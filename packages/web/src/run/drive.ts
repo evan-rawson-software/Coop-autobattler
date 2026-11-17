@@ -44,6 +44,15 @@ function firstId(list: Json | undefined): string | null {
 export function nextIntent(state: RunState, player = 0): Intent | null {
   const pending = isRecord(state.pending) ? state.pending : {};
   switch (state.step) {
+    case 'specialist_pick': {
+      // Each player takes a specialist (the roster in turn), then readies.
+      if (state.team.specialists?.[player] != null) return { type: 'ready' };
+      const ids = content.specialists.ids();
+      return {
+        type: 'pick_specialist',
+        specialist: ids[player % ids.length] as string,
+      };
+    }
     case 'core_placement': {
       const placed = Array.isArray(pending['positions'])
         ? (pending['positions'] as Json[])[player]

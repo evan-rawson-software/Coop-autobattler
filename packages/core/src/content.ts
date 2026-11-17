@@ -8,6 +8,8 @@ import { loadPoints } from './points.js';
 import type { PresentationConfig } from './presentation.js';
 import { loadPresentation } from './presentation.js';
 import type { ResourceConfig } from './resources.js';
+import type { SpecialistConfig } from './specialists.js';
+import { loadSpecialists } from './specialists.js';
 import { loadResources } from './resources.js';
 import type { TerrainConfig } from './terrain.js';
 import { loadTerrain } from './terrain.js';
@@ -21,6 +23,7 @@ export interface RawContent {
   readonly units: unknown;
   readonly buildings: unknown;
   readonly points: unknown;
+  readonly specialists: unknown;
   readonly presentation: unknown;
 }
 
@@ -30,6 +33,7 @@ export interface Content {
   readonly units: UnitConfig;
   readonly buildings: BuildingConfig;
   readonly points: PointsConfig;
+  readonly specialists: SpecialistConfig;
   readonly presentation: PresentationConfig;
 }
 
@@ -61,8 +65,16 @@ export function loadAllContent(raw: RawContent): ContentLoadResult {
     units.ok ? { units: units.config } : {},
   );
   if (!points.ok) prefixed('points', points.errors);
+  const specialists = loadSpecialists(raw.specialists);
+  if (!specialists.ok) prefixed('specialists', specialists.errors);
 
-  if (!resources.ok || !terrain.ok || !units.ok || !points.ok)
+  if (
+    !resources.ok ||
+    !terrain.ok ||
+    !units.ok ||
+    !points.ok ||
+    !specialists.ok
+  )
     return { ok: false, errors };
 
   const buildings = loadBuildings(raw.buildings, {
@@ -79,6 +91,7 @@ export function loadAllContent(raw: RawContent): ContentLoadResult {
     units: units.config,
     terrain: terrain.config,
     resources: resources.config,
+    specialistIds: specialists.config.ids(),
   });
   if (!presentation.ok) {
     prefixed('presentation', presentation.errors);
@@ -93,6 +106,7 @@ export function loadAllContent(raw: RawContent): ContentLoadResult {
       units: units.config,
       buildings: buildings.config,
       points: points.config,
+      specialists: specialists.config,
       presentation: presentation.config,
     },
   };

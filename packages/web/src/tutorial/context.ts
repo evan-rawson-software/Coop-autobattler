@@ -160,8 +160,12 @@ export function useTutorialInfo(
     () => ({ run: state, facts, turretSkipped }),
     [state, facts, turretSkipped],
   );
+  // The specialist pick comes before step 1 and shows no tutorial card; it is
+  // not the end of the tutorial (RS-13).
   const off =
-    active && tutorialPosition({ ...input, battleDone: false }).kind === 'off';
+    active &&
+    state.step !== 'specialist_pick' &&
+    tutorialPosition({ ...input, battleDone: false }).kind === 'off';
   // Past the battle (the reward step and on) the tutorial is over.
   useEffect(() => {
     if (off) finishTutorial(runId);

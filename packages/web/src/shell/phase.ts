@@ -20,6 +20,7 @@ export const PHASE_ORDER: readonly PhaseId[] = [
 /** The phase a step belongs to; null where there is none (run over). */
 export function phaseForStep(step: Step): PhaseId | null {
   switch (step) {
+    case 'specialist_pick':
     case 'core_placement':
       return 'setup';
     case 'build':
@@ -99,6 +100,7 @@ export function stepIdFor(
   state: Pick<RunState, 'step' | 'leg'>,
 ): StepId | null {
   switch (state.step) {
+    case 'specialist_pick':
     case 'core_placement':
       return 'setup';
     case 'build':

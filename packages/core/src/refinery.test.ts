@@ -7,6 +7,7 @@
 import { describe, expect, test } from 'vitest';
 import buildingsJson from '../../../content/buildings.json';
 import pointsJson from '../../../content/points.json';
+import specialistsJson from '../../../content/specialists.json';
 import presentationJson from '../../../content/presentation.en.json';
 import resourcesJson from '../../../content/resources.json';
 import terrainJson from '../../../content/terrain.json';
@@ -83,6 +84,7 @@ const withSinks = loadAllContentOrThrow({
     ],
   },
   points: pointsJson,
+  specialists: specialistsJson,
   presentation: {
     ...presentationJson,
     buildings: {

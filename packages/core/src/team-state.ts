@@ -42,6 +42,7 @@ import { decodeConduitId } from './conduit-ids.js';
 import { checkConduitList, networkProblem, parseConduits } from './conduits.js';
 import { tunnelPairs } from './tunnels.js';
 import { parseTeamModifiers, type TeamModifier } from './modifiers.js';
+import { SPECIALIST_ID_PATTERN, type SpecialistConfig } from './specialists.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -148,10 +149,69 @@ export interface TeamState {
    * keep their hashes.
    */
   readonly addedNodes?: readonly AddedNode[];
+  /**
+   * Each player's specialist (RS-13, CP-31): `map.partySize` entries, a
+   * specialist ID or null before that player has picked. Omitted (not a list
+   * of nulls) while nobody has picked, and in states made before specialists
+   * existed, so those keep their hashes and play as they did.
+   */
+  readonly specialists?: readonly (string | null)[];
 }
 
-/** What the team-state code needs from the loaded content. */
-export type TeamContent = MapContent;
+/**
+ * What the team-state code needs from the loaded content. `specialists` is
+ * optional: when given, a specialist ID must be in the roster.
+ */
+export type TeamContent = MapContent & {
+  readonly specialists?: Pick<SpecialistConfig, 'get'>;
+};
+
+export type SpecialistReason = 'invalid_owner' | 'unknown_specialist';
+
+/** The specialist ID of `player`, or null if the player has not picked. */
+export function specialistOf(state: TeamState, player: number): string | null {
+  return state.specialists?.[player] ?? null;
+}
+
+/**
+ * Set (or change) a player's specialist (RS-13). `specialist` must be in the
+ * roster when the content has one. The `specialists` list is dropped again
+ * when every entry is null.
+ */
+export function setSpecialist(
+  state: TeamState,
+  content: TeamContent,
+  player: number,
+  specialist: string | null,
+): OpResult<SpecialistReason> {
+  if (!isOwner(player, state.map.partySize)) {
+    return { ok: false, reason: 'invalid_owner' };
+  }
+  if (
+    specialist !== null &&
+    (typeof specialist !== 'string' ||
+      (content.specialists !== undefined &&
+        content.specialists.get(specialist) === undefined))
+  ) {
+    return {
+      ok: false,
+      reason: 'unknown_specialist',
+      detail: specialist,
+    };
+  }
+  const list = Array.from(
+    { length: state.map.partySize },
+    (_, i) => state.specialists?.[i] ?? null,
+  );
+  list[player] = specialist;
+  if (list.every((e) => e === null)) {
+    // Back to the form of a state without picks: no key at all.
+    const rest: Record<string, unknown> = { ...state };
+    delete rest['specialists'];
+    return { ok: true, state: rest as unknown as TeamState };
+  }
+  return { ok: true, state: { ...state, specialists: list } };
+}
 
 export type PlacementReason =
   | 'unknown_building'
@@ -1053,6 +1113,50 @@ export function addNode(
   };
 }
 
+/**
+ * Parse the `specialists` field of untrusted data: omitted, or exactly one
+ * entry per player, each null or a specialist ID of the roster (when the
+ * content has one). An all-null list is refused: the field is omitted then.
+ */
+function parseSpecialists(
+  raw: unknown,
+  partySize: number,
+  content: TeamContent,
+  errors: string[],
+): readonly (string | null)[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw) || raw.length !== partySize) {
+    errors.push(
+      `specialists: must be a list of ${String(partySize)} entries (one per player), or omitted.`,
+    );
+    return undefined;
+  }
+  const out: (string | null)[] = [];
+  raw.forEach((e: unknown, i) => {
+    if (e === null) {
+      out.push(null);
+    } else if (typeof e !== 'string' || !SPECIALIST_ID_PATTERN.test(e)) {
+      errors.push(
+        `specialists[${String(i)}]: must be null or a specialist ID.`,
+      );
+      out.push(null);
+    } else if (
+      content.specialists !== undefined &&
+      content.specialists.get(e) === undefined
+    ) {
+      errors.push(`specialists[${String(i)}]: unknown specialist "${e}".`);
+      out.push(null);
+    } else {
+      out.push(e);
+    }
+  });
+  if (out.every((e) => e === null)) {
+    errors.push('specialists: must be omitted when nobody has picked.');
+    return undefined;
+  }
+  return out;
+}
+
 const ADDED_NODE_KEYS = new Set(['x', 'y', 'resource', 'owner', 'round']);
 
 /** Parse the `addedNodes` field of untrusted data (shape only). */
@@ -1175,6 +1279,7 @@ const STATE_KEYS = new Set([
   'conduits',
   'modifiers',
   'addedNodes',
+  'specialists',
 ]);
 const PLACED_KEYS = new Set([
   'id',
@@ -1550,6 +1655,12 @@ function validateInner(
   if ('modifiers' in data && data['modifiers'] !== undefined) {
     modifiers = parseTeamModifiers(data['modifiers'], errors);
   }
+  const specialists = parseSpecialists(
+    data['specialists'],
+    map.partySize,
+    content,
+    errors,
+  );
   const partial: TeamState = {
     map,
     cores: coresOk ? cores : cores.map(() => null),
@@ -1575,5 +1686,6 @@ function validateInner(
     conduits,
     ...(modifiers === undefined ? {} : { modifiers }),
     ...(addedNodes === undefined ? {} : { addedNodes }),
+    ...(specialists === undefined ? {} : { specialists }),
   };
 }

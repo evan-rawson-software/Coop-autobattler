@@ -12,6 +12,7 @@ import {
 
 describe('phase mapping', () => {
   it('maps every step to a phase', () => {
+    expect(phaseForStep('specialist_pick')).toBe('setup');
     expect(phaseForStep('core_placement')).toBe('setup');
     expect(phaseForStep('build')).toBe('build');
     expect(phaseForStep('shop')).toBe('build');
@@ -39,6 +40,7 @@ describe('phase mapping', () => {
   });
 
   it('maps run places to the stepper steps', () => {
+    expect(stepIdFor({ step: 'specialist_pick', leg: 'pve' })).toBe('setup');
     expect(stepIdFor({ step: 'core_placement', leg: 'pve' })).toBe('setup');
     expect(stepIdFor({ step: 'build', leg: 'pve' })).toBe('build1');
     expect(stepIdFor({ step: 'shop', leg: 'pvp' })).toBe('build1');

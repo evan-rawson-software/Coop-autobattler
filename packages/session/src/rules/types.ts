@@ -28,6 +28,7 @@ export type { Json };
 // Steps
 
 export const STEPS = [
+  'specialist_pick',
   'core_placement',
   'build',
   'pve_choice',
@@ -317,6 +318,8 @@ export type IntentConduitEnd =
   | { readonly border: number; readonly y: number };
 
 export type BuiltinIntent =
+  /** Pick (or change the pick of) the player's specialist (RS-13). */
+  | { readonly type: 'pick_specialist'; readonly specialist: string }
   | { readonly type: 'place_core'; readonly x: number; readonly y: number }
   | { readonly type: 'vote'; readonly choice: Json }
   | { readonly type: 'ready' }
@@ -335,6 +338,7 @@ export interface ExtensionIntent {
 export type Intent = BuiltinIntent | ExtensionIntent;
 
 export const BUILTIN_INTENT_TYPES: readonly BuiltinIntentType[] = [
+  'pick_specialist',
   'place_core',
   'vote',
   'ready',
@@ -361,6 +365,8 @@ export type BuiltinReason =
   | 'invalid_intent'
   | 'invalid_choice'
   | 'unknown_intent'
+  | 'specialist_not_picked'
+  | 'unknown_specialist'
   | AnyReason
   | ConduitReason
   | 'unknown_conduit'
@@ -383,6 +389,12 @@ export type Effect =
       readonly y: number;
     }
   | { readonly type: 'core_position_changed'; readonly player: number }
+  /** A player picked or changed their specialist (RS-13). */
+  | {
+      readonly type: 'specialist_picked';
+      readonly player: number;
+      readonly specialist: string;
+    }
   | { readonly type: 'vote_changed'; readonly player: number }
   | {
       readonly type: 'vote_resolved';

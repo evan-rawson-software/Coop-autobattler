@@ -12,6 +12,7 @@ vi.mock('preact/hooks', () => ({
 
 const { RunOverScreen } = await import('./RunOverScreen.js');
 const { newRun } = await import('../run/test-run.js');
+const { content } = await import('../content.js');
 
 function text(n: unknown): string {
   if (n === null || n === undefined || typeof n === 'boolean') return '';
@@ -21,6 +22,9 @@ function text(n: unknown): string {
   if (typeof v.type === 'function' && v.type.name === 'Tally') {
     const p = v.props as unknown as { won: number; lost: number };
     return `${String(p.won)} won · ${String(p.lost)} lost`;
+  }
+  if (typeof v.type === 'function' && v.type.name === 'SpecialistLines') {
+    return text((v.type as (p: unknown) => unknown)(v.props));
   }
   return text(v.props.status) + text(v.props.children);
 }
@@ -91,6 +95,20 @@ describe('RunOverScreen for parties', () => {
       expect(out).toContain('Rival party');
     });
   }
+
+  test("the summary lists each player's specialist (RS-13d), nothing for an old run", () => {
+    const base = finished(2, 'defeated', false);
+    const ids = content.specialists.ids();
+    const withPicks: RunState = {
+      ...base,
+      team: { ...base.team, specialists: [ids[0] as string, ids[3] as string] },
+    };
+    const out = text(RunOverScreen({ state: withPicks, startingLives: 5 }));
+    expect(out).toContain('Ann: Flowmancer');
+    expect(out).toContain('Bo: Alchemist');
+    const old = text(RunOverScreen({ state: base, startingLives: 5 }));
+    expect(old).not.toContain('Flowmancer');
+  });
 
   test('a reopened finished run offers only Back to menu', () => {
     const state = finished(1, 'defeated', false);

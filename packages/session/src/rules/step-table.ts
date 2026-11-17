@@ -23,6 +23,7 @@ const BUILD_LIKE: readonly BuiltinIntentType[] = [
 export const STEP_INTENTS: Readonly<
   Record<Step, readonly BuiltinIntentType[]>
 > = {
+  specialist_pick: ['pick_specialist', 'ready', 'unready', 'abandon'],
   core_placement: ['place_core', 'ready', 'unready', 'abandon'],
   build: BUILD_LIKE,
   pve_choice: ['vote', 'abandon'],
@@ -38,6 +39,7 @@ export const STEP_INTENTS: Readonly<
 
 /** The steps in which a player's Ready flag locks their own editing (#58). */
 export const READY_LOCK_STEPS: readonly Step[] = [
+  'specialist_pick',
   'core_placement',
   'build',
   'shop',

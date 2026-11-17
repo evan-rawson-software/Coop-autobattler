@@ -20,6 +20,7 @@ import {
   rawBuildings,
   rawMapgen,
   rawPoints,
+  rawSpecialists,
   rawPresentationEn,
   rawResources,
   rawTerrain,
@@ -52,6 +53,7 @@ describe('team-state.schema.json', () => {
     units: rawUnits,
     buildings: rawBuildings,
     points: rawPoints,
+    specialists: rawSpecialists,
     presentation: rawPresentationEn,
   });
   const config = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });
@@ -99,6 +101,45 @@ describe('team-state.schema.json', () => {
     const result = validateTeamState(round, content, config);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.state).toEqual(state);
+  });
+
+  test('specialists (issue #470): optional, a list of IDs or null, in the schema and the validator', () => {
+    const base = sampleState();
+    // A state without the field (an old save) is valid, and has no such key.
+    expect(Object.keys(base)).not.toContain('specialists');
+    expect(validate(JSON.parse(JSON.stringify(base)))).toBe(true);
+    const withPicks = (list: unknown): unknown => ({
+      ...(JSON.parse(JSON.stringify(base)) as object),
+      specialists: list,
+    });
+    for (const good of [
+      ['spec_flowmancer', 'spec_flowmancer'],
+      ['spec_alchemist', null],
+      [null, 'spec_wardsmith'],
+    ]) {
+      const v = withPicks(good);
+      expect(validate(v), JSON.stringify(good)).toBe(true);
+      expect(validateTeamState(v, content, config).ok).toBe(true);
+    }
+    for (const bad of [
+      [],
+      ['Spec_X', null],
+      [1, null],
+      'spec_flowmancer',
+      ['spec_a', 'spec_a', 'spec_a', 'spec_a', 'spec_a'],
+    ]) {
+      expect(validate(withPicks(bad)), JSON.stringify(bad)).toBe(false);
+      expect(validateTeamState(withPicks(bad), content, config).ok).toBe(false);
+    }
+    // The schema cannot know the roster or the party size; the validator does.
+    expect(validate(withPicks(['spec_nobody', null]))).toBe(true);
+    expect(
+      validateTeamState(withPicks(['spec_nobody', null]), content, config).ok,
+    ).toBe(false);
+    expect(validate(withPicks(['spec_flowmancer']))).toBe(true);
+    expect(
+      validateTeamState(withPicks(['spec_flowmancer']), content, config).ok,
+    ).toBe(false);
   });
 
   test('a state with a conduit round-trips and validates', () => {

@@ -14,6 +14,15 @@
   color: var(--ink-muted);
 }
 
+/* The acting player's specialist: its name; the words are in the title. Kept
+   short so the step title keeps its room on a battle screen. */
+.run-bar .bar-specialist {
+  max-width: 7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
 .topbar-status {
   display: flex;
   align-items: center;

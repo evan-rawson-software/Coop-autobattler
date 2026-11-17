@@ -8,7 +8,8 @@
  * `returnToStash` and `removeFromStash` {actor, id}; `addNode` {owner, x, y,
  * resource, round} (Rich vein, an added resource node); `addConduit` {actor,
  * from: {building, side}, to: {building, side}, cells: [{x, y}]} and
- * `eraseConduit` {actor, id}). The map is `generateMap(seed, partySize)`. The
+ * `eraseConduit` {actor, id} and `setSpecialist` {actor, specialist: id or
+ * null}). The map is `generateMap(seed, partySize)`. The
  * result has one entry per op (`{ op, ok: true }` plus `id` for addToStash
  * and addConduit, or `{ op, ok: false, reason }`, plus `tunnels`, the Tunnel
  * pairs `[entrance, exit, distance]` after the op, once the state holds a Tunnel
@@ -16,7 +17,7 @@
  */
 import { generateMap } from './generate-map.js';
 import type { Json } from './hash.js';
-import { loadMapOrThrow, type MapContent } from './map.js';
+import { loadMapOrThrow } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import { addConduit, type ConduitEndArg } from './conduits.js';
 import { tunnelEnds, tunnelPairs } from './tunnels.js';
@@ -30,6 +31,8 @@ import {
   placeFromStash,
   removeFromStash,
   returnToStash,
+  setSpecialist,
+  type TeamContent,
   type TeamState,
 } from './team-state.js';
 
@@ -87,7 +90,7 @@ function endOf(v: Json | undefined, what: string): ConduitEndArg {
 /** Run a `team-state-ops` input script; shared by both kinds. */
 export function runTeamStateOps(
   input: Json,
-  content: MapContent,
+  content: TeamContent,
   config: MapgenConfig,
 ): { results: Json[]; state: TeamState } {
   {
@@ -174,6 +177,14 @@ export function runTeamStateOps(
             to: endOf(a['to'], 'to'),
             cells: cellList(a['cells']),
           });
+          break;
+        case 'setSpecialist':
+          outcome = setSpecialist(
+            state,
+            content,
+            int(a, 'actor'),
+            a['specialist'] === null ? null : str(a, 'specialist'),
+          );
           break;
         case 'eraseConduit':
           outcome = eraseConduit(state, {

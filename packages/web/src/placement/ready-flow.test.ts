@@ -94,6 +94,21 @@ describe('a refused Ready names the player', () => {
       '1.0.0',
     );
     if (!created.ok) throw new Error(created.reason);
+    // The specialist pick comes first; then the Core placement opens.
+    for (const p of [0, 1]) {
+      await created.controller.dispatch(
+        p,
+        {
+          type: 'pick_specialist',
+          specialist: content.specialists.ids()[0] as string,
+        },
+        Date.now(),
+      );
+    }
+    for (const p of [0, 1]) {
+      await created.controller.dispatch(p, { type: 'ready' }, Date.now());
+    }
+    expect(created.controller.state.step).toBe('core_placement');
     const rec = (await store.get('illegal-spot')) as {
       state: { pending: { positions: unknown[] } };
     };

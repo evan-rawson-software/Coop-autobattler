@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest';
 import buildingsJson from '../../../content/buildings.json';
 import mapgenJson from '../../../content/mapgen.json';
 import pointsJson from '../../../content/points.json';
+import specialistsJson from '../../../content/specialists.json';
 import presentationJson from '../../../content/presentation.en.json';
 import resourcesJson from '../../../content/resources.json';
 import terrainJson from '../../../content/terrain.json';
@@ -26,6 +27,7 @@ const content = loadAllContentOrThrow({
   units: unitsJson,
   buildings: buildingsJson,
   points: pointsJson,
+  specialists: specialistsJson,
   presentation: presentationJson,
 });
 const config = loadMapgenOrThrow(mapgenJson, {

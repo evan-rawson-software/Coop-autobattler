@@ -15,6 +15,7 @@ import {
   content,
   corePosition,
   mapgenConfig,
+  pickSpecialistAll,
   placeCoreAll,
   readyAll,
   runArgs,
@@ -53,7 +54,8 @@ function statesByStep(): Map<Step, RunState> {
   seen.set(s.step, s);
   for (let i = 0; i < 30; i++) {
     const before = s.step;
-    if (s.step === 'core_placement') s = placeCoreAll(s, deps);
+    if (s.step === 'specialist_pick') s = pickSpecialistAll(s, deps);
+    else if (s.step === 'core_placement') s = placeCoreAll(s, deps);
     else if (s.step === 'pve_choice' || s.step === 'event_choice')
       s = voteAll(s, firstOption(s), deps);
     else s = readyAll(s, deps);
@@ -154,6 +156,12 @@ function owned(
  * something to act on.
  */
 const MAKERS: Record<string, Maker> = {
+  pick_specialist: () => [
+    {
+      type: 'pick_specialist',
+      specialist: content.specialists.ids()[0] as string,
+    },
+  ],
   place_core: (s) => [{ type: 'place_core', ...corePosition(s) }],
   vote: (s) =>
     s.step === 'core_placement'

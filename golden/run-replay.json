@@ -2,11 +2,24 @@
   {
     "id": "run-replay.s1-p1-first-shop",
     "kind": "run-replay",
-    "description": "1 player(s): Core placement to the first shop (after the PvE leg).",
+    "description": "1 player(s): Specialist pick, Core placement to the first shop (after the PvE leg).",
     "input": {
       "seed": 1,
       "players": ["Ann"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -61,24 +74,37 @@
         "ok": true,
         "step": "shop",
         "round": 1,
-        "actions": 7,
+        "actions": 9,
         "gold": [21],
         "shops": [
           ["0 bld_wall_l t1 8", "1 bld_merger t1 5", "2 bld_extractor t1 10", "3 bld_range t1 24", "4 bld_crossover t1 8"]
         ],
         "rng": [948592740, 1408725001, 4049329563, 240181589],
-        "stateHash": "18d9c3ef"
+        "stateHash": "bfeb9b8d"
       }
     }
   },
   {
     "id": "run-replay.s2-p1-first-shop",
     "kind": "run-replay",
-    "description": "1 player(s): Core placement to the first shop (after the PvE leg).",
+    "description": "1 player(s): Specialist pick, Core placement to the first shop (after the PvE leg).",
     "input": {
       "seed": 2,
       "players": ["Ann"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -126,24 +152,50 @@
         "ok": true,
         "step": "shop",
         "round": 1,
-        "actions": 6,
+        "actions": 8,
         "gold": [25],
         "shops": [
           ["0 bld_range t1 24", "1 bld_turret t1 15", "2 bld_hangar t1 30", "3 bld_extractor t1 10", "4 bld_barracks t1 20"]
         ],
         "rng": [2374633939, 2579424794, 1610740903, 4078707704],
-        "stateHash": "09c00887"
+        "stateHash": "3dfe1045"
       }
     }
   },
   {
     "id": "run-replay.s3-p2-first-shop",
     "kind": "run-replay",
-    "description": "2 player(s): Core placement to the first shop (after the PvE leg).",
+    "description": "2 player(s): Specialist pick, Core placement to the first shop (after the PvE leg).",
     "input": {
       "seed": 3,
       "players": ["Ann", "Bo"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -245,25 +297,51 @@
         "ok": true,
         "step": "shop",
         "round": 1,
-        "actions": 14,
+        "actions": 18,
         "gold": [21, 21],
         "shops": [
           ["0 bld_extractor t1 10", "1 bld_extractor t1 10", "2 bld_turret t1 15", "3 bld_barracks t1 20", "4 bld_barracks t1 20"],
           ["0 bld_turret t1 15", "1 bld_extractor t1 10", "2 bld_merger t1 5", "3 bld_splitter t1 5", "4 bld_hangar t1 30"]
         ],
         "rng": [3486712235, 93806043, 2284422817, 725360740],
-        "stateHash": "86a22d7b"
+        "stateHash": "52508505"
       }
     }
   },
   {
     "id": "run-replay.s4-p2-first-shop",
     "kind": "run-replay",
-    "description": "2 player(s), split votes: Core placement to the first shop (after the PvE leg).",
+    "description": "2 player(s), split votes: Specialist pick, Core placement to the first shop (after the PvE leg).",
     "input": {
       "seed": 4,
       "players": ["Ann", "Bo"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -351,25 +429,64 @@
         "ok": true,
         "step": "shop",
         "round": 1,
-        "actions": 12,
+        "actions": 16,
         "gold": [28, 28],
         "shops": [
           ["0 bld_merger t1 5", "1 bld_barracks t1 20", "2 bld_extractor t1 10", "3 bld_barracks t1 20", "4 bld_turret t1 15"],
           ["0 bld_range t1 24", "1 bld_turret t1 15", "2 bld_gate t1 8", "3 bld_range t1 24", "4 bld_extractor t1 10"]
         ],
         "rng": [3495444511, 2074020531, 2024017816, 1059153629],
-        "stateHash": "19bac2d8"
+        "stateHash": "49f24cca"
       }
     }
   },
   {
     "id": "run-replay.s5-p3-first-shop",
     "kind": "run-replay",
-    "description": "3 player(s), split votes: Core placement to the first shop (after the PvE leg).",
+    "description": "3 player(s), split votes: Specialist pick, Core placement to the first shop (after the PvE leg).",
     "input": {
       "seed": 5,
       "players": ["Ann", "Bo", "Cy"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 2,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_beastbinder"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 2,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -497,7 +614,7 @@
         "ok": true,
         "step": "shop",
         "round": 1,
-        "actions": 18,
+        "actions": 24,
         "gold": [28, 28, 28],
         "shops": [
           ["0 bld_range t1 24", "1 bld_turret t1 15", "2 bld_turret t1 15", "3 bld_range t1 24", "4 bld_barracks t1 20"],
@@ -505,18 +622,57 @@
           ["0 bld_turret t1 15", "1 bld_hangar t1 30", "2 bld_barracks t1 20", "3 bld_barracks t1 20", "4 bld_extractor t1 10"]
         ],
         "rng": [2401453780, 1660996482, 2716312277, 2780469515],
-        "stateHash": "7fc6428d"
+        "stateHash": "0e706411"
       }
     }
   },
   {
     "id": "run-replay.s6-p3-first-shop",
     "kind": "run-replay",
-    "description": "3 player(s): Core placement to the first shop (after the PvE leg).",
+    "description": "3 player(s): Specialist pick, Core placement to the first shop (after the PvE leg).",
     "input": {
       "seed": 6,
       "players": ["Ann", "Bo", "Cy"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 2,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_beastbinder"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 2,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -665,7 +821,7 @@
         "ok": true,
         "step": "shop",
         "round": 1,
-        "actions": 21,
+        "actions": 27,
         "gold": [21, 21, 21],
         "shops": [
           ["0 bld_armory t1 30", "1 bld_extractor t1 10", "2 bld_overclocker t1 30", "3 bld_overclocker t1 30", "4 bld_turret t1 15"],
@@ -673,7 +829,7 @@
           ["0 bld_turret t1 15", "1 bld_wall_o t1 8", "2 bld_overclocker t1 30", "3 bld_barracks t1 20", "4 bld_wall_j t1 8"]
         ],
         "rng": [4002323717, 2067507954, 1864822148, 510943459],
-        "stateHash": "1caae038"
+        "stateHash": "a259388c"
       }
     }
   },
@@ -685,6 +841,19 @@
       "seed": 11,
       "players": ["Ann"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -764,13 +933,13 @@
         "ok": true,
         "step": "shop",
         "round": 1,
-        "actions": 11,
+        "actions": 13,
         "gold": [37],
         "shops": [
           ["0 bld_hangar t1 30", "1 bld_armory t1 30", "2 bld_extractor t1 10", "3 bld_barracks t1 20", "4 bld_turret t1 15"]
         ],
         "rng": [4017906222, 1048198776, 252071946, 525099987],
-        "stateHash": "96d93a0d"
+        "stateHash": "0aacf30d"
       }
     }
   },
@@ -782,6 +951,32 @@
       "seed": 12,
       "players": ["Ann", "Bo"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -934,7 +1129,7 @@
       "result": {
         "ok": false,
         "reason": "not_enough_gold",
-        "at": 13
+        "at": 17
       }
     }
   },
@@ -946,6 +1141,45 @@
       "seed": 13,
       "players": ["Ann", "Bo", "Cy"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 2,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_beastbinder"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 2,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -1185,7 +1419,7 @@
         "ok": true,
         "step": "shop",
         "round": 1,
-        "actions": 35,
+        "actions": 41,
         "gold": [33, 34, 24],
         "shops": [
           ["0 bld_range t1 24", "1 bld_turret t1 15", "2 bld_hangar t1 30", "3 bld_range t1 24", "4 bld_extractor t1 10"],
@@ -1193,7 +1427,7 @@
           ["0 bld_turret t1 15", "1 bld_hangar t1 30", "2 bld_turret t1 15", "3 bld_merger t1 5", "4 bld_range t1 24"]
         ],
         "rng": [4183173375, 1530242370, 2692292519, 2946822902],
-        "stateHash": "c82bcccd"
+        "stateHash": "5dfe7fbc"
       }
     }
   },
@@ -1205,6 +1439,19 @@
       "seed": 14,
       "players": ["Ann"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -1285,13 +1532,13 @@
         "ok": true,
         "step": "shop",
         "round": 1,
-        "actions": 11,
+        "actions": 13,
         "gold": [14],
         "shops": [
           ["0 bld_extractor t1 10", "1 bld_armory t1 30", "2 bld_barracks t1 20", "3 bld_extractor t1 10", "4 bld_hangar t1 30"]
         ],
         "rng": [2782579401, 4181980959, 2945516258, 1625768006],
-        "stateHash": "065fe09d"
+        "stateHash": "8054d161"
       }
     }
   },
@@ -1303,6 +1550,19 @@
       "seed": 6,
       "players": ["Ann"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -1407,13 +1667,13 @@
         "ok": true,
         "step": "shop",
         "round": 2,
-        "actions": 15,
+        "actions": 17,
         "gold": [52],
         "shops": [
           ["0 bld_gate t1 8", "1 bld_range t1 24", "2 bld_merger t1 5", "3 bld_armory t1 30", "4 bld_lancer_hall t1 25", "5 bld_barracks t1 20"]
         ],
         "rng": [672773956, 3933987911, 103030009, 1233337982],
-        "stateHash": "0d38a78d"
+        "stateHash": "ca1781ad"
       }
     }
   },
@@ -1425,6 +1685,32 @@
       "seed": 1,
       "players": ["Ann", "Bo"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -1614,14 +1900,14 @@
         "ok": true,
         "step": "shop",
         "round": 2,
-        "actions": 28,
+        "actions": 32,
         "gold": [52, 53],
         "shops": [
           ["0 bld_barracks t1 20", "1 bld_turret t1 15", "2 bld_barracks t1 20", "3 bld_extractor t1 10", "4 bld_hangar t1 30", "5 bld_merger t1 5"],
           ["0 bld_armory t1 30", "1 bld_lancer_hall t1 25", "2 bld_turret t1 15", "3 bld_hangar t1 30", "4 bld_wall_o t1 8", "5 bld_extractor t1 10"]
         ],
         "rng": [2844930618, 4069157601, 885434733, 2750679439],
-        "stateHash": "00a32e74"
+        "stateHash": "018be9fa"
       }
     }
   },
@@ -1633,6 +1919,19 @@
       "seed": 1,
       "players": ["Ann"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -1732,13 +2031,13 @@
         "ok": true,
         "step": "shop",
         "round": 2,
-        "actions": 14,
+        "actions": 16,
         "gold": [53],
         "shops": [
           ["0 bld_extractor t1 10", "1 bld_wall_l t1 8", "2 bld_overclocker t1 30", "3 bld_turret t1 15", "4 bld_splitter t1 5"]
         ],
         "rng": [733700114, 3032039541, 3556752480, 1764203217],
-        "stateHash": "8b092849"
+        "stateHash": "77b9ed05"
       }
     }
   },
@@ -1750,6 +2049,32 @@
       "seed": 4,
       "players": ["Ann", "Bo"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -1941,14 +2266,14 @@
         "ok": true,
         "step": "shop",
         "round": 2,
-        "actions": 28,
+        "actions": 32,
         "gold": [53, 53],
         "shops": [
           ["0 bld_armory t1 30", "1 bld_range t1 24", "2 bld_overclocker t1 30", "3 bld_wall_j t1 8", "4 bld_hangar t1 30"],
           ["0 bld_splitter t1 5", "1 bld_extractor t1 10", "2 bld_gate t1 8", "3 bld_range t1 24", "4 bld_range t1 24"]
         ],
         "rng": [3985151463, 1932769909, 374580781, 3230807315],
-        "stateHash": "66d53a6b"
+        "stateHash": "021662fb"
       }
     }
   },
@@ -1960,6 +2285,19 @@
       "seed": 17,
       "players": ["Ann"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -2116,7 +2454,7 @@
       "result": {
         "ok": false,
         "reason": "invalid_choice",
-        "at": 21
+        "at": 23
       }
     }
   },
@@ -2128,6 +2466,32 @@
       "seed": 214,
       "players": ["Ann", "Bo"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -2422,14 +2786,14 @@
         "ok": true,
         "step": "shop",
         "round": 3,
-        "actions": 44,
+        "actions": 48,
         "gold": [49, 85],
         "shops": [
           ["0 bld_wall_l t2 18", "1 bld_barracks t1 20", "2 bld_gate t1 8", "3 bld_wall_s t1 8", "4 bld_extractor t1 10", null],
           ["0 bld_hangar t1 30", "1 bld_overclocker t1 30", "2 bld_wall_l t1 8", "3 bld_refinery_bc t1 35", "4 bld_hangar t1 30", "5 bld_wall_l t1 8"]
         ],
         "rng": [3091127164, 4100099943, 578926084, 4194069035],
-        "stateHash": "77739caa"
+        "stateHash": "afaa0be0"
       }
     }
   },
@@ -2441,6 +2805,19 @@
       "seed": 4,
       "players": ["Ann"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -2540,13 +2917,13 @@
         "ok": true,
         "step": "shop",
         "round": 2,
-        "actions": 14,
+        "actions": 16,
         "gold": [53],
         "shops": [
           ["0 bld_barracks t1 20", "1 bld_wall_s t1 8", "2 bld_range t1 24", "3 bld_barracks t1 20", "4 bld_extractor t1 10"]
         ],
         "rng": [3593042403, 3946901260, 2354960710, 227958285],
-        "stateHash": "b98746a7"
+        "stateHash": "a8b24b23"
       }
     }
   },
@@ -2558,6 +2935,32 @@
       "seed": 6,
       "players": ["Ann", "Bo"],
       "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
         {
           "player": 0,
           "intent": {
@@ -2749,14 +3152,292 @@
         "ok": true,
         "step": "shop",
         "round": 2,
-        "actions": 28,
+        "actions": 32,
         "gold": [53, 53],
         "shops": [
           ["0 bld_lancer_hall t1 25", "1 bld_hangar t1 30", "2 bld_turret t1 15", "3 bld_wall_j t1 8", "4 bld_lancer_hall t1 25"],
           ["0 bld_gate t1 8", "1 bld_range t1 24", "2 bld_range t1 24", "3 bld_splitter t1 5", "4 bld_extractor t1 10"]
         ],
         "rng": [1805898060, 3571611108, 2599083624, 832983298],
-        "stateHash": "8bc192f7"
+        "stateHash": "242277eb"
+      }
+    }
+  },
+  {
+    "id": "run-replay.s1-p1-specialist-change",
+    "kind": "run-replay",
+    "description": "1 player(s): picks the Flowmancer, changes the pick to the Alchemist before Ready, readies (the step ends and Core placement opens), places the Core and readies: the run reaches the first build step. The picks are inputs: no stream moves, so the generator state after the pick step equals the one of a run that picked at once (compare run-replay.s1-p1-first-shop's `rng` at the same step).",
+    "input": {
+      "seed": 1,
+      "players": ["Ann"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_alchemist"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "place_core",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "step": "build",
+        "round": 1,
+        "actions": 5,
+        "gold": [10],
+        "shops": [null],
+        "rng": [1542572570, 3420670874, 2874148258, 2227881579],
+        "stateHash": "79358189"
+      }
+    }
+  },
+  {
+    "id": "run-replay.s2-p2-specialist-unready-change",
+    "kind": "run-replay",
+    "description": "2 player(s): Ann picks the Wardsmith and readies, Bo picks the Wardsmith too (duplicates are allowed) but has not readied; Ann un-readies (allowed while Bo is not ready), changes her pick to the Beastbinder, then both ready; Core placement and the first build step follow.",
+    "input": {
+      "seed": 2,
+      "players": ["Ann", "Bo"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "unready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_beastbinder"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "place_core",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "place_core",
+            "x": 24,
+            "y": 0
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "step": "build",
+        "round": 1,
+        "actions": 11,
+        "gold": [10, 10],
+        "shops": [null, null],
+        "rng": [1949379950, 3616954288, 3661881397, 1066949411],
+        "stateHash": "b512d7b9"
+      }
+    }
+  },
+  {
+    "id": "run-replay.s3-p1-ready-without-pick",
+    "kind": "run-replay",
+    "description": "Ready before any pick is refused with specialist_not_picked (there is no skip): the replay stops at the first action.",
+    "input": {
+      "seed": 3,
+      "players": ["Ann"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": false,
+        "reason": "specialist_not_picked",
+        "at": 1
+      }
+    }
+  },
+  {
+    "id": "run-replay.s4-p1-pick-after-step-ended",
+    "kind": "run-replay",
+    "description": "A solo player picks and readies, which ends the pick step; a later pick is refused with wrong_step (the pick is fixed for the run: there is no respec).",
+    "input": {
+      "seed": 4,
+      "players": ["Ann"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": false,
+        "reason": "wrong_step",
+        "at": 3
+      }
+    }
+  },
+  {
+    "id": "run-replay.s5-p2-pick-locked-while-ready",
+    "kind": "run-replay",
+    "description": "2 player(s): Ann readies with her pick, then tries to change it while Bo has not readied: refused with locked_ready (Ready locks the pick, CP-17a).",
+    "input": {
+      "seed": 5,
+      "players": ["Ann", "Bo"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_flowmancer"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_wardsmith"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": false,
+        "reason": "locked_ready",
+        "at": 3
+      }
+    }
+  },
+  {
+    "id": "run-replay.s6-p1-unknown-specialist",
+    "kind": "run-replay",
+    "description": "A pick of an ID that is not in the roster is refused with unknown_specialist.",
+    "input": {
+      "seed": 6,
+      "players": ["Ann"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "pick_specialist",
+            "specialist": "spec_nobody"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": false,
+        "reason": "unknown_specialist",
+        "at": 1
       }
     }
   }

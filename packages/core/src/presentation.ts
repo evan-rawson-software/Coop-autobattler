@@ -30,6 +30,17 @@ export interface ArchetypeEntry extends PresentationEntry {
   readonly tests: string;
 }
 
+/**
+ * The display text of a specialist (RS-13). `description` says what the
+ * signature building does; `signature` is that building's name and footprint;
+ * `family` is the family label and `bonus` the line about the family bonus.
+ */
+export interface SpecialistEntry extends PresentationEntry {
+  readonly family: string;
+  readonly bonus: string;
+  readonly signature: string;
+}
+
 export interface EventEntry {
   readonly name: string;
   readonly icon: string;
@@ -58,6 +69,8 @@ export interface PresentationConfig {
   event(type: string): EventEntry | undefined;
   /** Display name of a run modifier ID. */
   modifier(id: string): { readonly name: string } | undefined;
+  /** Display text of a specialist ID (RS-13). */
+  specialist(id: string): SpecialistEntry | undefined;
   readonly templates: PresentationTemplates;
 }
 
@@ -132,6 +145,8 @@ export const REASON_TEXT_CODES: readonly string[] = [
   'sealed_producer',
   'invalid_intent',
   'invalid_choice',
+  'specialist_not_picked',
+  'unknown_specialist',
   'unknown_intent',
   'save_failed',
   'invalid_state',
@@ -734,6 +749,23 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   uiKitRandomWall: [],
   uiKitRandomWallTip: [],
   uiPrimaryPlaceCoreSub: [],
+  specialistTitle: [],
+  specialistSubtitle: [],
+  specialistFamily: ['family'],
+  specialistBonusLabel: [],
+  specialistSignatureLabel: [],
+  specialistPartyTitle: [],
+  specialistNoneYet: [],
+  specialistStatusChoosing: [],
+  specialistStatusNotReady: [],
+  specialistStatusLocked: [],
+  specialistNote: [],
+  specialistNeedPick: [],
+  specialistBar: ['name'],
+  specialistListTitle: [],
+  specialistLine: ['player', 'specialist'],
+  uiPrimaryPickReady: [],
+  uiPrimaryPickReadySub: [],
   coreTitle: [],
   coreAbout: [],
   coreClickPre: [],
@@ -837,6 +869,8 @@ export interface PresentationLoadContext {
   readonly archetypeIds?: readonly string[];
   readonly eventTypes?: readonly string[];
   readonly modifierIds?: readonly string[];
+  /** When given, every specialist ID must have display text and no other ID may. */
+  readonly specialistIds?: readonly string[];
 }
 
 export type PresentationLoadResult = LoadResult<PresentationConfig>;
@@ -873,6 +907,7 @@ export function loadPresentation(
       'archetypes',
       'events',
       'modifiers',
+      'specialists',
       'templates',
       '$schema',
     ]),
@@ -963,6 +998,15 @@ export function loadPresentation(
     context.resources,
     errors,
   );
+  const specialists = readGroup(
+    data,
+    'specialists',
+    /^spec_[a-z0-9_]+$/,
+    ['name', 'description', 'family', 'bonus', 'signature'],
+    context.specialistIds,
+    context.resources,
+    errors,
+  );
   const templates = readTemplates(data['templates'], context.resources, errors);
 
   if (errors.length > 0 || templates === undefined) {
@@ -975,6 +1019,7 @@ export function loadPresentation(
       archetype: (id) => archetypes.get(id) as ArchetypeEntry | undefined,
       event: (type) => events.get(type) as EventEntry | undefined,
       modifier: (id) => modifiers.get(id) as { name: string } | undefined,
+      specialist: (id) => specialists.get(id) as SpecialistEntry | undefined,
       templates,
     },
   };

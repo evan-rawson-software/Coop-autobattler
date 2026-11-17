@@ -22,6 +22,7 @@ import {
   rawEconomy,
   rawMapgen,
   rawPoints,
+  rawSpecialists,
   rawPresentationEn,
   rawResources,
   rawTerrain,
@@ -65,6 +66,7 @@ describe('run-state.schema.json with shop data', () => {
     units: rawUnits,
     buildings: rawBuildings,
     points: rawPoints,
+    specialists: rawSpecialists,
     presentation: rawPresentationEn,
   });
   const mapgenConfig = loadMapgenOrThrow(rawMapgen, {
@@ -95,7 +97,12 @@ describe('run-state.schema.json with shop data', () => {
       if (!r.ok) throw new Error(r.reason);
       return r.state;
     };
-    let s = go(created.state, { type: 'place_core', ...pos });
+    let s = go(created.state, {
+      type: 'pick_specialist',
+      specialist: 'spec_flowmancer',
+    });
+    s = go(s, { type: 'ready' });
+    s = go(s, { type: 'place_core', ...pos });
     s = go(s, { type: 'ready' });
     s = go(s, { type: 'ready' });
     s = go(s, { type: 'vote', choice: 'easy' });

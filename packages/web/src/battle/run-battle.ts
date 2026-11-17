@@ -212,10 +212,12 @@ function describeStoredBattle(
   let opponent: OpponentInfo;
   if (oppKind === 'ghost') {
     const mods = source.type === 'ghost' ? source.team.modifiers : undefined;
+    const specs = source.type === 'ghost' ? source.team.specialists : undefined;
     opponent = {
       name: ghostDisplayName(label),
       kind: 'ghost',
       ...(mods === undefined || mods.length === 0 ? {} : { modifiers: mods }),
+      ...(specs === undefined ? {} : { specialists: specs }),
     };
   } else if (oppKind === 'boss') {
     // The boss ID the round record keeps; older saves only have the label.

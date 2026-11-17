@@ -18,6 +18,7 @@ describe('the step decides the screen', () => {
   });
 
   test('each step goes to its own screen', () => {
+    expect(screenForStep('specialist_pick')).toBe('specialist');
     expect(screenForStep('core_placement')).toBe('core');
     expect(screenForStep('build')).toBe('build');
     expect(screenForStep('pve_choice')).toBe('pve_choice');

@@ -26,6 +26,7 @@ import {
   content,
   coreMove,
   corePosition,
+  testSpecialist,
   mapgenConfig,
   runArgs,
 } from '../testing/test-support.js';
@@ -86,6 +87,10 @@ function nextIntent(s: RunState, phase: Map<string, number>): Intent {
   phase.set(key, n + 1);
   const options = (s.pending as { options?: { id: string }[] } | null)?.options;
   switch (s.step) {
+    case 'specialist_pick':
+      return s.team.specialists?.[0] == null
+        ? { type: 'pick_specialist', specialist: testSpecialist(0) }
+        : { type: 'ready' };
     case 'core_placement':
       return coreMove(s);
     case 'pve_choice':
@@ -113,6 +118,11 @@ function nextIntent(s: RunState, phase: Map<string, number>): Intent {
     default:
       return { type: 'ready' };
   }
+}
+
+/** Pick a specialist and ready, so the run is at the Core placement. */
+async function toCorePlacement(c: RunController): Promise<void> {
+  await playUntil(c, (s) => s.step === 'core_placement');
 }
 
 async function playUntil(
@@ -407,7 +417,7 @@ describe('the run controller', () => {
     const c2 = await start(counting);
     const n = puts;
     const rej = await c2.dispatch(0, { type: 'ready' }, tick());
-    expect(rej).toMatchObject({ ok: false, reason: 'core_not_placed' });
+    expect(rej).toMatchObject({ ok: false, reason: 'specialist_not_picked' });
     expect(puts).toBe(n);
   });
 
@@ -441,6 +451,7 @@ describe('the run controller', () => {
     expect(r).toMatchObject({ ok: false, reason: 'stale' });
     expect(await store.get('run-1')).toEqual(second);
     // The start stamp is carried unchanged on later writes of one run.
+    await toCorePlacement(b);
     await b.dispatch(
       0,
       { type: 'place_core', ...corePosition(b.state) },
@@ -454,10 +465,11 @@ describe('the run controller', () => {
   test('5b: a hook that throws mid-put leaves no partial record', async () => {
     const store = createMemorySaveStore({
       beforePut: (rec) => {
-        if (rec.actionCounter === 2) throw new Error('disk full');
+        if (rec.actionCounter === 4) throw new Error('disk full');
       },
     });
     const c = await start(store);
+    await toCorePlacement(c);
     await c.dispatch(
       0,
       { type: 'place_core', ...corePosition(c.state) },
@@ -795,9 +807,10 @@ describe('the run controller', () => {
     });
     const c = await start(store);
     const pos = corePosition(c.state);
-    const p1 = c.dispatch(0, { type: 'place_core', ...pos }, 1);
+    const spec = testSpecialist(0);
+    const p1 = c.dispatch(0, { type: 'pick_specialist', specialist: spec }, 1);
     const p2 = c.dispatch(0, { type: 'ready' }, 2);
-    const p3 = c.dispatch(0, { type: 'ready' }, 3);
+    const p3 = c.dispatch(0, { type: 'place_core', ...pos }, 3);
     const order: number[] = [];
     void p1.then(() => order.push(1));
     void p2.then(() => order.push(2));

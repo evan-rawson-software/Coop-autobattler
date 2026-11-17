@@ -686,6 +686,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           tps={tps}
           revealed={revealed}
           opponentModifiers={opponent.modifiers}
+          opponentSpecialists={opponent.specialists}
           statsOpen={statsOpen}
           onToggleStats={() => {
             setStatsOpen((o) => !o);

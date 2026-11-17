@@ -377,6 +377,21 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 | `MAX_UNIT_REACH`       | 1 920               | `reach` of a unit (eight cells)                                           |
 | `MAX_SEPARATION_CAP`   | 480                 | `separationCap` in `sim.json` (`separationPercent` is 0 to 100)           |
 
+In `specialists.json` (issue #470, "Specialists"): `specialists` has 1 to
+`MAX_SPECIALISTS` (16) entries, each `{ id, family, effects, signature }` with
+a unique `id` matching `spec_[a-z0-9_]+` of at most `MAX_SPECIALIST_ID_LENGTH`
+(48) characters, a `family` of `logistics`, `defense`, `units` or `industry`,
+1 to `MAX_SPECIALIST_EFFECTS` (4) `effects`, and a `signature` building ID
+matching `bld_[a-z0-9_]+`, unique across the file (the building itself is
+added by a later step of issue #468, so it is not checked against
+`buildings.json` yet). An effect is `{ kind, percent }` with a `kind` of
+`unit_health_percent`, `source_speed_percent` or `production_speed_percent`,
+or `{ kind: "building_health_percent", target, percent }` with a `target` of
+the modifier targets (`all`, `wall`, `gate`, `turret`, `source`, `route`,
+`unit_producer`, `economy`); `percent` is an integer from 1 to
+`MAX_SPECIALIST_PERCENT` (100); no other keys. The shipped numbers are the
+placeholders of CB-51a, tuned in issue #477.
+
 In `points.json` (points of interest, "The neutral zone"): `chancePercent` is
 0 to 100; `bandMarginCells` is at least 0 and twice it must be below
 `plotWidth` (the loader checks this when it knows the mapgen file, `pnpm
@@ -734,7 +749,7 @@ label in `before` in order, then draw `shop:r<round>:<leg>`. For each player
 `i`, roll the offers from that stream's child `p<i>`, then re-roll `rerolls`
 times from the same child. The result lists each player's rolls (offers as
 `slot def tier price`) and final stream state, and the run generator state
-after the shop draw. `run-replay`: input `{seed, players, actions}`, where
+after the shop draw. `run-replay` (a run starts in `specialist_pick`, so its actions begin with each player's `pick_specialist` and `ready`; issue #470): input `{seed, players, actions}`, where
 `actions` is a list of `{player, intent}`. The run is created with the given
 seed and player names and the actions are applied in order, with a battle
 resolver that always wins. The result is the final step, round, action count,
@@ -942,7 +957,7 @@ never changes its input.
 ### Format (plain JSON, `schemas/team-state.schema.json`)
 
 ```
-{ map, cores, buildings, stash, nextId, nextConduitId, conduits, modifiers?, addedNodes? }
+{ map, cores, buildings, stash, nextId, nextConduitId, conduits, modifiers?, addedNodes?, specialists? }
 ```
 
 - `map`: the map format above.
@@ -1014,6 +1029,22 @@ never changes its input.
   nodes, so a building that needs a node (a source) may stand on one and a
   building that must not (anything else) may not. A conduit may cross an added
   node as it may a generated one.
+
+- `specialists` (optional, issue #470, RS-13, CP-31): each player's specialist,
+  a list of exactly `partySize` entries, entry `p` being player `p`'s
+  specialist ID (`spec_...`, one of `content/specialists.json`) or `null`
+  while `p` has not picked. It is **omitted** (never a list of nulls) while
+  nobody has picked, and in a state made before specialists existed, so such a
+  state serialises and hashes as before and **no format number is raised**
+  (old saves and snapshots stay readable and play as they did; see
+  CONTRIBUTING). `setSpecialist(state, content, player, id)` is the only
+  operation that touches it: it fails with `invalid_owner` (not a player index)
+  or `unknown_specialist` (not in the roster; checked when the content has one),
+  otherwise sets entry `player` (a player can change it as often as they like;
+  `null` clears it) and omits the list again when every entry is `null`.
+  `specialistOf(state, p)` is entry `p`, or `null` when the field is absent.
+  It has no effect on a battle or a shop yet (later steps of issue #468).
+  Duplicates are allowed: all entries may be equal (RS-13a).
 
 Buildings of kind `core` never appear in `buildings` or `stash`.
 
@@ -1182,7 +1213,10 @@ the conduit's `owner`, canonical order, `nextConduitId` a list of `partySize`
 positive integers each above the largest number `n` of that owner's conduits, each conduit's geometry rules against all the other
 conduits, no two conduits on one side, no loop, no resource mismatch; see
 Conduits), counting the Tunnel pairs derived from the placement as conduit
-segments and re-checking them (see "Tunnels"). It does not check that the map is one the generator could produce.
+segments and re-checking them (see "Tunnels"). `specialists` is parsed
+hostilely: absent, or a list of exactly `partySize` entries, each `null` or a
+string matching `spec_[a-z0-9_]+` that is in the roster (`content.specialists`,
+when the content has one), and not all `null`. It does not check that the map is one the generator could produce.
 
 ### ASCII rendering
 
@@ -1202,7 +1236,8 @@ Input `{ "seed": u32, "partySize": 1..4, "ops": [...] }`. The map is the
 `id`, `x`, `y`, `rotation`), `returnToStash` and `removeFromStash` (`actor`,
 `id`), `addNode` (`owner`, `x`, `y`, `resource`, `round`; Rich vein, issue
 #414), `addConduit` (`actor`, `from` and `to`, each `{ building, side }`, and
-`cells`, a list of `{ x, y }`) and `eraseConduit` (`actor`, `id`). Once the
+`cells`, a list of `{ x, y }`), `eraseConduit` (`actor`, `id`) and
+`setSpecialist` (`actor`, `specialist`: an ID or `null`; issue #470). Once the
 state holds a Tunnel end (issue #442, CB-9g) every entry of `results` also has
 `tunnels`: the pairs `[entrance, exit, distance]` of the state after that op, in
 entrance order (nothing is added before the first end, so older vectors are
@@ -6145,12 +6180,12 @@ networking and anti-cheat design.
 
 ### Ready (CP-17, CP-17a)
 
-`ready` and `unready` are legal in `core_placement`, `build`, `shop`,
+`ready` and `unready` are legal in `specialist_pick`, `core_placement`, `build`, `shop`,
 `pve_summary` and `pvp_summary`. A step ends when every player is ready (a solo player's `ready`
 ends it at once); the ready flags are cleared on entering the next step.
-**Ready locks editing (issue #58):** in `core_placement`, `build` and `shop`, while a player is
+**Ready locks editing (issue #58):** in `specialist_pick`, `core_placement`, `build` and `shop`, while a player is
 ready, every intent of theirs other than `unready` (and `abandon` by the host)
-is rejected with `locked_ready`: `place_core`, `buy`, `sell`, `reroll`, the board edits
+is rejected with `locked_ready`: `pick_specialist`, `place_core`, `buy`, `sell`, `reroll`, the board edits
 (`place_building`, `move_building`, `return_building`, `add_conduit`,
 `erase_conduit`) and any extension intent a handler allows in those steps.
 The step check comes first (a `vote` in `build` is still `wrong_step`), and
@@ -6614,6 +6649,92 @@ so the team cannot change between a battle and the end of its summary step;
 `teamHash` records the team that fought and a replay refuses (`team_changed`)
 if it differs.
 
+## Specialists
+
+Issue #470 (umbrella #468; RS-13, CP-31, CB-51, MM-1e). Each player picks one
+starting specialist before placing their Core. This step adds the choice and
+stores it; a specialist has **no effect on a shop or a battle yet** (its
+bonus and its signature building come in later steps of #468), so every
+battle outcome is unchanged.
+
+### Content (`content/specialists.json`, `schemas/specialists.schema.json`)
+
+`{ specialists: [{ id, family, effects, signature }, ...] }`, the roster in the
+order the pick screen shows it; the bounds are in "Content bounds".
+The first roster: `spec_flowmancer` (logistics, `source_speed_percent` 10,
+`bld_mana_well`), `spec_wardsmith` (defense, `building_health_percent` 15 on
+`wall`, `gate` and `turret`, `bld_rune_ward`), `spec_beastbinder` (units,
+`unit_health_percent` 10, `bld_familiar_roost`) and `spec_alchemist` (industry,
+`production_speed_percent` 15, `bld_transmuter`). Names and descriptions are in
+`content/presentation.en.json` under `specialists` (one entry per ID, exactly:
+`name`, `family`, `bonus`, `signature`, `description`; a missing or extra entry
+is a load error).
+
+### The step `specialist_pick` and the intent `pick_specialist`
+
+- The step table: `specialist_pick` allows `pick_specialist`, `ready`,
+  `unready` and `abandon`. Its `pending` is `null`; the picks are in the team
+  state (`specialists`, "Team state and placement"). A new run starts here,
+  with `round` 1, `leg` `pve`, no Core and no pick. It is a Ready-lock step
+  (`locked_ready`, "Ready").
+- `pick_specialist { specialist }` by player `p` (any player, for their own
+  entry only; the intent has no other target, CP-31): `specialist` not a string
+  is `invalid_intent`; not in the roster is `unknown_specialist`; otherwise
+  `setSpecialist(team, content, p, specialist)`. Sending it again **changes the
+  pick**, for as long as `p` is not Ready (a Ready player is `locked_ready`
+  until `unready`). A pick that equals the current one changes nothing and
+  emits no effect; otherwise the effect `specialist_picked { player,
+  specialist }` is emitted. **Nothing is drawn**: the run generator and every
+  stream are untouched, so a pick (and the intents `ready` and `unready` of this
+  step) never moves a later stream.
+- `ready` is rejected with `specialist_not_picked` while the player has no pick
+  (there is no skip, RS-13a); otherwise the rules of "Ready" apply. When the
+  last player readies, the run enters `core_placement` (clearing the ready
+  flags) with `pending = { positions: [null, ..., null] }`. Solo, `ready` ends
+  the step at once. `abandon` by the host ends the run (`run_over`) with the
+  picks so far.
+- The picks are public to the party (RS-13b); every effect and the state show
+  them. Duplicates are allowed. No player can pick for another (the intent
+  names no target) and the picks never change after the step ends: no intent
+  later touches `specialists`.
+- **Validation** (`validateRunState`): `step` may be `specialist_pick`, with
+  `leg` `pve`, no Core placed, `pending` null; a ready player there has a pick;
+  in any other step but `run_over`, a state whose team has `specialists` has no
+  `null` entry (a state without the field is a run from before specialists and
+  is accepted in every step).
+- Bot: each strategy has one specialist, a fixed table (`rush`
+  `spec_beastbinder`, `fortify` `spec_wardsmith`, `siege` `spec_alchemist`,
+  `weak` `spec_flowmancer`); every player of a bot party picks it and readies.
+  Nothing is drawn, so no bot stream moves.
+
+### Saves and snapshots (no format number raised)
+
+The run state format stays 10 and the ghost snapshot format 7: `specialists`
+is an optional team-state field (see its entry in "Team state and placement")
+and `specialist_pick` is a new allowed value of `step`, not a changed shape.
+A save or a ghost made before this step has no `specialists` and, for a save,
+is in a step after `specialist_pick`; it loads and plays as it always did.
+A ghost snapshot carries the field as part of `team` (MM-1e); validation is
+`validateTeamState` (above) with the roster of the content, so an unknown
+specialist ID, a list of the wrong length or one that is all `null` is
+rejected, while a snapshot without the field is accepted, and so is one whose
+entries are equal. The size limit of "Validation" has the term
+`partySize * specialistEntry` (the canonical length of the longest specialist
+ID plus a comma), well inside the margin. A snapshot of a real run has every
+entry set (a run cannot leave `specialist_pick` otherwise).
+
+### Notes for a port
+
+- A port reads `specialists` as an optional list of `partySize` nullable
+  strings and omits it when every entry is null (the canonical JSON and the
+  hash depend on this).
+- `createRun` starts in `specialist_pick` with `pending` null; the Core
+  placement step then starts with every position null. The action log of a run
+  therefore begins with `pick_specialist` and `ready` of every player.
+- Match the order of the checks: step table, locked, then in `ready` the
+  pick check (`specialist_not_picked`) before anything else of the step.
+- No random draw anywhere in this step.
+
 ## Ghosts
 
 A ghost is another run's party, frozen at the start of one of its PvP battles
@@ -6799,6 +6920,7 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
              + N * stashEntry                            (the whole value bound in the stash)
              + partySize * maxAddedNodesPerPlot * addedNodeEntry   (Rich vein)
              + (2 * round - 1) * modifierEntry           (one modifier per event step)
+             + partySize * specialistEntry               (one specialist per player, RS-13)
              + 4096                                      (margin: ids, labels, counters)
 
    Each entry is the canonical length of a worst-case sample (longest content
@@ -6931,7 +7053,8 @@ Implemented (issues #135, #131, #139, #160).
   saves of older major versions are deleted and the local ghost pool is
   emptied, as for any major release (TA-8). There is no migration.
 - **Team state**: `cores` in place of `core` (PP-2); `owner` on every conduit
-  (PP-1); conduit ends may be border spots (PP-4).
+  (PP-1); conduit ends may be border spots (PP-4); the optional `specialists`
+  (issue #470; no format number raised, see "Specialists").
 - **Formats.** Ghost snapshot `formatVersion` 7, run state format 10 (both raised by issue #291, which replaced the wall `bld_wall` by seven shapes). Older
   values are rejected (a logged `chosen` snapshot of another format is
   refused in `select_ghost` and in `replayRun`).
@@ -7205,7 +7328,10 @@ positions" and "Team state and placement", and the Core health (issue #132):
 
 ### PP-3. The Core placement step
 
-Before the first build step the run is in the step `core_placement`.
+Before the first build step the run is in the step `core_placement`, which
+follows the step `specialist_pick` ("Specialists"). A run created by
+`createRun` starts in `specialist_pick`; a state saved before that step existed
+starts in `core_placement` and is read as before.
 
 - Player `p` sends `place_core { x, y }`. It is rejected with the reason of
   `validateCorePosition(map, p, x, y)` if that position is not legal;
@@ -7224,7 +7350,8 @@ Before the first build step the run is in the step `core_placement`.
   `p = 0 .. N - 1` in that order (none can be rejected: positions of
   different players are in different plots and nothing else is on the board),
   and the run enters the first `build` step, where gold and the starting kit
-  are granted as today.
+  are granted as today. The step's `pending` (`{ positions: [null, ..., null] }`,
+  one entry per player) is set when the step is entered, from `specialist_pick`.
 - There is no vote and no random draw in this step.
 
 ### PP-4. Border links

@@ -6,6 +6,7 @@ import {
   loadPoints,
   loadPresentation,
   loadSimConfig,
+  loadSpecialists,
   loadResources,
   loadTerrain,
   loadThreats,
@@ -18,6 +19,7 @@ import {
   type PresentationConfig,
   type ResourceConfig,
   type SimConfig,
+  type SpecialistConfig,
   type TerrainConfig,
   type ThreatsConfig,
   type UnitConfig,
@@ -34,6 +36,7 @@ export interface LoadedContent {
   events?: EventsConfig;
   sim?: SimConfig;
   points?: PointsConfig;
+  specialists?: SpecialistConfig;
   threats?: ThreatsConfig;
   presentation?: PresentationConfig;
 }
@@ -131,6 +134,12 @@ export const contentRegistry: readonly ContentEntry[] = [
       ),
   },
   {
+    key: 'specialists',
+    contentFile: 'specialists.json',
+    schemaFile: 'specialists.schema.json',
+    load: (data) => wrap(loadSpecialists(data)),
+  },
+  {
     key: 'sim',
     contentFile: 'sim.json',
     schemaFile: 'sim.schema.json',
@@ -174,7 +183,15 @@ export const contentRegistry: readonly ContentEntry[] = [
     key: 'presentation',
     contentFile: 'presentation.en.json',
     schemaFile: 'presentation.schema.json',
-    needs: ['resources', 'terrain', 'units', 'buildings', 'events', 'threats'],
+    needs: [
+      'resources',
+      'terrain',
+      'units',
+      'buildings',
+      'events',
+      'threats',
+      'specialists',
+    ],
     load: (data, loaded) =>
       wrap(
         loadPresentation(data, {
@@ -187,6 +204,7 @@ export const contentRegistry: readonly ContentEntry[] = [
             ...new Set(need(loaded, 'events').events.map((e) => e.type)),
           ],
           modifierIds: need(loaded, 'events').modifiers.map((m) => m.id),
+          specialistIds: need(loaded, 'specialists').ids(),
         }),
       ),
   },

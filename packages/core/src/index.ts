@@ -249,6 +249,7 @@ export {
 // Presentation text (display only; never read by the rules)
 export {
   type ArchetypeEntry,
+  type SpecialistEntry,
   type EventEntry,
   loadPresentation,
   loadPresentationOrThrow,
@@ -327,6 +328,9 @@ export {
   removeFromStash,
   returnToStash,
   ROTATIONS,
+  setSpecialist,
+  specialistOf,
+  type SpecialistReason,
   type StashedBuilding,
   type StashReason,
   type TeamContent,
@@ -493,6 +497,22 @@ export {
   type PointsLoadContext,
   type PointsLoadResult,
 } from './points.js';
+export {
+  loadSpecialists,
+  loadSpecialistsOrThrow,
+  MAX_SPECIALISTS,
+  MAX_SPECIALIST_EFFECTS,
+  MAX_SPECIALIST_PERCENT,
+  SPECIALIST_EFFECT_KINDS,
+  SPECIALIST_FAMILIES,
+  SPECIALIST_ID_PATTERN,
+  type SpecialistConfig,
+  type SpecialistDef,
+  type SpecialistEffect,
+  type SpecialistEffectKind,
+  type SpecialistFamily,
+  type SpecialistsLoadResult,
+} from './specialists.js';
 export {
   type GeneratedNeutralZone,
   generateNeutralZone,

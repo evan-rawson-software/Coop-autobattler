@@ -16,6 +16,7 @@ import {
   rawBuildings,
   rawMapgen,
   rawPoints,
+  rawSpecialists,
   rawPresentationEn,
   rawResources,
   rawTerrain,
@@ -44,6 +45,7 @@ describe('ghost-snapshot.schema.json', () => {
     units: rawUnits,
     buildings: rawBuildings,
     points: rawPoints,
+    specialists: rawSpecialists,
     presentation: rawPresentationEn,
   });
   const mapgen = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });
@@ -78,6 +80,20 @@ describe('ghost-snapshot.schema.json', () => {
     const again = JSON.parse(JSON.stringify(snapshot)) as unknown;
     expect(validate(again)).toBe(true);
     expect(canonicalJson(again)).toBe(canonicalJson(snapshot));
+  });
+
+  test('a snapshot with specialists validates; one without (old) still does', () => {
+    // The snapshot above is from before specialists: no such key.
+    expect(Object.keys(snapshot.team)).not.toContain('specialists');
+    const withPicks = (list: unknown): boolean =>
+      bad((o) => {
+        (o['team'] as Record<string, unknown>)['specialists'] = list;
+      });
+    expect(withPicks(['spec_flowmancer'])).toBe(true);
+    expect(withPicks([null])).toBe(true);
+    expect(withPicks([5])).toBe(false);
+    expect(withPicks(['not a specialist'])).toBe(false);
+    expect(withPicks([])).toBe(false);
   });
 
   test('the reserved fields are not accepted (TA-22b)', () => {

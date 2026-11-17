@@ -13,6 +13,7 @@ import { barLivesText } from './bar-lives.js';
 import { resultShown } from '../battle/result-shown.js';
 import { BonusesItem } from './BonusList.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
+import { barSpecialist } from '../specialist/view-model.js';
 
 const noStore = createStore<{ acting: number }>({ acting: 0 });
 
@@ -34,6 +35,9 @@ export function RunBar(props: {
   // that has no Core (still placing it, or abandoned while placing it) never
   // had the kit: the figure would read 0 for gold it never got.
   const showGold = state.team.cores.some((c) => c !== null);
+  // The acting player's specialist (RS-13b); none before the pick, and in a
+  // run saved before specialists.
+  const specialist = barSpecialist(state.team, acting);
   return (
     <span class="run-bar" id="run-bar">
       <span data-field="bar-lives">
@@ -46,6 +50,15 @@ export function RunBar(props: {
           Gold {gold}
         </span>
       ) : null}
+      {specialist === null ? null : (
+        <span
+          class="bar-specialist"
+          data-field="bar-specialist"
+          title={specialist.title}
+        >
+          {specialist.name}
+        </span>
+      )}
       <BonusesItem modifiers={state.team.modifiers} />
       {props.session === undefined ? null : (
         <ActingSwitch

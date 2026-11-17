@@ -98,8 +98,9 @@
     "host": { "type": "integer", "minimum": 0, "maximum": 3 },
     "round": { "type": "integer", "minimum": 1 },
     "step": {
-      "description": "The current step. pve_battle and pvp_battle are transient and never appear in a saved state.",
+      "description": "The current step. specialist_pick (RS-13) comes before core_placement in a new run; a state saved before it existed starts at core_placement. pve_battle and pvp_battle are transient and never appear in a saved state.",
       "enum": [
+        "specialist_pick",
         "core_placement",
         "build",
         "pve_choice",

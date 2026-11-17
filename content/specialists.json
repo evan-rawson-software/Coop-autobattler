@@ -1,0 +1,33 @@
+{
+  "$schema": "../schemas/specialists.schema.json",
+  "specialists": [
+    {
+      "id": "spec_flowmancer",
+      "family": "logistics",
+      "effects": [{ "kind": "source_speed_percent", "percent": 10 }],
+      "signature": "bld_mana_well"
+    },
+    {
+      "id": "spec_wardsmith",
+      "family": "defense",
+      "effects": [
+        { "kind": "building_health_percent", "target": "wall", "percent": 15 },
+        { "kind": "building_health_percent", "target": "gate", "percent": 15 },
+        { "kind": "building_health_percent", "target": "turret", "percent": 15 }
+      ],
+      "signature": "bld_rune_ward"
+    },
+    {
+      "id": "spec_beastbinder",
+      "family": "units",
+      "effects": [{ "kind": "unit_health_percent", "percent": 10 }],
+      "signature": "bld_familiar_roost"
+    },
+    {
+      "id": "spec_alchemist",
+      "family": "industry",
+      "effects": [{ "kind": "production_speed_percent", "percent": 15 }],
+      "signature": "bld_transmuter"
+    }
+  ]
+}

@@ -91,6 +91,7 @@ function entryLength(sample: unknown): number {
  *   stash       N * stash entry
  *   added nodes partySize * maxAddedNodesPerPlot * added node entry
  *   modifiers   (2 * round - 1) * longest modifier entry
+ *   specialists partySize * longest specialist ID entry     (one per player, RS-13)
  *   margin      GHOST_MAX_BYTES_MARGIN
  *
  * The result is at most `GHOST_MAX_SERIALIZED_BYTES`.
@@ -191,6 +192,8 @@ export function ghostMaxSerializedSize(
       );
     }
   }
+  const specialistId = longest(content.specialists.ids());
+  const specialistEntry = entryLength(specialistId);
   const placed = Math.min(cells, items);
   return Math.min(
     GHOST_MAX_SERIALIZED_BYTES,
@@ -200,6 +203,7 @@ export function ghostMaxSerializedSize(
       items * stashEntry +
       partySize * mapgen.maxAddedNodesPerPlot * addedEntry +
       (2 * round - 1) * modifier +
+      partySize * specialistEntry +
       GHOST_MAX_BYTES_MARGIN,
   );
 }

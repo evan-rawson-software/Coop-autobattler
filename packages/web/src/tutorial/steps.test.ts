@@ -55,6 +55,9 @@ function input(
 describe('tutorial position', () => {
   test('follows the run step and the first undone step of 2 to 4', () => {
     const at = (i: TutorialInput) => tutorialPosition(i);
+    // The specialist pick (RS-13) comes before step 1 and has no card.
+    expect(at(input('specialist_pick'))).toEqual({ kind: 'off' });
+    expect(stepsDone(input('specialist_pick'))[0]).toBe(false);
     expect(at(input('core_placement'))).toEqual({ kind: 'step', n: 1 });
     expect(at(input('build'))).toEqual({ kind: 'step', n: 2 });
     expect(at(input('build', { extractor: true }))).toEqual({

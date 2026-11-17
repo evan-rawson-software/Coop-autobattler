@@ -3,6 +3,7 @@ import buildingsJson from '../../../content/buildings.json';
 import eventsJson from '../../../content/events.json';
 import threatsJson from '../../../content/threats.json';
 import pointsJson from '../../../content/points.json';
+import specialistsJson from '../../../content/specialists.json';
 import presentationJson from '../../../content/presentation.en.json';
 import resourcesJson from '../../../content/resources.json';
 import terrainJson from '../../../content/terrain.json';
@@ -30,6 +31,7 @@ const raw = {
   units: unitsJson as unknown,
   buildings: buildingsJson as unknown,
   points: pointsJson,
+  specialists: specialistsJson,
   presentation: presentationJson as unknown,
 };
 

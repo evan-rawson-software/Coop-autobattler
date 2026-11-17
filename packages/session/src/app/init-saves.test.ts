@@ -233,6 +233,8 @@ describe.each([5, 6])(
       const rec = makeRecord(version, 'none', false);
       return {
         ...rec,
+        // A run of that format started in the Core placement.
+        summary: { ...rec.summary, step: 'core_placement' },
         state: {
           ...rec.state,
           formatVersion: previous,

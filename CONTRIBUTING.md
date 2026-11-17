@@ -294,6 +294,13 @@ taken}`. The fields are optional and the follow-up is a new allowed shape of
   turret) and the optional `splash` list to the `turret_fired` arena event
   (omitted for a turret without splash); no saved record holds either, so no
   format number is raised.
+  The specialist pick (issue #470, RS-13) adds the optional `specialists` list
+  to the team state (each player's specialist ID, or null before the pick; it
+  is omitted while nobody has picked), which covers both the run state and
+  ghost snapshots, and the new allowed step value `specialist_pick`, the first
+  step of a new run: records without the field stay readable and hash as
+  before, so no format number is raised (a run saved before the step existed
+  has none and plays as it did; a snapshot without it has no specialists).
   (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is

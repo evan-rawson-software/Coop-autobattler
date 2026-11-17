@@ -10292,5 +10292,1139 @@
         "hash": "2465310d"
       }
     }
+  },
+  {
+    "id": "team-state-ops.specialists",
+    "kind": "team-state-ops",
+    "description": "Specialists (issue #470, RS-13): a pick sets one player's entry and leaves the others null; a pick can be changed; duplicates are allowed; an ID outside the roster and a player outside the party are refused and change nothing. The state has no `specialists` field before the first pick (so it hashes as before) and the field afterwards. Clearing the only pick with null drops the field again.",
+    "input": {
+      "seed": 7,
+      "partySize": 3,
+      "ops": [
+        {
+          "op": "setSpecialist",
+          "actor": 1,
+          "specialist": "spec_wardsmith"
+        },
+        {
+          "op": "setSpecialist",
+          "actor": 1,
+          "specialist": "spec_alchemist"
+        },
+        {
+          "op": "setSpecialist",
+          "actor": 2,
+          "specialist": "spec_alchemist"
+        },
+        {
+          "op": "setSpecialist",
+          "actor": 0,
+          "specialist": "spec_nobody"
+        },
+        {
+          "op": "setSpecialist",
+          "actor": 3,
+          "specialist": "spec_flowmancer"
+        },
+        {
+          "op": "setSpecialist",
+          "actor": -1,
+          "specialist": "spec_flowmancer"
+        },
+        {
+          "op": "setSpecialist",
+          "actor": 0,
+          "specialist": "spec_flowmancer"
+        },
+        {
+          "op": "placeCore",
+          "actor": 0,
+          "x": 0,
+          "y": 0
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "setSpecialist",
+            "ok": true
+          },
+          {
+            "op": "setSpecialist",
+            "ok": true
+          },
+          {
+            "op": "setSpecialist",
+            "ok": true
+          },
+          {
+            "op": "setSpecialist",
+            "ok": false,
+            "reason": "unknown_specialist"
+          },
+          {
+            "op": "setSpecialist",
+            "ok": false,
+            "reason": "invalid_owner"
+          },
+          {
+            "op": "setSpecialist",
+            "ok": false,
+            "reason": "invalid_owner"
+          },
+          {
+            "op": "setSpecialist",
+            "ok": true
+          },
+          {
+            "op": "placeCore",
+            "ok": true
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 72,
+            "height": 16,
+            "partySize": 3,
+            "plotWidth": 24,
+            "features": [
+              {
+                "x": 1,
+                "y": 2,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 2,
+                "y": 2,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 3,
+                "y": 2,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 4,
+                "y": 2,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 1,
+                "y": 3,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 2,
+                "y": 3,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 4,
+                "y": 3,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 5,
+                "y": 3,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 6,
+                "y": 3,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 8,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 59,
+                "y": 3,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 60,
+                "y": 3,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 61,
+                "y": 3,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 62,
+                "y": 3,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 1,
+                "y": 4,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 2,
+                "y": 4,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 4,
+                "y": 4,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 8,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 28,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 29,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 30,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 31,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 32,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 57,
+                "y": 4,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 58,
+                "y": 4,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 59,
+                "y": 4,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 8,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 37,
+                "y": 5,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 58,
+                "y": 5,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 59,
+                "y": 5,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 8,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 36,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 37,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 38,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 39,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 41,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 42,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 49,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 57,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 58,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 59,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 8,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 17,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 18,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 19,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 37,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 38,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 39,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 42,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 49,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 50,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 51,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 59,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 60,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 61,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 8,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 17,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 18,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 19,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 37,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 42,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 61,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 17,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 18,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 19,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 20,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 42,
+                "y": 9,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 61,
+                "y": 9,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 17,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 18,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 19,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 42,
+                "y": 10,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 43,
+                "y": 10,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 44,
+                "y": 10,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 45,
+                "y": 10,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 61,
+                "y": 10,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 32,
+                "y": 11,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 30,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 31,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 32,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 34,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 35,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 51,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 52,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 54,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 55,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 31,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 32,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 33,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 34,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 35,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 51,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 52,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 53,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 54,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 55,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 56,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 32,
+                "y": 14,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 33,
+                "y": 14,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 34,
+                "y": 14,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 52,
+                "y": 14,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 56,
+                "y": 14,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 57,
+                "y": 14,
+                "feature": "ter_lake"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 51,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 71,
+                "y": 0,
+                "resource": "res_c"
+              },
+              {
+                "x": 36,
+                "y": 2,
+                "resource": "res_b"
+              },
+              {
+                "x": 56,
+                "y": 2,
+                "resource": "res_a"
+              },
+              {
+                "x": 62,
+                "y": 2,
+                "resource": "res_a"
+              },
+              {
+                "x": 25,
+                "y": 3,
+                "resource": "res_a"
+              },
+              {
+                "x": 11,
+                "y": 6,
+                "resource": "res_b"
+              },
+              {
+                "x": 36,
+                "y": 7,
+                "resource": "res_c"
+              },
+              {
+                "x": 16,
+                "y": 8,
+                "resource": "res_b"
+              },
+              {
+                "x": 9,
+                "y": 9,
+                "resource": "res_b"
+              },
+              {
+                "x": 23,
+                "y": 9,
+                "resource": "res_c"
+              },
+              {
+                "x": 6,
+                "y": 10,
+                "resource": "res_a"
+              },
+              {
+                "x": 15,
+                "y": 10,
+                "resource": "res_a"
+              },
+              {
+                "x": 39,
+                "y": 10,
+                "resource": "res_a"
+              },
+              {
+                "x": 64,
+                "y": 11,
+                "resource": "res_b"
+              },
+              {
+                "x": 69,
+                "y": 11,
+                "resource": "res_a"
+              },
+              {
+                "x": 20,
+                "y": 12,
+                "resource": "res_a"
+              },
+              {
+                "x": 59,
+                "y": 12,
+                "resource": "res_b"
+              },
+              {
+                "x": 26,
+                "y": 13,
+                "resource": "res_a"
+              },
+              {
+                "x": 35,
+                "y": 14,
+                "resource": "res_b"
+              },
+              {
+                "x": 42,
+                "y": 14,
+                "resource": "res_b"
+              }
+            ]
+          },
+          "cores": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            null,
+            null
+          ],
+          "buildings": [],
+          "stash": [],
+          "nextId": 1,
+          "nextConduitId": [1, 1, 1],
+          "conduits": [],
+          "specialists": ["spec_flowmancer", "spec_alchemist", "spec_alchemist"]
+        },
+        "hash": "eec4d312"
+      }
+    }
+  },
+  {
+    "id": "team-state-ops.specialist-cleared",
+    "kind": "team-state-ops",
+    "description": "Setting a player's specialist to null removes the entry; with no entry left the `specialists` field is omitted again, as in a state from before specialists.",
+    "input": {
+      "seed": 7,
+      "partySize": 2,
+      "ops": [
+        {
+          "op": "setSpecialist",
+          "actor": 0,
+          "specialist": "spec_beastbinder"
+        },
+        {
+          "op": "setSpecialist",
+          "actor": 0,
+          "specialist": null
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "setSpecialist",
+            "ok": true
+          },
+          {
+            "op": "setSpecialist",
+            "ok": true
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 48,
+            "height": 16,
+            "partySize": 2,
+            "plotWidth": 24,
+            "features": [
+              {
+                "x": 19,
+                "y": 2,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 3,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 4,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 19,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 38,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 3,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 19,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 38,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 3,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 19,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 31,
+                "y": 5,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 38,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 3,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 19,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 28,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 29,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 30,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 31,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 32,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 33,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 38,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 3,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 19,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 29,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 30,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 32,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 33,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 38,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 3,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 38,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 3,
+                "y": 9,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 16,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 37,
+                "y": 10,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 11,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 11,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 17,
+                "y": 11,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 18,
+                "y": 11,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 37,
+                "y": 11,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 17,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 18,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 37,
+                "y": 12,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 16,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 17,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 18,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 19,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 20,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 21,
+                "y": 13,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 37,
+                "y": 13,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 18,
+                "y": 14,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 19,
+                "y": 14,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 37,
+                "y": 14,
+                "feature": "ter_cliff"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 8,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 0,
+                "y": 1,
+                "resource": "res_c"
+              },
+              {
+                "x": 12,
+                "y": 1,
+                "resource": "res_a"
+              },
+              {
+                "x": 25,
+                "y": 1,
+                "resource": "res_c"
+              },
+              {
+                "x": 46,
+                "y": 1,
+                "resource": "res_b"
+              },
+              {
+                "x": 15,
+                "y": 3,
+                "resource": "res_b"
+              },
+              {
+                "x": 9,
+                "y": 4,
+                "resource": "res_a"
+              },
+              {
+                "x": 23,
+                "y": 5,
+                "resource": "res_a"
+              },
+              {
+                "x": 22,
+                "y": 6,
+                "resource": "res_b"
+              },
+              {
+                "x": 44,
+                "y": 8,
+                "resource": "res_a"
+              },
+              {
+                "x": 31,
+                "y": 10,
+                "resource": "res_a"
+              },
+              {
+                "x": 36,
+                "y": 10,
+                "resource": "res_b"
+              },
+              {
+                "x": 28,
+                "y": 11,
+                "resource": "res_a"
+              },
+              {
+                "x": 30,
+                "y": 13,
+                "resource": "res_b"
+              }
+            ]
+          },
+          "cores": [null, null],
+          "buildings": [],
+          "stash": [],
+          "nextId": 1,
+          "nextConduitId": [1, 1],
+          "conduits": []
+        },
+        "hash": "ccdfed9a"
+      }
+    }
   }
 ]
