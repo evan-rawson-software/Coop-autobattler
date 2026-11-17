@@ -41,10 +41,10 @@ battle (1, 8) → 2 event → 3 shop + 4 build → … → 9 run over.
 - `screens.html` — all the wireframes on one page, with the callouts. Open
   it in a browser. The screens are drawn by a script in the page, so edit
   that script to change them, then re-export the images.
-- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks, after the Battle screen) and `2b-caravan.png`, `2c-rich-vein.png` and `2d-blueprint.png` (the event follow-ups, after the Event choice screen), and `4b-build-footprints.png` (placement previews for the four new buildings, after the Build screen).
+- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks) and `1c-battle-points.png` (points of interest), both after the Battle screen and `2b-caravan.png`, `2c-rich-vein.png` and `2d-blueprint.png` (the event follow-ups, after the Event choice screen), and `4b-build-footprints.png` (placement previews for the four new buildings, after the Build screen).
 
-Not drawn: the lobby for forming a party, settings, and the screens for the
-deferred feature of points of interest. Refining (issue #378) is drawn on the
+Not drawn: the lobby for forming a party and settings. Points of interest are
+drawn in 1c and on the Battle summary (issue #370). Refining (issue #378) is drawn on the
 Shop, Build and Battle screens.
 
 Map legend: **Ex** extractor, **Bk** barracks, **Fo** foundry, **Tu** turret,
@@ -85,6 +85,19 @@ A boss battle looks like screen 1 plus one extra mark for the boss in play (MM-9
 2. Linked Cores: one shared bar for all boss Cores, with the Cores listed under it. Damage to any Core comes off the bar, and they all fall together. Not used in solo.
 3. Pylons: shield pylons around a boss Core, a shield ring while any stands, and a count ("Pylons 3/4"). Your units go for the pylons first.
 4. Warlord: the champion leading each wave, drawn bigger than a Golem, with its own health bar.
+
+## 1c. Battle: points of interest
+
+The neutral zone of a four-player battle, drawn flat, with one point in each plot band (CB-8c to CB-8g). A real battle shows the zone between the two boards as on screen 1. The image shows four moments at once; names and numbers are placeholders.
+
+![Points of interest wireframe](1c-battle-points.png)
+
+1. A guarded point: neutral guards hold it and fight units of both sides that come near. Nothing can be captured while a guard lives.
+2. A point being captured: your units keep to its capture range, and the ring in your colour fills as they hold it. Both sides in range means no progress.
+3. A held point: a solid marker in the holder's colour with its buff icon. A buff applies to every player of the side (CB-8c).
+4. The healing area: the holder's units inside it slowly regain health.
+5. A point held by the enemy, with the strength icon: their new units are stronger while they hold it. Your units that pass near it divert to retake it.
+6. The buffs your side has now, and what each point is doing. A band may have no point.
 
 ## 2. Event choice
 
@@ -235,8 +248,9 @@ Shown when playback ends. It says what happened and why, so the party can decide
 2. Army strength over the battle for both sides, with the moments that mattered marked, including each Core that fell.
 3. Where the enemy got through. Fallen Cores are greyed with a cross.
 4. What each building did.
-5. What comes next in the round.
-6. Watch the battle again, or ready up. The party moves on to the event when everyone is ready.
+5. One line per point of interest: who held it at the end, how long each side held it, and its buff. It is not part of the tiebreak (PP-10).
+6. What comes next in the round.
+7. Watch the battle again, or ready up. The party moves on to the event when everyone is ready.
 
 ## 9. Run over
 

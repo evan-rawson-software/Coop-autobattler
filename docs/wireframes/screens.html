@@ -143,6 +143,20 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   </section>
 
   <section>
+    <h2>1c. Battle: points of interest</h2>
+    <p>The neutral zone of a four-player battle, drawn flat, with one point in each plot band (CB-8c to CB-8g). A real battle shows the zone between the two boards as on screen 1. Points sit on the middle row. The sketch shows four moments at once, and a real battle shows whatever is happening. Numbers are placeholders.</p>
+    <div class="sheet"><svg id="s-poi" viewBox="0 0 960 540" role="img" aria-label="Points of interest in the neutral zone: a guarded point with neutral guards, a point being captured with a progress ring, a point held by the party with a healing area and buff icon, and a point held by the enemy with a strength icon."></svg></div>
+    <ol class="notes">
+      <li>A guarded point: neutral guards hold it and fight units of both sides that come near. Nothing can be captured while a guard lives.</li>
+      <li>A point being captured: your units keep to its capture range, and the ring in your colour fills as they hold it. Both sides in range means no progress.</li>
+      <li>A held point: a solid marker in the holder's colour with its buff icon. A buff applies to every player of the side.</li>
+      <li>The healing area: the holder's units inside it slowly regain health.</li>
+      <li>A point held by the enemy, with the strength icon: their new units are stronger while they hold it. Your units that pass near it divert to retake it.</li>
+      <li>The buffs your side has now, and what each point is doing. A band may have no point.</li>
+    </ol>
+  </section>
+
+  <section>
     <h2>2. Event choice</h2>
     <p>After every battle the party picks one of up to three events. It opens with the battle result so the reward is seen before the next decision.</p>
     <div class="sheet"><svg id="s-event" viewBox="0 0 960 540" role="img" aria-label="Event choice screen wireframe: a result strip above three event cards with vote markers."></svg></div>
@@ -293,12 +307,13 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   <section>
     <h2>8. Battle summary</h2>
     <p>Shown when playback ends. It says what happened and why, so the party can decide what to change.</p>
-    <div class="sheet"><svg id="s-summary" viewBox="0 0 960 540" role="img" aria-label="Battle summary wireframe: result strip, a chart over time, a small map showing where defenses were breached, per-building totals, costs and rewards, and ready controls."></svg></div>
+    <div class="sheet"><svg id="s-summary" viewBox="0 0 960 540" role="img" aria-label="Battle summary wireframe: result strip, a chart over time, a small map showing where defenses were breached, per-building totals, a line for each point of interest, costs and rewards, and ready controls."></svg></div>
     <ol class="notes">
       <li>The result, and in the corner what it cost or paid: lives lost and gold gained. Battle rewards are always gold. Below it, why it ended: the step of the tiebreak ladder that decided it (here, more Cores standing), the Core health left, how many Cores stand on each side and when each Core fell.</li>
       <li>Army strength over the battle for both sides, with the moments that mattered marked, including each Core that fell.</li>
       <li>Where the enemy got through. Fallen Cores are greyed with a cross.</li>
       <li>What each building did.</li>
+      <li>One line per point of interest: who held it at the end, for how long each side held it, and its buff. It is not part of the tiebreak.</li>
       <li>What comes next in the round.</li>
       <li>Watch the battle again, or ready up. The party moves on to the event when everyone is ready.</li>
     </ol>
@@ -953,6 +968,64 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     mark(s, 30, 54, 1); mark(s, 180, 112, 2); mark(s, 306, 104 + 162, 3); mark(s, 306, 104 + 212, 4); mark(s, 306, 104 + 280, 5);
   })();
 
+  // ================= 1c. POINTS OF INTEREST =================
+  (function () {
+    var s = document.getElementById("s-poi");
+    topbar(s, "Round 5 · PvE battle", "vs. Stronghold: working name", "Battle time 2:48  ·  Lives 4 / 5");
+    var S = 28.5, ox = 24, oy = 60, cols = 32, rows = 7;
+    function X(c) { return ox + (c + 0.5) * S; } function Y(r) { return oy + (r + 0.5) * S; }
+    R(s, ox, oy, cols * S, rows * S, "zone");
+    for (var i = 1; i < cols; i++) el(s, "line", { x1: ox + i * S, y1: oy, x2: ox + i * S, y2: oy + rows * S, class: "gridl" });
+    for (var j = 1; j < rows; j++) el(s, "line", { x1: ox, y1: oy + j * S, x2: ox + cols * S, y2: oy + j * S, class: "gridl" });
+    // lakes and cliffs
+    [[5, 0, 2, 2], [30, 5, 2, 2]].forEach(function (q) { R(s, ox + q[0] * S, oy + q[1] * S, q[2] * S, q[3] * S, "water"); });
+    [[0, 6, 2, 1], [26, 0, 2, 1]].forEach(function (q) { R(s, ox + q[0] * S, oy + q[1] * S, q[2] * S, q[3] * S, "cliff"); });
+    // bands
+    for (var b = 0; b < 4; b++) {
+      if (b) el(s, "line", { x1: ox + b * 8 * S, y1: oy - 4, x2: ox + b * 8 * S, y2: oy + rows * S + 4, class: "plot" });
+      T(s, ox + b * 8 * S + 4 * S, oy + rows * S + 14, "band " + b, "ts tm", "middle");
+    }
+    T(s, ox, oy - 6, "middle row", "ts tm"); el(s, "rect", { x: ox, y: oy + 3 * S, width: cols * S, height: S, fill: "none", stroke: "var(--muted)", "stroke-dasharray": "2 4", "stroke-width": 1 });
+    var my = Y(3);
+    function diamond(cx, cy, cls, st) { el(s, "polygon", { points: [cx, cy - 12, cx + 12, cy, cx, cy + 12, cx - 12, cy].join(","), class: cls, style: st || "" }); }
+    function icon(cx, cy, ch, col) { el(s, "circle", { cx: cx, cy: cy, r: 8, class: "box", style: "stroke:" + col }); T(s, cx, cy + 4, ch, "ts", "middle"); }
+    // A. guarded point, band 0, column 3
+    var ax = X(3);
+    diamond(ax, my, "box");
+    [[-14, -16], [14, -16], [-18, 4], [18, 6]].forEach(function (g) { el(s, "circle", { cx: ax + g[0], cy: my + g[1], r: 4, class: "u-n" }); });
+    [[-62, -8], [-50, 14]].forEach(function (u) { el(s, "circle", { cx: ax + u[0], cy: my + u[1], r: 4, class: "u-a" }); });
+    el(s, "circle", { cx: ax + 60, cy: my + 10, r: 4, class: "u-e" });
+    T(s, ax, my + 44, "4 guards", "ts", "middle");
+    // B. being captured, band 1, column 4
+    var bx = X(12);
+    el(s, "circle", { cx: bx, cy: my, r: 2 * S, class: "ring" });
+    el(s, "circle", { cx: bx, cy: my, r: 18, fill: "none", stroke: "var(--line)", "stroke-width": 5 });
+    el(s, "circle", { cx: bx, cy: my, r: 18, fill: "none", stroke: "var(--ally)", "stroke-width": 5, "stroke-dasharray": "67.9 45.2", transform: "rotate(-90 " + bx + " " + my + ")" });
+    diamond(bx, my, "box");
+    [[-30, -18], [-34, 8], [28, 20]].forEach(function (u) { el(s, "circle", { cx: bx + u[0], cy: my + u[1], r: 4, class: "u-a" }); });
+    T(s, bx, my + 66, "capturing 60%", "ts", "middle");
+    // C. held by us, heal, band 2, column 5
+    var cx = X(21);
+    el(s, "circle", { cx: cx, cy: my, r: 3 * S, class: "blast" });
+    diamond(cx, my, "bld");
+    icon(cx, my - 26, "+", "var(--ally)");
+    [[-40, -20], [-52, 14], [36, 28], [50, -14], [20, -52]].forEach(function (u) { el(s, "circle", { cx: cx + u[0], cy: my + u[1], r: 4, class: "u-a" }); });
+    T(s, cx, my + 92, "held by you", "ts", "middle");
+    // D. held by them, strength, band 3, column 4
+    var dx = X(28);
+    diamond(dx, my, "bld e");
+    icon(dx, my - 26, "▲", "var(--enemy)");
+    [[-30, 18], [26, -16]].forEach(function (u) { el(s, "circle", { cx: dx + u[0], cy: my + u[1], r: 4, class: "u-e" }); });
+    T(s, dx, my + 44, "held by them", "ts", "middle");
+    // status panels
+    R(s, 24, 290, 440, 226, "panel"); T(s, 36, 312, "POINTS NOW", "ts tm");
+    lines(s, 36, 336, ["Point 0   band 0   guarded, 4 guards left", "Point 1   band 1   you are capturing, 60%", "Point 2   band 2   held by you, healing", "Point 3   band 3   held by them, strength", "", "A band may have no point."], "t", 22);
+    R(s, 476, 290, 460, 226, "panel"); T(s, 488, 312, "YOUR SIDE'S BUFFS", "ts tm");
+    lines(s, 488, 336, ["+  healing near point 2: units within 3 cells", "    regain health once a second", "", "Their side's buffs", "▲  new units +20% health and damage", "    while they hold point 3"], "t", 22);
+    T(s, 488, 490, "A buff covers every player of the side and ends when the point is lost.", "ts tm");
+    mark(s, 150, 100, 1); mark(s, 340, 100, 2); mark(s, 630, 114, 3); mark(s, 636 + 70, 160 - 52, 4); mark(s, 850, 100, 5); mark(s, 450, 304, 6);
+  })();
+
   // ================= 8. BATTLE SUMMARY =================
   (function () {
     var s = document.getElementById("s-summary");
@@ -974,11 +1047,12 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     lines(s, 488, 314, ["Enemy units came through the", "open right flank, cut the splitter", "and took Cores 1 and 2."], "ts", 14);
     R(s, 708, 154, 228, 200, "panel"); T(s, 720, 174, "YOUR BUILDINGS", "ts tm");
     lines(s, 720, 198, ["Barracks    14 soldiers", "Foundry      3 heavies", "Turret      22 kills", "Armory       2 upgrades", "Walls        5 of 11 lost", "Splitter     destroyed 1:05"], "t", 22);
-    R(s, 24, 366, 672, 150, "panel"); T(s, 36, 386, "NEXT", "ts tm");
-    ["Event", "Shop + Build", "PvE battle (round 5)"].forEach(function (k, i) { R(s, 36 + i * 220, 404, 200, 44, "box"); T(s, 136 + i * 220, 431, k, "t", "middle"); if (i < 2) T(s, 246 + i * 220, 431, "→", "t tm", "middle"); });
-    T(s, 36, 494, "Your factory was saved as a ghost for other parties to fight.", "ts tm");
+    R(s, 24, 366, 672, 84, "panel"); T(s, 36, 384, "POINTS OF INTEREST", "ts tm");
+    lines(s, 36, 402, ["Point 1   held by you at the end    you 2:40 · them 0:50   healing near it", "Point 2   held by them at the end   you 1:15 · them 3:10   +20% new units", "Point 3   never captured            guards still alive"], "ts", 14);
+    R(s, 24, 458, 672, 58, "panel"); T(s, 36, 474, "NEXT", "ts tm");
+    ["Event", "Shop + Build", "PvE battle (round 5)"].forEach(function (k, i) { R(s, 36 + i * 220, 480, 200, 28, "box"); T(s, 136 + i * 220, 498, k, "ts", "middle"); if (i < 2) T(s, 246 + i * 220, 498, "→", "t tm", "middle"); });
     R(s, 708, 366, 228, 150, "panel"); btn(s, 720, 382, 204, 36, "Watch again"); btn(s, 720, 428, 204, 36, "Ready", true); T(s, 720, 494, "1 of 3 ready", "ts tm");
-    mark(s, 30, 56, 1); mark(s, 450, 168, 2); mark(s, 682, 168, 3); mark(s, 922, 168, 4); mark(s, 682, 380, 5); mark(s, 922, 478, 6);
+    mark(s, 30, 56, 1); mark(s, 450, 168, 2); mark(s, 682, 168, 3); mark(s, 922, 168, 4); mark(s, 682, 380, 5); mark(s, 682, 472, 6); mark(s, 922, 478, 7);
   })();
 
   // ================= 9. RUN OVER =================

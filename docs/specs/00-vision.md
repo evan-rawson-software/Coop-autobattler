@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v6.0
+Status: Draft v6.1
 
 This file says what the game is and what every other spec serves: the
 owner's top-level requirements, the design pillars, the scope, the theme and
@@ -221,6 +221,7 @@ brackets.
 | Event | A short non-combat step after every battle, before the shop. The party votes on one of the offered events (CP-16). |
 | Front edge | The side of a board that faces the enemy; units cross it. |
 | Ghost | A snapshot being used as another party's opponent. |
+| Guard | A neutral unit that holds a point of interest and fights units of both sides (CB-8e). |
 | Lives | The party's shared pool, five at the start of a run. Losing a PvP battle costs one; the run ends at zero. |
 | Merger | A route building that joins conduits of the same resource into one. |
 | Modifier | A lasting bonus for the rest of the run, mostly from the Shrine event. It belongs to the party's team state and travels with its snapshots (EC-8). |
@@ -231,7 +232,7 @@ brackets.
 | Party | The 1–4 players in a run together. |
 | Party vote | How the party makes a shared choice, such as the PvE difficulty or the event (CP-16). |
 | Plot [your area] | One player's own area of the board. A player builds only in their own plot. Plots are the same size and sit side by side. |
-| Point of interest | A spot in the neutral zone, guarded by neutral units, that buffs the side controlling it. |
+| Point of interest | A spot in the neutral zone, guarded by neutral units, that buffs the whole side controlling it. A side takes it by keeping units in range for a while (capture progress); more units capture faster, and both sides in range means no progress. |
 | PvE battle | The first battle of a round: a threat at the difficulty the party chose. |
 | PvP battle | The second battle of a round: a ghost, or a boss if no ghost matches. |
 | Ramp | The factory getting stronger over the course of one battle; what economy buildings provide. |

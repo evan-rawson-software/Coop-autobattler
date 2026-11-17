@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v5.1
+Status: Draft v5.2
 
 ## Direction
 
@@ -80,8 +80,9 @@ tune them, as cheaply as possible. It is a prototype, not the product.
     the Foundry, the Golem forge and the Spire are in `content/`, offered in
     shops from round 3, and built by the scripted bot. Their numbers are
     still to be tuned (#386).
-  - **Points of interest are not built yet** (issue #369). The neutral zone
-    format already reserves `pointsOfInterest`, always empty for now.
+  - **Points of interest are being added** (issue #369; rules in CB-8c to
+    CB-8g). The neutral zone format already reserves `pointsOfInterest`,
+    always empty until they are built. Refining them is still to come.
 - **TA-47 [PROPOSED]** Explicitly **out of scope** for the proof of concept:
   co-op, lobbies, online ghosts, Steam, saves beyond the browser,
   polish.
@@ -663,7 +664,8 @@ Still unconfirmed:
   validation, boss fallback; scripted bot; bundled bot ghosts.
 - **W3b — Refining (issue #378) and points of interest (issue #369)**
   (TA-41a). Refining is in; its numbers are still to be tuned (#386).
-  Points of interest are not built yet.
+  Points of interest are being added (the design is recorded, CB-8c to
+  CB-8g); refining is still to come.
 - **W4 — Tune** (in progress): balance harness, content iteration, more
   event types, the boss roster (MM-9a–MM-9e), playtests. The harness
   (`pnpm sim`), eight event types and five bosses are in. Ends at the exit
