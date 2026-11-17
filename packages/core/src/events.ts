@@ -299,7 +299,11 @@ export function loadEvents(
           );
           if (effect !== undefined) {
             effects.push(effect);
-            if (effect.kind === 'unit_strength_percent') {
+            if (
+              effect.kind === 'unit_strength_percent' ||
+              effect.kind === 'unit_move_speed_percent' ||
+              effect.kind === 'unit_attack_speed_percent'
+            ) {
               const known = context.units;
               const listed = effect.units ?? [];
               if (known !== undefined) {

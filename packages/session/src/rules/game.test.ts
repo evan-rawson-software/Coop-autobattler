@@ -764,6 +764,12 @@ describe('real battles', () => {
       if (s === s0) continue;
       const withMod = until(s, deps, (x) => x.step === 'pvp_summary');
       const base = until(s0, deps, (x) => x.step === 'pvp_summary');
+      // The run without the choice must not take the modifier by its default.
+      if (
+        (base.team.modifiers ?? []).some((m) => m.id === 'mod_fortified_core')
+      ) {
+        continue;
+      }
       const a = detailOf(withMod).summary.coreMaxHealth[0];
       const b = detailOf(base).summary.coreMaxHealth[0];
       expect(a).toBe(Math.floor((b * 120) / 100));
@@ -1037,7 +1043,7 @@ describe('event offers: one per type, up to three (issue #48)', () => {
   const offersFor = (s: RunState, seed: number) =>
     hooks.eventOffers(s, Rng.fromSeed(seed)) as Record<string, Json>[];
 
-  test('Workshop unavailable, three non-stackable held: a Shrine drawing three of the five stackable, and the Windfall', () => {
+  test('Workshop unavailable, three non-stackable held: a Shrine drawing three of the six stackable, and the Windfall', () => {
     const state = holding(tier3(atEvent), [
       'mod_sharpshooters',
       'mod_hornet_swarm',
@@ -1046,7 +1052,7 @@ describe('event offers: one per type, up to three (issue #48)', () => {
     const stackable = gameConfigs.events.modifiers
       .filter((m) => m.stackable)
       .map((m) => m.id);
-    expect(stackable).toHaveLength(5);
+    expect(stackable).toHaveLength(6);
     for (let seed = 1; seed <= 300; seed++) {
       const offers = offersFor(state, seed);
       expect(offers.map((o) => o['type']).sort()).toEqual([
@@ -1529,10 +1535,10 @@ describe('event follow-ups', () => {
 describe('a Shrine modifier changes the outcome of a real battle', () => {
   // A modifier far stronger than the shipped ones, so that the party's thin
   // board (it never wins without help) wins a battle it would have lost. The
-  // seed was found by searching seeds 1 to 40 (again for issue #291, when the kit walls became random shapes, and for issue #423, when more modifiers became offerable): at this
+  // seed was found by searching seeds 1 to 40 (again for issue #291, when the kit walls became random shapes, for issue #423, and again for issue #424, when more modifiers became offerable; the first of the seeds 1 to 40 that works is 20): at this
   // seed the Shrine offers it and the second PvE battle flips from a loss to
   // a win.
-  const SEED = 6;
+  const SEED = 20;
   const events = loadEventsOrThrow({
     offerCount: 3,
     events: gameConfigs.events.events.map((e) => ({ ...e })),

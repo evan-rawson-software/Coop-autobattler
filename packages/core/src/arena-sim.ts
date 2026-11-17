@@ -77,7 +77,11 @@ import {
 import type { GuardPlan } from './guards.js';
 import type { CaptureConfig, PointBuffEffect } from './points.js';
 import { maxHealthOf } from './max-health.js';
-import { modifierPercent, unitStrengthPercent } from './modifiers.js';
+import {
+  modifierPercent,
+  unitSpeedPercent,
+  unitStrengthPercent,
+} from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
@@ -361,6 +365,15 @@ export interface UnitSim {
   /** Attack damage fixed at spawn (base damage with the side's strength bonus). */
   damage: number;
   attackCooldown: number;
+  /**
+   * Only for a unit spawned with a speed modifier (issue #424), and only when
+   * it differs from the unit definition: the move cooldown ticks and the
+   * attack cooldown ticks this unit has for its whole life, fixed at spawn by
+   * `unitStats`. Absent means the definition's value, so a battle without
+   * speed modifiers has the same state and hash as before they existed.
+   */
+  moveCooldownTicks?: number;
+  attackCooldownTicks?: number;
   /** A player index of the unit's own side: whose plot it belongs to (PP-11). */
   readonly owner: number;
   /**
@@ -696,21 +709,41 @@ export interface ArenaOptions {
 // Unit stats seam (W1-7)
 
 /**
+ * A cooldown made faster by `speedPercent` (issue #424): `max(1,
+ * floor(base * 100 / (100 + speedPercent)))`, integer math only.
+ */
+export function fasterCooldown(base: number, speedPercent: number): number {
+  return Math.max(1, divFloor(mulInt(base, 100), addInt(100, speedPercent)));
+}
+
+/**
  * The stats a unit of type `def` fights with (`_side` is unused). The
  * spawned health and damage and the attack cooldown are read through here;
  * the decisions read `def.reach` and `def.radius` directly. With a
  * `strengthPercent` P above 0 (the side's capped `unit_strength` bonus at the
  * moment of spawning), health and damage become `mulPct(base, 100 + P)`
- * (rounded down); everything else is unchanged. Units keep the result they
- * were spawned with (`hp`, `damage`).
+ * (rounded down). With a `moveSpeedPercent` or `attackSpeedPercent` S (the
+ * sum of the side's matching modifier effects, issue #424) the move or attack
+ * cooldown becomes `fasterCooldown(base, S)`; everything else is unchanged.
+ * Units keep the result they were spawned with (`hp`, `damage` and, when it
+ * differs from the definition, `moveCooldownTicks` and `attackCooldownTicks`).
  */
 export function unitStats(
   _side: number,
   def: UnitDef,
   strengthPercent = 0,
   healthPercent = 100,
+  moveSpeedPercent = 0,
+  attackSpeedPercent = 0,
 ): UnitDef {
-  if (strengthPercent === 0 && healthPercent === 100) return def;
+  if (
+    strengthPercent === 0 &&
+    healthPercent === 100 &&
+    moveSpeedPercent === 0 &&
+    attackSpeedPercent === 0
+  ) {
+    return def;
+  }
   // Scaled stats are held to the content bound (limits.ts): a strength so
   // large that a unit would exceed it is an error, not a wrapped number.
   const scaled2 = (value: number, pct: number, what: string): number => {
@@ -741,6 +774,11 @@ export function unitStats(
     ...def,
     health: scaledHealth,
     damage: scaled(def.damage, 'scaled damage', MAX_DAMAGE),
+    moveCooldownTicks: fasterCooldown(def.moveCooldownTicks, moveSpeedPercent),
+    attackCooldownTicks: fasterCooldown(
+      def.attackCooldownTicks,
+      attackSpeedPercent,
+    ),
   };
 }
 
@@ -2111,6 +2149,34 @@ function spawnStrength(
   );
 }
 
+/**
+ * The cooldown fields a unit spawns with: only those the side's speed
+ * modifiers change (issue #424), none when nothing changes.
+ */
+function speedFields(
+  sim: ArenaSim,
+  side: number,
+  def: UnitDef,
+): { moveCooldownTicks?: number; attackCooldownTicks?: number } {
+  const team = sim.teams[side === 0 ? 0 : 1];
+  const stats = unitStats(
+    side,
+    def,
+    0,
+    100,
+    unitSpeedPercent(team, 'unit_move_speed_percent', def.id),
+    unitSpeedPercent(team, 'unit_attack_speed_percent', def.id),
+  );
+  return {
+    ...(stats.moveCooldownTicks === def.moveCooldownTicks
+      ? {}
+      : { moveCooldownTicks: stats.moveCooldownTicks }),
+    ...(stats.attackCooldownTicks === def.attackCooldownTicks
+      ? {}
+      : { attackCooldownTicks: stats.attackCooldownTicks }),
+  };
+}
+
 /** Create a unit of `side` at `(px, py)` and record `unit_spawned`. */
 function addUnit(
   sim: ArenaSim,
@@ -2141,6 +2207,7 @@ function addUnit(
     maxHp: stats.health,
     damage: stats.damage,
     attackCooldown: 0,
+    ...speedFields(sim, side, unitDef),
     owner: who.owner,
     target: who.target,
   };
@@ -2708,6 +2775,7 @@ export function spawnUnitForTest(
     maxHp: stats.health,
     damage: stats.damage,
     attackCooldown: 0,
+    ...speedFields(sim, args.side, def),
     owner,
     target:
       args.target ??
@@ -3690,7 +3758,6 @@ function resolveAttacks(
     const act = ctx.action[i] ?? ACT_NONE;
     if (u === undefined || (act !== ACT_UNIT && act !== ACT_BUILDING)) continue;
     if (u.attackCooldown > 0) continue; // holds position
-    const stats = unitStats(u.side, defOf(ctx, u));
     // Damage order (CB-5h): spawn damage, then Overload, then the splash
     // percent (secondary targets only), then each target's armor (only for a
     // hit on a unit).
@@ -3736,7 +3803,8 @@ function resolveAttacks(
           ? { kind: 'core', side: b.side, core: b.player }
           : { kind: 'building', side: b.side, building: b.id };
     }
-    u.attackCooldown = stats.attackCooldownTicks;
+    u.attackCooldown =
+      u.attackCooldownTicks ?? defOf(ctx, u).attackCooldownTicks;
     const pool =
       target.kind === 'core' ? poolOf(sim, target.side)?.hp : undefined;
     events?.push({
@@ -4061,7 +4129,10 @@ function moveUnits(ctx: ArenaContext, units: readonly UnitSim[]): void {
     ctx.motion.fight[i] =
       ctx.action[i] === ACT_UNIT || ctx.action[i] === ACT_BUILDING ? 1 : 0;
     if (ctx.action[i] === ACT_MOVE) {
-      ctx.motion.speed[i] = unitSpeed(defOf(ctx, u));
+      ctx.motion.speed[i] =
+        u.moveCooldownTicks === undefined
+          ? unitSpeed(defOf(ctx, u))
+          : divFloor(CELL_UNITS, u.moveCooldownTicks);
     }
   }
   ctx.motion.resolve(

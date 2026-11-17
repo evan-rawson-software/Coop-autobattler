@@ -33,6 +33,8 @@ export const MODIFIER_EFFECT_KINDS = [
   'building_health_percent',
   'core_health_percent',
   'unit_strength_percent',
+  'unit_move_speed_percent',
+  'unit_attack_speed_percent',
   'turret_damage_percent',
 ] as const;
 export type ModifierEffectKind = (typeof MODIFIER_EFFECT_KINDS)[number];
@@ -53,6 +55,13 @@ export type ModifierEffect =
        */
       readonly units?: readonly string[];
     }
+  | {
+      readonly kind: 'unit_move_speed_percent' | 'unit_attack_speed_percent';
+      /** 1 to `MAX_SPEED_MODIFIER_PERCENT`: a speed bonus is never a drawback. */
+      readonly percent: number;
+      /** As for `unit_strength_percent`: absent means every unit type. */
+      readonly units?: readonly string[];
+    }
   | { readonly kind: 'turret_damage_percent'; readonly percent: number };
 
 /** A modifier as held by a team: ID and the effects it had when taken. */
@@ -64,6 +73,20 @@ export interface TeamModifier {
 export const MODIFIER_ID = /^mod_[a-z0-9_]+$/;
 const UNIT_ID = /^unit_[a-z0-9_]+$/;
 
+/** The effect kinds that may carry `units`. */
+function hasUnitsField(
+  kind: unknown,
+): kind is
+  | 'unit_strength_percent'
+  | 'unit_move_speed_percent'
+  | 'unit_attack_speed_percent' {
+  return (
+    kind === 'unit_strength_percent' ||
+    kind === 'unit_move_speed_percent' ||
+    kind === 'unit_attack_speed_percent'
+  );
+}
+
 /** Highest percent a single effect may give (keeps products in range). */
 export const MAX_MODIFIER_PERCENT = 1000;
 
@@ -72,6 +95,12 @@ export const MAX_MODIFIER_PERCENT = 1000;
  * an integer from this to `MAX_MODIFIER_PERCENT`, never 0.
  */
 export const MIN_MODIFIER_PERCENT = -90;
+
+/**
+ * Highest percent a unit move or attack speed effect may give (issue #424).
+ * Its lowest is 1: those kinds have no drawback form.
+ */
+export const MAX_SPEED_MODIFIER_PERCENT = 100;
 
 /**
  * Parse one effect from untrusted data. Pushes readable errors and returns
@@ -90,7 +119,7 @@ export function parseModifierEffect(
   const allowed =
     kind === 'building_health_percent'
       ? new Set(['kind', 'target', 'percent'])
-      : kind === 'unit_strength_percent'
+      : hasUnitsField(kind)
         ? new Set(['kind', 'percent', 'units'])
         : new Set(['kind', 'percent']);
   for (const key of sortedKeys(raw)) {
@@ -123,7 +152,16 @@ export function parseModifierEffect(
       ? { kind, target: target as ModifierTarget, percent }
       : undefined;
   }
-  if (kind === 'unit_strength_percent') {
+  if (hasUnitsField(kind)) {
+    const speed = kind !== 'unit_strength_percent';
+    const rangeOk =
+      !speed ||
+      (percentOk && percent >= 1 && percent <= MAX_SPEED_MODIFIER_PERCENT);
+    if (percentOk && !rangeOk) {
+      errors.push(
+        `${at}: "percent" of ${kind} must be an integer from 1 to ${String(MAX_SPEED_MODIFIER_PERCENT)}.`,
+      );
+    }
     const rawUnits = raw['units'];
     let units: readonly string[] | undefined;
     let unitsOk = true;
@@ -147,7 +185,7 @@ export function parseModifierEffect(
         units = ids;
       }
     }
-    if (!percentOk || !unitsOk) return undefined;
+    if (!percentOk || !rangeOk || !unitsOk) return undefined;
     return units === undefined ? { kind, percent } : { kind, percent, units };
   }
   if (kind === 'core_health_percent' || kind === 'turret_damage_percent') {
@@ -283,6 +321,34 @@ export function unitStrengthPercent(
     }
   }
   return clampModifierSum(total, minSum);
+}
+
+/**
+ * Sum of the `unit_move_speed_percent` or `unit_attack_speed_percent` effects
+ * that apply to unit type `unitId` (no `units`, or `units` listing it). These
+ * kinds are never negative, so there is no sum floor. Checked like
+ * `modifierPercent`.
+ */
+export function unitSpeedPercent(
+  team: HasModifiers,
+  kind: 'unit_move_speed_percent' | 'unit_attack_speed_percent',
+  unitId: string,
+): number {
+  let total = 0;
+  for (const m of team.modifiers ?? []) {
+    for (const e of m.effects) {
+      if (e.kind !== kind) continue;
+      if (e.units !== undefined && !e.units.includes(unitId)) continue;
+      try {
+        total = addInt(total, e.percent);
+      } catch {
+        throw new RangeError(
+          `Modifier ${kind}: the percent sum must be an integer within the safe bound ${String(Number.MAX_SAFE_INTEGER)} (adding ${String(e.percent)} to ${String(total)}).`,
+        );
+      }
+    }
+  }
+  return total;
 }
 
 /** The ids of the modifiers a team holds, in the order taken. */

@@ -647,6 +647,7 @@ describe('follow-ups', () => {
     'mod_fortified_core',
     'mod_drilled_troops',
     'mod_reinforced_frames',
+    'mod_quick_march',
   ]);
 
   test('only a stackable bonus carries the stacks flag', () => {
