@@ -144,6 +144,16 @@
       "effects": [{ "kind": "unit_attack_speed_percent", "percent": 15 }]
     },
     {
+      "id": "mod_tithe",
+      "stackable": true,
+      "effects": [{ "kind": "shop_income_flat", "amount": 1 }]
+    },
+    {
+      "id": "mod_scrap_dealer",
+      "stackable": false,
+      "effects": [{ "kind": "sell_refund_percent", "percent": 25 }]
+    },
+    {
       "id": "mod_pact_fury",
       "stackable": false,
       "pact": true,

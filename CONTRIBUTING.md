@@ -239,6 +239,9 @@ The rule for a change that makes saved data unreadable:
   optional `units` as above), to a held modifier's effects: a new allowed
   value, not a changed shape, so old records stay readable and no format
   number is raised.
+  The gold modifiers (issue #425) add two more allowed effect kinds,
+  `shop_income_flat` (`amount` 1 to 10) and `sell_refund_percent` (`percent`
+  1 to 90), again a new allowed value, so no format number is raised.
   The Blueprint event (issue #412) adds one more entry shape to `nextShop`,
   `{kind: "held_offer", def}`: it is the same optional field, present only
   between the event and the end of that shop, so no format number is raised.

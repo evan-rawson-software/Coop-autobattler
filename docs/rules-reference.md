@@ -5175,8 +5175,17 @@ is 2 Extractors, 1 Barracks, a `pick` of `bld_wall_o`, `bld_wall_t`,
 ### Income
 
 On entering each `shop` step (both shops of every round), every player is paid
-`baseIncomePerShop`, and their offers are rolled in the same step. The first
-`build` step has no income and no offers.
+`baseIncomePerShop` plus the party's shop income bonus, and their offers are
+rolled in the same step. The first `build` step has no income and no offers.
+
+The **shop income bonus** (issue #425) is the sum of the `amount` of every
+`shop_income_flat` effect in `TeamState.modifiers` (a Tithe adds 1; whole gold,
+checked `addInt`). It is party-wide: every player is paid the same bonus, the
+gold stays per player and nothing moves between players (CP-29). A Tithe taken
+in an event is paid from the next shop on.
+
+Notes for a port: `income = baseIncomePerShop + sum(amount of shop_income_flat
+effects)`, added to each player's gold once per `shop` step.
 
 ### Weighted pick
 
@@ -5258,8 +5267,12 @@ shown, and reloading or replaying never changes them.
   three entries.
 - Sell `{id}`: only a stash entry (`not_in_stash` if it does not exist or is
   placed on the board) of the seller (`not_owner` otherwise). Refund =
-  floor(tier price x `sellRefundPercent` / 100). Selling is also allowed in the
-  first `build` step.
+  floor(tier price x R / 100), with R the sell refund percent: `sellRefundPercent`
+  plus the sum of the party's `sell_refund_percent` effects (issue #425), the
+  sum capped at 90 when any such effect is held (`R = max(sellRefundPercent,
+  min(sellRefundPercent + sum, 90))`, so with none `R` is `sellRefundPercent`
+  and selling never refunds the full price through a modifier). Selling is
+  also allowed in the first `build` step.
 - Re-roll `{}`: needs `gold >= rerollCost` (`not_enough_gold`). Pays it and
   replaces all of that player's offers with a roll from the next draws of that
   player's stored shop stream (so two re-rolls differ). A re-roll also brings
@@ -5372,6 +5385,8 @@ compounded, so each extra stack is worth relatively less than the one before:
 | `unit_move_speed_percent` (optional `units`) | percent 1 to 100; shortens the move cooldown of units of the side at spawn, see "Unit move and attack speed" below |
 | `unit_attack_speed_percent` (optional `units`) | percent 1 to 100; shortens the attack cooldown of units of the side at spawn, same section |
 | `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
+| `shop_income_flat` (`amount`, not `percent`) | whole gold 1 to 10 added to every player's income per shop, see "Income"; **no effect in battle** |
+| `sell_refund_percent` | percent 1 to 90 added to `sellRefundPercent` for every player's sales, capped at a sum of 90, see "Shop"; **no effect in battle** |
 
 **The sum floor** (EC-8). `minModifierSumPercent` (`sim.json`, an integer from
 -99 to 0, shipped -50) bounds the sum: `sum = max(sum, minModifierSumPercent)`,
@@ -5409,6 +5424,8 @@ optional `fromRound` (the first round the Shrine may offer it, default 1):
 | `mod_vanguard` | `unit_strength_percent` +20, `units: [unit_soldier, unit_raider]` | no | 1 |
 | `mod_quick_march` | `unit_move_speed_percent` +10 (issue #424) | yes | 1 |
 | `mod_rapid_fire` | `unit_attack_speed_percent` +15 (issue #424) | no | 2 |
+| `mod_tithe` | `shop_income_flat` 1 (issue #425) | yes | 1 |
+| `mod_scrap_dealer` | `sell_refund_percent` +25 (50 to 75, issue #425) | no | 1 |
 
 **Pacts** (issue #413, RS-4i6). A modifier definition may carry `pact: true`
 (optional, absent means false). The loader requires a pact to be not
@@ -5423,10 +5440,9 @@ through the Pact event.
 | `mod_pact_overcharge` | `turret_damage_percent` +40 | `building_health_percent` `turret` -20 |
 
 Planned, and entering the content only when the feature each needs has
-landed: tithe (+1 gold per shop for every player,
-stacks), scrap dealer (sell refund 50% to 75% for every player), stone skin
+landed: stone skin
 (+1 Golem armor, from round 3), wide arcs (+50% caster splash, from round 3)
-and claimstakers (points of interest captured 50% faster). Gold modifiers are
+and claimstakers (points of interest captured 50% faster). Gold modifiers (Tithe and Scrap dealer, issue #425) are
 party-wide and act for every player. Pacts (issue #413) are never offered by
 the Shrine.
 
@@ -5438,6 +5454,23 @@ negative: read it as a signed integer and keep the floor division of
 `floor(value * (100 + sum) / 100)` (the factor is at least 50, so no overflow
 beyond the positive case, and the floor is the usual round-down of a
 non-negative product).
+
+**Gold effects** (issue #425). `shop_income_flat` (`amount`, an integer from 1
+to `MAX_SHOP_INCOME_FLAT` = 10, no `percent`) and `sell_refund_percent`
+(`percent`, an integer from 1 to `MAX_SELL_REFUND_PERCENT_ADD` = 90) change
+gold only. They sit in `TeamState.modifiers` like every other effect (one list,
+one display) and are paid and applied as in "Income" and the Sell action of the
+shop. Both are party-wide: every player gets them, gold stays per player and
+nothing moves between players. **The arena ignores them**: no battle function
+reads them, so a battle, its hash and the generated threats are the same with
+or without them, and a ghost carrying them gains nothing in battle. Because
+the effects must equal their definition and a held modifier takes one of the
+`2 * round - 1` slots, ghost validation needs no rule for them and counts no
+strength for them (see "Ghosts"; their only effect on a bound is the Tithe
+gold in the value bound below). The refund cap is `SELL_REFUND_PERCENT_CAP` =
+90 (a constant, not content). A `percent` outside 1 to 90, or an `amount`
+outside 1 to 10, is rejected by the loader, the team-state parser and the
+schemas; `amount` sums use checked addition.
 
 **Unit move and attack speed** (issue #424). Two effect kinds, each with the
 optional `units` of `unit_strength_percent`: `unit_move_speed_percent` and
@@ -6186,6 +6219,15 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    (The earlier flat `4096 + 12288 * partySize` dropped a legitimate late
    four-player board of about 63 KB at round 23; the limit now always exceeds
    what the board and the value bound allow.)
+   **Tithe in the size limit** (issue #425). The size limit is a worst case over
+   every modifier set a run can hold, not over the snapshot, so `V` is taken
+   with `T = bestTitheAmount * (2r - 1)` (a Tithe at every event step; 0 when
+   the content has no `shop_income_flat` modifier). This grows `V` with the
+   square of the round: with the shipped content the party 4 limit goes from
+   1,112,200 to 2,097,152 (the cap) at round 100 and from 1,659,200 to the cap
+   at round 200 (events without the Caravan), and from 288,283 (was 258,880) at
+   round 5. A limit that reaches the cap is the cap: restore and replay use it
+   anyway, and the cap clamps it.
    **Building count.** A snapshot with more buildings than the board has cells
    (`partySize * plotWidth * plotDepth`) is rejected before the team is
    checked: placed buildings cannot overlap, so a legal board never exceeds it.
@@ -6254,6 +6296,12 @@ The value bound, for `n` players at the start of the PvP battle of round `r`:
                + kit                              price of the starting kit
     limit = n * (per player gold + kit)
 
+A held Tithe (issue #425) adds to the bound: `+ T * (2r - 1)` per player,
+with `T` the sum of the `amount` of every `shop_income_flat` effect in the
+snapshot's `modifiers`, so a Tithe is counted at every shop up to the round
+(more than it can have paid). Without such an effect `T` is 0 and the bound is
+exactly as before. `sell_refund_percent` adds nothing (a sale returns less than
+was paid). No strength is counted for either kind: the arena ignores them.
 There is no margin. Every gold source is counted at its best case; buying turns
 gold into building value one for one; selling returns less than was paid; and a
 Workshop upgrade adds less value (`price(t+1) - price(t)`) than it costs

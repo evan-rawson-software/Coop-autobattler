@@ -5,8 +5,12 @@ import { loadEconomy, loadEconomyOrThrow } from './economy.js';
 import { findModifier, loadEvents, loadEventsOrThrow } from './events.js';
 import { hashJson } from './hash.js';
 import {
+  sellRefundPercentFor,
+  shopIncomeBonus,
+  type ModifierEffect,
   heldModifierIds,
   modifierPercent,
+  effectValue,
   parseModifierEffect,
   unitStrengthPercent,
   withModifier,
@@ -614,8 +618,8 @@ describe('negative effects and the sum floor (#413)', () => {
     ]);
     for (const m of pacts) {
       expect(m.stackable).toBe(false);
-      expect(m.effects.some((e) => e.percent > 0)).toBe(true);
-      expect(m.effects.some((e) => e.percent < 0)).toBe(true);
+      expect(m.effects.some((e) => effectValue(e) > 0)).toBe(true);
+      expect(m.effects.some((e) => effectValue(e) < 0)).toBe(true);
     }
   });
 
@@ -642,5 +646,67 @@ describe('negative effects and the sum floor (#413)', () => {
     expect(load(true, true, [20, -10]).ok).toBe(false);
     expect(load(false, false, [20, -10]).ok).toBe(false);
     expect(load(undefined, false, [20]).ok).toBe(true);
+  });
+});
+
+describe('gold effects (issue #425)', () => {
+  const tithe = { kind: 'shop_income_flat', amount: 1 } as const;
+  const scrap = { kind: 'sell_refund_percent', percent: 25 } as const;
+
+  test('parse: amount 1 to 10 and percent 1 to 90, no other fields', () => {
+    const parse = (raw: unknown) => {
+      const errors: string[] = [];
+      return { out: parseModifierEffect(raw, 'e', errors), errors };
+    };
+    expect(parse(tithe).out).toEqual(tithe);
+    expect(parse(scrap).out).toEqual(scrap);
+    expect(parse({ kind: 'shop_income_flat', amount: 10 }).out).toBeDefined();
+    for (const bad of [0, 11, 1.5, -1, '1']) {
+      expect(
+        parse({ kind: 'shop_income_flat', amount: bad }).out,
+      ).toBeUndefined();
+    }
+    expect(parse({ kind: 'shop_income_flat', percent: 5 }).out).toBeUndefined();
+    expect(
+      parse({ kind: 'shop_income_flat', amount: 1, units: [] }).errors,
+    ).not.toEqual([]);
+    for (const bad of [0, -5, 91, 2.5]) {
+      expect(
+        parse({ kind: 'sell_refund_percent', percent: bad }).out,
+      ).toBeUndefined();
+    }
+    expect(
+      parse({ kind: 'sell_refund_percent', percent: 90 }).out,
+    ).toBeDefined();
+  });
+
+  test('income bonus sums the amounts; the refund percent is capped at 90', () => {
+    const team = (...effects: ModifierEffect[]) => ({
+      modifiers: effects.map((e, i) => ({
+        id: `mod_x${String(i)}`,
+        effects: [e],
+      })),
+    });
+    expect(shopIncomeBonus({})).toBe(0);
+    expect(shopIncomeBonus(team(tithe, tithe, tithe))).toBe(3);
+    expect(sellRefundPercentFor({}, 50)).toBe(50);
+    expect(sellRefundPercentFor(team(scrap), 50)).toBe(75);
+    expect(sellRefundPercentFor(team(scrap, scrap), 50)).toBe(90);
+    expect(sellRefundPercentFor(team(scrap, scrap, scrap), 50)).toBe(90);
+    // A base above the cap is never lowered by taking the modifier.
+    expect(sellRefundPercentFor(team(scrap), 95)).toBe(95);
+    // Tithe does not touch the refund and Scrap dealer does not touch income.
+    expect(sellRefundPercentFor(team(tithe), 50)).toBe(50);
+    expect(shopIncomeBonus(team(scrap))).toBe(0);
+  });
+
+  test('the arena ignores them: a battle with them hashes as without', () => {
+    expect(modifierPercent({}, 'core_health_percent', -50)).toBe(0);
+    const held = {
+      modifiers: [{ id: 'mod_tithe', effects: [tithe] }],
+    };
+    expect(modifierPercent(held, 'core_health_percent', -50)).toBe(0);
+    expect(modifierPercent(held, 'turret_damage_percent', -50)).toBe(0);
+    expect(unitStrengthPercent(held, 'unit_archer', -50)).toBe(0);
   });
 });

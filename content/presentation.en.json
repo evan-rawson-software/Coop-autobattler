@@ -266,6 +266,12 @@
     "mod_rapid_fire": {
       "name": "Rapid fire"
     },
+    "mod_tithe": {
+      "name": "Tithe"
+    },
+    "mod_scrap_dealer": {
+      "name": "Scrap dealer"
+    },
     "mod_pact_fury": {
       "name": "Pact of fury"
     },

@@ -44,12 +44,18 @@ const realCtx = (() => {
 // The size limit is derived from the value bound. The Caravan (#415) adds a
 // free building or raise per event step to that bound, which at round 200
 // reaches the fixed cap; these tests are about the economy-derived limit, so
-// they use the events without the Caravan (one test below covers it).
+// they use the events without the Caravan (one test below covers it). The
+// same goes for Tithe (#425): the size limit is a worst case over what a run
+// can hold, a Tithe at every event step, which grows the gold bound with the
+// square of the round and reaches the cap from about round 100.
 const ctx = {
   ...realCtx,
   events: {
     ...realCtx.events,
     events: realCtx.events.events.filter((e) => e.type !== 'caravan'),
+    modifiers: realCtx.events.modifiers.filter(
+      (m) => !m.effects.some((e) => e.kind === 'shop_income_flat'),
+    ),
   },
 };
 const { content, mapgen } = ctx;
@@ -664,6 +670,25 @@ describe('the fixed size cap and the round limit', () => {
         GHOST_MAX_SERIALIZED_BYTES,
       );
     }
+  });
+
+  test('with Tithe the worst-case size limit grows and is clamped by the cap', () => {
+    const withTithe = { ...ctx, events: realCtx.events };
+    const noCaravan = {
+      ...withTithe,
+      events: {
+        ...realCtx.events,
+        events: realCtx.events.events.filter((e) => e.type !== 'caravan'),
+      },
+    };
+    for (const r of [5, 20, 50]) {
+      expect(ghostMaxSerializedSize(4, r, noCaravan)).toBeGreaterThan(
+        ghostMaxSerializedSize(4, r, ctx),
+      );
+    }
+    expect(ghostMaxSerializedSize(4, GHOST_MAX_ROUND, noCaravan)).toBe(
+      GHOST_MAX_SERIALIZED_BYTES,
+    );
   });
 
   test('the cap clamps a limit that would be larger', () => {

@@ -532,6 +532,42 @@ describe('validation', () => {
     expect(validateGhostSnapshot(edited, ctx).ok).toBe(false);
   });
 
+  test('gold modifiers (issue #425): held like any modifier, and no strength counted', async () => {
+    const { ctx, good } = await setup();
+    const find = (id: string) => ctx.events.modifiers.find((m) => m.id === id);
+    const tithe = { id: 'mod_tithe', effects: find('mod_tithe')?.effects };
+    const scrap = {
+      id: 'mod_scrap_dealer',
+      effects: find('mod_scrap_dealer')?.effects,
+    };
+    const withMods = (mods: readonly object[]) => ({
+      ...clone(good),
+      team: { ...clone(good.team), modifiers: mods },
+    });
+    expect(validateGhostSnapshot(withMods([tithe]), ctx).ok).toBe(true);
+    expect(validateGhostSnapshot(withMods([scrap]), ctx).ok).toBe(true);
+    // They take event slots like any modifier, and Scrap dealer is held once.
+    expect(
+      validateGhostSnapshot(
+        withMods(Array.from({ length: 2 * good.round }, () => tithe)),
+        ctx,
+      ).ok,
+    ).toBe(false);
+    expect(validateGhostSnapshot(withMods([scrap, scrap]), ctx).ok).toBe(false);
+    // A changed amount is not the definition.
+    expect(
+      validateGhostSnapshot(
+        withMods([
+          {
+            id: 'mod_tithe',
+            effects: [{ kind: 'shop_income_flat', amount: 2 }],
+          },
+        ]),
+        ctx,
+      ).ok,
+    ).toBe(false);
+  });
+
   test('the control snapshots are valid', async () => {
     const { ctx, good } = await setup();
     expect(validateGhostSnapshot(clone(good), ctx).ok).toBe(true);
@@ -733,6 +769,18 @@ describe('validation', () => {
       });
       const s = await playUntil(g, atPvpShop(1));
       expect(s.pvpOpponent?.ghost?.owner.id).toBe('dev-a');
+    }
+  });
+
+  test('held Tithes add amount * shops to the value bound, and nothing is added without them (issue #425)', () => {
+    const e = gameConfigs.economy;
+    for (const round of [1, 3, 8]) {
+      const base = ghostValueBound(round, 2, content, e, gameConfigs.events);
+      const same = ghostValueBound(round, 2, content, e, gameConfigs.events, 0);
+      expect(same).toEqual(base);
+      const held = ghostValueBound(round, 2, content, e, gameConfigs.events, 3);
+      expect(held.goldPerPlayer - base.goldPerPlayer).toBe(3 * (2 * round - 1));
+      expect(held.limit - base.limit).toBe(2 * 3 * (2 * round - 1));
     }
   });
 

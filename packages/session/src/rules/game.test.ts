@@ -6,6 +6,7 @@ import {
   loadEventsOrThrow,
   pickWeightedIndex,
   Rng,
+  validateGhostSnapshot,
   withModifier,
   type TeamState,
 } from '@game/core';
@@ -21,6 +22,7 @@ import {
 import { createGameDeps } from './game-deps.js';
 import { applyIntent, createRun, replayRun } from './machine.js';
 import { readPveOption, type PveOption } from './pve-options.js';
+import { ghostContext, snapshotOf } from './ghosts.js';
 import { replayLastBattle, verifyLastBattle } from './replay.js';
 import { allowedIntents, nextBattleInfo } from './selectors.js';
 import {
@@ -1043,16 +1045,17 @@ describe('event offers: one per type, up to three (issue #48)', () => {
   const offersFor = (s: RunState, seed: number) =>
     hooks.eventOffers(s, Rng.fromSeed(seed)) as Record<string, Json>[];
 
-  test('Workshop unavailable, three non-stackable held: a Shrine drawing three of the six stackable, and the Windfall', () => {
+  test('Workshop unavailable, every round-1 non-stackable held: a Shrine drawing three of the seven stackable, and the Windfall', () => {
     const state = holding(tier3(atEvent), [
       'mod_sharpshooters',
       'mod_hornet_swarm',
       'mod_vanguard',
+      'mod_scrap_dealer',
     ]);
     const stackable = gameConfigs.events.modifiers
       .filter((m) => m.stackable)
       .map((m) => m.id);
-    expect(stackable).toHaveLength(6);
+    expect(stackable).toHaveLength(7);
     for (let seed = 1; seed <= 300; seed++) {
       const offers = offersFor(state, seed);
       expect(offers.map((o) => o['type']).sort()).toEqual([
@@ -1535,10 +1538,10 @@ describe('event follow-ups', () => {
 describe('a Shrine modifier changes the outcome of a real battle', () => {
   // A modifier far stronger than the shipped ones, so that the party's thin
   // board (it never wins without help) wins a battle it would have lost. The
-  // seed was found by searching seeds 1 to 40 (again for issue #291, when the kit walls became random shapes, for issue #423, and again for issue #424, when more modifiers became offerable; the first of the seeds 1 to 40 that works is 20): at this
+  // seed was found by searching seeds 1 to 40 (again for issue #291, when the kit walls became random shapes, for issue #423, and again for issue #424 and for issue #425, when more modifiers became offerable; the first of the seeds 1 to 40 that works is 4): at this
   // seed the Shrine offers it and the second PvE battle flips from a loss to
   // a win.
-  const SEED = 20;
+  const SEED = 4;
   const events = loadEventsOrThrow({
     offerCount: 3,
     events: gameConfigs.events.events.map((e) => ({ ...e })),
@@ -1653,5 +1656,129 @@ describe('a Shrine modifier changes the outcome of a real battle', () => {
     // After it: the run without it loses the second PvE battle, the run with it wins.
     expect(without.pve2).toBe(false);
     expect(withIt.pve2).toBe(true);
+  });
+});
+
+describe('gold modifiers in a real run (issue #425)', () => {
+  const deps = makeGameDeps({}, gameConfigs);
+
+  /** The follow-up option `id` when it is offered (the Shrine), else the first. */
+  const pickFor = (id: string) => (x: RunState) => {
+    const options = pending(x)['followUp'] as Record<string, Json>;
+    if (options['perPlayer'] === true) return 'skip';
+    const list = (options['options'] ?? []) as Record<string, Json>[];
+    const wanted = list.find((o) => o['id'] === id);
+    return (wanted ?? list[0])?.['id'] as string;
+  };
+
+  /** A run whose first event is a Shrine offering `id` and which takes it. */
+  function takeAtShrine(id: string): { trail: RunState[]; seed: number } {
+    const pick = pickFor(id);
+    for (let seed = 1; seed <= 200; seed++) {
+      let s = start(deps, ['Ann', 'Bo'], seed);
+      const trail: RunState[] = [s];
+      for (let i = 0; i < 40 && s.step !== 'run_over'; i++) {
+        s = step(s, deps, {
+          event: (x) => {
+            const shrine = offersOf(x).find((o) => o['type'] === 'shrine');
+            if (shrine !== undefined) {
+              return shrine['id'] as string;
+            }
+            return offersOf(x)[0]?.['id'] as string;
+          },
+          choose: pick,
+        });
+        trail.push(s);
+        if ((s.team.modifiers ?? []).some((m) => m.id === id)) {
+          // One more transition: the follow-up resolves, then the next shop.
+          for (let k = 0; k < 6 && s.step !== 'shop'; k++) {
+            s = step(s, deps, { choose: pick });
+            trail.push(s);
+          }
+          return { trail, seed };
+        }
+      }
+    }
+    throw new Error(`no seed offers ${id}`);
+  }
+
+  test('Tithe pays every player one more gold at each later shop; a save and a replay reproduce gold exactly', () => {
+    const { trail, seed } = takeAtShrine('mod_tithe');
+    const last = trail[trail.length - 1] as RunState;
+    expect((last.team.modifiers ?? []).map((m) => m.id)).toEqual(['mod_tithe']);
+    expect(last.step).toBe('shop');
+    const before = trail[trail.length - 2] as RunState;
+    expect(last.perPlayer.map((p) => p.gold)).toEqual(
+      before.perPlayer.map((p) => p.gold + 5 + 1),
+    );
+    const reloaded = validateRunState(clone(last), deps);
+    expect(reloaded.ok).toBe(true);
+    if (reloaded.ok) expect(reloaded.state).toEqual(last);
+    const replayed = replayRun(
+      runArgs(['Ann', 'Bo'], seed),
+      last.actionLog,
+      deps,
+    );
+    expect(replayed.ok).toBe(true);
+    if (replayed.ok) {
+      expect(replayed.state).toEqual(last);
+      expect(replayed.state.perPlayer.map((p) => p.gold)).toEqual(
+        last.perPlayer.map((p) => p.gold),
+      );
+    }
+  });
+
+  test('Scrap dealer raises the refund for every player, once taken', () => {
+    const { trail } = takeAtShrine('mod_scrap_dealer');
+    const last = trail[trail.length - 1] as RunState;
+    expect((last.team.modifiers ?? []).map((m) => m.id)).toContain(
+      'mod_scrap_dealer',
+    );
+    for (const p of [0, 1]) {
+      const entry = last.team.stash.find(
+        (e) => e.owner === p && e.def.startsWith('bld_wall_'),
+      );
+      if (entry === undefined) continue;
+      const gold = last.perPlayer[p]?.gold ?? 0;
+      const sold = ok(last, p, { type: 'sell', id: entry.id }, deps).state;
+      // A tier 1 kit wall costs 8: 75% is 6 (50% would be 4).
+      expect(entry.tier).toBe(1);
+      expect((sold.perPlayer[p]?.gold ?? 0) - gold).toBe(6);
+    }
+  });
+
+  test('a real run taking Tithe at every Shrine produces a snapshot that validates (the gold bound counts the held Tithes)', () => {
+    const ctx = ghostContext(makeGameDeps({ ghosts: { ownerId: 'dev-t' } }));
+    if (ctx === null) throw new Error('ghosts are on');
+    const pick = pickFor('mod_tithe');
+    let best = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      let s = start(deps, ['Ann'], seed);
+      for (let i = 0; i < 70 && s.round <= 6 && s.step !== 'run_over'; i++) {
+        // The snapshot is taken as the party readies out of the shop before the PvP battle.
+        const tithes = (s.team.modifiers ?? []).filter(
+          (m) => m.id === 'mod_tithe',
+        ).length;
+        if (tithes > 0 && s.step === 'shop' && s.leg === 'pve') {
+          best = Math.max(best, tithes);
+          const snap = JSON.parse(
+            JSON.stringify(
+              snapshotOf({ ...s, leg: 'pvp' }, { id: 'dev-t', label: 'Ann' }),
+            ),
+          ) as unknown;
+          const r = validateGhostSnapshot(snap, ctx);
+          expect(r.ok ? '' : r.errors.join('; ')).toBe('');
+        }
+        s = step(s, deps, {
+          event: (x) => {
+            const offers = offersOf(x);
+            const shrine = offers.find((o) => o['type'] === 'shrine');
+            return (shrine ?? offers[0])?.['id'] as string;
+          },
+          choose: pick,
+        });
+      }
+    }
+    expect(best).toBeGreaterThanOrEqual(2);
   });
 });
