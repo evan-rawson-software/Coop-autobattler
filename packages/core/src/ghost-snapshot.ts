@@ -18,7 +18,7 @@ import { generateMap } from './generate-map.js';
 import { isRecord, isSafeInt } from './load-util.js';
 import type { MapgenConfig } from './mapgen.js';
 import { kitChoices } from './economy.js';
-import { tierPrice } from './shop.js';
+import { offerWeightsAt, tierPrice } from './shop.js';
 import { validateTeamState, type TeamState } from './team-state.js';
 
 /** The snapshot format. Bump when a field changes meaning. */
@@ -335,6 +335,43 @@ function drillValue(
   return step * (2 * (round - from) + 1);
 }
 
+/**
+ * Gold-equivalent value one player can gain from Caravan events by the start
+ * of the PvP battle of `round`, beyond the gold the Caravan pays (that is in
+ * `maxEventGold`): per event step one reward, at best a free tier-1 building
+ * of the dearest price the shop sells by then (`offerWeightsAt`) or a free raise of the
+ * building with the largest price step. 0 without a Caravan event. Event
+ * steps are counted as for `drillValue`.
+ */
+function caravanValue(
+  round: number,
+  content: Content,
+  economy: EconomyConfig,
+  events: EventsConfig,
+): number {
+  let from = Infinity;
+  for (const e of events.events) {
+    if (e.type === 'caravan') from = Math.min(from, e.fromRound ?? 1);
+  }
+  if (round < from) return 0;
+  let step = 0;
+  for (const w of offerWeightsAt(economy, round)) {
+    if (w.weight <= 0) continue;
+    const t = content.buildings.get(w.def)?.tiers[0];
+    if (t !== undefined && 'price' in t) step = Math.max(step, t.price);
+  }
+  for (const def of content.buildings.list()) {
+    for (let t = 1; t < 3; t++) {
+      const a = def.tiers[t - 1];
+      const b = def.tiers[t];
+      if (a !== undefined && b !== undefined && 'price' in a && 'price' in b) {
+        step = Math.max(step, b.price - a.price);
+      }
+    }
+  }
+  return step * (2 * (round - from) + 1);
+}
+
 export interface GhostValueBound {
   /** Gold one player can have received by the start of the PvP battle of the round. */
   readonly goldPerPlayer: number;
@@ -355,6 +392,7 @@ export interface GhostValueBound {
  *   + bestPvpGold * (round - 1)                    best PvP reward in the rounds before
  *   + maxEventGold * (2 * round - 1)               every event a Windfall
  *   + drill value                                  free collector raises (Drill), 0 without one
+ *   + caravan value                                a free building or raise per Caravan step, 0 without one
  *   + kit                                          price of the starting kit
  *
  * times the party size. There is no margin: every gold source is counted at
@@ -380,7 +418,8 @@ export function ghostValueBound(
       round +
     Math.max(rewards.pvpWin, rewards.pvpLoss) * (round - 1) +
     maxEventGold(events) * shops +
-    drillValue(round, content, events);
+    drillValue(round, content, events) +
+    caravanValue(round, content, economy, events);
   let kitPerPlayer = 0;
   for (const k of economy.startingKit) {
     // A `pick` entry is bounded by its dearest choice.
@@ -414,8 +453,8 @@ export interface GhostTierBound {
  *    offers tiers by the row `tierOddsFor(r)`; shops of later rounds are not
  *    reached), at least the tier of every kit entry, at least 1.
  *  - `upgradesPerOwner`: `2 * round - 1` (the event steps before the PvP
- *    battle of `round`) if some configured event has type `workshop` or `drill`, else 0.
- *    Each Workshop or Drill event raises at most one building per player by one tier.
+ *    battle of `round`) if some configured event has type `workshop`, `drill` or `caravan`, else 0.
+ *    Each Workshop, Drill or Caravan event raises at most one building per player by one tier.
  *
  * A snapshot passes if, for every owner, the sum over that owner's buildings
  * (placed and stashed) of `max(0, tier - shopTier)` is at most
@@ -436,9 +475,9 @@ export function ghostTierBound(
       if (w > 0) shopTier = Math.max(shopTier, i + 1);
     });
   }
-  // Workshop and Drill each raise at most one building per player per event step.
+  // Workshop, Drill and Caravan each raise at most one building per player per event step.
   const raises = events.events.some(
-    (e) => e.type === 'workshop' || e.type === 'drill',
+    (e) => e.type === 'workshop' || e.type === 'drill' || e.type === 'caravan',
   );
   return { shopTier, upgradesPerOwner: raises ? 2 * round - 1 : 0 };
 }
@@ -915,20 +954,25 @@ function plausibility(
       );
     }
   }
-  // Added nodes come only from a Rich vein event (RS-4i4): the cells, the
+  // Added nodes come only from a Rich vein event (RS-4i4) or a Caravan with a
+  // Node reward (RS-4i3, `weightNode` above 0): the cells, the
   // owner's plot, the cap and the order were checked with the team state; here
   // each must be from a round in which that event could have run.
   const addedNodes = s.team.addedNodes ?? [];
   if (addedNodes.length > 0) {
     const first = Math.min(
       ...ctx.events.events
-        .filter((e) => e.type === 'rich_vein')
+        .filter(
+          (e) =>
+            e.type === 'rich_vein' ||
+            (e.type === 'caravan' && Number(e.params['weightNode'] ?? 0) > 0),
+        )
         .map((e) => e.fromRound ?? 1),
     );
     addedNodes.forEach((n, i) => {
       if (n.round < first || n.round > s.round) {
         errors.push(
-          `addedNodes[${String(i)}]: added in round ${String(n.round)}, but Rich vein is offered from round ${Number.isFinite(first) ? String(first) : 'never'} and the snapshot is from round ${String(s.round)}.`,
+          `addedNodes[${String(i)}]: added in round ${String(n.round)}, but Rich vein or Caravan is offered from round ${Number.isFinite(first) ? String(first) : 'never'} and the snapshot is from round ${String(s.round)}.`,
         );
       }
     });

@@ -218,6 +218,7 @@ describe('loadEvents', () => {
       'pact',
       'rich_vein',
       'blueprint',
+      'caravan',
     ]);
     expect(events.events.map((e) => e.fromRound)).toEqual([
       undefined,
@@ -228,6 +229,7 @@ describe('loadEvents', () => {
       4,
       3,
       3,
+      2,
     ]);
     expect(events.modifiers.length).toBeGreaterThanOrEqual(3);
   });

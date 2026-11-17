@@ -722,3 +722,62 @@ describe('follow-ups', () => {
     expect(followUpView(newRun(), config, content, 0, realDeps())).toBeNull();
   });
 });
+
+describe('the Caravan', () => {
+  test('its card names the rewards and who chooses first', () => {
+    const run = withOffers(newRun(), [
+      {
+        id: 'evt_caravan',
+        event: 'evt_caravan',
+        type: 'caravan',
+        items: [{ id: 'it0' }, { id: 'it1' }],
+        order: [0],
+      },
+    ]);
+    const [card] = eventCards(run, 0, config, content);
+    expect(card?.title).toBe('Caravan');
+    expect(card?.lines[0]).toMatch(/2 rewards/);
+  });
+
+  test('the notice is worded for the viewing player', () => {
+    const applied: Json[] = [
+      { player: 0, result: 'gold', gold: 6 },
+      {
+        player: 1,
+        result: 'modifier',
+        modifier: 'mod_stout_walls',
+        partyWide: true,
+      },
+      {
+        player: 2,
+        result: 'upgrade',
+        building: 3,
+        def: 'bld_extractor',
+        newTier: 2,
+      },
+      { player: 3, result: 'skip', dropped: true, reason: 'invalid_choice' },
+    ];
+    const n = (p: number) => appliedNotice(applied, p, content, 'caravan');
+    expect(n(0)).toMatch(/^\+6 gold\. .* now applies to the whole party\.$/);
+    expect(n(1)).toMatch(/^Took .* for the whole party\.$/);
+    expect(n(2)).toMatch(/^Raised .* to tier 2\./);
+    expect(n(3)).toMatch(/^Reward skipped\./);
+    expect(appliedNotice(applied, 5, content, 'caravan')).toBeNull();
+    expect(
+      appliedNotice(
+        [{ player: 0, result: 'node', resource: 'res_a' }],
+        0,
+        content,
+        'caravan',
+      ),
+    ).toMatch(/^Added a .* node\.$/);
+    expect(
+      appliedNotice(
+        [{ player: 0, result: 'building', def: 'bld_barracks' }],
+        0,
+        content,
+        'caravan',
+      ),
+    ).toMatch(/inventory/);
+  });
+});

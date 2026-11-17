@@ -1296,11 +1296,11 @@
     }
   },
   {
-    "id": "run-replay.s2-p1-market-day",
+    "id": "run-replay.s6-p1-market-day",
     "kind": "run-replay",
     "description": "1 player(s): Market day at the round 2 event, then two re-rolls in the next shop (the first free, the second paid), six offers throughout.",
     "input": {
-      "seed": 2,
+      "seed": 6,
       "players": ["Ann"],
       "actions": [
         {
@@ -1410,10 +1410,10 @@
         "actions": 15,
         "gold": [52],
         "shops": [
-          ["0 bld_turret t1 15", "1 bld_turret t1 15", "2 bld_range t1 24", "3 bld_turret t1 15", "4 bld_splitter t1 5", "5 bld_hangar t1 30"]
+          ["0 bld_turret t1 15", "1 bld_barracks t1 20", "2 bld_extractor t1 10", "3 bld_turret t1 15", "4 bld_overclocker t1 30", "5 bld_armory t1 30"]
         ],
-        "rng": [1905870424, 1723016527, 107256670, 580824877],
-        "stateHash": "f104891e"
+        "rng": [672773956, 3933987911, 103030009, 1233337982],
+        "stateHash": "77003437"
       }
     }
   },
@@ -1743,11 +1743,11 @@
     }
   },
   {
-    "id": "run-replay.s2-p2-drill",
+    "id": "run-replay.s4-p2-drill",
     "kind": "run-replay",
     "description": "2 player(s): Drill at the round 2 event, each player raises one of their own collectors (b1 and b8) by one tier for free, then the shop.",
     "input": {
-      "seed": 2,
+      "seed": 4,
       "players": ["Ann", "Bo"],
       "actions": [
         {
@@ -1944,20 +1944,20 @@
         "actions": 28,
         "gold": [53, 53],
         "shops": [
-          ["0 bld_extractor t1 10", "1 bld_merger t1 5", "2 bld_barracks t1 20", "3 bld_barracks t1 20", "4 bld_turret t1 15"],
-          ["0 bld_splitter t1 5", "1 bld_wall_t t1 8", "2 bld_splitter t1 5", "3 bld_extractor t1 10", "4 bld_barracks t1 20"]
+          ["0 bld_hangar t1 30", "1 bld_range t1 24", "2 bld_extractor t1 10", "3 bld_armory t1 30", "4 bld_splitter t1 5"],
+          ["0 bld_barracks t1 20", "1 bld_turret t1 15", "2 bld_barracks t1 20", "3 bld_range t1 24", "4 bld_barracks t1 20"]
         ],
-        "rng": [117859859, 1301006879, 1501573541, 380681472],
-        "stateHash": "0e20b59b"
+        "rng": [3985151463, 1932769909, 374580781, 3230807315],
+        "stateHash": "4c67e131"
       }
     }
   },
   {
-    "id": "run-replay.s1-p1-blueprint",
+    "id": "run-replay.s17-p1-blueprint",
     "kind": "run-replay",
     "description": "1 player(s): Blueprint at the round 3 event, each player takes the first building offered, then one re-roll and a purchase of the held slot (slot 5) by player 1; the held offer sits after the five rolled offers throughout.",
     "input": {
-      "seed": 1,
+      "seed": 17,
       "players": ["Ann"],
       "actions": [
         {
@@ -2120,19 +2120,19 @@
         "actions": 23,
         "gold": [34],
         "shops": [
-          ["0 bld_extractor t1 10", "1 bld_wall_i t1 8", "2 bld_hangar t2 60", "3 bld_spire t1 50", "4 bld_turret t1 15", null]
+          ["0 bld_armory t1 30", "1 bld_range t1 24", "2 bld_overclocker t1 30", "3 bld_hangar t1 30", "4 bld_splitter t1 5", null]
         ],
-        "rng": [2956792176, 801330319, 2974328144, 4138882869],
-        "stateHash": "7416c51f"
+        "rng": [3284931280, 3321211597, 2469862114, 1381860622],
+        "stateHash": "80550fed"
       }
     }
   },
   {
-    "id": "run-replay.s16-p2-blueprint",
+    "id": "run-replay.s214-p2-blueprint",
     "kind": "run-replay",
     "description": "2 player(s): Blueprint at the round 3 event, each player takes the first building offered, then one re-roll and a purchase of the held slot (slot 5) by player 1; the held offer sits after the five rolled offers throughout.",
     "input": {
-      "seed": 16,
+      "seed": 214,
       "players": ["Ann", "Bo"],
       "actions": [
         {
@@ -2432,11 +2432,338 @@
         "actions": 44,
         "gold": [49, 85],
         "shops": [
-          ["0 bld_refinery_ab t1 35", "1 bld_range t1 24", "2 bld_golem_forge t1 45", "3 bld_barracks t1 20", "4 bld_splitter t1 5", null],
-          ["0 bld_turret t1 15", "1 bld_turret t2 35", "2 bld_merger t1 5", "3 bld_spire t1 50", "4 bld_extractor t1 10", "5 bld_wall_l t1 8"]
+          ["0 bld_merger t2 12", "1 bld_splitter t1 5", "2 bld_splitter t1 5", "3 bld_gate t1 8", "4 bld_extractor t1 10", null],
+          ["0 bld_overclocker t1 30", "1 bld_extractor t1 10", "2 bld_range t1 24", "3 bld_hangar t1 30", "4 bld_barracks t1 20", "5 bld_wall_l t1 8"]
         ],
-        "rng": [625884006, 2448930022, 2460517141, 769292368],
-        "stateHash": "de41c251"
+        "rng": [3091127164, 4100099943, 578926084, 4194069035],
+        "stateHash": "fbdd21f0"
+      }
+    }
+  },
+  {
+    "id": "run-replay.s4-p1-caravan",
+    "kind": "run-replay",
+    "description": "1 player(s): Caravan at the round 2 event (a Node and a building on offer): the player takes the Node and names the cell, then the shop.",
+    "input": {
+      "seed": 4,
+      "players": ["Ann"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "place_core",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_caravan"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "event_choose",
+            "choice": "it1:c2_0"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "step": "shop",
+        "round": 2,
+        "actions": 14,
+        "gold": [53],
+        "shops": [
+          ["0 bld_turret t1 15", "1 bld_wall_j t1 8", "2 bld_barracks t1 20", "3 bld_hangar t1 30", "4 bld_barracks t1 20"]
+        ],
+        "rng": [3593042403, 3946901260, 2354960710, 227958285],
+        "stateHash": "492163f2"
+      }
+    }
+  },
+  {
+    "id": "run-replay.s6-p2-caravan",
+    "kind": "run-replay",
+    "description": "2 player(s): Caravan at the round 2 event (gold, a building, an Upgrade): the players pick in turn, the Upgrade names building b8 on its taker's turn, one reward is left over; then the shop.",
+    "input": {
+      "seed": 6,
+      "players": ["Ann", "Bo"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "place_core",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "place_core",
+            "x": 24,
+            "y": 0
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_caravan"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_caravan"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "event_choose",
+            "choice": "it2:b8"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "event_choose",
+            "choice": "it1"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "step": "shop",
+        "round": 2,
+        "actions": 28,
+        "gold": [53, 53],
+        "shops": [
+          ["0 bld_extractor t1 10", "1 bld_gate t1 8", "2 bld_turret t1 15", "3 bld_wall_s t1 8", "4 bld_turret t1 15"],
+          ["0 bld_wall_t t1 8", "1 bld_turret t1 15", "2 bld_merger t1 5", "3 bld_crossover t1 8", "4 bld_barracks t1 20"]
+        ],
+        "rng": [1805898060, 3571611108, 2599083624, 832983298],
+        "stateHash": "01deb6e5"
       }
     }
   }

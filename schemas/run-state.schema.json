@@ -351,6 +351,18 @@
         }
       }
     },
+    "caravanCount": {
+      "description": "Optional (absent means no Caravan yet): how many Caravan events the party has taken (RS-4h). Present together with caravanFirst.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "caravanFirst": {
+      "description": "Optional, with caravanCount: the player who chose first in the latest Caravan. The next Caravan starts with the player after this one. Below the party size (checked by validateRunState).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
     "outcome": {
       "description": "Null while the run is going.",
       "oneOf": [

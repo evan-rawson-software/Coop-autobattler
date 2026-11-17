@@ -16,7 +16,8 @@ import { GameFrame } from '../shell/GameFrame.js';
 import '../choice/choice.css';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { screenText, screenTexts } from '../build/texts.js';
-import { richVeinChoice, SKIP_CHOICE } from '@game/session';
+import { openDraft, richVeinChoice, SKIP_CHOICE } from '@game/session';
+import { CaravanResolve } from './CaravanScreen.js';
 import type { Cell } from '@game/core';
 import { VeinPicker } from './VeinPicker.js';
 import {
@@ -180,6 +181,7 @@ export function EventResolveScreen(props: { run: RunHandle }) {
       followUpView(view.run, gameConfigs.events, content, view.acting, deps),
     [view.run, view.acting, deps],
   );
+  if (openDraft(view.run) !== null) return <CaravanResolve run={props.run} />;
   return v?.vein == null ? (
     <EventListResolve run={props.run} />
   ) : (

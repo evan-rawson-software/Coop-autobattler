@@ -19,6 +19,7 @@ import {
   sealedProducers,
   tierPrice,
 } from '@game/core';
+import { defaultDraftPick, openDraft } from '../rules/caravan.js';
 import {
   chainPlaceable,
   isChainPiece,
@@ -993,6 +994,10 @@ function playStep(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       return;
     }
     case 'event_resolve': {
+      if (openDraft(st) !== null) {
+        caravanTurns(d);
+        return;
+      }
       for (let p = 0; p < st.players.length; p++) {
         if (d.state.step !== 'event_resolve') break;
         const view = eventFollowUp(d.state, p, d.deps);
@@ -1019,6 +1024,17 @@ function playStep(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       return;
     default:
       readyAll(d);
+  }
+}
+
+/** A Caravan draft: each player in turn takes the reward `defaultDraftPick` names. */
+function caravanTurns(d: Driver): void {
+  for (let guard = 0; guard < 8; guard++) {
+    const pick = defaultDraftPick(d.state, d.deps);
+    if (pick === null) return;
+    if (!d.send(pick.player, { type: 'event_choose', choice: pick.choice })) {
+      return;
+    }
   }
 }
 

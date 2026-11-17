@@ -5,6 +5,7 @@ import {
   type MemoryGhostStore,
 } from '../app/ghost-store.js';
 import { SELECT_GHOST } from '../rules/ghosts.js';
+import { defaultDraftPick } from '../rules/caravan.js';
 import { applyIntent, createRun } from '../rules/machine.js';
 import { startRun, type RunController } from '../app/run-controller.js';
 import { createMemorySaveStore } from '../app/save-store-memory.js';
@@ -93,9 +94,29 @@ export async function stepOnce(g: Game): Promise<void> {
     case 'event_resolve': {
       const fu = (
         s.pending as {
-          followUp: { perPlayer?: boolean; options: { id: string }[] };
+          followUp: {
+            perPlayer?: boolean;
+            mode?: string;
+            options: { id: string }[];
+          };
         }
       ).followUp;
+      if (fu.mode === 'draft') {
+        // A Caravan: the players take their rewards in turn.
+        for (
+          let i = 0;
+          i < 8 && g.controller.state.step === 'event_resolve';
+          i++
+        ) {
+          const pick = defaultDraftPick(g.controller.state, g.deps);
+          if (pick === null) break;
+          await send(g, pick.player, {
+            type: 'event_choose',
+            choice: pick.choice,
+          });
+        }
+        return;
+      }
       const id = fu.perPlayer === true ? 'skip' : (fu.options[0]?.id ?? '');
       for (const p of all)
         await send(g, p, { type: 'event_choose', choice: id });
@@ -228,6 +249,19 @@ export function botStep(
     }
     case 'event_resolve': {
       const fu = (s.pending as { followUp: unknown }).followUp;
+      if ((fu as { mode?: string }).mode === 'draft') {
+        // A Caravan: the players take their rewards in turn.
+        for (let i = 0; i < 8 && stepOf(s) === 'event_resolve'; i++) {
+          const pick = defaultDraftPick(s, deps);
+          if (
+            pick === null ||
+            !put(pick.player, { type: 'event_choose', choice: pick.choice })
+          ) {
+            return null;
+          }
+        }
+        return s;
+      }
       const opts = optionsOf(fu, 'options');
       const per = (fu as { perPlayer?: boolean }).perPlayer === true;
       for (let p = 0; p < n; p++) {

@@ -36,11 +36,22 @@ const deps = makeGameDeps({
   battle: fixedBattle(true),
   rules: RULES,
 });
-const ctx = (() => {
+const realCtx = (() => {
   const c = ghostContext(deps);
   if (c === null) throw new Error('ghosts are on');
   return c;
 })();
+// The size limit is derived from the value bound. The Caravan (#415) adds a
+// free building or raise per event step to that bound, which at round 200
+// reaches the fixed cap; these tests are about the economy-derived limit, so
+// they use the events without the Caravan (one test below covers it).
+const ctx = {
+  ...realCtx,
+  events: {
+    ...realCtx.events,
+    events: realCtx.events.events.filter((e) => e.type !== 'caravan'),
+  },
+};
 const { content, mapgen } = ctx;
 
 /** A real four-player snapshot (a valid Core and map to build on). */
@@ -252,6 +263,19 @@ function maximalBoard(round: number): GhostSnapshot {
     lives: RULES.startingLives,
   };
 }
+
+describe('the Caravan in the size limit', () => {
+  test('its free building or raise loosens the limit; at round 200 the cap clamps it', () => {
+    for (const n of [1, 4]) {
+      expect(ghostMaxSerializedSize(n, 10, realCtx)).toBeGreaterThan(
+        ghostMaxSerializedSize(n, 10, ctx),
+      );
+    }
+    expect(ghostMaxSerializedSize(4, GHOST_MAX_ROUND, realCtx)).toBe(
+      GHOST_MAX_SERIALIZED_BYTES,
+    );
+  });
+});
 
 describe('size limit derived from board capacity', () => {
   test('grows with party size and round; documented examples', () => {

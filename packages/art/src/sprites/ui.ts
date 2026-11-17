@@ -282,6 +282,21 @@ function blueprint(): Pix {
   return p;
 }
 
+function caravan(): Pix {
+  const p = new Pix(16, 16);
+  // A covered wagon: a canvas hood on a cart body with two wheels.
+  p.ellipse(8, 7, 5.5, 3.5, '6');
+  p.rect(2, 8, 12, 4, '4');
+  p.rect(2, 8, 12, 1, '5');
+  p.rect(3, 6, 2, 1, '5');
+  p.ellipse(5, 12.5, 2, 2, '3');
+  p.set(5, 12, 'y');
+  p.ellipse(11, 12.5, 2, 2, '3');
+  p.set(11, 12, 'y');
+  p.outline('K');
+  return p;
+}
+
 const EVENT_ICONS: Readonly<Record<string, () => Pix>> = {
   workshop,
   shrine,
@@ -291,6 +306,7 @@ const EVENT_ICONS: Readonly<Record<string, () => Pix>> = {
   pact,
   rich_vein: richVein,
   blueprint,
+  caravan,
 };
 
 export function uiSprites(): SpriteDef[] {

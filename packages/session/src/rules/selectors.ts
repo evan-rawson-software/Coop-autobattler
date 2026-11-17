@@ -13,6 +13,7 @@ import {
 } from './workshop-option.js';
 import type { Json, RunDeps, RunState, VoteTopic } from './types.js';
 import { isRecord } from './json-guards.js';
+import { draftTurn, readDraft } from './caravan.js';
 
 /** Indices of the players who are currently ready. */
 export function whoIsReady(state: RunState): number[] {
@@ -111,6 +112,23 @@ export function eventFollowUp(
   const fu = rec['followUp'];
   if (typeof fu !== 'object' || fu === null || Array.isArray(fu)) return null;
   const f = fu as Record<string, Json>;
+  const draft = readDraft(f);
+  if (draft !== null) {
+    // A Caravan draft: the one who is up is the only one still to act.
+    const turn = draftTurn(draft);
+    const slotOf = (p: number): number => draft.order.indexOf(p);
+    return {
+      prompt: typeof f['prompt'] === 'string' ? f['prompt'] : '',
+      perPlayer: false,
+      options: [],
+      chosen: state.players.map((_p, i) => {
+        const slot = slotOf(i);
+        return slot >= 0 && draft.taken[slot] !== null;
+      }),
+      waitingFor: turn.chooser === null ? [] : [turn.chooser],
+      mine: player === undefined ? null : (draft.taken[slotOf(player)] ?? null),
+    };
+  }
   const votes = Array.isArray(f['votes']) ? (f['votes'] as Json[]) : [];
   const options = Array.isArray(f['options']) ? (f['options'] as Json[]) : [];
   const per = f['perPlayer'] === true;

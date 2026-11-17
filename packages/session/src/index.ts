@@ -71,6 +71,24 @@ export {
   type FollowUpSpec,
 } from './rules/events.js';
 export {
+  CARAVAN_PROMPT,
+  caravanChoice,
+  caravanHandler,
+  caravanView,
+  defaultDraftPick,
+  draftChoiceProblem,
+  draftTurn,
+  nodeSub,
+  openDraft,
+  parseCaravanChoice,
+  readDraft,
+  upgradeSub,
+  type CaravanItem,
+  type CaravanKind,
+  type CaravanView,
+  type Draft,
+} from './rules/caravan.js';
+export {
   replayLastBattle,
   verifyLastBattle,
   type ReplayLastBattleResult,

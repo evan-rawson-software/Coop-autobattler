@@ -10,6 +10,7 @@ import {
   type TeamState,
 } from '@game/core';
 import { fixedBattle } from './defaults.js';
+import { defaultDraftPick, openDraft } from './caravan.js';
 import {
   checkEventHandlers,
   defaultEventHandlers,
@@ -107,6 +108,21 @@ function step(s: RunState, deps: RunDeps, policy: Policy = {}): RunState {
       );
     case 'event_resolve': {
       const fu = pending(s)['followUp'] as Record<string, Json>;
+      if (fu['mode'] === 'draft') {
+        // A Caravan: the players take their rewards in turn.
+        let cur = s;
+        while (cur.step === 'event_resolve') {
+          const pick = defaultDraftPick(cur, deps);
+          if (pick === null) throw new Error('draft: nobody is up');
+          cur = ok(
+            cur,
+            pick.player,
+            { type: 'event_choose', choice: pick.choice },
+            deps,
+          ).state;
+        }
+        return cur;
+      }
       const first = (fu['options'] as Record<string, Json>[])[0];
       // A per-player follow-up (Workshop): everyone skips unless told.
       const id =
@@ -766,6 +782,7 @@ describe('a whole run with real battles', () => {
     const states: RunState[] = [s];
     let guard = 0;
     let boughtOrKit = totalBuildings(s.team);
+    let gifted = 0;
     while (s.step !== 'run_over' && guard++ < 300) {
       const before = totalBuildings(s.team);
       const next = step(s, deps, {
@@ -776,13 +793,22 @@ describe('a whole run with real battles', () => {
           return offers[guard % offers.length]?.['id'] as string;
         },
       });
-      // Only the shop adds buildings (and the starting kit, before this loop).
-      expect(totalBuildings(next.team)).toBe(before);
+      // Only the shop adds buildings (and the starting kit, before this
+      // loop), and a Caravan's free building rewards (one per player at most).
+      const draft = openDraft(s);
+      const gifts =
+        draft === null
+          ? 0
+          : draft.items.filter((it) => it.kind === 'building').length;
+      expect(totalBuildings(next.team) - before).toBeGreaterThanOrEqual(0);
+      expect(totalBuildings(next.team) - before).toBeLessThanOrEqual(gifts);
+      if (draft === null) expect(totalBuildings(next.team)).toBe(before);
+      gifted += totalBuildings(next.team) - before;
       s = next;
       states.push(s);
       boughtOrKit = totalBuildings(s.team);
     }
-    expect(boughtOrKit).toBe(totalBuildings(initial.team));
+    expect(boughtOrKit).toBe(totalBuildings(initial.team) + gifted);
     return { deps, s, states, initial };
   }
 
