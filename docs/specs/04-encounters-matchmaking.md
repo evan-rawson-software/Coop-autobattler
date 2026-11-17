@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v5.2
+Status: Draft v5.3
 
 ## Encounter types
 
@@ -222,15 +222,48 @@ clears only the local rows. See `docs/rules-reference.md`, "Bundled ghosts".
 - **MM-18 [PROPOSED]** PvE enemies are **threat profiles** (CB-29) — waves plus a stronghold — built
   from templates and scaled by the same budget function as bosses, with a
   multiplier per difficulty (easy < medium < hard; see SC-1) and by party
-  size (CP-7).
+  size (CP-7). There are nine **threat types**: the three that exist and six
+  new ones (W4, #428). None of the six is built yet. Names are working names
+  until the theme issue (#393); that issue keeps no name table yet, so the
+  names are recorded here. All numbers below are [PROPOSED] and live in
+  configuration; tuning is #435.
+
+  | Threat | From round | Waves | Stronghold | Counter in the build |
+  |--------|-----------|-------|------------|----------------------|
+  | Rusher | 1 | Heavy early waves (existing) | Existing | Defence (existing) |
+  | Fortress | 1 | Light waves (existing) | Heavily defended (existing) | Ramp and siege (existing) |
+  | Escalator | 1 | Waves that grow quickly (existing) | Existing | Speed (existing) |
+  | Skirmishers | 2 | Mostly archers, with a soldier screen | Open, many turrets | Fast melee to catch archers; turrets. Walls do not stop ranged attacks. |
+  | Swarm | 1 | Raiders only, small and very frequent waves | Open, small Core | Area damage (casters); turrets |
+  | Maze | 2 | Light waves | New `maze` layout: a winding walled path to the Core, lined with turrets | A strong army that pushes through, or breaching |
+  | Focus | 3 | Normal mix, but each wave enters through one plot, which changes from wave to wave (CB-29) | Ring | Neighbours defend across borders; shared turrets near plot edges. In solo it plays as ordinary waves. |
+  | Juggernaut | 3 | Few, slow, very tough waves of heavies and Golems | Line | Focused damage; walls to buy time |
+  | Coven | 3 | Casters behind a soldier screen | Ring | Spread-out units; armored Golems shrug off splash |
+
+  Threats that need refining's units start from round 3.
+- **MM-18b [DECIDED]** **PvE threats use existing battle rules only.** A new
+  threat differs in which units it sends, wave timing and stronghold layout.
+  Special mechanics stay with bosses (MM-9a, MM-9d). Generator-side choices
+  are allowed: stronghold layouts (the `maze` layout) and which plot a wave
+  enters through (Focus, CB-29).
+- **MM-18c [DECIDED]** **A threat changes only its own side**: its units, its
+  waves and its stronghold. It never changes how the party's factory works.
+  This is the design rule of MM-9a, which covers bosses and PvE threats
+  alike.
 - **MM-18a [DECIDED]** **PvE and PvP follow the same rules.** Every PvE
   opponent, bosses included, has one Core per player. The opponent's total
   Core health is split evenly between its Cores, and each wave unit heads
   first for the Core of the plot it enters (CB-29). The party wins when all
   of the opponent's Cores are destroyed.
 - **MM-19 [DECIDED/PROPOSED detail]** The party is offered easy, medium, and
-  hard each round (RS-3). Each option shows the enemy archetype (Rusher,
-  Fortress, Escalator, …) and the reward; the party votes (CP-16). The three options may be different
-  templates, not just the same enemy at three strengths.
+  hard each round (RS-3). Each option shows the threat type (MM-18) and the
+  reward; the party votes (CP-16). **The three options use three different
+  threat types**, not the same enemy at three strengths:
+  - **Unlocked by round**: each type has a first round (MM-18), like bosses
+    (MM-9b).
+  - **Varied offers**: each round's three types leave out the types offered
+    the round before, when enough other types are unlocked.
 - **MM-20 [PROPOSED]** PvE battles are not snapshotted and do not affect the
   ghost pool.
+- **Considered, not planned:** **Air raid** (a threat of drones only). Left out
+  of the nine threat types (MM-18) by the owner (#428).
