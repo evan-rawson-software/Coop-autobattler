@@ -182,25 +182,25 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_range t1 24", "1 bld_crossover t1 8", "2 bld_extractor t1 10", "3 bld_gate t1 8", "4 bld_hangar t1 30"],
-              ["0 bld_turret t1 15", "1 bld_range t1 24", "2 bld_splitter t1 5", "3 bld_extractor t1 10", "4 bld_extractor t1 10"],
-              ["0 bld_splitter t1 5", "1 bld_wall_t t1 8", "2 bld_wall_o t1 8", "3 bld_extractor t1 10", "4 bld_extractor t1 10"]
+              ["0 bld_hangar t1 30", "1 bld_crossover t1 8", "2 bld_range t1 24", "3 bld_merger t1 5", "4 bld_hangar t1 30"],
+              ["0 bld_splitter t1 5", "1 bld_range t1 24", "2 bld_range t1 24", "3 bld_splitter t1 5", "4 bld_barracks t1 20"],
+              ["0 bld_barracks t1 20", "1 bld_turret t1 15", "2 bld_crossover t1 8", "3 bld_range t1 24", "4 bld_extractor t1 10"]
             ],
             "stream": [4082284504, 1246615528, 2421326979, 222664747]
           },
           {
             "rolls": [
-              ["0 bld_turret t1 15", "1 bld_merger t1 5", "2 bld_splitter t1 5", "3 bld_hangar t1 30", "4 bld_barracks t1 20"],
-              ["0 bld_extractor t1 10", "1 bld_extractor t1 10", "2 bld_range t1 24", "3 bld_armory t1 30", "4 bld_hangar t1 30"],
-              ["0 bld_barracks t1 20", "1 bld_overclocker t1 30", "2 bld_splitter t1 5", "3 bld_splitter t1 5", "4 bld_crossover t1 8"]
+              ["0 bld_turret t1 15", "1 bld_barracks t1 20", "2 bld_merger t1 5", "3 bld_merger t1 5", "4 bld_barracks t1 20"],
+              ["0 bld_extractor t1 10", "1 bld_barracks t1 20", "2 bld_barracks t1 20", "3 bld_hangar t1 30", "4 bld_turret t1 15"],
+              ["0 bld_hangar t1 30", "1 bld_wall_l t1 8", "2 bld_gate t1 8", "3 bld_turret t1 15", "4 bld_merger t1 5"]
             ],
             "stream": [1377751922, 1363642561, 3308590562, 2812818089]
           },
           {
             "rolls": [
-              ["0 bld_barracks t1 20", "1 bld_merger t1 5", "2 bld_hangar t1 30", "3 bld_barracks t1 20", "4 bld_hangar t1 30"],
-              ["0 bld_barracks t1 20", "1 bld_armory t1 30", "2 bld_barracks t1 20", "3 bld_gate t1 8", "4 bld_range t1 24"],
-              ["0 bld_merger t1 5", "1 bld_barracks t1 20", "2 bld_extractor t1 10", "3 bld_merger t1 5", "4 bld_turret t1 15"]
+              ["0 bld_range t1 24", "1 bld_splitter t1 5", "2 bld_merger t1 5", "3 bld_merger t1 5", "4 bld_extractor t1 10"],
+              ["0 bld_lancer_hall t1 25", "1 bld_armory t1 30", "2 bld_armory t1 30", "3 bld_barracks t1 20", "4 bld_barracks t1 20"],
+              ["0 bld_crossover t1 8", "1 bld_hangar t1 30", "2 bld_armory t1 30", "3 bld_range t1 24", "4 bld_turret t1 15"]
             ],
             "stream": [794474622, 2427705164, 4230207860, 2611801790]
           }
@@ -227,8 +227,8 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_splitter t2 12", "1 bld_splitter t1 5", "2 bld_refinery_ab t2 75", "3 bld_hangar t1 30", "4 bld_wall_j t1 8"],
-              ["0 bld_hangar t1 30", "1 bld_range t2 50", "2 bld_turret t1 15", "3 bld_wall_t t2 18", "4 bld_extractor t2 25"]
+              ["0 bld_gate t2 16", "1 bld_range t1 24", "2 bld_extractor t2 25", "3 bld_armory t1 30", "4 bld_splitter t1 5"],
+              ["0 bld_merger t1 5", "1 bld_lancer_hall t2 50", "2 bld_barracks t1 20", "3 bld_merger t2 12", "4 bld_merger t2 12"]
             ],
             "stream": [716291332, 230979304, 1034140873, 1201362969]
           }
@@ -255,13 +255,13 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_armory t1 30", "1 bld_splitter t3 25", "2 bld_range t3 90", "3 bld_overclocker t2 60", "4 bld_armory t1 30"]
+              ["0 bld_mortar t1 40", "1 bld_barracks t3 80", "2 bld_barracks t3 80", "3 bld_barracks t2 45", "4 bld_armory t1 30"]
             ],
             "stream": [3155416046, 449040429, 1627471564, 3228596691]
           },
           {
             "rolls": [
-              ["0 bld_overclocker t1 30", "1 bld_splitter t2 12", "2 bld_armory t1 30", "3 bld_turret t1 15", "4 bld_merger t2 12"]
+              ["0 bld_hangar t1 30", "1 bld_barracks t2 45", "2 bld_splitter t1 5", "3 bld_lancer_hall t1 25", "4 bld_merger t2 12"]
             ],
             "stream": [2689204891, 1823835324, 3184180384, 1462441704]
           }
@@ -288,22 +288,22 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_refinery_bc t2 75", "1 bld_range t2 50", "2 bld_extractor t1 10", "3 bld_refinery_bc t3 130", "4 bld_refinery_bc t1 35"],
-              ["0 bld_turret t3 65", "1 bld_extractor t2 25", "2 bld_extractor t2 25", "3 bld_foundry t1 40", "4 bld_turret t1 15"]
+              ["0 bld_barracks t2 45", "1 bld_splitter t2 12", "2 bld_barracks t1 20", "3 bld_barracks t3 80", "4 bld_foundry t1 40"],
+              ["0 bld_lancer_hall t3 90", "1 bld_hangar t2 60", "2 bld_armory t2 60", "3 bld_barracks t1 20", "4 bld_barracks t1 20"]
             ],
             "stream": [3023572215, 3480116702, 2107910352, 4165149210]
           },
           {
             "rolls": [
-              ["0 bld_extractor t3 50", "1 bld_armory t1 30", "2 bld_hangar t2 60", "3 bld_foundry t3 150", "4 bld_wall_l t1 8"],
-              ["0 bld_extractor t2 25", "1 bld_extractor t3 50", "2 bld_foundry t2 85", "3 bld_armory t3 100", "4 bld_golem_forge t3 160"]
+              ["0 bld_merger t3 25", "1 bld_mortar t1 40", "2 bld_extractor t2 25", "3 bld_hangar t3 100", "4 bld_merger t1 5"],
+              ["0 bld_turret t2 35", "1 bld_extractor t3 50", "2 bld_crossover t2 18", "3 bld_turret t3 65", "4 bld_extractor t3 50"]
             ],
             "stream": [2467628782, 562568050, 3992507445, 3751745097]
           },
           {
             "rolls": [
-              ["0 bld_merger t3 25", "1 bld_crossover t2 18", "2 bld_refinery_ab t3 130", "3 bld_hangar t1 30", "4 bld_foundry t3 150"],
-              ["0 bld_merger t2 12", "1 bld_overclocker t2 60", "2 bld_spire t2 95", "3 bld_armory t2 60", "4 bld_wall_t t3 36"]
+              ["0 bld_foundry t3 150", "1 bld_armory t2 60", "2 bld_extractor t3 50", "3 bld_splitter t1 5", "4 bld_mortar t3 140"],
+              ["0 bld_splitter t2 12", "1 bld_range t2 50", "2 bld_merger t2 12", "3 bld_splitter t2 12", "4 bld_turret t3 65"]
             ],
             "stream": [263490785, 2863029878, 1326267165, 3761374636]
           }
@@ -571,17 +571,17 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_merger t1 5", "1 bld_wall_z t1 8", "2 bld_range t1 24", "3 bld_hangar t1 30", "4 bld_hangar t1 30", "5 bld_range t1 24"],
-              ["0 bld_gate t1 8", "1 bld_crossover t1 8", "2 bld_gate t1 8", "3 bld_overclocker t1 30", "4 bld_hangar t1 30", "5 bld_range t1 24"],
-              ["0 bld_hangar t1 30", "1 bld_hangar t1 30", "2 bld_wall_t t1 8", "3 bld_hangar t1 30", "4 bld_merger t1 5", "5 bld_turret t1 15"]
+              ["0 bld_range t1 24", "1 bld_barracks t1 20", "2 bld_barracks t1 20", "3 bld_splitter t1 5", "4 bld_hangar t1 30", "5 bld_overclocker t1 30"],
+              ["0 bld_splitter t1 5", "1 bld_wall_s t1 8", "2 bld_wall_s t1 8", "3 bld_turret t1 15", "4 bld_barracks t1 20", "5 bld_hangar t1 30"],
+              ["0 bld_hangar t1 30", "1 bld_range t1 24", "2 bld_barracks t1 20", "3 bld_barracks t1 20", "4 bld_turret t1 15", "5 bld_armory t1 30"]
             ],
             "stream": [3708538753, 496519937, 4122058918, 263385321]
           },
           {
             "rolls": [
-              ["0 bld_range t1 24", "1 bld_armory t1 30", "2 bld_armory t1 30", "3 bld_barracks t1 20", "4 bld_extractor t1 10", "5 bld_barracks t1 20"],
-              ["0 bld_range t1 24", "1 bld_merger t1 5", "2 bld_barracks t1 20", "3 bld_armory t1 30", "4 bld_extractor t1 10", "5 bld_turret t1 15"],
-              ["0 bld_extractor t1 10", "1 bld_range t1 24", "2 bld_turret t1 15", "3 bld_turret t1 15", "4 bld_barracks t1 20", "5 bld_overclocker t1 30"]
+              ["0 bld_turret t1 15", "1 bld_gate t1 8", "2 bld_gate t1 8", "3 bld_gate t1 8", "4 bld_range t1 24", "5 bld_lancer_hall t1 25"],
+              ["0 bld_barracks t1 20", "1 bld_armory t1 30", "2 bld_range t1 24", "3 bld_splitter t1 5", "4 bld_armory t1 30", "5 bld_crossover t1 8"],
+              ["0 bld_lancer_hall t1 25", "1 bld_range t1 24", "2 bld_merger t1 5", "3 bld_wall_t t1 8", "4 bld_splitter t1 5", "5 bld_hangar t1 30"]
             ],
             "stream": [2946144622, 3661036790, 2431091325, 2332946021]
           }
@@ -609,10 +609,162 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_gate t1 8", "1 bld_barracks t1 20", "2 bld_splitter t1 5", "3 bld_hangar t1 30", "4 bld_extractor t1 10", "5 bld_extractor t1 10", "6 bld_armory t1 30", "7 bld_range t1 24"],
-              ["0 bld_barracks t1 20", "1 bld_splitter t1 5", "2 bld_barracks t1 20", "3 bld_merger t1 5", "4 bld_merger t1 5", "5 bld_wall_t t1 8", "6 bld_hangar t1 30", "7 bld_barracks t1 20"]
+              ["0 bld_wall_t t1 8", "1 bld_turret t1 15", "2 bld_barracks t1 20", "3 bld_splitter t1 5", "4 bld_turret t1 15", "5 bld_barracks t1 20", "6 bld_range t1 24", "7 bld_splitter t1 5"],
+              ["0 bld_range t1 24", "1 bld_turret t1 15", "2 bld_merger t1 5", "3 bld_turret t1 15", "4 bld_range t1 24", "5 bld_armory t1 30", "6 bld_barracks t1 20", "7 bld_gate t1 8"]
             ],
             "stream": [509064230, 402989084, 3024865861, 4128673288]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.19-p1-r2-new-buildings",
+    "kind": "shop-roll",
+    "description": "Solo, round 2 with nine re-rolls: the Lancer hall is on offer from round 2 (shipped list), the Tunnel, Mortar and Grand barracks are not.",
+    "input": {
+      "seed": 190,
+      "before": ["kit", "pve_options:r1"],
+      "round": 2,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 9
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r2:pve",
+        "runState": [2533713409, 2078753098, 2230661894, 3244583719],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_turret t1 15", "1 bld_splitter t1 5", "2 bld_barracks t1 20", "3 bld_gate t1 8", "4 bld_barracks t1 20"],
+              ["0 bld_extractor t1 10", "1 bld_overclocker t1 30", "2 bld_merger t1 5", "3 bld_extractor t1 10", "4 bld_barracks t1 20"],
+              ["0 bld_splitter t1 5", "1 bld_range t1 24", "2 bld_wall_z t1 8", "3 bld_wall_s t1 8", "4 bld_armory t1 30"],
+              ["0 bld_armory t1 30", "1 bld_range t1 24", "2 bld_hangar t1 30", "3 bld_range t1 24", "4 bld_lancer_hall t1 25"],
+              ["0 bld_merger t1 5", "1 bld_crossover t1 8", "2 bld_hangar t1 30", "3 bld_range t1 24", "4 bld_barracks t1 20"],
+              ["0 bld_turret t1 15", "1 bld_hangar t1 30", "2 bld_wall_o t1 8", "3 bld_splitter t1 5", "4 bld_barracks t1 20"],
+              ["0 bld_overclocker t1 30", "1 bld_turret t1 15", "2 bld_barracks t1 20", "3 bld_splitter t1 5", "4 bld_turret t1 15"],
+              ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_splitter t1 5", "3 bld_wall_s t1 8", "4 bld_merger t1 5"],
+              ["0 bld_hangar t1 30", "1 bld_turret t1 15", "2 bld_armory t1 30", "3 bld_barracks t1 20", "4 bld_hangar t1 30"],
+              ["0 bld_crossover t1 8", "1 bld_extractor t1 10", "2 bld_barracks t1 20", "3 bld_turret t1 15", "4 bld_barracks t1 20"]
+            ],
+            "stream": [417879395, 1937520367, 979904475, 1551846013]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.20-p1-r3-new-buildings",
+    "kind": "shop-roll",
+    "description": "Solo, round 3 with fourteen re-rolls: the Tunnel entrance (priced as an item, 10) and the Mortar join; no Grand barracks yet.",
+    "input": {
+      "seed": 200,
+      "before": ["kit", "pve_options:r1"],
+      "round": 3,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 14
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r3:pve",
+        "runState": [3230247194, 2119974150, 3825097190, 2234991926],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_turret t2 35", "1 bld_extractor t1 10", "2 bld_wall_t t1 8", "3 bld_armory t2 60", "4 bld_foundry t1 40"],
+              ["0 bld_turret t1 15", "1 bld_armory t1 30", "2 bld_wall_s t2 18", "3 bld_barracks t1 20", "4 bld_tunnel_in t1 10"],
+              ["0 bld_gate t1 8", "1 bld_foundry t1 40", "2 bld_hangar t2 60", "3 bld_splitter t2 12", "4 bld_range t1 24"],
+              ["0 bld_mortar t1 40", "1 bld_wall_l t1 8", "2 bld_merger t1 5", "3 bld_barracks t2 45", "4 bld_turret t1 15"],
+              ["0 bld_extractor t1 10", "1 bld_barracks t1 20", "2 bld_gate t1 8", "3 bld_mortar t1 40", "4 bld_merger t1 5"],
+              ["0 bld_barracks t2 45", "1 bld_barracks t1 20", "2 bld_wall_z t1 8", "3 bld_barracks t1 20", "4 bld_wall_t t1 8"],
+              ["0 bld_barracks t1 20", "1 bld_hangar t2 60", "2 bld_wall_i t1 8", "3 bld_gate t1 8", "4 bld_turret t1 15"],
+              ["0 bld_hangar t2 60", "1 bld_mortar t2 80", "2 bld_range t1 24", "3 bld_range t1 24", "4 bld_splitter t1 5"],
+              ["0 bld_armory t1 30", "1 bld_wall_z t1 8", "2 bld_spire t2 95", "3 bld_mortar t2 80", "4 bld_foundry t1 40"],
+              ["0 bld_turret t1 15", "1 bld_armory t1 30", "2 bld_barracks t1 20", "3 bld_merger t1 5", "4 bld_extractor t1 10"],
+              ["0 bld_merger t2 12", "1 bld_refinery_ab t2 75", "2 bld_barracks t1 20", "3 bld_crossover t1 8", "4 bld_extractor t1 10"],
+              ["0 bld_splitter t1 5", "1 bld_hangar t1 30", "2 bld_lancer_hall t2 50", "3 bld_tunnel_in t1 10", "4 bld_barracks t1 20"],
+              ["0 bld_splitter t1 5", "1 bld_barracks t2 45", "2 bld_armory t1 30", "3 bld_spire t1 50", "4 bld_turret t1 15"],
+              ["0 bld_splitter t1 5", "1 bld_tunnel_in t1 10", "2 bld_gate t2 16", "3 bld_merger t2 12", "4 bld_refinery_ab t1 35"],
+              ["0 bld_extractor t2 25", "1 bld_splitter t1 5", "2 bld_wall_j t2 18", "3 bld_spire t1 50", "4 bld_splitter t2 12"]
+            ],
+            "stream": [1322908116, 3258071820, 2342927082, 2178201940]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.21-p1-r5-new-buildings",
+    "kind": "shop-roll",
+    "description": "Solo, round 5 with nine re-rolls: the Grand barracks joins the shipped list.",
+    "input": {
+      "seed": 21,
+      "before": ["kit", "pve_options:r1"],
+      "round": 5,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 9
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r5:pve",
+        "runState": [3796297708, 198008405, 2067776768, 1235756252],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_lancer_hall t2 50", "1 bld_overclocker t1 30", "2 bld_splitter t1 5", "3 bld_crossover t1 8", "4 bld_barracks t2 45"],
+              ["0 bld_barracks t2 45", "1 bld_armory t2 60", "2 bld_wall_l t2 18", "3 bld_range t1 24", "4 bld_gate t2 16"],
+              ["0 bld_range t2 50", "1 bld_merger t2 12", "2 bld_extractor t1 10", "3 bld_turret t1 15", "4 bld_refinery_bc t2 75"],
+              ["0 bld_barracks t1 20", "1 bld_spire t1 50", "2 bld_barracks t2 45", "3 bld_merger t1 5", "4 bld_barracks t2 45"],
+              ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_armory t1 30", "3 bld_wall_s t1 8", "4 bld_lancer_hall t1 25"],
+              ["0 bld_gate t2 16", "1 bld_barracks t1 20", "2 bld_barracks t1 20", "3 bld_refinery_ab t2 75", "4 bld_splitter t2 12"],
+              ["0 bld_barracks t1 20", "1 bld_armory t2 60", "2 bld_crossover t1 8", "3 bld_crossover t2 18", "4 bld_barracks t2 45"],
+              ["0 bld_range t1 24", "1 bld_extractor t1 10", "2 bld_merger t1 5", "3 bld_barracks t1 20", "4 bld_merger t1 5"],
+              ["0 bld_barracks t1 20", "1 bld_barracks t2 45", "2 bld_gate t1 8", "3 bld_range t2 50", "4 bld_tunnel_in t3 40"],
+              ["0 bld_barracks t1 20", "1 bld_splitter t1 5", "2 bld_foundry t2 85", "3 bld_barracks t2 45", "4 bld_grand_barracks t2 140"]
+            ],
+            "stream": [3325637692, 3233097305, 1477514851, 499574798]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.22-p2-r8-new-buildings",
+    "kind": "shop-roll",
+    "description": "Two players, round 8 with three re-rolls: every new building can be offered.",
+    "input": {
+      "seed": 22,
+      "before": ["kit", "pve_options:r1"],
+      "round": 8,
+      "leg": "pve",
+      "players": 2,
+      "rerolls": 3
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r8:pve",
+        "runState": [2970985273, 4067442378, 4278183983, 737900583],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_turret t1 15", "1 bld_refinery_ab t2 75", "2 bld_extractor t2 25", "3 bld_spire t2 95", "4 bld_extractor t1 10"],
+              ["0 bld_turret t2 35", "1 bld_refinery_ab t3 130", "2 bld_crossover t2 18", "3 bld_crossover t2 18", "4 bld_refinery_ab t1 35"],
+              ["0 bld_extractor t1 10", "1 bld_turret t3 65", "2 bld_armory t3 100", "3 bld_tunnel_in t1 10", "4 bld_hangar t2 60"],
+              ["0 bld_grand_barracks t3 240", "1 bld_merger t2 12", "2 bld_barracks t3 80", "3 bld_hangar t2 60", "4 bld_barracks t2 45"]
+            ],
+            "stream": [514719719, 2275310537, 2518883504, 3100796270]
+          },
+          {
+            "rolls": [
+              ["0 bld_tunnel_in t2 22", "1 bld_splitter t3 25", "2 bld_splitter t1 5", "3 bld_armory t2 60", "4 bld_merger t3 25"],
+              ["0 bld_extractor t2 25", "1 bld_barracks t1 20", "2 bld_barracks t1 20", "3 bld_splitter t2 12", "4 bld_tunnel_in t2 22"],
+              ["0 bld_foundry t1 40", "1 bld_barracks t2 45", "2 bld_barracks t2 45", "3 bld_crossover t3 35", "4 bld_barracks t2 45"],
+              ["0 bld_extractor t3 50", "1 bld_foundry t3 150", "2 bld_turret t2 35", "3 bld_range t1 24", "4 bld_barracks t2 45"]
+            ],
+            "stream": [404625877, 1050670648, 1911194736, 303467107]
           }
         ]
       }

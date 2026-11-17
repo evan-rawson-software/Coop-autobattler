@@ -501,6 +501,9 @@ describe('the economy files', () => {
     const mk = (def: string, where: 'offer' | 'kit') => {
       const bad = JSON.parse(JSON.stringify(economyJson)) as typeof economyJson;
       if (where === 'offer') {
+        // The shipped list offers the entrance (#443): drop it first, so the
+        // entry added here is not a duplicate.
+        bad.offerWeights = bad.offerWeights.filter((w) => w.def !== def);
         bad.offerWeights.push({ def, weight: 1, fromRound: 1 });
       } else bad.startingKit.push({ def, tier: 1, count: 1 });
       const r = loadEconomy(bad, ctx);

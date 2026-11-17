@@ -124,9 +124,14 @@ function wiring(r: BotRunResult, id: number): { into: number; out: number } {
 // The Focus threat type (#433, from round 3) changed the PvE options again, so
 // the fortify Aether seed was searched again over 1 to 80: 5, 19, 34, 47 (10 no
 // longer builds it). Rush Composite 17 and Foundry 4 still build theirs.
+// The new buildings (#443: the shop offers them from round 2 to 5, and the rush
+// bot keeps two nodes back for a Grand barracks) changed the shops and the
+// boards, so the seeds were searched again (over 1 to 80, 80 and 40; no
+// rejected intent, the chain on the board, its units spawned): rush Composite
+// 2, 6, 7; fortify Aether 39 (the only one in 80); rush Foundry 1, 3, 6.
 describe('the bot builds the Foundry and the refining chains (issue #384)', () => {
   test('rush builds the Composite chain and its Golems fight', () => {
-    for (const seed of [17]) {
+    for (const seed of [2]) {
       const r = play('rush', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_ab')).toBeGreaterThan(0);
@@ -136,7 +141,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('fortify builds the Aether chain and its casters fight', () => {
-    for (const seed of [5]) {
+    for (const seed of [39]) {
       const r = play('fortify', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_bc')).toBeGreaterThan(0);
@@ -146,7 +151,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('a Foundry is built and its heavies fight', () => {
-    const r = play('rush', 4);
+    const r = play('rush', 1);
     expect(r.rejected).toEqual([]);
     expect(onBoard(r, 'bld_foundry')).toBeGreaterThan(0);
     expect(r.spawned['unit_heavy'] ?? 0).toBeGreaterThan(0);

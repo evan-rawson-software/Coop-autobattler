@@ -130,6 +130,14 @@ function wantWalls(n: number): Record<string, number> {
   return Object.fromEntries(WALL_SHAPES.map((id) => [id, n]));
 }
 
+function isTunnelDef(
+  content: { readonly buildings: BuildingConfig },
+  def: string,
+): boolean {
+  const d = content.buildings.get(def);
+  return d !== undefined && d.kind === 'route' && d.routeType === 'tunnel_in';
+}
+
 function isWallDef(
   content: { readonly buildings: BuildingConfig },
   def: string,
@@ -155,6 +163,11 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_refinery_ab: 6,
       bld_golem_forge: 6,
       bld_foundry: 3,
+      // New buildings (#443): Lancers beside the Barracks, and a Grand
+      // barracks fed by two collectors through a Merger.
+      bld_lancer_hall: 7,
+      bld_grand_barracks: 7,
+      bld_merger: 7,
     },
     tierBonus: 1,
     maxBuys: 8,
@@ -188,13 +201,15 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       placeLeftovers: true,
       priority: [
         'bld_barracks',
+        'bld_lancer_hall',
         'bld_range',
         'bld_armory',
         'bld_overclocker',
         'bld_turret',
       ],
       links: true,
-      reserve: { res_a: 1, res_b: 1 },
+      // Two collectors for a Grand barracks and one for the Golem chain (#443).
+      reserve: { res_a: 2, res_b: 1 },
     },
     roles: true,
   },
@@ -213,6 +228,9 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_refinery_bc: 8,
       bld_spire: 8,
       bld_foundry: 3,
+      // A Mortar at the back, behind the walls, and a Lancer hall (#443).
+      bld_mortar: 9,
+      bld_lancer_hall: 4,
     },
     tierBonus: 2,
     maxBuys: 8,
@@ -247,9 +265,11 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       placeLeftovers: true,
       priority: [
         'bld_turret',
+        'bld_mortar',
         'bld_range',
         'bld_overclocker',
         'bld_barracks',
+        'bld_lancer_hall',
         'bld_armory',
       ],
       reserve: { res_b: 1, res_c: 1 },
@@ -268,6 +288,11 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_hangar: 3,
       bld_splitter: 5,
       bld_foundry: 4,
+      // New buildings (#443): few, high-tier ones.
+      bld_lancer_hall: 6,
+      bld_mortar: 4,
+      bld_grand_barracks: 8,
+      bld_merger: 8,
     },
     tierBonus: 6,
     maxBuys: 5,
@@ -301,7 +326,9 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       placeLeftovers: true,
       priority: [
         'bld_barracks',
+        'bld_lancer_hall',
         'bld_armory',
+        'bld_mortar',
         'bld_turret',
         'bld_hangar',
         'bld_overclocker',
@@ -575,9 +602,21 @@ function buildScore(s: Strategy, def: string, tier: number, rng: Rng): number {
 const REFINERY_USER: Readonly<Record<string, string>> = {
   bld_refinery_ab: 'bld_golem_forge',
   bld_refinery_bc: 'bld_spire',
+  // The Merger and the Grand barracks it feeds are bought and wired as a
+  // chain too (#443).
+  bld_merger: 'bld_grand_barracks',
 };
 /** The refineries of `REFINERY_USER`, in a fixed order. */
-const REFINERIES: readonly string[] = ['bld_refinery_ab', 'bld_refinery_bc'];
+const REFINERIES: readonly string[] = [
+  'bld_refinery_ab',
+  'bld_refinery_bc',
+  'bld_merger',
+];
+
+/** The first round of the shop in which a chain is looked for (default 3). */
+const CHAIN_FROM_ROUND: Readonly<Record<string, number>> = {
+  bld_merger: 5,
+};
 
 /** The other half of a refining chain, or undefined (the Foundry stands alone). */
 function chainPartner(def: string): string | undefined {
@@ -600,6 +639,9 @@ function withoutReserve(style: LayoutStyle): LayoutStyle {
   };
 }
 
+/** Gold kept for the re-rolls that find a Merger once a Grand barracks is bought. */
+const MERGER_REROLL_GOLD = 8;
+
 /** Rounds a bot with half a chain saves gold for the other half. */
 const CHAIN_SAVE_ROUNDS = 4;
 
@@ -613,6 +655,9 @@ const CONSUMERS = [
   'bld_overclocker',
   'bld_range',
   'bld_hangar',
+  // One collector each (#443); the Grand barracks has its own chain.
+  'bld_lancer_hall',
+  'bld_mortar',
 ];
 
 /**
@@ -673,7 +718,7 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
           (s.want[ref] ?? 0) > 0 &&
           !s.random &&
           s.layout.connect &&
-          d.state.round >= 3 &&
+          d.state.round >= (CHAIN_FROM_ROUND[ref] ?? 3) &&
           ownedDef(ref) + ownedDef(user) === stashed(ref) + stashed(user)
         ) {
           const missing = [ref, user].filter((def) => stashed(def) === 0);
@@ -711,13 +756,15 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
         (b) =>
           b.owner === p &&
           (d.deps.content.buildings.get(b.def)?.kind === 'refinery' ||
-            b.def === 'bld_foundry'),
+            b.def === 'bld_foundry' ||
+            b.def === 'bld_merger'),
       ).length;
       const room = plotRoom(
         d.state.team,
         p,
         d.deps.content,
         d.state.team.map.plotWidth,
+        s.layout,
       );
       const openNodes = room.openNodeTotal;
       // Owned consumers by the resource they take, board and stash.
@@ -934,6 +981,7 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
           if (isChainPiece(d.deps.content, o.def) && o.def !== 'bld_foundry') {
             score = 0;
           }
+          // Nor a Tunnel (see below).
         } else if (isChainPiece(d.deps.content, o.def)) {
           // A chain piece: bought when the whole chain would be placed on
           // this plot, and only one of each; the collectors it needs are
@@ -941,6 +989,24 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
           const partner = chainPartner(o.def);
           const complete = partner === undefined || stashed(partner) > 0;
           const ext = tierPrice(d.deps.content, 'bld_extractor', 1);
+          // The Grand barracks is the rare piece: its Merger (a common one)
+          // is bought only once it is in the stash, so that no Merger waits
+          // for a Grand barracks that never comes (#443).
+          if (o.def === 'bld_merger' && !complete) score = 0;
+          // ... and a Grand barracks only with the gold left to re-roll for
+          // the Merger in this very shop, while its collectors' nodes and
+          // its hole are still free.
+          if (
+            o.def === 'bld_grand_barracks' &&
+            !complete &&
+            o.price +
+              tierPrice(d.deps.content, 'bld_merger', 1) +
+              2 * ext +
+              MERGER_REROLL_GOLD >
+              me.gold
+          ) {
+            score = 0;
+          }
           if (
             !s.layout.connect ||
             ownedDef(o.def) > 0 ||
@@ -995,6 +1061,9 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
         }
         // A style that does not connect places no collector at all.
         if (o.def === 'bld_extractor' && !s.layout.connect) score = 0;
+        // The scripted bot does not use Tunnels: it never routes a conduit
+        // it cannot lay, so it has nothing to cross. Left to people (#443).
+        if (isTunnelDef(d.deps.content, o.def)) score = 0;
         if (score > bestScore) {
           bestScore = score;
           best = slot;
@@ -1201,7 +1270,12 @@ function tastesOf(deps: RunDeps, s: Strategy, rng: Rng): EventTastes {
     caravan: s.caravan,
     random: s.random,
     connect: s.layout.connect,
-    score: (def, tier) => buildScore(s, def, tier, rng),
+    // The shop buys a Grand barracks and its Merger together; an event does
+    // not hand them out to a bot that has no place ready for them (#443).
+    score: (def, tier) =>
+      def === 'bld_merger' || def === 'bld_grand_barracks'
+        ? 0
+        : buildScore(s, def, tier, rng),
     consumers: CONSUMERS,
     chainPartner,
     isChainPiece: (def) => isChainPiece(deps.content, def),

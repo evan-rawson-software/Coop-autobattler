@@ -70,7 +70,10 @@ describe('Splitter placement (#178)', () => {
   // never takes it, but the event pool and so the draws change) 71 of 81 (12/13,
   // 22/25, 37/43): 87.7%, so the overall floor is 0.87 (party 4 is 86%, still
   // above the 0.85 floor per party size). The ratio is the point: a Splitter that is bought is
-  // placed.
+  // placed. With the new buildings (#443: the shop offers a Lancer hall, a
+  // Mortar, a Tunnel and a Grand barracks, and rush keeps two nodes back for a
+  // Grand barracks) 65 of 76 (13/14, 17/20, 35/42): 85.5%, party 4 is 83%, so
+  // the floor per party size is 0.83 and the overall one 0.85.
   test('rush: Splitters are bought and nearly all are placed, at every party size', () => {
     let bought = 0;
     let placedAll = 0;
@@ -85,16 +88,16 @@ describe('Splitter placement (#178)', () => {
       bought += placed + stashed;
       placedAll += placed;
       expect(placed, `rush party ${String(party)}`).toBeGreaterThanOrEqual(
-        0.85 * (placed + stashed),
+        0.83 * (placed + stashed),
       );
     }
     // The ratio means nothing if nothing is bought.
     // Issue #383: from round 3 the shop also offers five refining
     // buildings the bot never buys, so a little less is bought (92 of 99); with
     // Drill (#411) 71 of 78.
-    expect(bought).toBeGreaterThanOrEqual(75);
-    expect(placedAll).toBeGreaterThanOrEqual(68);
-    expect(placedAll / bought).toBeGreaterThanOrEqual(0.87);
+    expect(bought).toBeGreaterThanOrEqual(72);
+    expect(placedAll).toBeGreaterThanOrEqual(62);
+    expect(placedAll / bought).toBeGreaterThanOrEqual(0.85);
   });
 
   // Siege buys few Splitters (its barracks and armories are high tier), so

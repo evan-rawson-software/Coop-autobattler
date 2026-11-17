@@ -134,6 +134,22 @@ pnpm sim --help
   Power, one Flux node (`fortify`) and the cells around it free of plain
   collectors and walls. The bot draws no border link for a chain (no Flux
   sharing).
+- The bot also buys and places the four new buildings (issue #443; the shop
+  offers them from round 2, 3 and 5). A **Lancer hall** is a consumer of Ore
+  like a Barracks; its layout searches the whole plot and puts it behind or
+  beside one of the bot's Barracks, else along the plot's edge (`rush` 7,
+  `siege` 6, `fortify` 4). A **Mortar** is a consumer of Ore too; it is placed
+  as near the Core as a path from its collector allows, and the next walls the
+  layout places go in front of it (`fortify` 9, `siege` 4). A **Grand barracks**
+  is bought like a refining chain (`rush` 7, `siege` 8, with its Merger): only
+  with the gold for it, a Merger and two collectors, only if the dry run finds a
+  free 3x3 hole and two free Ore nodes, and the layout wires it all or nothing
+  (two collectors into a Merger, the Merger into the hole); to keep two Ore
+  nodes free `rush` keeps two (it was one) back from plain collectors until
+  round 9 or until the chain stands. It is rare (about 3 percent of rush runs
+  place one). **Tunnels are left to people**: the scripted bot never buys or
+  places one (it routes every conduit around the others, so it never needs to
+  cross), also not the weak bot; one that an event hands it stays in the stash.
 - `stage` builds five solo boards by hand on the map of seed 5 with the Core at
   (11, 5): `kit` (the starting kit), `half`, and `full1`, `full2`, `full3` (all
   six Ore and Power nodes used, 3 Barracks, 3 turrets, 7 walls, at tier 1, 2

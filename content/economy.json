@@ -50,7 +50,11 @@
     { "def": "bld_refinery_ab", "weight": 4, "fromRound": 3 },
     { "def": "bld_golem_forge", "weight": 4, "fromRound": 3 },
     { "def": "bld_refinery_bc", "weight": 4, "fromRound": 3 },
-    { "def": "bld_spire", "weight": 4, "fromRound": 3 }
+    { "def": "bld_spire", "weight": 4, "fromRound": 3 },
+    { "def": "bld_lancer_hall", "weight": 5, "fromRound": 2 },
+    { "def": "bld_tunnel_in", "weight": 5, "fromRound": 3 },
+    { "def": "bld_mortar", "weight": 4, "fromRound": 3 },
+    { "def": "bld_grand_barracks", "weight": 3, "fromRound": 5 }
   ],
   "tierOdds": [
     { "fromRound": 1, "weights": [100, 0, 0] },
