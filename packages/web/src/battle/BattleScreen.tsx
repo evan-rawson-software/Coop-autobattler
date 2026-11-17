@@ -63,6 +63,7 @@ import { simClient, type RecordOutcome } from '../sim-worker/client.js';
 import { CannotShow } from './CannotShow.js';
 import { ResultCard } from './ResultCard.js';
 import { readFailPlayback } from './cannot-show.js';
+import { readForcedPoint } from './force-point.js';
 import { createReadyGate } from './ready-gate.js';
 import { battleConfig } from './setup.js';
 import type { BattleDescription, BattleViewProps } from './types.js';
@@ -719,7 +720,7 @@ export function BattleSampleScreen() {
   const [readyCount, setReadyCount] = useState(0);
   // The tick changes while playing; the battle does not.
   const sample = useMemo(
-    () => buildSample({ ...sel, tick: 0 }),
+    () => buildSample({ ...sel, tick: 0 }, readForcedPoint()),
     [sel.player, sel.opponent, sel.seed, sel.threatSeed, nonce],
   );
   const options = useMemo(() => opponentOptions(), []);

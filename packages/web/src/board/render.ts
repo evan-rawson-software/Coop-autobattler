@@ -26,6 +26,8 @@ export interface Theme {
   readonly core: string;
   readonly coreInk: string;
   readonly owners: readonly string[];
+  /** The neutral guards' colour: a grey, apart from both sides. */
+  readonly guard: string;
   readonly ink: string;
   readonly inkMuted: string;
   readonly front: string;

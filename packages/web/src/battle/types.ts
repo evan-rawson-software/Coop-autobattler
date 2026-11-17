@@ -19,7 +19,12 @@ export type BattleDescription =
       /** Test-only: a hand-made neutral zone (`BattleOptions.zone`). */
       readonly zone?: NeutralZone;
     }
-  | { readonly kind: 'pve'; readonly input: PveBattleInput };
+  | {
+      readonly kind: 'pve';
+      readonly input: PveBattleInput;
+      /** Debug only (sample battles): a zone with a forced point. */
+      readonly zone?: NeutralZone;
+    };
 
 export type OpponentKind = 'ghost' | 'boss' | 'pve';
 

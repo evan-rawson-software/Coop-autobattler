@@ -30,6 +30,7 @@ import { rampOf } from '../board/sprite-board.js';
 import { restFacing, type Playback } from './playback.js';
 import { spriteHalf, spriteReach } from './sprite-size.js';
 import { bossMarks } from './boss.js';
+import { drawPoints } from './draw-points.js';
 
 type UnitsView = Pick<ArenaSim, 'health'>;
 import { screenText, screenTexts } from '../build/texts.js';
@@ -153,7 +154,11 @@ interface UnitArt {
 }
 
 let artSet: SpriteSet | null = null;
-const artCache = new Map<string, readonly [UnitArt | null, UnitArt | null]>();
+// Sides A and B, then the neutral guards (the untinted grey sprites).
+const artCache = new Map<
+  string,
+  readonly [UnitArt | null, UnitArt | null, UnitArt | null]
+>();
 // Per unit ID, valid only when `attackGen` equals the current draw's
 // generation: the index of its attack event in the log. Nothing outlives a
 // frame, so the picture depends only on the playback state at the shown tick.
@@ -211,22 +216,23 @@ function unitArt(def: string, side: number): UnitArt | null {
   let pair = artCache.get(def);
   if (pair === undefined) {
     const make = (tag: string): UnitArt | null => {
-      const idle = framesOf(set, `${def}@${tag}`);
-      const walk = framesOf(set, `${def}@${tag}.walk`);
-      const attack = framesOf(set, `${def}@${tag}.attack`);
+      const name = tag === '' ? def : `${def}@${tag}`;
+      const idle = framesOf(set, name);
+      const walk = framesOf(set, `${name}.walk`);
+      const attack = framesOf(set, `${name}.attack`);
       if (!idle || !walk || !attack) return null;
       return {
         idle,
         walk,
         attack,
-        walkFps: findSprite(`${def}@${tag}.walk`)?.fps ?? 0,
-        attackFps: findSprite(`${def}@${tag}.attack`)?.fps ?? 0,
+        walkFps: findSprite(`${name}.walk`)?.fps ?? 0,
+        attackFps: findSprite(`${name}.attack`)?.fps ?? 0,
       };
     };
-    pair = [make('a'), make('b')];
+    pair = [make('a'), make('b'), make('')];
     artCache.set(def, pair);
   }
-  return side === 0 ? pair[0] : pair[1];
+  return side === 0 ? pair[0] : side === 1 ? pair[1] : pair[2];
 }
 
 const OCTANT = Math.PI / 4;
@@ -296,21 +302,23 @@ function drawFlatUnits(
   radiusOf: (u: UnitSim) => number,
   own: string,
   foe: string,
+  guard: string,
   outline: string,
   bg: string,
 ): void {
-  for (const side of [0, 1] as const) {
+  for (const side of [0, 1, 2] as const) {
     ctx.beginPath();
     for (let i = 0; i < units.length; i++) {
       const u = units[i];
-      if (u === undefined || (u.side === 0 ? 0 : 1) !== side) continue;
+      if (u === undefined || (u.side === 0 ? 0 : u.side === 1 ? 1 : 2) !== side)
+        continue;
       if (unitArt(u.def, u.side) !== null) continue;
       pxOf(u, tmp);
       const ur = radiusOf(u);
       ctx.moveTo(tmp.x + ur, tmp.y);
       ctx.arc(tmp.x, tmp.y, ur, 0, Math.PI * 2);
     }
-    ctx.fillStyle = side === 0 ? own : foe;
+    ctx.fillStyle = side === 0 ? own : side === 1 ? foe : guard;
     ctx.fill();
     ctx.lineWidth = 1;
     ctx.strokeStyle = outline;
@@ -319,7 +327,7 @@ function drawFlatUnits(
   ctx.beginPath();
   for (let i = 0; i < units.length; i++) {
     const u = units[i];
-    if (u === undefined || u.side === 0) continue;
+    if (u === undefined || u.side !== 1) continue;
     if (unitArt(u.def, u.side) !== null) continue;
     pxOf(u, tmp);
     const dd = radiusOf(u) * 0.5;
@@ -517,7 +525,9 @@ export function drawBattleOverlay(
   const frac = pb.frac;
   const own = theme.owners[0] ?? theme.ink;
   const foe = theme.owners[1] ?? theme.ink;
-  const sideColor = (s: number): string => (s === 0 ? own : foe);
+  const guardColor = theme.guard;
+  const sideColor = (s: number): string =>
+    s === 0 ? own : s === 1 ? foe : guardColor;
 
   // --- Board labels (rotated along the left edge) -------------------------
   if (z >= 8) {
@@ -653,10 +663,14 @@ export function drawBattleOverlay(
     }
   }
 
+  // --- Points of interest, under the units (shown once the zone is revealed) ---
+  if (pb.revealed) drawPoints(ctx, o, d, (tick + frac) / pb.ticksPerSecond);
+
   // --- Units ----------------------------------------------------------------
   // Units are circles at their real position and body radius (the collision
   // circle is smaller and soft, so neighbours may overlap on screen).
-  const units = sim.units;
+  // The neutral guards are part of the zone: not shown before it is revealed.
+  const units = pb.revealed ? sim.units : sim.units.filter((u) => u.side !== 2);
   if (idToIndex.length < sim.nextUnitId + 1) {
     idToIndex = new Int32Array(
       Math.max(sim.nextUnitId + 1, idToIndex.length * 2),
@@ -806,6 +820,7 @@ export function drawBattleOverlay(
       radiusOf,
       own,
       foe,
+      guardColor,
       theme.outline,
       theme.boardBg,
     );

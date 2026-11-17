@@ -281,7 +281,8 @@ describe('playback engine', () => {
       pb.seekTo(t);
       for (const u of pb.sim.units) {
         expect(isAttacking(pb, u.id)).toBe(false);
-        if (t === 0) expect(pb.facing(u)).toBe(u.side === 0 ? 0 : 4);
+        // Side B faces south; side A and the neutral guards (untinted art, which faces north) face north.
+        if (t === 0) expect(pb.facing(u)).toBe(u.side === 1 ? 4 : 0);
       }
     }
     expect(attackShows(0, 0)).toBe(false);

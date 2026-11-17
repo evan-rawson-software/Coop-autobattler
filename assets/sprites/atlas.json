@@ -2498,10 +2498,71 @@
       "category": "ui",
       "note": "Ready tick."
     },
-    "ui_event_workshop": {
+    "ui_point_marker": {
       "sheet": "ui",
       "x": 242,
       "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "tintable": true,
+      "note": "Point of interest marker; the tint ramp is the holder colour."
+    },
+    "ui_point_strength": {
+      "sheet": "ui",
+      "x": 259,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Point buff: stronger new units."
+    },
+    "ui_point_heal": {
+      "sheet": "ui",
+      "x": 276,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Point buff: healing."
+    },
+    "ui_point_guard": {
+      "sheet": "ui",
+      "x": 293,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Neutral guard of a point."
+    },
+    "ui_event_workshop": {
+      "sheet": "ui",
+      "x": 0,
+      "y": 65,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2515,8 +2576,8 @@
     },
     "ui_event_shrine": {
       "sheet": "ui",
-      "x": 259,
-      "y": 0,
+      "x": 17,
+      "y": 65,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2530,8 +2591,8 @@
     },
     "ui_event_windfall": {
       "sheet": "ui",
-      "x": 276,
-      "y": 0,
+      "x": 34,
+      "y": 65,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2545,8 +2606,8 @@
     },
     "ui_event_drill": {
       "sheet": "ui",
-      "x": 293,
-      "y": 0,
+      "x": 51,
+      "y": 65,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2560,7 +2621,7 @@
     },
     "ui_event_market_day": {
       "sheet": "ui",
-      "x": 0,
+      "x": 68,
       "y": 65,
       "w": 16,
       "h": 16,
@@ -2575,7 +2636,7 @@
     },
     "ui_event_pact": {
       "sheet": "ui",
-      "x": 17,
+      "x": 85,
       "y": 65,
       "w": 16,
       "h": 16,
@@ -2590,7 +2651,7 @@
     },
     "ui_event_rich_vein": {
       "sheet": "ui",
-      "x": 34,
+      "x": 102,
       "y": 65,
       "w": 16,
       "h": 16,
@@ -2605,7 +2666,7 @@
     },
     "ui_event_blueprint": {
       "sheet": "ui",
-      "x": 51,
+      "x": 119,
       "y": 65,
       "w": 16,
       "h": 16,
@@ -2620,7 +2681,7 @@
     },
     "ui_event_caravan": {
       "sheet": "ui",
-      "x": 68,
+      "x": 136,
       "y": 65,
       "w": 16,
       "h": 16,

@@ -26,6 +26,8 @@ function swatchColor(info: HoverInfo): string {
       return 'var(--board-front)';
     case 'core':
       return 'var(--board-core)';
+    case 'point':
+      return info.color ?? 'var(--guard)';
     case 'building':
     case 'unit':
       return `var(--owner-${String(Math.min(3, info.owner ?? 0))})`;

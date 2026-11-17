@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v5.4
+Status: Draft v5.5
 
 ## Direction
 
@@ -225,11 +225,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     and no reason to rearrange the whole factory for each battle.
   - It can also contain **points of interest** that **give buffs to the
     side that controls them**, and that are **guarded by neutral units**.
-    Not built yet: the zone holds only lakes and cliffs today, and its
-    format keeps an empty `pointsOfInterest` list for them (TA-41a). The
-    rules are in CB-8c to CB-8g.
-- **CB-8c [DECIDED]** Points of interest (owner decisions, issue #369; not
-  built yet, CB-8):
+    Built (issue #369): the zone's `pointsOfInterest` list holds them
+    (TA-41a), and the rules are in CB-8c to CB-8g.
+- **CB-8c [DECIDED]** Points of interest (owner decisions, built in issue
+  #369; CB-8):
   - **Aggro** [DECIDED]: units are not sent to points of interest. A unit
     goes to one only if its path takes it **near enough to "aggro"** — within
     the point's aggro range — in which case it diverts to fight there.

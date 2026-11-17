@@ -23,6 +23,7 @@ import {
   standingPylons,
 } from './boss.js';
 import type { Playback, BattleRecord } from './playback.js';
+import { captureNotice, zoneBuff } from './points.js';
 
 export type Side = 0 | 1;
 
@@ -116,6 +117,7 @@ export type MomentKind =
   | 'pylon'
   | 'shield'
   | 'champion'
+  | 'point'
   | 'core_half'
   | 'core_quarter'
   | 'core_destroyed';
@@ -303,6 +305,17 @@ export function deriveMoments(
           focus,
         });
       }
+    } else if (e.type === 'point_captured') {
+      const side: Side = e.side === 0 ? 0 : 1;
+      const at = record.zone.pointsOfInterest.find((q) => q.id === e.point);
+      out.push({
+        tick: e.tick + 1,
+        kind: 'point',
+        side,
+        text: captureNotice(e, zoneBuff(content, record.zone, e.point)),
+        focus:
+          at === undefined ? null : arenaToView(g, at.x, g.boardHeight + at.y),
+      });
     } else if (e.type === 'burst_released') {
       const side: Side = e.side === 0 ? 0 : 1;
       out.push({

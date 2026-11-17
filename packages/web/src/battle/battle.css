@@ -742,3 +742,57 @@ button:disabled {
   flex-direction: column;
   gap: 8px;
 }
+
+/* Points of interest (#375). */
+.points-section {
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+  gap: 0.4rem;
+}
+
+.point-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.point-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.point-icon {
+  flex: none;
+  image-rendering: pixelated;
+}
+
+.point-bonus {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.point-hint {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.point-summary,
+.point-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+}
+
+.point-summary .muted {
+  display: block;
+}

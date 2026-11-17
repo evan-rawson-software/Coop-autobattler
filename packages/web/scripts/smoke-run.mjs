@@ -1997,6 +1997,21 @@ export async function runRunSmoke({
     'debug screen: "Next PvP opponent" set back to Automatic removes the setting',
   );
 
+  // The debug "Point of interest" control writes the setting and clears it.
+  const POINT_KEY = 'coop-autobattler:debug-force-point';
+  const pointValue = () =>
+    page.evaluate((k) => localStorage.getItem(k), POINT_KEY);
+  await page.selectOption('#force-point', 'heal');
+  check(
+    (await pointValue()) === 'heal',
+    'debug screen: "Force a point" set to Healing stores the setting',
+  );
+  await page.selectOption('#force-point', 'off');
+  check(
+    (await pointValue()) === null,
+    'debug screen: "Force a point" set back to Off removes the setting',
+  );
+
   // ---------------------------------------------------------------------
   // Rich vein (issue #414): a real save of a party of two at the cell
   // follow-up of a Rich vein (made in Node, see smoke-vein-seed.mjs). Each

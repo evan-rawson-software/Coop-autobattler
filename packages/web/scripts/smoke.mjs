@@ -1901,6 +1901,123 @@ try {
         await shot('battle-7-ghost-summary');
       }
 
+      // Points of interest (issue #375): a battle whose zone has a guarded
+      // point (seed 2 of the sample route has one that the enemy takes).
+      {
+        const errorsBefore = consoleErrors.length;
+        await open('#battle?p=rush&o=ghost:fortify&s=2');
+        await waitPhase('playing');
+        const early = await page.evaluate(() => ({
+          revealed: window.__debug.battle.revealed(),
+          listed: document.querySelectorAll('[data-field="points"]').length,
+        }));
+        check(
+          early.revealed || early.listed === 0,
+          'battle: the points are not listed before the zone is revealed',
+        );
+        await page.waitForFunction(() => window.__debug?.battle?.revealed());
+        await page.waitForSelector('[data-field="point-0"]');
+        const guarded = await page
+          .locator('[data-field="point-0"]')
+          .getAttribute('data-status');
+        const pointText = await page
+          .locator('[data-field="point-0"]')
+          .innerText();
+        check(
+          guarded === 'guarded' && /guarded, \d+ guards? left/.test(pointText),
+          `battle: a point is listed with its guards once the zone is revealed ("${pointText}")`,
+        );
+        check(
+          (await page.locator('[data-field="point-hint"]').count()) === 1,
+          'battle: the first battle with a point shows the one-line hint',
+        );
+        await page.evaluate(() => window.__debug.battle.setSpeed(4));
+        await page.waitForFunction(
+          () => window.__debug.battle.tick() > 300,
+          undefined,
+          { timeout: slow(30000) },
+        );
+        await shot('battle-points-guarded');
+        await page.waitForFunction(
+          () => {
+            const el = document.querySelector('[data-field="point-0"]');
+            return (
+              el?.getAttribute('data-status') === 'capturing' ||
+              window.__debug.battle.phase() === 'summary'
+            );
+          },
+          undefined,
+          { timeout: slow(60000) },
+        );
+        check(
+          (await page
+            .locator('[data-field="point-0"]')
+            .getAttribute('data-status')) === 'capturing',
+          'battle: a point being captured shows its progress',
+        );
+        await shot('battle-points-capturing');
+        await page.waitForFunction(
+          () =>
+            document
+              .querySelector('[data-field="point-0"]')
+              ?.getAttribute('data-status') === 'held' ||
+            window.__debug.battle.phase() === 'summary',
+          undefined,
+          { timeout: slow(60000) },
+        );
+        const held = (
+          await page.locator('[data-field="feed"]').innerText()
+        ).replace(/\s+/g, ' ');
+        check(
+          /took point 1: stronger new units/.test(held) &&
+            /\+20%/.test(
+              await page.locator('[data-field="bonus-foe"]').innerText(),
+            ),
+          `battle: a capture is announced and the holder's bonus is listed ("${held.slice(0, 60)}")`,
+        );
+        await shot('battle-points-held');
+        await page.evaluate(() => window.__debug.battle.setSpeed(4));
+        await page.click('#skip');
+        await waitPhase('summary');
+        const sumPoints = (
+          await page.locator('[data-field="point-summary"]').innerText()
+        ).replace(/\s+/g, ' ');
+        check(
+          /Point 1, Strength point: held by them at the end\. Held: you 0:00, them \d+:\d\d\./.test(
+            sumPoints,
+          ) &&
+            (await page.locator('[data-field="point-totals"] li').count()) ===
+              2,
+          `battle: the summary lists the point, its holder and times, guards and healing ("${sumPoints.slice(0, 90)}")`,
+        );
+        await shot('battle-points-summary');
+        check(
+          consoleErrors.length === errorsBefore,
+          `battle: a battle with a point raises no page errors (${consoleErrors.slice(errorsBefore).join(' | ')})`,
+        );
+        // The debug option forces a healing point into a battle that has none.
+        await page.evaluate(() =>
+          localStorage.setItem('coop-autobattler:debug-force-point', 'heal'),
+        );
+        await open('#battle?p=rush&o=ghost:fortify&s=3');
+        await page.waitForFunction(() => window.__debug?.battle?.revealed());
+        await page.waitForSelector('[data-field="point-0"]');
+        const forced = await page.locator('[data-field="point-0"]').innerText();
+        check(
+          /Healing point/.test(forced),
+          `battle: the forced point option puts a healing point into the battle ("${forced}")`,
+        );
+        await page.evaluate(() =>
+          localStorage.removeItem('coop-autobattler:debug-force-point'),
+        );
+        await open('#battle?p=rush&o=ghost:fortify&s=3');
+        await page.waitForFunction(() => window.__debug?.battle?.revealed());
+        check(
+          (await page.locator('[data-field="point-0"]').count()) === 0,
+          'battle: without the option the same battle has no point',
+        );
+      }
+
       // Performance at 4x with hundreds of units.
       await open(`#battle?p=${winGold.board}&o=stress&s=1`);
       await waitPhase('playing');

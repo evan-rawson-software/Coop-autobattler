@@ -28,6 +28,8 @@ import {
   type NeutralZone,
   type TeamState,
   type UnitSim,
+  buildStronghold,
+  threatSideOptions,
   isCoreHealth,
   poolOf,
 } from '@game/core';
@@ -93,6 +95,24 @@ export function startDescribed(
   content: WebContent,
   config: BattleConfig,
 ): Started {
+  if (desc.kind === 'pve' && desc.zone !== undefined) {
+    // A sample with a forced point (debug): `startPveBattle` with the zone
+    // handed to `startBattle`, as it builds it.
+    const { team, threat, seed, round } = desc.input;
+    const started = startBattle(
+      {
+        teamA: team,
+        teamB: buildStronghold(threat, content, config.mapgen),
+        seed,
+        round,
+        sideOptions: [null, threatSideOptions(threat)],
+      },
+      content,
+      config,
+      { zone: desc.zone },
+    );
+    return started;
+  }
   return desc.kind === 'versus'
     ? startBattle(
         desc.input,
@@ -222,9 +242,12 @@ const OCTANT = Math.PI / 4;
 /** Within this fraction of an octant from a boundary, the side's rest facing wins. */
 const STICKY = 0.12;
 
-/** Rest facing of a side: A north (0), B south (4). */
+/**
+ * Rest facing of a side: A north (0), B south (4). The neutral guards (side
+ * 2) use the untinted art, which faces north like A's.
+ */
 export function restFacing(side: number): number {
-  return side === 0 ? 0 : 4;
+  return side === 1 ? 4 : 0;
 }
 
 /**

@@ -18,6 +18,11 @@ import {
   writeForcedOpponent,
   type ForcedOpponent,
 } from '../run/force-opponent.js';
+import {
+  readForcedPoint,
+  writeForcedPoint,
+  type ForcedPoint,
+} from '../battle/force-point.js';
 import { useStore } from '../app-state.js';
 import { BoardView } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
@@ -247,6 +252,38 @@ function OpponentPanel() {
         Applies when a shop fixes the opponent of its PvP battle; one already
         fixed stays. Stays set in this browser until you switch it back. For
         playtesting only.
+      </p>
+    </Panel>
+  );
+}
+
+function PointPanel() {
+  const [mode, setMode] = useState<ForcedPoint>(() => readForcedPoint());
+  return (
+    <Panel title="Point of interest" id="panel-point">
+      <div class="form-grid">
+        <label>
+          Force a point
+          <select
+            id="force-point"
+            value={mode}
+            onChange={(e) => {
+              const v = e.currentTarget.value as ForcedPoint;
+              writeForcedPoint(v);
+              setMode(v);
+            }}
+          >
+            <option value="off">Off (the zone as generated)</option>
+            <option value="unit_strength">Stronger new units</option>
+            <option value="heal">Healing</option>
+          </select>
+        </label>
+      </div>
+      <p class="muted">
+        Puts a point of that buff into your own band (its buff is changed when
+        the band already has one) in the next sample battle of the #battle page.
+        Battles of a run are never changed: they replay from the saved run.
+        Stays set in this browser until you switch it off. For playtesting only.
       </p>
     </Panel>
   );
@@ -515,6 +552,7 @@ export function DebugScreen() {
         <>
           <SetupPanel />
           <OpponentPanel />
+          <PointPanel />
           <LegendPanel />
         </>
       }

@@ -29,6 +29,17 @@ import { resultFacts } from './result-why.js';
 import { SPEEDS } from './playback.js';
 import type { OpponentInfo } from './types.js';
 import { OpponentBonuses } from '../run/BonusList.js';
+import { useStore } from '../app-state.js';
+import { SpriteIcon } from '../sprites/SpriteIcon.js';
+import { dismissPointHint, pointHintSeen } from './point-hint.js';
+import {
+  bonusLines,
+  buffText,
+  guardAndHealLines,
+  pointRow,
+  pointsNow,
+  summaryRows,
+} from './points.js';
 
 const t = (key: string, values: Record<string, string> = {}): string =>
   screenText(screenTexts, key, values);
@@ -289,6 +300,84 @@ export function PlaybackTray(props: {
   );
 }
 
+/**
+ * The points of the zone: one line each with its buff icon and what it is
+ * doing, the bonuses each side has now, and the one-line hint the first time a
+ * battle has points. Shown from the reveal, only when the zone has points.
+ */
+export function PointsSection(props: {
+  readonly pb: Playback;
+  readonly tps: number;
+}) {
+  const { pb, tps } = props;
+  const hintSeen = useStore(pointHintSeen);
+  const points = pointsNow(pb.sim);
+  if (points.length === 0) return null;
+  const mine = bonusLines(pb.sim, 0, tps);
+  const theirs = bonusLines(pb.sim, 1, tps);
+  const side = (label: string, lines: readonly string[], field: string) => (
+    <p class="point-bonus" data-field={field}>
+      <strong>{label}</strong>{' '}
+      {lines.length === 0 ? (
+        <span class="muted">{t('battleBonusNone')}</span>
+      ) : (
+        lines.join(' · ')
+      )}
+    </p>
+  );
+  return (
+    <section
+      class="rail-section points-section"
+      aria-label="Points of interest"
+      data-field="points"
+    >
+      <h2 class="rail-label">{t('battlePointsTitle')}</h2>
+      <ul class="plain point-list">
+        {points.map((p) => (
+          <li
+            key={p.id}
+            data-field={`point-${String(p.id)}`}
+            data-status={p.status}
+            title={buffText(p.buff, tps)}
+          >
+            <SpriteIcon
+              name={
+                p.buff?.kind === 'heal' ? 'ui_point_heal' : 'ui_point_strength'
+              }
+              size={16}
+              class="point-icon"
+            />
+            <span
+              class={
+                p.controller >= 0 ? `side-${String(p.controller)}-text` : ''
+              }
+            >
+              {pointRow(p)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {side(t('battleBonusYours'), mine, 'bonus-own')}
+      {side(t('battleBonusTheirs'), theirs, 'bonus-foe')}
+      {mine.length + theirs.length > 0 ? (
+        <p class="muted small">{t('battleBonusNote')}</p>
+      ) : null}
+      {hintSeen ? null : (
+        <p class="point-hint" data-field="point-hint">
+          {t('battlePointHint')}{' '}
+          <button
+            type="button"
+            data-action="dismiss-point-hint"
+            onClick={dismissPointHint}
+          >
+            {t('uiPhaseGotIt')}
+          </button>
+        </p>
+      )}
+    </section>
+  );
+}
+
 /** Newest line first; older ones fade out. */
 const FEED_FADE: readonly number[] = [1, 0.8, 0.62, 0.45];
 
@@ -357,6 +446,7 @@ export function BattleRail(props: {
           </span>
         </p>
       </section>
+      {props.revealed ? <PointsSection pb={pb} tps={props.tps} /> : null}
       {props.revealed ? (
         <OpponentBonuses modifiers={props.opponentModifiers} />
       ) : null}
@@ -677,6 +767,10 @@ export function BattleSummaryView(props: SummaryProps) {
     own.coresStanding === 0 &&
     foe.coresStanding === 0 &&
     rec.result.reason.startsWith('tiebreak_');
+  const pointRows = useMemo(
+    () => summaryRows(rec.summary, content, rec.zone, props.tps, clock),
+    [rec, content, props.tps],
+  );
   const [details, setDetails] = useState(false);
   const firstBreach = useMemo(
     () => resultFacts(rec, content, moments, props.tps).breach,
@@ -817,6 +911,23 @@ export function BattleSummaryView(props: SummaryProps) {
           {t(details ? 'battleHideDetails' : 'battleShowDetails')}
         </button>
       </section>
+
+      {pointRows.length === 0 ? null : (
+        <Panel title={t('battlePanelPoints')} id="panel-points">
+          <ul class="plain point-summary" data-field="point-summary">
+            {pointRows.map((r) => (
+              <li key={r.number} data-field={`sum-point-${String(r.number)}`}>
+                {r.line} <span class="muted">{r.buff}</span>
+              </li>
+            ))}
+          </ul>
+          <ul class="plain point-totals" data-field="point-totals">
+            {guardAndHealLines(rec.summary).map((l) => (
+              <li key={l}>{l}</li>
+            ))}
+          </ul>
+        </Panel>
+      )}
 
       {details ? (
         <div class="summary-details" id="battle-details">

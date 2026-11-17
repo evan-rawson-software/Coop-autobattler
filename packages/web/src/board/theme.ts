@@ -27,6 +27,7 @@ export function readTheme(el: Element): Theme {
     core: v('--board-core'),
     coreInk: v('--board-core-ink'),
     owners: [v('--owner-0'), v('--owner-1'), v('--owner-2'), v('--owner-3')],
+    guard: v('--guard'),
     ink: v('--ink'),
     inkMuted: v('--ink-muted'),
     front: v('--board-front'),
