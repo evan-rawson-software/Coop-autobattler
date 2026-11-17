@@ -27,7 +27,7 @@ import type { BoardId } from './layout.js';
 
 /** What the swatch before the title is coloured from. */
 export type HoverTone =
-  'resource' | 'terrain' | 'front' | 'building' | 'core' | 'unit';
+  'resource' | 'terrain' | 'front' | 'building' | 'core' | 'unit' | 'point';
 
 export interface HoverInfo {
   readonly title: string;

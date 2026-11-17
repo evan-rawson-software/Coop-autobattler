@@ -37,6 +37,17 @@ When the opponent is a computer-made boss, the Next fight panel of the shop and 
 - Pylons: its Cores are shielded while pylons beside them stand (blue shield and lines on the board, a count in the side panel). The shield drops when the last pylon falls.
 - Warlord: each wave is led by a champion Golem, drawn larger with its own health bar.
 
+## Points of interest
+
+Some battles have a point of interest in the neutral zone between the two boards, at most one in each plot band. It shows when the battle begins, as a diamond with a small icon for what it gives: an arrow for stronger new units, a cross for healing. A neutral guard group (grey units that fight both sides) holds each point at first, and nothing can be captured while a guard lives.
+
+Once the guards are gone, units of one side that stand near the point take it: a ring around it fills in that side's colour. If both sides are near it, nothing happens (the ring flickers). Units are not sent there: only units whose way passes near the point turn aside to fight for it. A held point is tinted in its holder's colour, and its buff covers every player of that side until the point is lost or the battle ends:
+
+- **Strength point**: the holder's new units are stronger (+20% health and damage each, up to +40% from several points).
+- **Healing point**: the holder's units near it slowly regain health, and its radius is drawn while it is held.
+
+The side panel lists each point and what it is doing, and both sides' bonuses. A short line in the log tells who took a point. The summary says, for each point, who held it at the end and how long each side held it, how many guards each side killed and how much health each side regained. Hover a point or a guard to read what it does. The first time a battle has a point, a one-line hint explains it.
+
 ## What to try
 
 - Play at least two runs back to back, and look for your first run's factory in the second.
@@ -47,10 +58,14 @@ When the opponent is a computer-made boss, the Next fight panel of the shop and 
 - Reload the page in the middle of a step to check your run comes back.
 - Build a refining chain (collectors into a refinery, then into a Golem forge or Spire) and compare it with two base buildings (Barracks) on the same collectors.
 - Try the Aether chain against the Overclocker for your Flux: with one Flux node, the refinery and the Overclocker compete, and the preview shows who goes short.
+- Route units past a point of interest, then avoid it, and compare: do you win more when you take it, or when you leave it alone?
+- Watch a point being captured and a healing point's radius, and see whether it is clear who holds what.
 
 ## Choosing the opponent (for testing)
 
 Open the `#debug` page (add `#debug` to the address) and use "Next PvP opponent" to force the boss. It applies the next time a shop fixes an opponent, and stays set in your browser until you switch it back to Automatic. Normal play never needs it.
+
+The same page has "Point of interest": force a point of a chosen buff into your own band in the next sample battle of the `#battle` page (the zone gets one if its band had none; a band's own point changes its buff). It changes only those samples: battles of a run always replay as saved. It stays set in your browser until you switch it off.
 
 ## Feedback that helps most
 
@@ -63,6 +78,7 @@ Open the `#debug` page (add `#debug` to the address) and use "Next PvP opponent"
 - Do Golems feel tanky? Do casters feel strong against swarms?
 - Is two-input routing fun, or a chore?
 - Did you change what you built after seeing which boss was next?
+- Do points feel worth fighting for, or are they a distraction? Are they noticeable in the battle, and is it clear what they give and who holds them?
 - Anything that confused you, broke, or looked wrong, with what you were doing at the time.
 
 Send it as a note on the issue tracker or in your own words.

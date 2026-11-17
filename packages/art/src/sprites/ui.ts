@@ -297,6 +297,61 @@ function caravan(): Pix {
   return p;
 }
 
+/** The marker of a point of interest: a diamond that takes the holder's colour. */
+function pointMarker(): Pix {
+  const p = new Pix(16, 16);
+  for (let y = 0; y < 16; y++)
+    for (let x = 0; x < 16; x++) {
+      const d = Math.abs(x + 0.5 - 8) + Math.abs(y + 0.5 - 8);
+      if (d > 7) continue;
+      if (d > 5.2) p.set(x, y, 'X');
+      else if (x + y < 15 && d < 4) p.set(x, y, 'Z');
+      else p.set(x, y, 'x');
+    }
+  p.outline('K');
+  return p;
+}
+
+/** The icon of a point that makes new units stronger: a gold disc with an arrow up. */
+function pointStrength(): Pix {
+  const p = new Pix(16, 16);
+  p.ellipse(8, 8, 6.2, 6.2, 'o');
+  p.ellipse(8, 8, 5.2, 5.2, 'y');
+  p.set(8, 4, 'K');
+  p.rect(7, 5, 2, 1, 'K');
+  p.rect(6, 6, 4, 1, 'K');
+  p.rect(5, 7, 6, 1, 'K');
+  p.rect(7, 8, 2, 4, 'K');
+  p.outline('K');
+  return p;
+}
+
+/** The icon of a healing point: a green disc with a white cross. */
+function pointHeal(): Pix {
+  const p = new Pix(16, 16);
+  p.ellipse(8, 8, 6.2, 6.2, 't');
+  p.ellipse(8, 8, 5.2, 5.2, 'N');
+  p.rect(7, 4, 2, 8, '6');
+  p.rect(4, 7, 8, 2, '6');
+  p.outline('K');
+  return p;
+}
+
+/** The icon of a neutral guard: a grey shield. */
+function pointGuard(): Pix {
+  const p = new Pix(16, 16);
+  for (let y = 2; y < 14; y++) {
+    const half = y < 9 ? 5 : 5 - (y - 8);
+    if (half <= 0) continue;
+    for (let x = 8 - half; x < 8 + half; x++) {
+      p.set(x, y, x < 8 ? (y < 4 ? 'Z' : 'x') : 'X');
+    }
+  }
+  p.rect(7, 4, 2, 7, 'K');
+  p.outline('K');
+  return p;
+}
+
 const EVENT_ICONS: Readonly<Record<string, () => Pix>> = {
   workshop,
   shrine,
@@ -373,6 +428,35 @@ export function uiSprites(): SpriteDef[] {
     category: 'ui',
     frames: tick(),
     note: 'Ready tick.',
+  });
+  add({
+    name: 'ui_point_marker',
+    sheet: 'ui',
+    category: 'ui',
+    frames: pointMarker(),
+    tintable: true,
+    note: 'Point of interest marker; the tint ramp is the holder colour.',
+  });
+  add({
+    name: 'ui_point_strength',
+    sheet: 'ui',
+    category: 'ui',
+    frames: pointStrength(),
+    note: 'Point buff: stronger new units.',
+  });
+  add({
+    name: 'ui_point_heal',
+    sheet: 'ui',
+    category: 'ui',
+    frames: pointHeal(),
+    note: 'Point buff: healing.',
+  });
+  add({
+    name: 'ui_point_guard',
+    sheet: 'ui',
+    category: 'ui',
+    frames: pointGuard(),
+    note: 'Neutral guard of a point.',
   });
   for (const type of loadEventTypes()) {
     const make = EVENT_ICONS[type];

@@ -36,6 +36,7 @@
   --owner-1: #d1551d;
   --owner-2: #2f9e44;
   --owner-3: #a62fc2;
+  --guard: #6b7580;
   --hover: #ff8a00;
   --select: #d6006e;
   --conduit-unknown: #7b858c;
@@ -84,6 +85,7 @@
     --owner-1: #ff8a52;
     --owner-2: #5fd17a;
     --owner-3: #d68cf0;
+    --guard: #aab4bd;
     --hover: #ffb02e;
     --select: #ff5cae;
     --conduit-unknown: #8e9aa2;

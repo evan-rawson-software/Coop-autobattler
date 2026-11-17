@@ -12,8 +12,11 @@ import {
   REFERENCE_BOARDS,
   buildReferenceBoard,
   generateMap,
+  generateNeutralZone,
   generateThreat,
+  type NeutralZone,
   type ReferenceBoardName,
+  type TeamState,
   type ThreatType,
 } from '@game/core';
 import { content } from '../content.js';
@@ -22,6 +25,7 @@ import { DEFAULT_SEED } from '../build/setup.js';
 import { buildSampleTeam } from '../sample-team.js';
 import { archetypeText, bossLabel } from '../run/display-text.js';
 import { threatsConfig } from './setup.js';
+import { withForcedPoint, type ForcedPoint } from './force-point.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
 
 /** The party's board of a sample: a reference board, or the refining demo. */
@@ -127,8 +131,40 @@ export interface Sample {
   readonly reward: (won: boolean) => string;
 }
 
-/** Build the battle a selection names. Deterministic in the selection. */
-export function buildSample(sel: SampleSelection): Sample {
+/**
+ * The zone of a sample with a point of buff `forced` in the player's own band
+ * (the debug option, issue #375); undefined when it is off, so the zone is the
+ * usual one.
+ */
+function forcedZone(
+  team: TeamState,
+  seed: number,
+  forced: ForcedPoint,
+): NeutralZone | undefined {
+  if (forced === 'off') return undefined;
+  const width = team.map.width;
+  const plotWidth = content.mapgen.plotWidth;
+  const core = team.cores.find((c) => c !== null);
+  const band = Math.min(
+    Math.floor((core?.x ?? 0) / plotWidth),
+    Math.ceil(width / plotWidth) - 1,
+  );
+  return withForcedPoint(
+    generateNeutralZone(seed, width, content, content.mapgen),
+    forced,
+    band,
+    { terrain: content.terrain, points: content.points, plotWidth },
+  );
+}
+
+/**
+ * Build the battle a selection names. Deterministic in the selection and the
+ * forced point (the debug option; off by default).
+ */
+export function buildSample(
+  sel: SampleSelection,
+  forced: ForcedPoint = 'off',
+): Sample {
   const board =
     sel.player === REFINING_BOARD
       ? refiningDemoTeam(DEFAULT_SEED, content)
@@ -160,8 +196,13 @@ export function buildSample(sel: SampleSelection): Sample {
       { threats: threatsConfig, mapgen: content.mapgen },
     );
     const boss = c === 'boss';
+    const zone = forcedZone(team, sel.seed, forced);
     return {
-      battle: { kind: 'pve', input: { team, threat, seed: sel.seed, round } },
+      battle: {
+        kind: 'pve',
+        input: { team, threat, seed: sel.seed, round },
+        ...(zone === undefined ? {} : { zone }),
+      },
       opponent: {
         name: `${archetypeText(a).name} threat, round ${String(round)}`,
         kind: boss ? 'boss' : 'pve',
@@ -210,10 +251,12 @@ export function buildSample(sel: SampleSelection): Sample {
   }
   const ghostBoard = REFERENCE_BOARDS.find((b) => b === a) ?? 'rush';
   const teamB = buildReferenceBoard(ghostBoard, content, content.mapgen);
+  const zone = forcedZone(team, sel.seed, forced);
   return {
     battle: {
       kind: 'versus',
       input: { teamA: team, teamB, seed: sel.seed, round: 1 },
+      ...(zone === undefined ? {} : { zone }),
     },
     opponent: {
       name: `ghost of the "${ghostBoard}" board`,
