@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v5.1
+Status: Draft v5.2
 
 ## Encounter types
 
@@ -22,8 +22,8 @@ The loop is defined in `01-run-structure.md` RS-1.
   - party size
   - round number
   - full team state: the party's map, every player's Core position,
-    buildings and conduits with their owners (border links included), and
-    run modifiers (CB-32, CP-6)
+    buildings (placed and stashed) and conduits with their owners (border
+    links included), and run modifiers (CB-32, CP-6)
   - the run's ID and seed, and a signature (TA-22a)
   - party members' Steam IDs (display names are looked up from Steam)
   - metadata: lives remaining and PvP record at that point (for optional
@@ -34,8 +34,9 @@ The loop is defined in `01-run-structure.md` RS-1.
 - **MM-1a [PROPOSED]** Snapshots are taken *before* the fight and are saved
   regardless of whether the party then wins or loses. Saving only winners
   would make the pool progressively harder than the real population.
-- **MM-1b [PROPOSED]** Snapshots contain no personal data beyond Steam IDs,
-  and a player can opt to appear anonymously to opponents.
+- **MM-1b [DECIDED]** Snapshots contain no personal data beyond Steam IDs.
+  **Steam persona names are shown on ghosts by default; a player can opt out
+  and appear anonymously** (issue #392).
 - **MM-1c [PROPOSED]** Each host has at most one snapshot per
   `(version, party size, round)` bucket; a newer run replaces it (TA-18).
 
@@ -50,10 +51,12 @@ The loop is defined in `01-run-structure.md` RS-1.
   - snapshots from any party that includes a member of the requesting party
     (which also covers the party's own snapshots)
   - ghosts this party has already fought in this run
-- **MM-4 [PROPOSED]** Selection among eligible snapshots is uniformly random
-  initially. Later refinements, in priority order: prefer recent snapshots;
-  prefer snapshots with a similar lives/record profile. What is practical
-  depends on what the Steam storage mechanism can query (TA-17).
+- **MM-4 [DECIDED]** **Ghost selection is uniform random among eligible
+  snapshots** (issue #392).
+  - **MM-4a [OPEN]** Any weighting (prefer recent snapshots; prefer
+    snapshots with a similar lives/record profile) is decided later from
+    online data (issue #368). What is practical depends on what the Steam
+    storage mechanism can query (TA-17).
 - **MM-5 [DECIDED]** If no eligible snapshot exists, a **PvE boss** is
   generated instead, based on the party's progress (see below).
 - **MM-6 [PROPOSED]** The ghost's board runs in the standard simulation
@@ -74,20 +77,23 @@ decides these [PROPOSED] details: the opponent is selected on entering the shop
 before the PvP battle (MM-7, MM-11); MM-3's member exclusion is "the same run"
 only, because a local pool has a single owner; ghosts already fought are
 excluded by owner and run, so one ghost is met at most once per run (MM-3);
-the local pool keeps the player's last five runs per owner and bucket, and a
-selection validates a bounded number of rows (`docs/rules-reference.md`,
-"Local pool limits");
+the local pool keeps the player's last five runs per owner and bucket
+(`GHOST_KEEP_PER_OWNER_BUCKET`), and a selection validates a bounded number
+of rows (`docs/rules-reference.md`, "Local pool limits");
 invalid snapshots are filtered out before one uniform draw (MM-4, MM-17); the
 power bound is the building-value formula in `docs/rules-reference.md`,
-"Ghosts"; signatures (MM-17, TA-22a) and the run seed and action log (MM-1d)
-are not implemented, the latter two are reserved fields.
+"Ghosts", applied per owner, with no extra tolerance for runs that spanned an
+update; signatures (MM-17, TA-22a) and the action log (MM-1d) are not
+implemented. The run's seed is stored as `mapSeed`; the separate `runSeed`
+and `actionLog` fields are reserved and rejected for now. The owner label is
+the party's player names.
 
 *Implementation note (W3-2; spec statuses unchanged).* MM-12 (b) is
 implemented for the prototype: a bundled file of bot-made snapshots (party
 sizes 1 to 4, rounds 1 to 6, four per bucket, owner labels "Bundled <strategy>
 bot") is a read-only second source beside the local pool, ignored when its game
-version differs from the build's; "Clear ghost pool" clears only the local
-rows. See `docs/rules-reference.md`, "Bundled ghosts".
+version differs from the build's; "Clear saved opponents" (Developer menu)
+clears only the local rows. See `docs/rules-reference.md`, "Bundled ghosts".
 
 ## Boss fallback
 
@@ -110,6 +116,9 @@ rows. See `docs/rules-reference.md`, "Bundled ghosts".
 - **MM-9a [DECIDED]** **A boss mechanic changes only the boss's own side**:
   its stronghold and its units. It never changes how the party's factory
   works: no effect on party buildings, production, flow, ramp or turrets.
+  **This applies to every PvE opponent, bosses and PvE threats alike**
+  (V-17): no mechanic may change how a player's factory functions, because
+  the player has no way of dealing with it at the time.
   Reason: the party gives no orders during a battle (pillar 4), so a
   mechanic that breaks their factory mid-fight cannot be answered. Rejected
   for this reason: jammers that stop party buildings, siege units that
@@ -119,27 +128,31 @@ rows. See `docs/rules-reference.md`, "Bundled ghosts".
 - **MM-9b [DECIDED]** **Roster and unlocks.** Each boss has a first round
   and a minimum party size. The boss is a uniform draw (from the seed)
   among the bosses that are unlocked at the round and fit the party size.
-  Linked Cores needs 2 or more players, so it is skipped in solo and the
-  draw picks another unlocked boss. A boss with only a data signature (a
+  Bonded needs 2 or more players, so it is skipped in solo and the
+  draw picks another unlocked boss. The first round and minimum party size
+  are `fromRound` and `minPartySize` in `content/threats.json`. A boss with only a data signature (a
   different wave mix and nothing new in the arena) was rejected as too close
   to ordinary PvE.
 - **MM-9c [DECIDED]** **No back-to-back repeats.** The boss met in the run's
   previous boss battle is left out of the draw when another boss is
   eligible. If it is the only eligible one, it is drawn again.
 - **MM-9d [PROPOSED]** **The bosses.** Each has one new arena rule, boss side
-  only (MM-9a). Names are working names; theme issue #393 renames them. All
-  numbers here are [PROPOSED].
+  only (MM-9a). Names are the display names in `content/presentation.en.json`
+  (`archetypes`); they are working names until the theme issue (#393). All five are implemented; their numbers are configuration
+  in `content/threats.json` (`archetypes`) and stay [PROPOSED]. Every boss
+  has the Boss's waves, including every third wave being all raiders; the
+  others add one mechanic each.
 
   | Boss | ID | From round | Party size | Mechanic (boss side only) | Counter |
   |------|----|-----------|------------|---------------------------|---------|
-  | Today's boss | `arch_boss` | 1 | any | Every third wave is all raiders (unchanged). The early, cold-start boss (MM-12). | Defence against swarms |
-  | Brood stronghold | `arch_boss_brood` | 3 | any | Each boss Core releases a burst of units when it falls below 75%, 50% and 25% of its starting health. A hit that crosses several thresholds releases each of them; destroying a Core releases any left. | Keep defence at home; do not go all-in on attack |
-  | Linked Cores | `arch_boss_linked` | 5 | 2–4 | The boss Cores share one health pool: damage to any of them comes off the pool, and they all fall together when it is empty. | Co-op: a strong lane carries a weak one; total pressure matters |
-  | Pylons | `arch_boss_pylons` | 7 | any | Each boss plot has a few shield pylons around its Core. That Core takes no damage while any of its pylons stands. Party units treat a shielded Core's pylons as their targets until they are down. | Enough units to break through; ranged units to reach pylons |
-  | Warlord | `arch_boss_warlord` | 9 | any | Every wave is led by one champion per boss plot: a Golem with many times a Golem's health, paid for out of the wave budget. | Focused damage and walls that delay it; Golem armor shrugs off splash |
+  | Boss | `arch_boss` | 1 | any | Every third wave is all raiders. The early, cold-start boss (MM-12). | Defence against swarms |
+  | Brood | `arch_boss_brood` | 3 | any | Each boss Core releases a burst of units when its health falls to each of the thresholds in `brood.thresholdsPercent` (75%, 50% and 25% of its starting health now). A hit that crosses several thresholds releases each of them; destroying a Core releases any left. | Keep defence at home; do not go all-in on attack |
+  | Bonded | `arch_boss_linked` | 5 | 2–4 | The boss Cores share one health pool: damage to any of them comes off the pool, and they all fall together when it is empty. | Co-op: a strong lane carries a weak one; total pressure matters |
+  | Pylons | `arch_boss_pylons` | 7 | any | Each boss plot has `pylons.perPlot` shield pylons (3 now) around its Core. That Core takes no damage from units while any of its pylons stands. Party units treat a shielded Core's pylons as their targets until they are down. | Enough units to break through; ranged units to reach pylons |
+  | Warlord | `arch_boss_warlord` | 9 | any | Every wave is led by one champion per boss plot: a Golem with up to `champion.healthPercent` of a Golem's health (600% now), paid for out of the wave budget. | Focused damage and walls that delay it; Golem armor shrugs off splash |
 
-  - Boss waves may use refining's units (Golem, caster, heavy). Only the
-    Warlord depends on them.
+  - Of refining's units, only the Golem appears in a boss, as the Warlord's
+    champion. No threat's wave mix uses the Golem, caster or heavy unit.
   - Pylons: the party's units change what they walk to only because of a
     building on the boss's side. The party's factory works as always, so
     this fits MM-9a. Pylons are boss-only buildings (CB-29), never in a shop.
@@ -162,7 +175,9 @@ rows. See `docs/rules-reference.md`, "Bundled ghosts".
   disguised as players. When the opponent is a boss, the shop before the PvP
   battle names the boss and explains its mechanic and a counter, so the party
   can build against it. A ghost is still described only as a "rival party"
-  (MM-7 is unchanged for ghosts).
+  (MM-7 is unchanged for ghosts). Implemented: the shop's next-battle panel
+  shows the boss's name, mechanic and counter (`bossMechanic*` and
+  `bossCounter*` in `content/presentation.en.json`).
 
 ## Pool health
 
@@ -193,12 +208,13 @@ rows. See `docs/rules-reference.md`, "Bundled ghosts".
   schema, legal placement on its own map (sources on nodes, nothing on
   natural features, every building and conduit inside its owner's plot, one
   valid Core position per player inside that player's plot, legal border
-  links), the generated map plus at most 3
-  added nodes per plot (Rich vein, RS-4i4), each on a buildable cell of that
+  links), the generated map plus at most `maxAddedNodesPerPlot`
+  added nodes per plot (`content/mapgen.json`; Rich vein, RS-4i4), each on a buildable cell of that
   plot, and a plausibility bound on total power for its round
   (TA-22). The generator and the numbers used for these checks are the
   installed version's; a snapshot from a run that spanned an update is
-  given more tolerance on the power bound. A snapshot that fails is skipped and another is drawn.
+  given more tolerance on the power bound (not implemented: the bound has no
+  such tolerance yet). A snapshot that fails is skipped and another is drawn.
 - **MM-17a [PROPOSED]** Players can report a ghost (TA-23).
 
 ## PvE encounters
@@ -213,8 +229,8 @@ rows. See `docs/rules-reference.md`, "Bundled ghosts".
   first for the Core of the plot it enters (CB-29). The party wins when all
   of the opponent's Cores are destroyed.
 - **MM-19 [DECIDED/PROPOSED detail]** The party is offered easy, medium, and
-  hard each round (RS-3). Each option shows the enemy archetype (rusher,
-  fortress, escalator, …) and the reward; the party votes (CP-16). The three options may be different
+  hard each round (RS-3). Each option shows the enemy archetype (Rusher,
+  Fortress, Escalator, …) and the reward; the party votes (CP-16). The three options may be different
   templates, not just the same enemy at three strengths.
 - **MM-20 [PROPOSED]** PvE battles are not snapshotted and do not affect the
   ghost pool.
