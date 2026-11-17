@@ -20,6 +20,7 @@ import {
 import {
   generateNeutralZone,
   neutralZoneProblem,
+  type NeutralZoneContent,
   zoneBlockedCells,
   type NeutralZone,
 } from './neutral-zone.js';
@@ -76,6 +77,9 @@ export interface BattleInput {
     SideOptions | null | undefined,
   ];
 }
+
+/** What a battle needs from the loaded content: the arena's and the zone's points. */
+export type BattleContent = ArenaContent & Pick<NeutralZoneContent, 'points'>;
 
 export interface BattleConfig {
   readonly sim: SimConfig;
@@ -213,7 +217,7 @@ function fail(error: BattleError): { ok: false; error: BattleError } {
  */
 export function startBattle(
   input: BattleInput,
-  content: ArenaContent,
+  content: BattleContent,
   config: BattleConfig,
   options: BattleOptions = {},
 ): StartBattleResult {
@@ -460,7 +464,7 @@ export function startBattle(
  */
 export function simulateBattle(
   input: BattleInput,
-  content: ArenaContent,
+  content: BattleContent,
   config: BattleConfig,
   options: BattleOptions = {},
 ): SimulateBattleResult {

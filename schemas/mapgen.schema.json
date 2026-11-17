@@ -100,7 +100,12 @@
       "required": ["depth", "lakes", "cliffs", "maxAttempts"],
       "additionalProperties": false,
       "properties": {
-        "depth": { "type": "integer", "minimum": 1 },
+        "depth": {
+          "description": "Rows of the zone. Odd: the points of interest sit on the middle row.",
+          "type": "integer",
+          "minimum": 1,
+          "not": { "multipleOf": 2 }
+        },
         "lakes": {
           "type": "object",
           "required": [

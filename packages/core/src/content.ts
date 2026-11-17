@@ -3,6 +3,8 @@
 import type { BuildingConfig } from './buildings.js';
 import { loadBuildings } from './buildings.js';
 import { unwrapOrThrow } from './load-util.js';
+import type { PointsConfig } from './points.js';
+import { loadPoints } from './points.js';
 import type { PresentationConfig } from './presentation.js';
 import { loadPresentation } from './presentation.js';
 import type { ResourceConfig } from './resources.js';
@@ -18,6 +20,7 @@ export interface RawContent {
   readonly terrain: unknown;
   readonly units: unknown;
   readonly buildings: unknown;
+  readonly points: unknown;
   readonly presentation: unknown;
 }
 
@@ -26,6 +29,7 @@ export interface Content {
   readonly terrain: TerrainConfig;
   readonly units: UnitConfig;
   readonly buildings: BuildingConfig;
+  readonly points: PointsConfig;
   readonly presentation: PresentationConfig;
 }
 
@@ -35,7 +39,7 @@ export type ContentLoadResult =
 
 /**
  * Load all content: resources, then terrain and units, then buildings, then
- * presentation. A file that fails stops the files that depend on it, so the
+ * presentation (points have no dependency). A file that fails stops the files that depend on it, so the
  * errors come from the first broken layer(s), each prefixed with its file.
  */
 export function loadAllContent(raw: RawContent): ContentLoadResult {
@@ -50,8 +54,11 @@ export function loadAllContent(raw: RawContent): ContentLoadResult {
   if (!terrain.ok) prefixed('terrain', terrain.errors);
   const units = loadUnits(raw.units);
   if (!units.ok) prefixed('units', units.errors);
+  const points = loadPoints(raw.points);
+  if (!points.ok) prefixed('points', points.errors);
 
-  if (!resources.ok || !terrain.ok || !units.ok) return { ok: false, errors };
+  if (!resources.ok || !terrain.ok || !units.ok || !points.ok)
+    return { ok: false, errors };
 
   const buildings = loadBuildings(raw.buildings, {
     resources: resources.config,
@@ -80,6 +87,7 @@ export function loadAllContent(raw: RawContent): ContentLoadResult {
       terrain: terrain.config,
       units: units.config,
       buildings: buildings.config,
+      points: points.config,
       presentation: presentation.config,
     },
   };

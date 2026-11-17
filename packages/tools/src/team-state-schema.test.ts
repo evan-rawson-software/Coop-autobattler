@@ -19,6 +19,7 @@ import {
 import {
   rawBuildings,
   rawMapgen,
+  rawPoints,
   rawPresentationEn,
   rawResources,
   rawTerrain,
@@ -50,6 +51,7 @@ describe('team-state.schema.json', () => {
     terrain: rawTerrain,
     units: rawUnits,
     buildings: rawBuildings,
+    points: rawPoints,
     presentation: rawPresentationEn,
   });
   const config = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });

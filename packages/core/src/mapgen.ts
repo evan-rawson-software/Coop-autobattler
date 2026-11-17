@@ -28,7 +28,7 @@ export interface MapgenCliffs {
 
 /** The neutral zone between the two boards of a battle (W1-8, CB-8). */
 export interface NeutralZoneConfig {
-  /** Rows of the zone. */
+  /** Rows of the zone. Odd: the points of interest sit on the middle row. */
   readonly depth: number;
   /** Lakes per plot of front width: the zone gets `plots * count` in total. */
   readonly lakes: {
@@ -73,7 +73,7 @@ export interface MapgenConfig {
   readonly sideMargin: number;
   /** A Core footprint must satisfy `y + footprintHeight <= height - this`. */
   readonly coreFrontClearance: number;
-  /** Tries per lake or cliff before the whole attempt is abandoned. */
+  /** Tries per lake, cliff or point of interest before the whole attempt is abandoned. */
   readonly placementTries: number;
   readonly maxAttempts: number;
   /** The neutral zone generated between the boards of a battle. */
@@ -149,6 +149,11 @@ function loadNeutralZone(
   if (!rec) return undefined;
   const L = 'neutralZone';
   const depth = readInt(rec, 'depth', 1, L, errors);
+  if (depth !== undefined && depth % 2 === 0) {
+    errors.push(
+      `${L}: "depth" must be odd, so that the points of interest have a middle row (got ${String(depth)}).`,
+    );
+  }
   const maxAttempts = readInt(rec, 'maxAttempts', 1, L, errors);
   const lakesRec = section(
     { lakes: rec['lakes'] },

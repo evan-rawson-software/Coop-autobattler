@@ -54,9 +54,17 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 12,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
-        "hash": "801f04c1",
+        "hash": "186d53b8",
         "attempts": 1
       }
     }
@@ -146,9 +154,17 @@
               "feature": "ter_cliff"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 21,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
-        "hash": "aa73539d",
+        "hash": "d188d7be",
         "attempts": 1
       }
     }
@@ -298,9 +314,24 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 21,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 1,
+              "band": 2,
+              "x": 59,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
-        "hash": "6711dd58",
+        "hash": "693a7945",
         "attempts": 1
       }
     }
@@ -480,9 +511,459 @@
               "feature": "ter_lake"
             }
           ],
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 13,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 1,
+              "band": 2,
+              "x": 64,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
+        },
+        "hash": "17ee90b3",
+        "attempts": 1
+      }
+    }
+  },
+  {
+    "id": "neutral-zone.points-all-bands",
+    "kind": "neutral-zone",
+    "description": "A 4-plot front where every band gets a point (width 96): the points are in band order with ids 0 to 3.",
+    "input": {
+      "seed": 9,
+      "partySize": 4
+    },
+    "expected": {
+      "result": {
+        "zone": {
+          "width": 96,
+          "depth": 7,
+          "features": [
+            {
+              "x": 81,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 82,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 83,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 86,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 87,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 7,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 8,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 86,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 87,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 10,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 88,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 92,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 93,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 94,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 10,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 81,
+              "y": 4,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 88,
+              "y": 4,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 92,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 93,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 10,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 80,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 81,
+              "y": 5,
+              "feature": "ter_cliff"
+            }
+          ],
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 15,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 42,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 2,
+              "band": 2,
+              "x": 51,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 3,
+              "band": 3,
+              "x": 79,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
+        },
+        "hash": "c047fe0c",
+        "attempts": 1
+      }
+    }
+  },
+  {
+    "id": "neutral-zone.points-none",
+    "kind": "neutral-zone",
+    "description": "A 4-plot front where no band gets a point: pointsOfInterest is empty.",
+    "input": {
+      "seed": 6,
+      "partySize": 4
+    },
+    "expected": {
+      "result": {
+        "zone": {
+          "width": 96,
+          "depth": 7,
+          "features": [
+            {
+              "x": 19,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 20,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 59,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 60,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 61,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 39,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 60,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 61,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 62,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 29,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 30,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 38,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 39,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 57,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 58,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 29,
+              "y": 4,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 51,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 52,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 53,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 54,
+              "y": 5,
+              "feature": "ter_cliff"
+            }
+          ],
           "pointsOfInterest": []
         },
-        "hash": "093eb3d7",
+        "hash": "58e95e42",
+        "attempts": 1
+      }
+    }
+  },
+  {
+    "id": "neutral-zone.points-two-plots",
+    "kind": "neutral-zone",
+    "description": "A 2-plot front with a point in both bands (width 48).",
+    "input": {
+      "seed": 2,
+      "partySize": 2
+    },
+    "expected": {
+      "result": {
+        "zone": {
+          "width": 48,
+          "depth": 7,
+          "features": [
+            {
+              "x": 21,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 22,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 40,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 41,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 42,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 43,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 22,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 23,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 25,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 40,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 23,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 24,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 25,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 26,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 28,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 31,
+              "y": 4,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 25,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 26,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 27,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 28,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 31,
+              "y": 5,
+              "feature": "ter_cliff"
+            }
+          ],
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 13,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 33,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
+        },
+        "hash": "e52cb95e",
         "attempts": 1
       }
     }

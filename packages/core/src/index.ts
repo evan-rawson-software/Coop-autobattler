@@ -429,12 +429,24 @@ export {
   openFor,
 } from './arena-paths.js';
 export {
+  loadPoints,
+  loadPointsOrThrow,
+  MAX_POINT_BUFFS,
+  POINT_BUFF_KINDS,
+  type PointBuff,
+  type PointBuffKind,
+  type PointsConfig,
+  type PointsLoadContext,
+  type PointsLoadResult,
+} from './points.js';
+export {
   type GeneratedNeutralZone,
   generateNeutralZone,
   generateNeutralZoneWithStats,
   NEUTRAL_ZONE_STREAM,
   type NeutralZone,
   type NeutralZoneContent,
+  type PointOfInterest,
   neutralZoneProblem,
   zoneBlockedCells,
 } from './neutral-zone.js';
@@ -451,6 +463,7 @@ export { coreMaxHealth } from './max-health.js';
 export {
   type Battle,
   type BattleConfig,
+  type BattleContent,
   type BattleError,
   type BattleErrorCode,
   type BattleInput,

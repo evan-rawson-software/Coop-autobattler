@@ -303,12 +303,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "29b67f1d",
         "events": 252
       },
-      "eventLogHash": "92babaab"
+      "eventLogHash": "408b111f"
     }
   },
   {
@@ -615,12 +623,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "a8b03c73",
         "events": 200
       },
-      "eventLogHash": "18eb2e16"
+      "eventLogHash": "43c2ea42"
     }
   },
   {
@@ -927,12 +943,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "d07e2f1c",
         "events": 212
       },
-      "eventLogHash": "9a411e77"
+      "eventLogHash": "53d74b8b"
     }
   },
   {
@@ -1239,12 +1263,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "2e618166",
         "events": 224
       },
-      "eventLogHash": "e87df145"
+      "eventLogHash": "af692a19"
     }
   },
   {
@@ -1724,12 +1756,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "326b8002",
         "events": 267
       },
-      "eventLogHash": "b297f6d1"
+      "eventLogHash": "ea2ebac5"
     }
   },
   {
@@ -2209,12 +2249,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "85822fa2",
         "events": 215
       },
-      "eventLogHash": "0fac8230"
+      "eventLogHash": "35f4bc14"
     }
   },
   {
@@ -2694,12 +2742,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "510a61d3",
         "events": 264
       },
-      "eventLogHash": "65ac9d22"
+      "eventLogHash": "95aaf166"
     }
   },
   {
@@ -3179,12 +3235,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "d628b9cc",
         "events": 215
       },
-      "eventLogHash": "26159544"
+      "eventLogHash": "f4b89830"
     }
   },
   {
@@ -3478,12 +3542,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "6b0757cc",
         "events": 167
       },
-      "eventLogHash": "3ff4e996"
+      "eventLogHash": "0ec3291a"
     }
   },
   {
@@ -3777,12 +3849,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "2a8a652f",
         "events": 154
       },
-      "eventLogHash": "510d6d30"
+      "eventLogHash": "57a42734"
     }
   },
   {
@@ -4076,12 +4156,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "dde171d4",
         "events": 167
       },
-      "eventLogHash": "23a0f5b9"
+      "eventLogHash": "87eda995"
     }
   },
   {
@@ -4375,12 +4463,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "b535ab98",
         "events": 126
       },
-      "eventLogHash": "703c5e31"
+      "eventLogHash": "0c7bfaad"
     }
   },
   {
@@ -5172,12 +5268,20 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 20,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "384d0708",
         "events": 2916
       },
-      "eventLogHash": "6c1d47a2"
+      "eventLogHash": "57c92e31"
     }
   },
   {
@@ -5783,12 +5887,34 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 21,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 36,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 2,
+              "band": 3,
+              "x": 83,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
         "stateHash": "a25b50ae",
         "events": 509
       },
-      "eventLogHash": "a502fac3"
+      "eventLogHash": "908e748e"
     }
   },
   {
@@ -6354,12 +6480,41 @@
               "feature": "ter_cliff"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 38,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 2,
+              "band": 2,
+              "x": 66,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 3,
+              "band": 3,
+              "x": 89,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "615fe524",
         "events": 1161
       },
-      "eventLogHash": "467c88dc"
+      "eventLogHash": "3e4b67a6"
     }
   },
   {
@@ -6641,12 +6796,20 @@
           "width": 24,
           "depth": 7,
           "features": [],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "a9a7e2e4",
         "events": 233
       },
-      "eventLogHash": "48f12cc8"
+      "eventLogHash": "29072b8d"
     }
   },
   {
@@ -7213,12 +7376,41 @@
               "feature": "ter_cliff"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 38,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 2,
+              "band": 2,
+              "x": 66,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 3,
+              "band": 3,
+              "x": 89,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "048984b9",
         "events": 760
       },
-      "eventLogHash": "d79838a0"
+      "eventLogHash": "88d562ca"
     }
   },
   {
@@ -7598,12 +7790,27 @@
               "feature": "ter_cliff"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 38,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
         "stateHash": "8805a0e5",
         "events": 552
       },
-      "eventLogHash": "a5d351e0"
+      "eventLogHash": "06d2cd7e"
     }
   },
   {
@@ -8169,12 +8376,41 @@
               "feature": "ter_cliff"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 38,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 2,
+              "band": 2,
+              "x": 66,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 3,
+              "band": 3,
+              "x": 89,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "cbaae4fb",
         "events": 1079
       },
-      "eventLogHash": "b937e1ac"
+      "eventLogHash": "4dde4836"
     }
   },
   {
@@ -8555,12 +8791,27 @@
               "feature": "ter_cliff"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 38,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
         "stateHash": "be8e5809",
         "events": 162
       },
-      "eventLogHash": "36acaa54"
+      "eventLogHash": "1ca8404a"
     }
   },
   {
@@ -8942,12 +9193,27 @@
               "feature": "ter_cliff"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 38,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
         "stateHash": "0a5771df",
         "events": 107906
       },
-      "eventLogHash": "2f1f6499"
+      "eventLogHash": "cc90bfdf"
     }
   },
   {
@@ -9329,12 +9595,27 @@
               "feature": "ter_cliff"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 38,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
         "stateHash": "9a844f09",
         "events": 107906
       },
-      "eventLogHash": "84bc16ab"
+      "eventLogHash": "353017d9"
     }
   },
   {
@@ -9716,12 +9997,27 @@
               "feature": "ter_cliff"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 38,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
         "stateHash": "94828598",
         "events": 105507
       },
-      "eventLogHash": "09c3a19f"
+      "eventLogHash": "826c06f1"
     }
   },
   {
@@ -10002,12 +10298,20 @@
           "width": 24,
           "depth": 7,
           "features": [],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "b3eaa98a",
         "events": 402
       },
-      "eventLogHash": "621f1e70"
+      "eventLogHash": "412b4355"
     }
   },
   {
@@ -10288,12 +10592,20 @@
           "width": 24,
           "depth": 7,
           "features": [],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "9c519947",
         "events": 370
       },
-      "eventLogHash": "18a94262"
+      "eventLogHash": "6ae7d875"
     }
   },
   {
@@ -10673,12 +10985,27 @@
               "feature": "ter_cliff"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 38,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
         "stateHash": "9244007a",
         "events": 970
       },
-      "eventLogHash": "442c53b5"
+      "eventLogHash": "3bae3ab7"
     }
   },
   {
@@ -10767,12 +11094,20 @@
           "width": 24,
           "depth": 7,
           "features": [],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "e9474a36",
         "events": 1095
       },
-      "eventLogHash": "054b91c0"
+      "eventLogHash": "dc59906f"
     }
   },
   {
@@ -11378,12 +11713,34 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 21,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 36,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 2,
+              "band": 3,
+              "x": 83,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
         "stateHash": "ec7124c3",
         "events": 761
       },
-      "eventLogHash": "66a0c343"
+      "eventLogHash": "8cbe007c"
     }
   },
   {
@@ -11989,12 +12346,34 @@
               "feature": "ter_lake"
             }
           ],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 21,
+              "y": 3,
+              "buff": "poi_heal"
+            },
+            {
+              "id": 1,
+              "band": 1,
+              "x": 36,
+              "y": 3,
+              "buff": "poi_strength"
+            },
+            {
+              "id": 2,
+              "band": 3,
+              "x": 83,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
         },
         "stateHash": "47128244",
         "events": 939
       },
-      "eventLogHash": "1213cafe"
+      "eventLogHash": "6f5e1129"
     }
   },
   {
@@ -12275,12 +12654,20 @@
           "width": 24,
           "depth": 7,
           "features": [],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "18577565",
         "events": 767
       },
-      "eventLogHash": "92344088"
+      "eventLogHash": "31568825"
     }
   },
   {
@@ -12561,12 +12948,20 @@
           "width": 24,
           "depth": 7,
           "features": [],
-          "pointsOfInterest": []
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 4,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
         },
         "stateHash": "8784b857",
         "events": 270
       },
-      "eventLogHash": "19b7c8d4"
+      "eventLogHash": "350df81f"
     }
   }
 ]

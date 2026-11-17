@@ -75,7 +75,7 @@ non-package directory; from inside a workspace package use `pnpm -w sim`. Bad
 input prints an error and exits non-zero (2 for usage errors, 1 otherwise).
 
 ```
-pnpm sim map --seed 5 [--party 1]
+pnpm sim map --seed 5 [--party 1]   # also draws the neutral zone, points of interest as *
 pnpm sim battle --a rush --b fortify --seed 1 [--log events.json] [--ascii]
 pnpm sim pve --team boards/rush.json --archetype rusher --type medium --round 3 --seed 1
 pnpm sim batch --a rush --b fortify --count 300 --seed 1 [--time]

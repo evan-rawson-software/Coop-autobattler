@@ -3,6 +3,7 @@ import {
   loadEconomy,
   loadEvents,
   loadMapgen,
+  loadPoints,
   loadPresentation,
   loadSimConfig,
   loadResources,
@@ -13,6 +14,7 @@ import {
   type EconomyConfig,
   type EventsConfig,
   type MapgenConfig,
+  type PointsConfig,
   type PresentationConfig,
   type ResourceConfig,
   type SimConfig,
@@ -31,6 +33,7 @@ export interface LoadedContent {
   economy?: EconomyConfig;
   events?: EventsConfig;
   sim?: SimConfig;
+  points?: PointsConfig;
   threats?: ThreatsConfig;
   presentation?: PresentationConfig;
 }
@@ -113,6 +116,14 @@ export const contentRegistry: readonly ContentEntry[] = [
     needs: ['terrain'],
     load: (data, loaded) =>
       wrap(loadMapgen(data, { terrain: need(loaded, 'terrain') })),
+  },
+  {
+    key: 'points',
+    contentFile: 'points.json',
+    schemaFile: 'points.schema.json',
+    needs: ['mapgen'],
+    load: (data, loaded) =>
+      wrap(loadPoints(data, { plotWidth: need(loaded, 'mapgen').plotWidth })),
   },
   {
     key: 'sim',

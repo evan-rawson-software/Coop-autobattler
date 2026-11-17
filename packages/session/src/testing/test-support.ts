@@ -12,6 +12,7 @@ import buildingsJson from '../../../../content/buildings.json';
 import economyJson from '../../../../content/economy.json';
 import eventsJson from '../../../../content/events.json';
 import mapgenJson from '../../../../content/mapgen.json';
+import pointsJson from '../../../../content/points.json';
 import presentationJson from '../../../../content/presentation.en.json';
 import resourcesJson from '../../../../content/resources.json';
 import simJson from '../../../../content/sim.json';
@@ -34,6 +35,7 @@ export const content = loadAllContentOrThrow({
   terrain: terrainJson,
   units: unitsJson,
   buildings: buildingsJson,
+  points: pointsJson,
   presentation: presentationJson,
 });
 export const mapgenConfig = loadMapgenOrThrow(mapgenJson, {

@@ -2,6 +2,7 @@ import { renderTeamStateAscii } from './ascii-render.js';
 import { describe, expect, test } from 'vitest';
 import buildingsJson from '../../../content/buildings.json';
 import mapgenJson from '../../../content/mapgen.json';
+import pointsJson from '../../../content/points.json';
 import presentationJson from '../../../content/presentation.en.json';
 import resourcesJson from '../../../content/resources.json';
 import terrainJson from '../../../content/terrain.json';
@@ -43,6 +44,7 @@ const content = loadAllContentOrThrow({
   terrain: terrainJson,
   units: unitsJson,
   buildings: buildingsJson,
+  points: pointsJson,
   presentation: presentationJson,
 });
 const config = loadMapgenOrThrow(mapgenJson, { terrain: content.terrain });

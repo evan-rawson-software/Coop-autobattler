@@ -374,6 +374,15 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 | `MAX_UNIT_REACH`       | 1 920               | `reach` of a unit (eight cells)                                           |
 | `MAX_SEPARATION_CAP`   | 480                 | `separationCap` in `sim.json` (`separationPercent` is 0 to 100)           |
 
+In `points.json` (points of interest, "The neutral zone"): `chancePercent` is
+0 to 100; `bandMarginCells` is at least 0 and twice it must be below
+`plotWidth` (the loader checks this when it knows the mapgen file, `pnpm
+validate:content` always does; the generator also treats a band with no column
+left as having no point); `buffs` has 1 to 16 entries, each with a unique `id`
+matching `poi_[a-z0-9_]+`, a `kind` of `unit_strength` or `heal`, and an
+integer `weight` from 1 to 1000. `neutralZone.depth` in `mapgen.json` must be
+odd (the loader and `mapgen.schema.json` refuse an even one).
+
 `offerWeights[].fromRound` in `economy.json` is an integer of at least 1 (no
 upper bound; a value above the last round just never offers the entry); the
 loader and `economy.schema.json` reject 0, negative and non-integer values, and
@@ -3057,7 +3066,7 @@ shot is recorded in step 3, before the step 4 attack events):
 | `overload_started`   | (none)                                                          |
 | `overload_level`     | `level` (the new level)                                         |
 | `overload_core_damage` | `side`, `core`, `damage`; and `pool` (as above) for a side with `linkedCores`, which has one such event per beat, naming its lowest living Core |
-| `zone_revealed`      | `zone` (the neutral zone); recorded by a battle at tick 0, first in the log |
+| `zone_revealed`      | `zone` (the neutral zone with its points of interest); recorded by a battle at tick 0, first in the log |
 | `battle_ended`       | `winner`, `reason`; recorded by a battle as its last event, `tick` is the last tick that ran |
 
 `target` is `{kind: "unit", unit}`, `{kind: "building", side, building}` or
@@ -3192,8 +3201,9 @@ terrain, a wall, a gate and a turret; a sealed base with one weak wall; four plo
 bonus at spawn). `stepArena` does not assume the gap is open ground (blocked
 gap cells are how the neutral zone enters), and does not end the battle: the
 neutral zone, the battle end and the top-level entry point are in "The neutral
-zone" and "Battles". Points of interest and neutral guards are deferred (CB-8
-to CB-8c): the zone format reserves a `pointsOfInterest` list for them.
+zone" and "Battles". The zone holds points of interest (CB-8d), but the arena
+ignores them: they do not block movement and nothing reads them yet. Guards,
+capture and buffs are deferred (CB-8e to CB-8g).
 
 ### Decided simplifications
 
@@ -3243,8 +3253,9 @@ Implemented in `packages/core/src/neutral-zone.ts`; parameters in
 `content/mapgen.json` under `neutralZone` (loader `mapgen.ts`); schema
 `schemas/neutral-zone.schema.json`; golden kind `neutral-zone`. A battle is
 fought on the two sides' boards with a small neutral zone between them (CB-8).
-Its lakes and cliffs are different every battle and hidden from players until
-the battle begins (the battle's first event reveals them).
+Its lakes, cliffs and points of interest are different every battle and
+hidden from players until the battle begins (the battle's first event reveals
+them).
 
 ### Format
 
@@ -3260,12 +3271,20 @@ JSON `{ width, depth, features, pointsOfInterest }`:
   sorted by `(y, x)`; a cell not listed is open ground. A feature blocks
   movement exactly when its terrain entry says `blocksMovement` (the same flag
   the boards use).
-- `pointsOfInterest` is always `[]` for now. It is in the format so that the
-  format does not change when points of interest are added (TA-41a).
+- `pointsOfInterest` lists the points of interest (CB-8d) as `{id, band, x, y,
+  buff}`, sorted by `id`. `band` is the plot band: columns `band * plotWidth`
+  to `(band + 1) * plotWidth - 1` (clipped to `width - 1`), between side 0's
+  plot `band` and side 1's plot `N - 1 - band` (CB-8b). `id` counts from 0 in
+  band order, so ids and bands both increase along the list. `y` is always the
+  middle row `(depth - 1) / 2`; `x` is the column; `buff` is a buff ID of
+  `content/points.json`. A point is one cell. It does **not** block movement
+  and units walk over it; it never lies on a feature. There is at most one per
+  band. The arena ignores points for now (a battle plays out as if there were
+  none).
 
 ### Parameters (`content/mapgen.json`, `neutralZone`)
 
-`depth` (7), `lakes` `{countMinPerPlot, countMaxPerPlot, sizeMin, sizeMax}`
+`depth` (7, **odd**: points sit on the middle row), `lakes` `{countMinPerPlot, countMaxPerPlot, sizeMin, sizeMax}`
 (0 to 1 per plot, 3 to 8 cells), `cliffs` `{countMinPerPlot, countMaxPerPlot,
 lengthMin, lengthMax}` (0 to 1 per plot, 2 to 5 cells) and `maxAttempts` (64).
 The feature IDs are those of `lakes.feature` and `cliffs.feature` in the same
@@ -3274,6 +3293,15 @@ means per `plotWidth` columns of front width: `plots = ceil(width /
 plotWidth)` (a hand-made board narrower than a plot counts as one plot), and
 the zone's counts are `plots * countMinPerPlot` to `plots * countMaxPerPlot`.
 A four-player battle therefore gets up to four lakes and four cliffs.
+
+The points of interest read `content/points.json` (schema
+`schemas/points.schema.json`, loader `points.ts`): `chancePercent` (60),
+`bandMarginCells` (2) and `buffs` (a list of `{id, kind, weight}`; `poi_strength`
+of kind `unit_strength` and `poi_heal` of kind `heal`, both weight 1). The tries
+per point are `placementTries` of `mapgen.json`. The numbers of each buff kind
+are not in the file yet (CB-8g). `generateNeutralZone` takes the loaded points
+in its `content` argument (`content.points`); `startBattle` therefore needs
+`content.points` too.
 
 ### Constraints
 
@@ -3331,6 +3359,26 @@ and configuration), so a battle is reproducible from `(teamA, teamB, seed)`
      `(d1 + 3) mod 4` (`perp = 1`) from the last of those cells. Directions are
      indexed north, east, south, west. The try fails if any cell is outside the
      region or already holds a feature.
+  5. Points, after lakes and cliffs and after constraint 3 has been checked
+     (they take no part in it), from `pointsRng = A.child("points")` (nothing
+     is drawn from `A` itself; the lakes and cliffs draws are untouched, so
+     every zone keeps its features and attempt count). `y = (depth - 1) / 2`.
+     For `band = 0 .. plots - 1`, in this order:
+     1. `roll = pointsRng.nextInt(100)`, always drawn. The band has no point
+        unless `roll < chancePercent`.
+     2. `lo = band * plotWidth + bandMarginCells`, `hi = min((band + 1) *
+        plotWidth - 1, width - 1) - bandMarginCells`. If `lo > hi` the band has
+        no point and nothing more is drawn for it. Otherwise up to
+        `placementTries` tries: `x = between(pointsRng, lo, hi)`; the try
+        succeeds when the 3 x 3 cells around `(x, y)` all lie inside the zone
+        and none holds a `blocksMovement` feature; the first success ends the
+        tries. If every try fails the band has no point (the attempt does not
+        fail).
+     3. For a band that got a point: `i = pickWeightedIndex(pointsRng,
+        weights)` with the buffs' `weight`s in file order (exactly one
+        `nextInt(totalWeight)`; the first index whose running total exceeds the
+        draw), and the point is `{id: number of points so far, band, x, y,
+        buff: buffs[i].id}`.
 - After placement, constraint 3 is checked on the open cells; if it fails the
   attempt fails. A failed attempt is simply replaced by attempt `a + 1`. If
   all attempts fail an error is raised. With the standard content, over 500
@@ -3341,11 +3389,13 @@ and configuration), so a battle is reproducible from `(teamA, teamB, seed)`
 
 Input `{seed, partySize}`; the width is `partySize * plotWidth`. Result
 `{zone, hash, attempts}` with `hash = hashJson(zone)`. Vectors:
-`golden/neutral-zone.json`, one per party size 1 to 4.
+`golden/neutral-zone.json`, one per party size 1 to 4, plus a four-plot zone
+with a point in every band, one with no point and a two-plot zone with two.
 
 ### Samples
 
-One plot (seed 7, first attempt; `y = 0` is side 0's edge, `~` lake, `#` cliff):
+`*` is a point of interest. One plot (seed 7, first attempt; `y = 0` is side 0's
+edge, `~` lake, `#` cliff; this one has no point):
 
 ```
 ........................
@@ -3357,16 +3407,31 @@ One plot (seed 7, first attempt; `y = 0` is side 0's edge, `~` lake, `#` cliff):
 ........................
 ```
 
-Four plots (seed 3, first attempt):
+Four plots (seed 3, first attempt; one point, in band 3, `poi_strength` at
+`(90, 3)`; bands 0 to 2 rolled no point):
 
 ```
 ................................................................................................
 ................................................................................................
 ...............................###..............................................................
-................................##..............................................................
+................................##........................................................*.....
 ................................................................................................
 .........................................................................#####..................
 ................................................................................................
+```
+
+Two plots (seed 2, first attempt; a point in each band: `poi_strength` at
+`(13, 3)` and `poi_heal` at `(33, 3)`). `pnpm sim map --seed 2 --party 2` prints
+this picture, with the point list, under the board map:
+
+```
+................................................
+................................................
+.....................~~.................####....
+.............*........~~.~.......*......#.......
+.......................~~~~.~..#................
+.........................~~~~..#................
+................................................
 ```
 
 ## Battles

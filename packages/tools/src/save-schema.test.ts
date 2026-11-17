@@ -13,6 +13,7 @@ import {
 import {
   rawBuildings,
   rawMapgen,
+  rawPoints,
   rawPresentationEn,
   rawResources,
   rawTerrain,
@@ -42,6 +43,7 @@ describe('save.schema.json', () => {
     terrain: rawTerrain,
     units: rawUnits,
     buildings: rawBuildings,
+    points: rawPoints,
     presentation: rawPresentationEn,
   });
   const mapgenConfig = loadMapgenOrThrow(rawMapgen, {

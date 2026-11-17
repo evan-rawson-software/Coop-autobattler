@@ -17,7 +17,7 @@ import {
   runTeamStateOps,
   sortedKeys,
   startBattle,
-  type ArenaContent,
+  type BattleContent,
   type Json,
   type MapgenConfig,
   type ScheduledWave,
@@ -156,7 +156,7 @@ function withModifiers(team: TeamState, raw: Json | undefined): TeamState {
 }
 
 export function makeBattleKind(
-  content: ArenaContent,
+  content: BattleContent,
   mapgen: MapgenConfig,
   simConfig: SimConfig,
 ): SimulationFn {

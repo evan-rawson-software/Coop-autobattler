@@ -4,11 +4,13 @@
  */
 import {
   generateMap,
+  generateNeutralZone,
   generateThreat,
   hashJson,
   listLegalCorePositions,
   maxThreatRound,
   renderArenaAscii,
+  renderNeutralZoneAscii,
   renderMapAscii,
   startBattle,
   startPveBattle,
@@ -56,12 +58,28 @@ export function mapCommand(
   const cores = Array.from({ length: map.partySize }, (_, p) =>
     listLegalCorePositions(map, ctx.content, ctx.mapgen, p),
   ).flat();
+  const zone = generateNeutralZone(
+    args.seed,
+    map.width,
+    ctx.content,
+    ctx.mapgen,
+  );
   const lines = [
     `Map: seed ${String(args.seed)}, party size ${String(args.party)}, ${String(map.width)} x ${String(map.height)} cells`,
     renderMapAscii(map, ctx.content),
     `Resource nodes: ${map.nodes.map((n) => `${n.resource}@(${String(n.x)},${String(n.y)})`).join(' ')}`,
     `Legal Core positions: ${String(cores.length)}`,
     `Map hash: ${hashJson(map)}`,
+    `Neutral zone, if this seed were the battle seed (~ lake, # cliff, * point of interest): points ${String(zone.pointsOfInterest.length)}, hash ${hashJson(zone)}`,
+    renderNeutralZoneAscii(
+      zone,
+      ctx.mapgen.lakes.feature,
+      ctx.mapgen.cliffs.feature,
+    ),
+    ...zone.pointsOfInterest.map(
+      (p) =>
+        `Point ${String(p.id)}: band ${String(p.band)}, (${String(p.x)},${String(p.y)}), ${p.buff}`,
+    ),
   ];
   return { text: lines.join('\n') };
 }

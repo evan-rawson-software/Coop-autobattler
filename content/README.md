@@ -18,6 +18,7 @@ art. Every file here is validated against a schema in [`../schemas/`](../schemas
 | `sim.json`             | Battle constants (ticks per second, buffer size, breach costs, aggro and separation, modifier caps, Overload, time limit) | `schemas/sim.schema.json`          |
 | `economy.json`         | Gold, starting kit, shop size, re-roll/sell rules, battle rewards, offer and tier odds | `schemas/economy.schema.json`      |
 | `events.json`          | Event definitions (type, weight, params) and the run modifiers a Shrine or a Pact offers | `schemas/events.schema.json`       |
+| `points.json`          | Points of interest of the neutral zone: chance per plot band, margin, buffs (CB-8d) | `schemas/points.schema.json`       |
 | `threats.json`         | PvE threats: budget curve (SC-1), unit prices, per-plot limits, ranged mix, layout parameters, archetype and boss templates | `schemas/threats.schema.json`      |
 | `presentation.en.json` | English names and descriptions for buildings, units, terrain, archetypes, event types and run modifiers, plus the effect-sentence templates, kind labels, "needs" words and screen texts | `schemas/presentation.schema.json` |
 

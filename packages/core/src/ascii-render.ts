@@ -172,7 +172,7 @@ export function renderTeamStateAscii(
 // ---------------------------------------------------------------------------
 // Neutral zone
 
-/** ASCII picture of a zone, `y = 0` (side 0's edge) first: `~` lake, `#` cliff, `?` other, `.` open. */
+/** ASCII picture of a zone, `y = 0` (side 0's edge) first: `~` lake, `#` cliff, `?` other, `*` point of interest, `.` open. */
 export function renderNeutralZoneAscii(
   zone: NeutralZone,
   lakeFeature: string,
@@ -183,9 +183,12 @@ export function renderNeutralZoneAscii(
     let row = '';
     for (let x = 0; x < zone.width; x++) {
       const f = zone.features.find((c) => c.x === x && c.y === y)?.feature;
+      const isPoint = zone.pointsOfInterest.some((p) => p.x === x && p.y === y);
       row +=
         f === undefined
-          ? '.'
+          ? isPoint
+            ? '*'
+            : '.'
           : f === lakeFeature
             ? '~'
             : f === cliffFeature

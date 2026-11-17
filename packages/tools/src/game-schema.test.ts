@@ -25,6 +25,7 @@ import {
   rawEconomy,
   rawEvents,
   rawMapgen,
+  rawPoints,
   rawPresentationEn,
   rawResources,
   rawSim,
@@ -59,6 +60,7 @@ describe('run-state.schema.json with options, events and modifiers', () => {
     terrain: rawTerrain,
     units: rawUnits,
     buildings: rawBuildings,
+    points: rawPoints,
     presentation: rawPresentationEn,
   });
   const mapgen = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });
