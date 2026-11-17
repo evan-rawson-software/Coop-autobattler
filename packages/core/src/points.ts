@@ -4,6 +4,7 @@
  */
 
 import type { UnitConfig, UnitId } from './units.js';
+import { addInt, divCeil, mulInt } from './int.js';
 import {
   isRecord,
   readId,
@@ -68,6 +69,22 @@ export interface GuardsConfig {
   readonly leashCells: number;
   /** The units a guard can be, in file order (the order of the draw). */
   readonly units: readonly GuardUnit[];
+}
+
+/**
+ * The capture progress a side needs to take a point when its points of
+ * interest capture `speedPercent` percent faster (issue #426):
+ * `max(1, ceil(captureTicks * 100 / (100 + speedPercent)))`, integer math.
+ * With 0 it is `captureTicks`; the progress added per tick is unchanged.
+ */
+export function captureTicksFor(
+  captureTicks: number,
+  speedPercent: number,
+): number {
+  return Math.max(
+    1,
+    divCeil(mulInt(captureTicks, 100), addInt(100, speedPercent)),
+  );
 }
 
 /**

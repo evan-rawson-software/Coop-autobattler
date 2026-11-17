@@ -36,8 +36,18 @@ export interface BonusView {
   readonly held: readonly HeldModifier[];
 }
 
+/** The kinds whose value is a flat `amount`, not a `percent`. */
+function isAmountEffect(
+  e: ModifierEffect,
+): e is Extract<
+  ModifierEffect,
+  { kind: 'shop_income_flat' | 'unit_armor_flat' }
+> {
+  return e.kind === 'shop_income_flat' || e.kind === 'unit_armor_flat';
+}
+
 function effectPercent(e: ModifierEffect): number {
-  return e.kind === 'shop_income_flat' ? 0 : e.percent;
+  return isAmountEffect(e) ? 0 : e.percent;
 }
 
 function line(effect: ModifierEffect): BonusLine {
@@ -50,6 +60,10 @@ function totalKey(e: ModifierEffect): string {
     case 'building_health_percent':
       return `${e.kind}|${e.target}`;
     case 'unit_strength_percent':
+    case 'unit_move_speed_percent':
+    case 'unit_attack_speed_percent':
+    case 'unit_splash_percent':
+    case 'unit_armor_flat':
       return `${e.kind}|${(e.units ?? []).join(',')}`;
     default:
       return e.kind;
@@ -71,16 +85,18 @@ export function totalEffects(
       const key = totalKey(e);
       const prev = sums.get(key);
       if (prev === undefined) sums.set(key, e);
-      else if (prev.kind === 'shop_income_flat' && e.kind === prev.kind) {
-        sums.set(key, { ...prev, amount: prev.amount + e.amount });
-      } else if (prev.kind !== 'shop_income_flat') {
+      else if (isAmountEffect(prev)) {
+        if (isAmountEffect(e)) {
+          sums.set(key, { ...prev, amount: prev.amount + e.amount });
+        }
+      } else {
         sums.set(key, { ...prev, percent: prev.percent + effectPercent(e) });
       }
     }
   }
   return [...sums.values()]
     .map((e) =>
-      isGoldEffect(e)
+      isAmountEffect(e) || isGoldEffect(e)
         ? e
         : {
             ...e,

@@ -144,6 +144,31 @@
       "effects": [{ "kind": "unit_attack_speed_percent", "percent": 15 }]
     },
     {
+      "id": "mod_stone_skin",
+      "stackable": false,
+      "fromRound": 3,
+      "effects": [
+        { "kind": "unit_armor_flat", "amount": 1, "units": ["unit_golem"] }
+      ]
+    },
+    {
+      "id": "mod_wide_arcs",
+      "stackable": false,
+      "fromRound": 3,
+      "effects": [
+        {
+          "kind": "unit_splash_percent",
+          "percent": 50,
+          "units": ["unit_caster"]
+        }
+      ]
+    },
+    {
+      "id": "mod_claimstakers",
+      "stackable": false,
+      "effects": [{ "kind": "poi_capture_speed_percent", "percent": 50 }]
+    },
+    {
       "id": "mod_tithe",
       "stackable": true,
       "effects": [{ "kind": "shop_income_flat", "amount": 1 }]

@@ -266,6 +266,15 @@
     "mod_rapid_fire": {
       "name": "Rapid fire"
     },
+    "mod_stone_skin": {
+      "name": "Stone skin"
+    },
+    "mod_wide_arcs": {
+      "name": "Wide arcs"
+    },
+    "mod_claimstakers": {
+      "name": "Claimstakers"
+    },
     "mod_tithe": {
       "name": "Tithe"
     },

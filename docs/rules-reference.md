@@ -611,11 +611,14 @@ middle:
   duplicates, each a unit of `units.json`, **in the order of `units.json`**
   (the loader rejects any other order, so every definition has one canonical
   form and a held effect compares equal to it, see "Ghosts"). `units` is
-  allowed on `unit_strength_percent`, `unit_move_speed_percent` and
-  `unit_attack_speed_percent` (issue #424) and on no other effect kind. The two
-  speed kinds have their own range: `percent` an integer from 1 to
+  allowed on `unit_strength_percent`, `unit_move_speed_percent`,
+  `unit_attack_speed_percent` (issue #424), `unit_splash_percent` and
+  `unit_armor_flat` (issue #426) and on no other effect kind. The two
+  speed kinds and `unit_splash_percent` and `poi_capture_speed_percent` have
+  their own range: `percent` an integer from 1 to
   `MAX_SPEED_MODIFIER_PERCENT` (100), never negative (no drawback form, so no
-  pact uses them). A team state parses `units` the same way,
+  pact uses them); `unit_armor_flat` has `amount`, not `percent`, an integer
+  from 1 to `MAX_ARMOR_FLAT` (10). A team state parses `units` the same way,
   except that the unit IDs are not checked against `units.json` and their
   order is not checked (a held effect must equal its definition anyway).
   **Stacking has no cap** (issue #423): the percent sum of a kind is bounded
@@ -1955,7 +1958,10 @@ is kept sorted by `id`. `hp` starts at the unit definition's `health`; `maxHp` (
 speed modifier (issue #424, "Unit move and attack speed") also stores the
 optional `moveCooldownTicks` and `attackCooldownTicks`, **fixed at spawn**,
 each only when it differs from the unit definition's value; a unit without
-them uses the definition's. A port must not write them otherwise, so the state
+them uses the definition's. In the same way (issue #426) a unit spawned by a
+side that holds Stone skin or Wide arcs stores `armor` (the definition's plus
+the side's `unit_armor_flat` amounts, at most `MAX_ARMOR`) or `splashPercent`
+(see "Unit armor and splash modifiers"), each only when it differs. A port must not write them otherwise, so the state
 hash of every battle without speed modifiers is unchanged. **Units are circles that may overlap
 each other a little for a while but never solid ground** (soft collision,
 issue #82): see "Unit geometry" and step 5 of the tick. There is no
@@ -1964,7 +1970,7 @@ issue #82): see "Unit geometry" and step 5 of the tick. There is no
 A unit also stores `damage`, its attack damage **fixed at spawn**. All reads
 of a unit's stats (health, damage, range, cooldowns) go through one function,
 `unitStats(side, def, strengthPercent, healthPercent = 100, moveSpeedPercent =
-0, attackSpeedPercent = 0)`. With
+0, attackSpeedPercent = 0, armorBonus = 0, splashBonusPercent = 0)`. With
 `strengthPercent = P` above 0 it returns the definition with `health =
 mulPct(health, 100 + P)` and `damage = mulPct(damage, 100 + P)` (rounded
 down). With `moveSpeedPercent = S` or `attackSpeedPercent = S` above 0 the
@@ -1982,10 +1988,12 @@ current `unit_strength` bonus (see "In-battle ramp"; plus the side's
 `unitStrengthPercent` option, see "Side options"; plus the side's point bonus,
 see "Points of interest", "Buffs"), and the unit starts with
 `hp = health` and `damage` of the result; units already on the field are never
-changed afterwards. A unit's `armor` (CB-5h) is never stored in the unit and
-never scaled: it is read from the definition each time a hit on the unit is
-dealt (see "Units, combat and destruction", "Order of damage modifiers"), and
-`unitStats` returns it unchanged.
+changed afterwards. A unit's `armor` (CB-5h) is never scaled by strength: it is
+read each time a hit on the unit is dealt (see "Units, combat and destruction",
+"Order of damage modifiers"), from the definition, or from the unit's own
+`armor` when its side held Stone skin at its spawn (issue #426, "Unit armor and
+splash modifiers"); `unitStats` returns the definition's armor plus the side's
+`armorBonus`, at most `MAX_ARMOR`.
 
 **Splash** (issue #387). A unit definition may give `splash`, an object
 `{radiusSub, percent}`: `radiusSub` an integer from 1 to `MAX_SPLASH_RADIUS`
@@ -3775,7 +3783,7 @@ A battle whose zone has points (`placeGuards` was called) has `points` in the
 | `id`           | The point's id (the same order as `guards.posts`, entry `k` is post `k`).    |
 | `controller`   | The side that holds the point: -1 (nobody, the start), 0 or 1.               |
 | `progressSide` | The side whose progress `progress` is: -1, 0 or 1.                           |
-| `progress`     | Capture progress, 0 up to `captureTicks - 1`.                                |
+| `progress`     | Capture progress, 0 up to `captureTicks - 1` (`need - 1` of the side with Claimstakers). |
 | `held`         | `[ticks side 0 held it, ticks side 1 held it]`, from 0.                      |
 | `buff`         | The numbers of the point's buff (CB-8g, "Buffs"); absent: the point gives nothing. |
 
@@ -3852,8 +3860,9 @@ each point in `id` order, with `c0` and `c1` the counts of side 0 and side 1:
    controller:
    - if `progressSide != s`: `progressSide = s`, `progress = 0` and
      `point_capture_started {point, side: s}` is recorded;
-   - `progress += min(count, maxCapturersCounted)`;
-   - if `progress >= captureTicks`: `previous = controller`, `controller =
+   - `progress += min(count, maxCapturersCounted)` (the progress added per
+     tick is never scaled);
+   - if `progress >= need_s`: `previous = controller`, `controller =
      s`, `progress = 0`, `progressSide = -1` and `point_captured {point,
      side: s, previous}` is recorded.
 4. If exactly one side is in range and it **is** the controller: nothing
@@ -3862,12 +3871,24 @@ each point in `id` order, with `c0` and `c1` the counts of side 0 and side 1:
 5. If no unit of a side is in range: `progress` falls by 1 if above 0, and
    when it is 0 `progressSide = -1`.
 
+`need_s` is the take threshold of side `s` (issue #426, Claimstakers): with
+`P_s` the sum of the `poi_capture_speed_percent` percents of `s`'s modifiers
+(checked `addInt`; 0 without any), `need_s = max(1, ceil(captureTicks * 100 /
+(100 + P_s)))` in integers (`captureTicksFor`). With 0 it is `captureTicks`;
+50 percent turns 50 into 34, 100 percent into 25. It is computed once at the
+start of the step for each side from the side's `teams[s].modifiers` (already
+part of the state, so a restored battle needs nothing more) and applies to the
+capturing side only; the decay (rule 5), the contested rule (2), the
+controller rule (4) and the guarded rule (1) are unchanged, and `progress`
+stays an integer from 0 to `need_s - 1`. A progress held when a side's
+threshold is below it cannot happen: modifiers are fixed for the whole battle.
+
 Last, still in the pass of that point: if `controller` is 0 or 1,
 `held[controller] += 1`. So the tick of a capture counts for the new
 controller, and `held[0] + held[1]` is at most the number of ticks.
 
 With the shipped numbers (`captureTicks` 50, `maxCapturersCounted` 3) one
-unit takes a free point in 50 ticks (`point_captured` 49 ticks after
+unit takes a free point in 50 ticks (34 with Claimstakers) (`point_captured` 49 ticks after
 `point_capture_started`, which is recorded in the tick of the first
 progress), two units in 25, three or more in 17.
 
@@ -5384,6 +5405,9 @@ compounded, so each extra stack is worth relatively less than the one before:
 | `unit_strength_percent` (optional `units`: unit IDs) | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena"); side-wide, and it comes only from run modifiers, never from an economy building (PP-8). A unit of type `u` spawns with the sum of the side's effects with no `units` plus those whose `units` list `u`, summed and applied once (never one application per effect). Without `units` an effect applies to every unit type, as before; a battle whose modifiers have no `units` is bit-identical to one before the field existed |
 | `unit_move_speed_percent` (optional `units`) | percent 1 to 100; shortens the move cooldown of units of the side at spawn, see "Unit move and attack speed" below |
 | `unit_attack_speed_percent` (optional `units`) | percent 1 to 100; shortens the attack cooldown of units of the side at spawn, same section |
+| `unit_armor_flat` (`amount` 1 to 10, optional `units`) | added to the armor of units of the side at spawn (issue #426), see "Unit armor and splash modifiers" below |
+| `unit_splash_percent` (percent 1 to 100, optional `units`) | added to the splash percent of units of the side with `splash` at spawn (issue #426), same section |
+| `poi_capture_speed_percent` (percent 1 to 100, side-wide) | shortens the capture threshold of the side's points of interest (issue #426), see "Capture step" |
 | `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
 | `shop_income_flat` (`amount`, not `percent`) | whole gold 1 to 10 added to every player's income per shop, see "Income"; **no effect in battle** |
 | `sell_refund_percent` | percent 1 to 90 added to `sellRefundPercent` for every player's sales, capped at a sum of 90, see "Shop"; **no effect in battle** |
@@ -5426,6 +5450,9 @@ optional `fromRound` (the first round the Shrine may offer it, default 1):
 | `mod_rapid_fire` | `unit_attack_speed_percent` +15 (issue #424) | no | 2 |
 | `mod_tithe` | `shop_income_flat` 1 (issue #425) | yes | 1 |
 | `mod_scrap_dealer` | `sell_refund_percent` +25 (50 to 75, issue #425) | no | 1 |
+| `mod_stone_skin` | `unit_armor_flat` 1, `units: [unit_golem]` (issue #426) | no | 3 |
+| `mod_wide_arcs` | `unit_splash_percent` +50, `units: [unit_caster]` (issue #426) | no | 3 |
+| `mod_claimstakers` | `poi_capture_speed_percent` +50 (issue #426) | no | 1 |
 
 **Pacts** (issue #413, RS-4i6). A modifier definition may carry `pact: true`
 (optional, absent means false). The loader requires a pact to be not
@@ -5521,6 +5548,41 @@ or an attack cooldown is read. Ghost snapshots need nothing new: a held
 modifier must equal its definition, be unlocked by the snapshot round
 (`fromRound`), and the number held is bounded by the event slots; no modifier
 adds to the ghost value bound (unit strength does not either).
+
+**Unit armor and splash modifiers** (issue #426). `unit_armor_flat` (`amount`,
+1 to `MAX_ARMOR_FLAT` = 10) and `unit_splash_percent` (`percent`, 1 to 100),
+both with the optional `units` of `unit_strength_percent`. At the spawn of a
+unit of type `u` (the same places as the speed kinds), `A` is the sum of the
+side's `unit_armor_flat` amounts that apply to `u` and `P` the sum of its
+`unit_splash_percent` percents that apply (checked `addInt`), and `unitStats`
+returns
+
+```
+armor          = min(MAX_ARMOR, def.armor + A)
+splash.percent = floor(def.splash.percent * (100 + P) / 100)   (only if def has splash)
+splash.radiusSub unchanged
+```
+
+The percents are summed and applied once, never one application per effect:
+Wide arcs on a caster (50) gives `floor(50 * 150 / 100)` = 75. A unit stores
+`armor` or `splashPercent` only if it differs from the definition (`armor` when
+`A > 0` and the cap does not hide it, `splashPercent` when `P > 0` and the unit
+has `splash` and the result differs), keeps it for its lifetime, and taking a
+modifier later changes no unit already on the field; a battle without these
+modifiers has the same state and hash as before. Wherever armor is read (a hit
+on a unit: unit attacks, turret shots, secondary splash targets, "Order of
+damage modifiers") a unit's own `armor` is used if present, else the
+definition's; wherever a splash is applied the unit's own `splashPercent` is
+used if present, else the definition's percent. The damage order is unchanged:
+spawn damage, Overload, splash percent (secondary targets only), each target's
+armor. A unit without `splash` is unaffected by `unit_splash_percent`.
+
+Notes for a port: keep the two optional per-unit fields out of the state when
+they equal the definition's, and read armor and splash through one helper that
+prefers the unit's field. Ghost snapshots need nothing new (see below): neither
+kind changes any value a snapshot holds, so the ghost bound is untouched and a
+held Stone skin or Wide arcs is validated like any other modifier (equal to its
+definition, unlocked by `fromRound`, within the event slots).
 
 ### Party votes (CP-16)
 

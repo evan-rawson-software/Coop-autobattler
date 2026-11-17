@@ -242,6 +242,13 @@ The rule for a change that makes saved data unreadable:
   The gold modifiers (issue #425) add two more allowed effect kinds,
   `shop_income_flat` (`amount` 1 to 10) and `sell_refund_percent` (`percent`
   1 to 90), again a new allowed value, so no format number is raised.
+  The feature-linked modifiers (issue #426) add three more allowed effect
+  kinds: `unit_armor_flat` (`amount` 1 to 10, optional `units`),
+  `unit_splash_percent` (`percent` 1 to 100, optional `units`) and
+  `poi_capture_speed_percent` (`percent` 1 to 100), again new allowed values,
+  so no format number is raised. The arena state is not a saved format; its
+  new optional unit fields `armor` and `splashPercent` are omitted unless a
+  modifier changes them.
   The Blueprint event (issue #412) adds one more entry shape to `nextShop`,
   `{kind: "held_offer", def}`: it is the same optional field, present only
   between the event and the end of that shop, so no format number is raised.

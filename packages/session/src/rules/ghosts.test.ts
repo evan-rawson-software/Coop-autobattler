@@ -568,6 +568,59 @@ describe('validation', () => {
     ).toBe(false);
   });
 
+  test('feature-linked modifiers (issue #426): held like any modifier, none raises the ghost bound', async () => {
+    const { ctx, good } = await setup();
+    const withMods = (mods: readonly object[]) => ({
+      ...clone(good),
+      team: { ...clone(good.team), modifiers: mods },
+    });
+    const held = (id: string) => {
+      const def = ctx.events.modifiers.find((m) => m.id === id);
+      return { id, effects: def?.effects };
+    };
+    for (const id of ['mod_stone_skin', 'mod_wide_arcs', 'mod_claimstakers']) {
+      const def = ctx.events.modifiers.find((m) => m.id === id);
+      expect(def, id).toBeDefined();
+      // Held at a round it is offered from: valid, and the value bound is the
+      // same as for a snapshot without it.
+      const open = {
+        ...ctx,
+        events: {
+          ...ctx.events,
+          modifiers: ctx.events.modifiers.map((m) =>
+            m.id === id ? { ...m, fromRound: 1 } : m,
+          ),
+        },
+      };
+      expect(validateGhostSnapshot(withMods([held(id)]), open).ok, id).toBe(
+        true,
+      );
+      // Not offered before its round, and only once.
+      const early = validateGhostSnapshot(withMods([held(id)]), {
+        ...ctx,
+        events: {
+          ...ctx.events,
+          modifiers: ctx.events.modifiers.map((m) =>
+            m.id === id ? { ...m, fromRound: good.round + 1 } : m,
+          ),
+        },
+      });
+      expect(early.ok, id).toBe(false);
+      expect(
+        validateGhostSnapshot(withMods([held(id), held(id)]), ctx).ok,
+        id,
+      ).toBe(false);
+    }
+    // A changed number is not the definition.
+    const edited = withMods([
+      {
+        id: 'mod_claimstakers',
+        effects: [{ kind: 'poi_capture_speed_percent', percent: 51 }],
+      },
+    ]);
+    expect(validateGhostSnapshot(edited, ctx).ok).toBe(false);
+  });
+
   test('the control snapshots are valid', async () => {
     const { ctx, good } = await setup();
     expect(validateGhostSnapshot(clone(good), ctx).ok).toBe(true);

@@ -1051,6 +1051,7 @@ describe('event offers: one per type, up to three (issue #48)', () => {
       'mod_hornet_swarm',
       'mod_vanguard',
       'mod_scrap_dealer',
+      'mod_claimstakers',
     ]);
     const stackable = gameConfigs.events.modifiers
       .filter((m) => m.stackable)
@@ -1538,10 +1539,10 @@ describe('event follow-ups', () => {
 describe('a Shrine modifier changes the outcome of a real battle', () => {
   // A modifier far stronger than the shipped ones, so that the party's thin
   // board (it never wins without help) wins a battle it would have lost. The
-  // seed was found by searching seeds 1 to 40 (again for issue #291, when the kit walls became random shapes, for issue #423, and again for issue #424 and for issue #425, when more modifiers became offerable; the first of the seeds 1 to 40 that works is 4): at this
+  // seed was found by searching seeds 1 to 40 (again for issue #291, when the kit walls became random shapes, for issue #423, and again for issues #424, #425 and #426, when more modifiers became offerable; the first of the seeds 1 to 40 that works is 5): at this
   // seed the Shrine offers it and the second PvE battle flips from a loss to
   // a win.
-  const SEED = 4;
+  const SEED = 5;
   const events = loadEventsOrThrow({
     offerCount: 3,
     events: gameConfigs.events.events.map((e) => ({ ...e })),

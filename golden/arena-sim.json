@@ -19678,5 +19678,390 @@
       },
       "eventLogHash": "32070058"
     }
+  },
+  {
+    "id": "arena-sim.stone-skin",
+    "kind": "arena-sim",
+    "description": "Both sides have a golem next to a soldier, one cell apart, in the gap. Side 0 holds Stone skin (+1 golem armor: 3 to 4): its golem takes 2 from each soldier hit (6 less 4), side 1's golem takes 3 (6 less 3). The stats report pins the health of every unit and the state hash pins the armor a unit carries (a unit with changed armor has it in its state).",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 50,
+      "report": "stats",
+      "modifiersA": [
+        {
+          "id": "mod_stone_skin",
+          "effects": [
+            {
+              "kind": "unit_armor_flat",
+              "amount": 1,
+              "units": ["unit_golem"]
+            }
+          ]
+        }
+      ],
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_golem",
+          "x": 2,
+          "y": 18
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 2,
+          "y": 19
+        },
+        {
+          "side": 1,
+          "def": "unit_golem",
+          "x": 9,
+          "y": 19
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 9,
+          "y": 18
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 50,
+        "stateHash": "58f23399",
+        "events": 18,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "stats": [
+          [1, 250, 260, 6],
+          [2, 16, 40, 6],
+          [3, 245, 260, 6],
+          [4, 16, 40, 6]
+        ]
+      },
+      "eventLogHash": "c83cf88e"
+    }
+  },
+  {
+    "id": "arena-sim.wide-arcs",
+    "kind": "arena-sim",
+    "description": "Side 0 holds Wide arcs (+50% caster splash: 50 to 75 percent) and side 1 none. Each side's caster hits one soldier of the other side with a second soldier next to it: the neighbour takes 75 percent of the hit on side 0's cluster of targets and 50 percent on side 1's. The stats report pins the health of every unit.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 40,
+      "report": "stats",
+      "modifiersA": [
+        {
+          "id": "mod_wide_arcs",
+          "effects": [
+            {
+              "kind": "unit_splash_percent",
+              "percent": 50,
+              "units": ["unit_caster"]
+            }
+          ]
+        }
+      ],
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_caster",
+          "x": 2,
+          "y": 14
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 2,
+          "y": 19
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 19
+        },
+        {
+          "side": 1,
+          "def": "unit_caster",
+          "x": 9,
+          "y": 24
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 9,
+          "y": 19
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 10,
+          "y": 19
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 40,
+        "stateHash": "faf8e1da",
+        "events": 15,
+        "sides": [
+          {
+            "spawned": 3,
+            "alive": 3,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 3,
+            "alive": 3,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "stats": [
+          [1, 10, 28, 9],
+          [2, 22, 40, 6],
+          [3, 34, 40, 6],
+          [4, 4, 28, 9],
+          [5, 32, 40, 6],
+          [6, 22, 40, 6]
+        ]
+      },
+      "eventLogHash": "6266606a"
+    }
+  },
+  {
+    "id": "arena-sim.claimstakers",
+    "kind": "arena-sim",
+    "description": "Side 0 holds Claimstakers (points captured 50% faster: 50 capture ticks become 34). One soldier of side 0 stands on one point and one soldier of side 1 on another; after 40 ticks the first point is held by side 0 (taken at its 34th tick) while the second has progress 39 of 50 for side 1. The run is also saved and restored mid-way.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 40,
+      "report": "positions",
+      "restoreAt": [20],
+      "modifiersA": [
+        {
+          "id": "mod_claimstakers",
+          "effects": [
+            {
+              "kind": "poi_capture_speed_percent",
+              "percent": 50
+            }
+          ]
+        }
+      ],
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 2,
+          "y": 19
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 9,
+          "y": 19
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 2,
+            "y": 19
+          },
+          {
+            "id": 1,
+            "x": 9,
+            "y": 19
+          }
+        ],
+        "units": []
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 40,
+        "stateHash": "2d7fc396",
+        "events": 3,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [7, 0]
+          },
+          {
+            "id": 1,
+            "controller": -1,
+            "progressSide": 1,
+            "progress": 40,
+            "held": [0, 0]
+          }
+        ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
+        "positions": [
+          [1, 600, 4920],
+          [2, 2280, 4680]
+        ]
+      },
+      "eventLogHash": "1a08fbd1"
+    }
   }
 ]
