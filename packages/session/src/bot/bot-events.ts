@@ -10,7 +10,7 @@ import {
   addableNodeCells,
   isBorderEnd,
   occupancy,
-  tierPrice,
+  itemPrice,
   workshopOptions,
   type Content,
 } from '@game/core';
@@ -365,7 +365,7 @@ export function blueprintPick(
     if (t.score(o.def, 1) <= 0) continue;
     if (t.chainPartner(o.def) !== undefined) continue;
     if (t.random && t.isChainPiece(o.def) && o.def !== 'bld_foundry') continue;
-    const price = tierPrice(deps.content, o.def, 1);
+    const price = itemPrice(deps.content, o.def, 1);
     if (price <= gold && price > bestPrice) {
       bestPrice = price;
       best = o.id;

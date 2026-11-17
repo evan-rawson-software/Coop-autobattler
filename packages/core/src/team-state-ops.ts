@@ -10,13 +10,16 @@
  * from: {building, side}, to: {building, side}, cells: [{x, y}]} and
  * `eraseConduit` {actor, id}). The map is `generateMap(seed, partySize)`. The
  * result has one entry per op (`{ op, ok: true }` plus `id` for addToStash
- * and addConduit, or `{ op, ok: false, reason }`) and the final state.
+ * and addConduit, or `{ op, ok: false, reason }`, plus `tunnels`, the Tunnel
+ * pairs `[entrance, exit, distance]` after the op, once the state holds a Tunnel
+ * end) and the final state.
  */
 import { generateMap } from './generate-map.js';
 import type { Json } from './hash.js';
 import { loadMapOrThrow, type MapContent } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import { addConduit, type ConduitEndArg } from './conduits.js';
+import { tunnelEnds, tunnelPairs } from './tunnels.js';
 import {
   addNode,
   addToStash,
@@ -190,6 +193,17 @@ export function runTeamStateOps(
         );
       } else {
         results.push({ op: name, ok: false, reason: outcome.reason });
+      }
+      // A state with Tunnel ends (CB-9g) also reports its pairs after every
+      // op, as `[entrance, exit, distance]` in entrance order; a state
+      // without any ends adds nothing.
+      if (tunnelEnds(state, content).length > 0) {
+        const last = results[results.length - 1] as Record<string, Json>;
+        last['tunnels'] = tunnelPairs(state, content).map((p) => [
+          p.entrance,
+          p.exit,
+          p.distance,
+        ]);
       }
     }
     return { results, state };

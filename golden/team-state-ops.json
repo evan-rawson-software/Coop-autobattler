@@ -8301,5 +8301,1996 @@
         "hash": "40f4d006"
       }
     }
+  },
+  {
+    "id": "team-state-ops.tunnel-pairing",
+    "kind": "team-state-ops",
+    "description": "Tunnel pairing (CB-9g): an entrance pairs with the exit in the direction it faces, with at most 5 cells between (distance 6): pairs at distance 4 (north) and 6 (the longest); an exit 6 cells away (distance 7) is out of range, so both ends stay unpaired; an entrance turned east pairs with an exit in its row, and a nearer exit placed later takes the pair over (nearest wins); an end of owner 1 in owner 0's plot is refused with outside_own_plot; owner 1's own pair is separate. Each result lists the pairs [entrance, exit, distance] after the op.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "map": {
+        "width": 48,
+        "height": 16,
+        "partySize": 2,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": []
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 6,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 6,
+          "y": 9,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 9,
+          "y": 2,
+          "rotation": 90
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 6,
+          "x": 14,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 7,
+          "x": 18,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 8,
+          "x": 18,
+          "y": 8,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 2,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 9,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 2,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 10,
+          "x": 30,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 2,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 11,
+          "x": 30,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 12,
+          "x": 12,
+          "y": 2,
+          "rotation": 0
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": []
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2,
+            "tunnels": []
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3,
+            "tunnels": [
+              [1, 2, 4]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4,
+            "tunnels": [
+              [1, 2, 4]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 5,
+            "tunnels": [
+              [1, 2, 4]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 6,
+            "tunnels": [
+              [1, 2, 4]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 7,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 8,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5],
+              [7, 8, 6]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 9,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5],
+              [7, 8, 6]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "outside_own_plot",
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5],
+              [7, 8, 6]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 10,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5],
+              [7, 8, 6]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5],
+              [7, 8, 6]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 11,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5],
+              [7, 8, 6]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5],
+              [7, 8, 6],
+              [10, 11, 3]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 12,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 6, 5],
+              [7, 8, 6],
+              [10, 11, 3]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4],
+              [5, 12, 3],
+              [7, 8, 6],
+              [10, 11, 3]
+            ]
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 48,
+            "height": 16,
+            "partySize": 2,
+            "plotWidth": 24,
+            "features": [],
+            "nodes": []
+          },
+          "cores": [null, null],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 3,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 3,
+              "y": 6,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 3,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 6,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 4,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 6,
+              "y": 9,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 5,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 9,
+              "y": 2,
+              "rotation": 90,
+              "owner": 0
+            },
+            {
+              "id": 6,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 14,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 7,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 18,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 8,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 18,
+              "y": 8,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 10,
+              "def": "bld_tunnel_in",
+              "tier": 2,
+              "x": 30,
+              "y": 2,
+              "rotation": 0,
+              "owner": 1
+            },
+            {
+              "id": 11,
+              "def": "bld_tunnel_out",
+              "tier": 2,
+              "x": 30,
+              "y": 5,
+              "rotation": 0,
+              "owner": 1
+            },
+            {
+              "id": 12,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 12,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            }
+          ],
+          "stash": [
+            {
+              "id": 9,
+              "def": "bld_tunnel_in",
+              "tier": 2,
+              "owner": 1
+            }
+          ],
+          "nextId": 13,
+          "nextConduitId": [1, 1],
+          "conduits": []
+        },
+        "hash": "2497dc9c"
+      }
+    }
+  },
+  {
+    "id": "team-state-ops.tunnel-nearest-wins",
+    "kind": "team-state-ops",
+    "description": "Tunnel pairing, nearest wins (CB-9g): one entrance and two exits in its line take the nearer exit whatever the placing order; two entrances facing the same exit give it to the nearer one, and the other stays unpaired (it does not fall back to the farther exit behind); two entrances at the same distance from one exit from opposite sides give it to the lower building ID.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": []
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 8,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 10,
+          "y": 1,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 10,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 6,
+          "x": 10,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 7,
+          "x": 10,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 8,
+          "x": 16,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 9,
+          "x": 16,
+          "y": 6,
+          "rotation": 180
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 10,
+          "x": 16,
+          "y": 4,
+          "rotation": 0
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": []
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2,
+            "tunnels": []
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 6]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3,
+            "tunnels": [
+              [1, 2, 6]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 3, 3]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4,
+            "tunnels": [
+              [1, 3, 3]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 3, 3]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 5,
+            "tunnels": [
+              [1, 3, 3]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 3, 3]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 6,
+            "tunnels": [
+              [1, 3, 3]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 3, 3],
+              [5, 6, 3]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 7,
+            "tunnels": [
+              [1, 3, 3],
+              [5, 6, 3]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 3, 3],
+              [5, 6, 3]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 8,
+            "tunnels": [
+              [1, 3, 3],
+              [5, 6, 3]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 3, 3],
+              [5, 6, 3]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 9,
+            "tunnels": [
+              [1, 3, 3],
+              [5, 6, 3]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 3, 3],
+              [5, 6, 3]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 10,
+            "tunnels": [
+              [1, 3, 3],
+              [5, 6, 3]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 3, 3],
+              [5, 6, 3],
+              [8, 10, 2]
+            ]
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 1,
+            "plotWidth": 24,
+            "features": [],
+            "nodes": []
+          },
+          "cores": [null],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 3,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 3,
+              "y": 8,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 3,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 3,
+              "y": 5,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 4,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 10,
+              "y": 1,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 5,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 10,
+              "y": 3,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 6,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 10,
+              "y": 6,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 7,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 10,
+              "y": 7,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 8,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 16,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 9,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 16,
+              "y": 6,
+              "rotation": 180,
+              "owner": 0
+            },
+            {
+              "id": 10,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 16,
+              "y": 4,
+              "rotation": 0,
+              "owner": 0
+            }
+          ],
+          "stash": [],
+          "nextId": 11,
+          "nextConduitId": [1],
+          "conduits": []
+        },
+        "hash": "387e2dcd"
+      }
+    }
+  },
+  {
+    "id": "team-state-ops.tunnel-repair-on-move",
+    "kind": "team-state-ops",
+    "description": "Tunnel pairing follows the placement (CB-9g): moving the exit out of line unpairs, moving it nearer re-pairs at the shorter distance, a farther exit does not change a pair, turning the entrance away unpairs and back re-pairs, picking up the nearer exit brings the farther one into the pair, moving the entrance changes the distance, a move onto the entrance is refused (overlaps_building), and picking up the entrance unpairs everything.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": []
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 2,
+          "x": 5,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 8,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 90
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "returnToStash",
+          "actor": 0,
+          "id": 2
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "returnToStash",
+          "actor": 0,
+          "id": 1
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": []
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2,
+            "tunnels": []
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 4]
+            ]
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true,
+            "tunnels": []
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 2]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3,
+            "tunnels": [
+              [1, 2, 2]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 2]
+            ]
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true,
+            "tunnels": []
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true,
+            "tunnels": [
+              [1, 2, 2]
+            ]
+          },
+          {
+            "op": "returnToStash",
+            "ok": true,
+            "tunnels": [
+              [1, 3, 6]
+            ]
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true,
+            "tunnels": [
+              [1, 3, 3]
+            ]
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "overlaps_building",
+            "tunnels": [
+              [1, 3, 3]
+            ]
+          },
+          {
+            "op": "returnToStash",
+            "ok": true,
+            "tunnels": []
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 1,
+            "plotWidth": 24,
+            "features": [],
+            "nodes": []
+          },
+          "cores": [null],
+          "buildings": [
+            {
+              "id": 3,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 3,
+              "y": 8,
+              "rotation": 0,
+              "owner": 0
+            }
+          ],
+          "stash": [
+            {
+              "id": 1,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "owner": 0
+            }
+          ],
+          "nextId": 4,
+          "nextConduitId": [1],
+          "conduits": []
+        },
+        "hash": "09791668"
+      }
+    }
+  },
+  {
+    "id": "team-state-ops.tunnel-loop-refusals",
+    "kind": "team-state-ops",
+    "description": "A Tunnel pair is a conduit segment, so it counts for loops (CB-9c): the entrance (fed by a Merger) pairs with the nearer exit; the farther exit feeds a Splitter whose east output runs back to the Merger. That ring is accepted while the nearer exit stands (the farther exit is unpaired). Picking up the nearer exit, or moving it out of line, would pair the entrance with the farther exit and close the loop, so both are refused with would_loop (and nothing changes); turning the farther exit instead detaches its conduit first and is accepted.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": []
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 3,
+          "y": 9,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 3,
+          "y": 11,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 5,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 10
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 5,
+            "side": "east"
+          },
+          "to": {
+            "building": 1,
+            "side": "east"
+          },
+          "cells": [
+            {
+              "x": 4,
+              "y": 11
+            },
+            {
+              "x": 5,
+              "y": 11
+            },
+            {
+              "x": 5,
+              "y": 10
+            },
+            {
+              "x": 5,
+              "y": 9
+            },
+            {
+              "x": 5,
+              "y": 8
+            },
+            {
+              "x": 5,
+              "y": 7
+            },
+            {
+              "x": 5,
+              "y": 6
+            },
+            {
+              "x": 5,
+              "y": 5
+            },
+            {
+              "x": 5,
+              "y": 4
+            },
+            {
+              "x": 4,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "returnToStash",
+          "actor": 0,
+          "id": 3
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 3,
+          "x": 8,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 4,
+          "x": 3,
+          "y": 9,
+          "rotation": 90
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": []
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 4,
+            "tunnels": []
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3,
+            "tunnels": []
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 5,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 8,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 12,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "returnToStash",
+            "ok": false,
+            "reason": "would_loop",
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "would_loop",
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 1,
+            "plotWidth": 24,
+            "features": [],
+            "nodes": []
+          },
+          "cores": [null],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_merger",
+              "tier": 1,
+              "x": 3,
+              "y": 4,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 3,
+              "y": 5,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 3,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 3,
+              "y": 7,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 4,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 3,
+              "y": 9,
+              "rotation": 90,
+              "owner": 0
+            },
+            {
+              "id": 5,
+              "def": "bld_splitter",
+              "tier": 1,
+              "x": 3,
+              "y": 11,
+              "rotation": 0,
+              "owner": 0
+            }
+          ],
+          "stash": [],
+          "nextId": 6,
+          "nextConduitId": [4],
+          "conduits": [
+            {
+              "id": 4,
+              "owner": 0,
+              "from": {
+                "building": 1,
+                "side": "north"
+              },
+              "to": {
+                "building": 2,
+                "side": "south"
+              },
+              "cells": []
+            },
+            {
+              "id": 12,
+              "owner": 0,
+              "from": {
+                "building": 5,
+                "side": "east"
+              },
+              "to": {
+                "building": 1,
+                "side": "east"
+              },
+              "cells": [
+                {
+                  "x": 4,
+                  "y": 11
+                },
+                {
+                  "x": 5,
+                  "y": 11
+                },
+                {
+                  "x": 5,
+                  "y": 10
+                },
+                {
+                  "x": 5,
+                  "y": 9
+                },
+                {
+                  "x": 5,
+                  "y": 8
+                },
+                {
+                  "x": 5,
+                  "y": 7
+                },
+                {
+                  "x": 5,
+                  "y": 6
+                },
+                {
+                  "x": 5,
+                  "y": 5
+                },
+                {
+                  "x": 5,
+                  "y": 4
+                },
+                {
+                  "x": 4,
+                  "y": 4
+                }
+              ]
+            }
+          ]
+        },
+        "hash": "d48b2ec7"
+      }
+    }
+  },
+  {
+    "id": "team-state-ops.tunnel-mismatch-refusal",
+    "kind": "team-state-ops",
+    "description": "A Tunnel pair carries one resource fixed by its input conduit (CB-5b): Ore enters the entrance, the exit it pairs with has no conduit, and the farther exit feeds a Hangar (Power). Picking up or moving the nearer exit, which would carry Ore to the Hangar, is refused with resource_mismatch.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 3,
+          "y": 9,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_hangar",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 3,
+          "y": 11,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 5,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 10
+            }
+          ]
+        },
+        {
+          "op": "returnToStash",
+          "actor": 0,
+          "id": 3
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 3,
+          "x": 5,
+          "y": 7,
+          "rotation": 0
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": []
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 4,
+            "tunnels": []
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3,
+            "tunnels": []
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 5,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 8,
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "returnToStash",
+            "ok": false,
+            "reason": "resource_mismatch",
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "resource_mismatch",
+            "tunnels": [
+              [2, 3, 2]
+            ]
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 1,
+            "plotWidth": 24,
+            "features": [],
+            "nodes": [
+              {
+                "x": 3,
+                "y": 2,
+                "resource": "res_a"
+              }
+            ]
+          },
+          "cores": [null],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_extractor",
+              "tier": 1,
+              "x": 3,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_tunnel_in",
+              "tier": 1,
+              "x": 3,
+              "y": 5,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 3,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 3,
+              "y": 7,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 4,
+              "def": "bld_tunnel_out",
+              "tier": 1,
+              "x": 3,
+              "y": 9,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 5,
+              "def": "bld_hangar",
+              "tier": 1,
+              "x": 3,
+              "y": 11,
+              "rotation": 0,
+              "owner": 0
+            }
+          ],
+          "stash": [],
+          "nextId": 6,
+          "nextConduitId": [3],
+          "conduits": [
+            {
+              "id": 4,
+              "owner": 0,
+              "from": {
+                "building": 1,
+                "side": "north"
+              },
+              "to": {
+                "building": 2,
+                "side": "south"
+              },
+              "cells": [
+                {
+                  "x": 3,
+                  "y": 3
+                },
+                {
+                  "x": 3,
+                  "y": 4
+                }
+              ]
+            },
+            {
+              "id": 8,
+              "owner": 0,
+              "from": {
+                "building": 4,
+                "side": "north"
+              },
+              "to": {
+                "building": 5,
+                "side": "south"
+              },
+              "cells": [
+                {
+                  "x": 3,
+                  "y": 10
+                }
+              ]
+            }
+          ]
+        },
+        "hash": "2465310d"
+      }
+    }
   }
 ]

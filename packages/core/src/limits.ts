@@ -67,6 +67,10 @@ export const MAX_TIER_COST = 1_000_000;
 /** Largest `unitsPerProduction` of a unit producer tier (CB-13a). */
 export const MAX_UNITS_PER_PRODUCTION = 4;
 
+/** Largest `maxSpanCells` of a Tunnel entrance (CB-9g): the cells between its
+ * two ends. */
+export const MAX_TUNNEL_SPAN_CELLS = 12;
+
 /** Largest `outputPerBatch` of a refinery tier (CB-5d): the items of one batch
  * wait in its output store and leave one per tick. */
 export const MAX_OUTPUT_PER_BATCH = 1000;

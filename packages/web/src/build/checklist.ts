@@ -57,6 +57,7 @@ const FIX_KEY: Readonly<Record<ProblemKind, string | null>> = {
   output_faces_edge: null,
   stalled_output: 'uiFixStalled',
   broken_link: 'uiFixBroken',
+  unpaired_tunnel: null,
   stash: 'uiFixStash',
   free_nodes: null,
 };

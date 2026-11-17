@@ -39,7 +39,8 @@ import {
 import type { MapgenConfig } from './mapgen.js';
 import type { ResourceId } from './resources.js';
 import { decodeConduitId } from './conduit-ids.js';
-import { checkConduitList, parseConduits } from './conduits.js';
+import { checkConduitList, networkProblem, parseConduits } from './conduits.js';
+import { tunnelPairs } from './tunnels.js';
 import { parseTeamModifiers, type TeamModifier } from './modifiers.js';
 
 // ---------------------------------------------------------------------------
@@ -164,7 +165,9 @@ export type PlacementReason =
   | 'overlaps_building'
   | 'overlaps_conduit'
   | 'source_needs_node'
-  | 'node_reserved';
+  | 'node_reserved'
+  | 'resource_mismatch'
+  | 'would_loop';
 
 export type CoreReason =
   | 'invalid_owner'
@@ -186,6 +189,17 @@ export type OpResult<R extends string> =
 
 export type AddToStashResult =
   | { readonly ok: true; readonly state: TeamState; readonly id: number }
+  | OpFailure<StashReason>;
+
+export type AddItemToStashResult =
+  | {
+      readonly ok: true;
+      readonly state: TeamState;
+      /** The first building's ID (the entrance of a Tunnel). */
+      readonly id: number;
+      /** Every building added, in order. */
+      readonly ids: readonly number[];
+    }
   | OpFailure<StashReason>;
 
 export type AnyReason = PlacementReason | CoreReason | StashReason;
@@ -243,6 +257,35 @@ export function addToStash(
       ],
       nextId: id + 1,
     },
+  };
+}
+
+/**
+ * Add one shop item to a player's stash: the building `def`, and, for a Tunnel
+ * entrance, its exit as well (CB-9g: one item, two buildings, each its own
+ * stash entry of the same tier). The entrance's entry comes first. Same
+ * rejections as `addToStash`; nothing is added when any fails.
+ */
+export function addItemToStash(
+  state: TeamState,
+  content: Pick<TeamContent, 'buildings'>,
+  args: { def: string; tier: number; owner: number },
+): AddItemToStashResult {
+  const first = addToStash(state, content, args);
+  if (!first.ok) return first;
+  const def = content.buildings.get(args.def);
+  const partner =
+    def !== undefined && def.kind === 'route' ? def.partner : undefined;
+  if (partner === undefined) {
+    return { ok: true, state: first.state, id: first.id, ids: [first.id] };
+  }
+  const second = addToStash(first.state, content, { ...args, def: partner });
+  if (!second.ok) return second;
+  return {
+    ok: true,
+    state: second.state,
+    id: first.id,
+    ids: [first.id, second.id],
   };
 }
 
@@ -555,7 +598,9 @@ function checkActor(
 
 /**
  * Place a stashed building on the board. Free. Reasons, in order:
- * unknown_building, invalid_owner, not_owner, then those of `checkPlacement`.
+ * unknown_building, invalid_owner, not_owner, then those of `checkPlacement`,
+ * then, for a Tunnel end only, resource_mismatch and would_loop (the pair it
+ * brings into being is a conduit segment, CB-9g).
  */
 export function placeFromStash(
   state: TeamState,
@@ -594,20 +639,46 @@ export function placeFromStash(
     rotation: args.rotation as Rotation,
     owner: item.owner,
   };
+  const next: TeamState = {
+    ...state,
+    stash: state.stash.filter((s) => s.id !== item.id),
+    buildings: sortById([...state.buildings, placed]),
+  };
+  const pairing = tunnelNetworkFailure(next, content, def);
+  if (pairing !== null) return pairing;
+  return { ok: true, state: next };
+}
+
+/**
+ * A Tunnel end that is placed or moved can bring a pair into being, and the
+ * pair is a conduit segment (CB-9g): it must not close a loop (CB-9c) or carry
+ * a resource a building at the other end refuses (CB-5b). Other buildings
+ * cannot change the pairing, so they are not checked.
+ */
+function tunnelNetworkFailure(
+  next: TeamState,
+  content: TeamContent,
+  def: BuildingDef,
+): OpFailure<'resource_mismatch' | 'would_loop'> | null {
+  if (
+    def.kind !== 'route' ||
+    (def.routeType !== 'tunnel_in' && def.routeType !== 'tunnel_out')
+  ) {
+    return null;
+  }
+  const problem = networkProblem(next, content);
+  if (problem === null) return null;
   return {
-    ok: true,
-    state: {
-      ...state,
-      stash: state.stash.filter((s) => s.id !== item.id),
-      buildings: sortById([...state.buildings, placed]),
-    },
+    ok: false,
+    reason: problem.reason,
+    ...(problem.detail === undefined ? {} : { detail: problem.detail }),
   };
 }
 
 /**
  * Move and/or rotate a placed building in one step. The building's own
  * current cells do not count as overlap. Attached conduits are removed
- * (detachConduits). Free.
+ * (detachConduits). Free. A Tunnel end is checked as in `placeFromStash`.
  */
 export function moveBuilding(
   state: TeamState,
@@ -652,15 +723,29 @@ export function moveBuilding(
     ...state,
     buildings: state.buildings.map((b) => (b.id === item.id ? moved : b)),
   };
-  return { ok: true, state: detachConduits(next, item.id) };
+  const detached = detachConduits(next, item.id);
+  const pairing = tunnelNetworkFailure(detached, content, def);
+  if (pairing !== null) return pairing;
+  return { ok: true, state: detached };
 }
 
-/** Take a placed building off the board into the stash. Free. */
+/**
+ * Take a placed building off the board into the stash. Free. Taking a Tunnel
+ * end away can let another end pair in its place (a nearer exit hid a farther
+ * one): that is refused with `would_loop` or `resource_mismatch` when the new
+ * pair would close a loop or carry a resource its end refuses (CB-9g).
+ */
 export function returnToStash(
   state: TeamState,
-  _content: Pick<TeamContent, 'buildings'>,
+  content: TeamContent,
   args: { actor: number; id: number },
-): OpResult<'unknown_building' | 'invalid_owner' | 'not_owner'> {
+): OpResult<
+  | 'unknown_building'
+  | 'invalid_owner'
+  | 'not_owner'
+  | 'would_loop'
+  | 'resource_mismatch'
+> {
   const item = state.buildings.find((b) => b.id === args.id);
   if (item === undefined) return { ok: false, reason: 'unknown_building' };
   const denied = checkActor(state, args.actor, item.owner);
@@ -673,7 +758,13 @@ export function returnToStash(
       { id: item.id, def: item.def, tier: item.tier, owner: item.owner },
     ]),
   };
-  return { ok: true, state: detachConduits(next, item.id) };
+  const detached = detachConduits(next, item.id);
+  const def = content.buildings.get(item.def);
+  if (def !== undefined) {
+    const pairing = tunnelNetworkFailure(detached, content, def);
+    if (pairing !== null) return pairing;
+  }
+  return { ok: true, state: detached };
 }
 
 export type RaiseTierReason = 'unknown_building' | 'invalid_tier';
@@ -1150,6 +1241,49 @@ export function validateTeamState(
   return { ok: false, errors };
 }
 
+/**
+ * Tunnel pairs (CB-9g) are derived from placement, so a state cannot store a
+ * wrong one; this re-checks the derived pairing anyway (it is the one the
+ * flow uses): every pair has an entrance and an exit of one owner, both in
+ * that owner's plot, and no end is in two pairs (an exit claimed twice).
+ * Ends outside the owner's plot are refused by the placement rules.
+ */
+function checkTunnelPairs(
+  state: TeamState,
+  content: TeamContent,
+  errors: string[],
+): void {
+  const pairs = tunnelPairs(state, content);
+  if (pairs.length === 0) return;
+  const q = queryTeamMap(state, content.terrain);
+  const owner = new Map(state.buildings.map((b) => [b.id, b]));
+  const entrances = new Set<number>();
+  const exits = new Set<number>();
+  for (const p of pairs) {
+    const a = owner.get(p.entrance);
+    const b = owner.get(p.exit);
+    if (
+      a === undefined ||
+      b === undefined ||
+      a.owner !== b.owner ||
+      q.plotOf(a.x) !== a.owner ||
+      q.plotOf(b.x) !== b.owner
+    ) {
+      errors.push(
+        `tunnels: the pair of building ${String(p.entrance)} and ${String(p.exit)} is not inside one owner's plot.`,
+      );
+    }
+    if (entrances.has(p.entrance)) {
+      errors.push(`tunnels: entrance ${String(p.entrance)} is in two pairs.`);
+    }
+    if (exits.has(p.exit)) {
+      errors.push(`tunnels: exit ${String(p.exit)} is claimed twice.`);
+    }
+    entrances.add(p.entrance);
+    exits.add(p.exit);
+  }
+}
+
 function validateInner(
   data: unknown,
   content: TeamContent,
@@ -1426,6 +1560,7 @@ function validateInner(
     conduits,
   };
   checkConduitList(partial, content, errors);
+  checkTunnelPairs(partial, content, errors);
 
   if (errors.length > 0 || !isSafeInt(nextId) || nextConduitId === undefined) {
     return undefined;

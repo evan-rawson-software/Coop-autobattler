@@ -19,6 +19,7 @@ import {
   type SimConfig,
   type TeamState,
   buildingEnd,
+  unpairedTunnelEnds,
 } from '@game/core';
 import type { WebContent } from '../content.js';
 import { plural } from '../plural.js';
@@ -287,6 +288,7 @@ export type ProblemKind =
   | 'output_faces_edge'
   | 'stalled_output'
   | 'broken_link'
+  | 'unpaired_tunnel'
   | 'stash'
   | 'free_nodes';
 
@@ -531,6 +533,20 @@ export function deriveProblems(
         building: null,
       });
     }
+  }
+
+  // A Tunnel end with no partner does nothing (CB-9g): its own player is told.
+  for (const id of unpairedTunnelEnds(state, content)) {
+    const b = state.buildings.find((x) => x.id === id);
+    if (b === undefined) continue;
+    if (scope !== undefined && b.owner !== scope.acting) continue;
+    out.push({
+      id: `unpaired:${String(id)}`,
+      kind: 'unpaired_tunnel',
+      text: screenText(texts, 'problemTunnelUnpaired', { name: name(b) }),
+      focus: occ.cellsOf(b)[0] ?? { x: b.x, y: b.y },
+      building: id,
+    });
   }
 
   // A broken link is listed for both of its players (all of them in solo).

@@ -156,6 +156,44 @@ function crossoverSprite(): Pix {
   return p;
 }
 
+/** A Tunnel mouth: a dark arch in the route plate, the way in or out of the ground. */
+function tunnelMouth(p: Pix): void {
+  p.ellipse(8, 7, 5.5, 4.5, 'K');
+  p.rect(2, 7, 12, 6, 'K');
+  p.ellipse(8, 7.5, 4.5, 3.5, '1');
+  p.rect(3, 7, 10, 5, '1');
+  p.rect(3, 7, 1, 5, '0');
+  p.rect(12, 7, 1, 5, '0');
+}
+
+/** The entrance: a channel runs in at the bottom and disappears into the arch. */
+function tunnelInSprite(): Pix {
+  const p = routePlate();
+  tunnelMouth(p);
+  channel(p, 7, 15, 7, 8, 'T', 't');
+  head(p, 'n', 6, 6, 'T');
+  // A hint of the way on, over the top.
+  p.set(7, 2, 'S');
+  p.set(8, 2, 'S');
+  p.set(7, 3, 'S');
+  p.set(8, 3, 'S');
+  return p;
+}
+
+/** The exit: the flow comes up out of the arch and carries on at the top. */
+function tunnelOutSprite(): Pix {
+  const p = routePlate();
+  tunnelMouth(p);
+  channel(p, 7, 9, 7, 3, 'y', 'O');
+  head(p, 'n', 6, 1, 'y');
+  // The way it came, under the bottom edge.
+  p.set(7, 13, 'S');
+  p.set(8, 13, 'S');
+  p.set(7, 14, 'S');
+  p.set(8, 14, 'S');
+  return p;
+}
+
 function extractorSprite(): Pix {
   const p = new Pix(16, 16);
   plate(p, 1, 1, 14, 14, KIND_RAMP['source'] as Ramp);
@@ -795,6 +833,8 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_extractor: extractorSprite,
   bld_splitter: splitterSprite,
   bld_merger: mergerSprite,
+  bld_tunnel_in: tunnelInSprite,
+  bld_tunnel_out: tunnelOutSprite,
   bld_crossover: crossoverSprite,
   bld_barracks: barracksSprite,
   bld_grand_barracks: grandBarracksSprite,

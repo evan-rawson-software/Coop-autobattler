@@ -1505,7 +1505,8 @@ describe('property: random operations', () => {
         // The Range and the Hangar have the Barracks' shape, the Lancer hall and
         // the Grand barracks are measured by their own rotation tests
         // (lancer.test.ts, grand-barracks.test.ts), the Mortar is a 2x2 turret
-        // (mortar.test.ts), and the wall
+        // (mortar.test.ts), the Tunnel ends are measured by tunnel.test.ts, and
+        // the wall
         // shapes only stand for the single wall; leaving them out keeps the
         // seeded operation sequence of this test unchanged (31 accepted
         // conduits, as measured).
@@ -1517,6 +1518,8 @@ describe('property: random operations', () => {
             b.id !== 'bld_lancer_hall' &&
             b.id !== 'bld_grand_barracks' &&
             b.id !== 'bld_mortar' &&
+            b.id !== 'bld_tunnel_in' &&
+            b.id !== 'bld_tunnel_out' &&
             !/^bld_wall_[a-z]$/.test(b.id),
         )
         .map((b) => b.id);

@@ -2515,5 +2515,418 @@
         "hash": "89194776"
       }
     }
+  },
+  {
+    "id": "flow-graph.tunnel-under-walls",
+    "kind": "flow-graph",
+    "description": "Ore collector -> Tunnel entrance (3,5) -> exit (3,9) -> Barracks, with walls on the cells between the ends (CB-9g). The entrance and exit are nodes of kind tunnel_in and tunnel_out; the pair is the edge with the negative id -(entrance ID), length 4 (the distance), from the entrance's facing side (north) to the exit's front (south), carrying Ore, listed after the conduits.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall_block",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall_block",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 3,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall_i",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 4,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 6,
+          "x": 3,
+          "y": 9,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 7,
+          "x": 3,
+          "y": 11,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 6,
+            "side": "north"
+          },
+          "to": {
+            "building": 7,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 10
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "graph": {
+          "nodes": [
+            {
+              "key": "1",
+              "building": 1,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_a",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 4
+                }
+              ]
+            },
+            {
+              "key": "2",
+              "building": 2,
+              "channel": null,
+              "def": "bld_tunnel_in",
+              "kind": "tunnel_in",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 4,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": -2
+                }
+              ]
+            },
+            {
+              "key": "6",
+              "building": 6,
+              "channel": null,
+              "def": "bld_tunnel_out",
+              "kind": "tunnel_out",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": -2,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 8
+                }
+              ]
+            },
+            {
+              "key": "7",
+              "building": 7,
+              "channel": null,
+              "def": "bld_barracks",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 8,
+                  "requires": "res_a"
+                }
+              ],
+              "outputs": []
+            }
+          ],
+          "edges": [
+            {
+              "conduitId": 4,
+              "linkedConduit": null,
+              "from": "1",
+              "to": "2",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 2,
+              "resource": "res_a"
+            },
+            {
+              "conduitId": 8,
+              "linkedConduit": null,
+              "from": "6",
+              "to": "7",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 1,
+              "resource": "res_a"
+            },
+            {
+              "conduitId": -2,
+              "linkedConduit": null,
+              "from": "2",
+              "to": "6",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 4,
+              "resource": "res_a"
+            }
+          ],
+          "order": ["1", "2", "6", "7"],
+          "brokenLinks": []
+        },
+        "hash": "56567744"
+      }
+    }
+  },
+  {
+    "id": "flow-graph.tunnel-unpaired",
+    "kind": "flow-graph",
+    "description": "A Tunnel entrance with no exit in range (CB-9g): it is a node of kind tunnel_in whose input has the conduit and whose output (the side it faces) has none: no edge for the pair.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "graph": {
+          "nodes": [
+            {
+              "key": "1",
+              "building": 1,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_a",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 4
+                }
+              ]
+            },
+            {
+              "key": "2",
+              "building": 2,
+              "channel": null,
+              "def": "bld_tunnel_in",
+              "kind": "tunnel_in",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 4,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": null
+                }
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "conduitId": 4,
+              "linkedConduit": null,
+              "from": "1",
+              "to": "2",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 2,
+              "resource": "res_a"
+            }
+          ],
+          "order": ["1", "2"],
+          "brokenLinks": []
+        },
+        "hash": "994ca33b"
+      }
+    }
   }
 ]

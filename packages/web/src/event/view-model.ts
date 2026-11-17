@@ -9,7 +9,7 @@
 import { playerName, screenText, screenTexts } from '../build/texts.js';
 import {
   findModifier,
-  tierPrice,
+  itemPrice,
   type BuildingDef,
   type Cell,
   type EventsConfig,
@@ -440,7 +440,7 @@ export function followUpView(
     if (f.prompt === BLUEPRINT_PROMPT && def !== null) {
       // One rare building offered to this player: tier 1 at the shop price.
       const bdef = content.buildings.get(def);
-      const price = bdef === undefined ? null : tierPrice(content, def, 1);
+      const price = bdef === undefined ? null : itemPrice(content, def, 1);
       options.push({
         id,
         title: buildingName(content, def),

@@ -128,6 +128,9 @@ export function effectText(
       values['unit'] = content.presentation.get(def.unit)?.name ?? def.unit;
       break;
     }
+    case 'route':
+      values['span'] = String(def.maxSpanCells ?? 0);
+      break;
     case 'refinery': {
       const x = def.tiers[tier - 1];
       if (x !== undefined) {

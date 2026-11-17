@@ -96,6 +96,7 @@ import type { NeutralZone } from './neutral-zone.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
 import { brokenLinks, conduitsLostWith } from './conduits.js';
+import { tunnelPairs, type TunnelPair } from './tunnels.js';
 import type { TeamState } from './team-state.js';
 import { unitSpeed, type UnitDef, type UnitId } from './units.js';
 
@@ -884,6 +885,12 @@ export interface ArenaContext {
   readonly arena: Arena;
   /** Per side; replaced when a building is destroyed. */
   readonly flows: FlowContext[];
+  /**
+   * Per side, the Tunnel pairs of the battle (CB-9g): derived from the
+   * placement once, at the start. A destroyed end takes its pair out of the
+   * list for good, and no other end pairs in its place.
+   */
+  readonly tunnels: TunnelPair[][];
   /** Events are appended here when present. */
   readonly events?: ArenaEvent[];
   /** `ref` -> index into `sim.health`. */
@@ -1189,6 +1196,7 @@ export function createArenaContext(
     simConfig,
     arena,
     flows,
+    tunnels: sim.teams.map((team) => tunnelPairs(team, content)),
     healthIndex,
     maxHealth,
     coreRemaining,
@@ -3774,11 +3782,18 @@ function destroyBuilding(
       });
     }
   }
+  // The pair of a destroyed Tunnel end is gone for the rest of the battle;
+  // the end that is left stands unpaired (CB-9g).
+  const standing = (ctx.tunnels[b.side] ?? []).filter(
+    (p) => p.entrance !== b.id && p.exit !== b.id,
+  );
+  ctx.tunnels[b.side] = standing;
   const { sim: board, plan } = rebuildFlow(
     sim.boards[b.side === 0 ? 0 : 1],
     newTeam,
     ctx.content,
     ctx.simConfig,
+    standing,
   );
   sim.boards[b.side === 0 ? 0 : 1] = board;
   ctx.flows[b.side] = flowContextFor(

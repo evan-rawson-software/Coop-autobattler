@@ -17,6 +17,14 @@
       "name": "Crossover",
       "description": "Lets two flows pass each other at right angles."
     },
+    "bld_tunnel_in": {
+      "name": "Tunnel entrance",
+      "description": "Bought with its exit. Takes a flow in at its back and carries it in a straight line under whatever lies between, to the exit it faces."
+    },
+    "bld_tunnel_out": {
+      "name": "Tunnel exit",
+      "description": "Bought with its entrance. Lets the flow of the entrance that faces it out at its back."
+    },
     "bld_barracks": {
       "name": "Barracks",
       "description": "Consumes {res_a} to train soldiers."
@@ -342,6 +350,8 @@
       "splitter": "Splits one flow into {outs} outputs",
       "merger": "Merges {ins} inputs into one flow",
       "crossover": "Lets two flows cross without mixing",
+      "tunnel_in": "Carries one flow under up to {span} cells to its exit",
+      "tunnel_out": "Lets out the flow of its entrance",
       "unit_producer": "Trains 1 {unit} per {cost} {resource}",
       "unit_producer_multi": "Trains {unit} x{units} per {total} {resource}",
       "unit_producer_costs": "Trains 1 {unit} per {costs}",
@@ -434,6 +444,10 @@
       "problemNoConduitResourceMany": "{count} {names} have no conduit into their {resource} input.",
       "uiCheckRepeat": "{text} ({count} times)",
       "problemNothingFeeding": "{name} has nothing feeding it.",
+      "problemTunnelUnpaired": "{name} has no partner end in line within range, so it does nothing.",
+      "uiTunnelUnpaired": "No partner",
+      "uiTunnelHintEntrance": "Its exit goes in line ahead, up to {span} cells away.",
+      "uiTunnelHintExit": "An entrance facing it in line, up to {span} cells away, pairs with it.",
       "problemStalled": "{name} is stalled {percent}% of the time: output backs up.",
       "problemStarved": "{name} receives no {resource} in the dry run.",
       "problemStashMany": "{count} buildings in the inventory.",

@@ -53,6 +53,34 @@
       ]
     },
     {
+      "id": "bld_tunnel_in",
+      "kind": "route",
+      "routeType": "tunnel_in",
+      "partner": "bld_tunnel_out",
+      "maxSpanCells": 5,
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [{ "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        { "health": 20, "price": 5 },
+        { "health": 30, "price": 11 },
+        { "health": 40, "price": 20 }
+      ]
+    },
+    {
+      "id": "bld_tunnel_out",
+      "kind": "route",
+      "routeType": "tunnel_out",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [],
+      "outputs": ["north"],
+      "tiers": [
+        { "health": 20, "price": 5 },
+        { "health": 30, "price": 11 },
+        { "health": 40, "price": 20 }
+      ]
+    },
+    {
       "id": "bld_barracks",
       "kind": "unit_producer",
       "unit": "unit_soldier",

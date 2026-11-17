@@ -7684,5 +7684,584 @@
       },
       "eventLogHash": "adbd20ff"
     }
+  },
+  {
+    "id": "flow-sim.tunnel-under-walls",
+    "kind": "flow-sim",
+    "description": "The tunnel-under-walls layout run for 1000 ticks with the consumers paced at their need: the Barracks is fed through the pair as through a conduit (CB-9g), no item is lost.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall_block",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall_block",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 3,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall_i",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 4,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 6,
+          "x": 3,
+          "y": 9,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 7,
+          "x": 3,
+          "y": 11,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 6,
+            "side": "north"
+          },
+          "to": {
+            "building": 7,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 10
+            }
+          ]
+        }
+      ],
+      "ticks": 1000,
+      "consumers": "need"
+    },
+    "expected": {
+      "result": {
+        "tick": 1000,
+        "stateHash": "a54cc015",
+        "flow": {
+          "produced": 50,
+          "inConduits": 1,
+          "held": 0,
+          "inBuffers": 0,
+          "consumed": 49,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 50,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2",
+            "lost": 0,
+            "held": null
+          },
+          {
+            "building": 6,
+            "key": "6",
+            "lost": 0,
+            "held": null
+          }
+        ],
+        "consumers": [
+          {
+            "building": 7,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 49,
+            "consumed": 49
+          }
+        ],
+        "pacers": [
+          {
+            "building": 7,
+            "progress": 4,
+            "cooldown": 6,
+            "productions": 9
+          }
+        ]
+      },
+      "eventLogHash": "7188b48f"
+    }
+  },
+  {
+    "id": "flow-sim.tunnel-transit-pair",
+    "kind": "flow-sim",
+    "description": "Transit time of a Tunnel pair (CB-9g): an Ore collector, 2 conduit cells, a Tunnel pair of distance 4 (ends at y 5 and 9) and a Barracks directly north of the exit, run for 25 ticks. The first Ore item has not arrived yet: the same line built with Mergers at the two end cells and a conduit of the 3 cells between them (flow-sim.tunnel-transit-conduit) delivers its first item one tick earlier, in the last of the 25 ticks. A tunnel is never faster than a conduit.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 10,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_in",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_tunnel_out",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 3,
+          "y": 9,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        }
+      ],
+      "ticks": 25,
+      "consumers": "hold"
+    },
+    "expected": {
+      "result": {
+        "tick": 25,
+        "stateHash": "0ced8f14",
+        "flow": {
+          "produced": 1,
+          "inConduits": 1,
+          "held": 0,
+          "inBuffers": 0,
+          "consumed": 0,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 1,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 3,
+            "key": "3",
+            "lost": 0,
+            "held": null
+          },
+          {
+            "building": 4,
+            "key": "4",
+            "lost": 0,
+            "held": null
+          }
+        ],
+        "consumers": [
+          {
+            "building": 2,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 0,
+            "consumed": 0
+          }
+        ]
+      },
+      "eventLogHash": "b6ebd9ef"
+    }
+  },
+  {
+    "id": "flow-sim.tunnel-transit-conduit",
+    "kind": "flow-sim",
+    "description": "The comparison for flow-sim.tunnel-transit-pair: Mergers at the same two cells joined by a conduit of the 3 cells between them. The first Ore item arrives one tick earlier than through the Tunnel pair, so after the same 25 ticks one item is delivered.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 10,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 3,
+          "y": 9,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 3,
+            "side": "north"
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 7
+            },
+            {
+              "x": 3,
+              "y": 8
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        }
+      ],
+      "ticks": 25,
+      "consumers": "hold"
+    },
+    "expected": {
+      "result": {
+        "tick": 25,
+        "stateHash": "6e56f37f",
+        "flow": {
+          "produced": 1,
+          "inConduits": 0,
+          "held": 0,
+          "inBuffers": 1,
+          "consumed": 0,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 1,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 3,
+            "key": "3",
+            "lost": 0,
+            "held": null
+          },
+          {
+            "building": 4,
+            "key": "4",
+            "lost": 0,
+            "held": null
+          }
+        ],
+        "consumers": [
+          {
+            "building": 2,
+            "side": "south",
+            "resource": "res_a",
+            "count": 1,
+            "delivered": 1,
+            "consumed": 0
+          }
+        ]
+      },
+      "eventLogHash": "9e07fb9c"
+    }
   }
 ]
