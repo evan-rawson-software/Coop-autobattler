@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v5.0
+Status: Draft v5.1
 
 ## Direction
 
@@ -11,6 +11,14 @@ Status: Draft v5.0
   2. **Port to Godot** — the real game client.
   3. **Multiplayer and Steam** — co-op and online ghost PvP, built in Godot
      after the port.
+
+  Where things stand: phase 1 is built and playable (see "The proof of
+  concept as built"). Phases 2 and 3 are planned in issues #365 (Godot
+  port), #366 (Steam integration and the Steamworks spike), #367 (lobbies
+  and co-op) and #368 (online ghosts). The alternative of building the
+  prototype in Godot and using Godot's web export for playtests (Q6) is
+  closed [DECIDED]: the separate web proof of concept was built and served
+  its purpose (issue #392).
 - **TA-1 [DECIDED]** The target is a **Steam** release, and the game should
   use **Steam's own features for backend needs wherever possible**: lobby
   creation, multiplayer networking, and the asynchronous ghost PvP pool.
@@ -57,16 +65,23 @@ tune them, as cheaply as possible. It is a prototype, not the product.
   in the browser.
 - **TA-45 [DECIDED: TypeScript; rest PROPOSED]** Stack: TypeScript, a simple bundler (e.g. Vite), and
   the lightest rendering that works (DOM/SVG or a canvas). Keep it small;
-  most of this code is thrown away at the port.
+  most of this code is thrown away at the port. As built: Vite and Preact,
+  with the board drawn on a `<canvas>` and the panels as ordinary DOM.
 - **TA-46 [PROPOSED]** A **balance harness** (command-line, no UI) runs
   thousands of simulated battles and bot-played runs (SC-6). The numbers it
   produces are a main output of this phase.
 - **TA-41a [DECIDED]** **Refining and points of interest are left out of the
   first playable build** and added afterwards, once the core loop can be
-  played (refining is now being added, issue #378). The first build has the three base resources, conduits, base
+  played. The first build has the three base resources, conduits, base
   buildings, units, the neutral zone with terrain only, and PvE threats.
   Formats and the resource configuration file must leave room for both so
   adding them is not a rewrite.
+  - **Refining is in** (issue #378): the Composite and Aether refineries,
+    the Foundry, the Golem forge and the Spire are in `content/`, offered in
+    shops from round 3, and built by the scripted bot. Their numbers are
+    still to be tuned (#386).
+  - **Points of interest are not built yet** (issue #369). The neutral zone
+    format already reserves `pointsOfInterest`, always empty for now.
 - **TA-47 [PROPOSED]** Explicitly **out of scope** for the proof of concept:
   co-op, lobbies, online ghosts, Steam, saves beyond the browser,
   polish.
@@ -96,6 +111,46 @@ language-neutral from the start:
 - Not carried over: UI and rendering code, the bundler setup, browser
   storage.
 
+### The proof of concept as built
+
+`CONTRIBUTING.md` describes the layout, commands and CI in full. In short:
+
+- **Packages** (a pnpm workspace, split by the layers of TA-52):
+  - `packages/core` — Core: pure logic (simulation, run rules, generators,
+    content loading).
+  - `packages/session` — Session: owns a run in progress through intents;
+    solo, plus a debug mode for multi-plot boards (TA-43). The scripted bot
+    lives here.
+  - `packages/web` — Presentation: the static site, with the simulation
+    worker (TA-55).
+  - `packages/content` — exports the parsed `content/*.json` files.
+  - `packages/tools` — Node scripts: content validation, source scans, and
+    the command-line runner and balance harness (`pnpm sim`, TA-46).
+  - `packages/golden` — runs and regenerates the golden vectors.
+  - `packages/art` — generates the placeholder sprites (`pnpm art:build`).
+- **Layer rule**: `core` imports neither `session` nor `web`, and uses no
+  DOM, no Node I/O and no clock; `session` imports only `core`; `web` may
+  import both. The TypeScript configs and ESLint enforce it.
+- **Content (TA-48)**: `content/` holds `buildings`, `economy`, `events`,
+  `mapgen`, `resources` (TA-27a), `sim`, `terrain`, `threats` and `units`,
+  and the display text in `presentation.en.json` (TA-27b).
+- **Schemas (TA-51)**: `schemas/` has a schema for each content file and
+  for the formats: map, neutral zone, team state, threat profile, event
+  log events, ghost snapshot, run state, save and golden vector.
+- **Golden vectors (TA-49)** are in `golden/`; the **rules reference**
+  (TA-50) is `docs/rules-reference.md`; reference boards are in `boards/`.
+- **Local ghost pool (TA-42)**: snapshots kept in the browser, plus
+  bundled bot ghosts in the web build.
+- **Performance budget (CB-36)**: `docs/performance-budget.md`, enforced by
+  tests.
+- **CI** (`.github/workflows/ci.yml`): typecheck, lint, format check and
+  content validation; unit tests in two shards; a browser smoke test in two
+  parts, one of which also checks that the golden vectors are current; and
+  short scripted-bot runs that are replayed to check they are
+  deterministic. `pnpm check` runs the same chain locally.
+- **Playtest builds (TA-44)**: every push to `main` is published to GitHub
+  Pages (`.github/workflows/deploy.yml`).
+
 ### Simulation off the main thread (web)
 
 - **TA-55 [DECIDED]** The web client runs the up-front battle simulation in a
@@ -123,6 +178,11 @@ language-neutral from the start:
   strategies are all viable; the
   scaling curve produces runs of the intended length (SC-4); and the rules
   reference and golden vectors are complete.
+
+  Where these stand: the routing rules are settled (CB-3f to CB-3h,
+  CB-9a to CB-9e), and the rules reference and golden vectors cover every
+  rule in the code. Fun, the three strategies and run length are judged
+  from playtests and the balance harness, after W3b and W4.
 
 ## Phases 2 and 3 — Godot and Steam
 
@@ -197,14 +257,17 @@ Everything from here down describes the Godot game.
 - **TA-7 [PROPOSED]** **Presentation** renders state and plays back event
   logs. It contains no rules. Battle playback is driven entirely by the event
   log, for the host and guests alike.
-- **TA-8 [DECIDED/PROPOSED detail]** **Versioning.** Decided:
+- **TA-8 [DECIDED]** **Versioning.** Decided:
   - A run keeps the **version it was played on**. It only ever meets ghosts
     that were **played on that same version**, even after the game has been
     updated.
   - On a **major version release, old saves and all ghost data from old
     versions are deleted.**
 
-  Proposed detail:
+  Detail, decided (issue #392): the patch / minor / major definitions below
+  are accepted as written. Whether a change is minor or major is judged by
+  a person at release time, against these definitions written as a
+  checklist (TA-34).
   - Versions are written `major.minor.patch`.
     - **Patch** — fixes that do not touch combat rules or content numbers.
       Does not split the ghost pool.
@@ -234,7 +297,8 @@ Everything from here down describes the Godot game.
     meant.
   - A check in CI compares combat rules and content against the last
     release, so a change that needs at least a minor bump cannot ship as a
-    patch by mistake.
+    patch by mistake. (Not built yet; the web proof of concept has no
+    releases.)
 - **TA-9 [PROPOSED]** Consequences of TA-8:
   - **Runs on an older minor version** continue normally. Their pool only
     gets new snapshots from other runs still on that version, so it thins
@@ -273,7 +337,7 @@ Everything from here down describes the Godot game.
   outside a battle, the session ends for everyone until the host re-hosts
   and the others rejoin; nothing can be bought or moved while there is no
   host. (A non-host leaving does not stop the others from shopping and
-  building, CP-21f.) A battle is simulated in full before playback begins
+  building, CP-21i.) A battle is simulated in full before playback begins
   and its result and event log are sent to every player for playback, so if
   the host leaves during a battle the others can finish watching; the run
   then waits for the host. There is no host migration: the host of a run is
@@ -436,12 +500,13 @@ is deliberate.
 
 ## Language
 
-- **TA-28 [OPEN]** GDScript or C#. Recommended: **typed GDScript**
-  throughout — simplest path with GodotSteam, one language for coding agents,
-  no .NET export requirements. The simulation is discrete (fixed ticks on a grid) but includes
-  pathfinding for many units, so performance is not a given; measure it
-  against the performance budget (CB-36) and revisit only if the balance
-  harness is too slow. See Q6.
+- **TA-28 [DECIDED]** **Typed GDScript** throughout (issue #365): every
+  variable, parameter and return value has a static type; no C#. It is the
+  simplest path with GodotSteam, one language for coding agents, and has no
+  .NET export requirements. The simulation is discrete (fixed ticks on a
+  grid) but includes pathfinding for many units, so performance is not a
+  given; measure it against the performance budget (CB-36) and revisit only
+  if the balance harness is too slow.
 - **TA-29 [PROPOSED]** Core uses integer math and an explicit seeded PRNG so
   battles are reproducible from `(teams, seed, installed version)` for tests,
   replays, and bug reports. Golden test vectors (stored inputs → expected
@@ -497,8 +562,8 @@ Still unconfirmed:
 
 ## Spikes needed before committing to details
 
-- **TA-30 [PROPOSED]** A short Steamworks spike, using a real app ID, to
-  confirm:
+- **TA-30 [PROPOSED]** A short Steamworks spike (issue #366), using a real
+  app ID, to confirm:
   1. Leaderboards with attached shared files work as the ghost pool: create
      on demand, attach a file, random-rank download, download speed.
   2. Limits: number of leaderboards per app, details payload size, shared
@@ -572,7 +637,8 @@ Still unconfirmed:
   possible, old ghost data cannot be fully deleted as TA-8 requires. What
   would remain is leaderboard entries that no game version reads, and the
   attached files of any player who never launches the game again (TA-9). Whether that is
-  acceptable is the owner's call once the spike reports (Q9).
+  acceptable is the owner's call once the spike reports (Q9). Waits for
+  the Steamworks spike (issue #366).
 
 ## Backlog
 
@@ -584,22 +650,26 @@ Still unconfirmed:
 
 **Phase 1 — Web proof of concept (offline, solo)**
 
-- **W0 — Foundations:** repo layout, content and format schemas, test
-  runner, CI, static-site deploy for playtest builds.
-- **W1 — Sim core:** map generation; deterministic headless battles with
-  pathfinding, boards of 1–4 plots, factory versus factory and factory
+- **W0 — Foundations** (done): repo layout, content and format schemas,
+  test runner, CI, static-site deploy for playtest builds.
+- **W1 — Sim core** (done): map generation; deterministic headless battles
+  with pathfinding, boards of 1–4 plots, factory versus factory and factory
   versus threat; performance budget (CB-36);
   command-line runner; golden vectors; rules reference started.
-- **W2 — Playable loop:** PvE battle (3 difficulties) + event + shop +
-  lives + exponential scaling; Core placement; factory editing UI with flow and enemy-path preview; battle
-  playback.
-- **W3 — PvP step:** local ghost pool, matching, snapshot validation, boss
-  fallback; scripted bot; bundled bot ghosts.
-- **W3b — Refining (issue #378) and points of interest** (TA-41a).
-- **W4 — Tune:** balance harness, content iteration, more event types,
-  the boss roster (MM-9a–MM-9e), playtests. Ends at the exit criteria (TA-53).
+- **W2 — Playable loop** (done): PvE battle (3 difficulties) + event + shop
+  + lives + exponential scaling; Core placement; factory editing UI with
+  flow and enemy-path preview; battle playback.
+- **W3 — PvP step** (done): local ghost pool, matching, snapshot
+  validation, boss fallback; scripted bot; bundled bot ghosts.
+- **W3b — Refining (issue #378) and points of interest (issue #369)**
+  (TA-41a). Refining is in; its numbers are still to be tuned (#386).
+  Points of interest are not built yet.
+- **W4 — Tune** (in progress): balance harness, content iteration, more
+  event types, the boss roster (MM-9a–MM-9e), playtests. The harness
+  (`pnpm sim`), eight event types and five bosses are in. Ends at the exit
+  criteria (TA-53).
 
-**Phase 2 — Godot port**
+**Phase 2 — Godot port** (issue #365)
 
 - **G0 — Foundations:** Godot project layout, layers, headless tests in CI,
   Platform interface with the Local implementation.
@@ -608,9 +678,10 @@ Still unconfirmed:
 - **G2 — Solo game:** the full loop with real UI and presentation, at
   parity with the proof of concept.
 
-**Phase 3 — Multiplayer and Steam**
+**Phase 3 — Multiplayer and Steam** (issues #366 to #368)
 
-- **S0 — Steamworks spike** (TA-30). Can run any time; do it early.
+- **S0 — Steamworks spike** (TA-30, issue #366). Can run any time; do it
+  early.
 - **S1 — Co-op (local):** host-authoritative session, 2–4 players over
   loopback/LAN, simultaneous editing (each player in their own plot),
   border links between players, votes,
