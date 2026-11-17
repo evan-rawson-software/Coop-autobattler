@@ -9,7 +9,7 @@
  * built from the offer's own data (the tier count, the gold, the modifier
  * effects).
  */
-import type { ModifierEffect } from '@game/core';
+import type { ModifierEffect, SpecialistEffect } from '@game/core';
 import { content } from '../content.js';
 
 export interface ArchetypeText {
@@ -123,6 +123,21 @@ export function effectLine(effect: ModifierEffect): string {
       return `Turrets: ${pct} damage`;
     case 'sell_refund_percent':
       return `Every player: ${pct} sell refund`;
+  }
+}
+
+/** What one effect of a specialist's family bonus does (CB-51a). */
+export function specialistEffectLine(effect: SpecialistEffect): string {
+  const pct = signedPercent(effect.percent);
+  switch (effect.kind) {
+    case 'building_health_percent':
+      return `${TARGET_WORDS[effect.target] ?? effect.target}: ${pct} health`;
+    case 'unit_health_percent':
+      return `Units from your producers: ${pct} health`;
+    case 'source_speed_percent':
+      return `Your collectors: ${pct} speed`;
+    case 'production_speed_percent':
+      return `Your refineries and ramp buildings: ${pct} speed`;
   }
 }
 

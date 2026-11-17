@@ -46,6 +46,7 @@ import {
   createFlowContext,
   intakeByResource,
   rebuildFlow,
+  scaledInterval,
   stepFlow,
   takeFromBuffer,
   type BoardSim,
@@ -82,6 +83,7 @@ import {
   type PointBuffEffect,
 } from './points.js';
 import { maxHealthOf } from './max-health.js';
+import { specialistEffectsOf, specialistPercent } from './specialists.js';
 import {
   captureSpeedPercent,
   modifierPercent,
@@ -764,7 +766,8 @@ export function fasterCooldown(base: number, speedPercent: number): number {
  * the decisions read `def.reach` and `def.radius` directly. With a
  * `strengthPercent` P above 0 (the side's capped `unit_strength` bonus at the
  * moment of spawning), health and damage become `mulPct(base, 100 + P)`
- * (rounded down). With a `moveSpeedPercent` or `attackSpeedPercent` S (the
+ * (rounded down); a `healthBonusPercent` H (the owner's specialist, CB-51a)
+ * makes the health `mulPct(base, 100 + P + H)` and leaves the damage alone. With a `moveSpeedPercent` or `attackSpeedPercent` S (the
  * sum of the side's matching modifier effects, issue #424) the move or attack
  * cooldown becomes `fasterCooldown(base, S)`; everything else is unchanged.
  * Units keep the result they were spawned with (`hp`, `damage` and, when it
@@ -779,9 +782,11 @@ export function unitStats(
   attackSpeedPercent = 0,
   armorBonus = 0,
   splashBonusPercent = 0,
+  healthBonusPercent = 0,
 ): UnitDef {
   if (
     strengthPercent === 0 &&
+    healthBonusPercent === 0 &&
     healthPercent === 100 &&
     moveSpeedPercent === 0 &&
     attackSpeedPercent === 0 &&
@@ -811,7 +816,16 @@ export function unitStats(
     return v;
   };
   // Champions: the health percent follows the strength percent (health only).
-  const strengthened = scaled(def.health, 'scaled health', MAX_HEALTH);
+  // A health bonus (the owner's specialist, CB-51a) joins the strength percent
+  // for health only and is applied once, rounded down.
+  const strengthened =
+    healthBonusPercent === 0
+      ? scaled(def.health, 'scaled health', MAX_HEALTH)
+      : scaled2(
+          def.health,
+          addInt(addInt(100, strengthPercent), healthBonusPercent),
+          'scaled health',
+        );
   const scaledHealth =
     healthPercent === 100
       ? strengthened
@@ -869,6 +883,51 @@ interface TurretInfo {
   readonly splash?: { readonly radiusSub: number; readonly percent: number };
 }
 
+/** One player's specialist bonuses in a battle (CB-51a), in percent. */
+interface OwnerSpecialistBonus {
+  /** Added to the owner's `source_speed` ramp total before the cap (EC-8b). */
+  readonly sourceSpeed: number;
+  /** Shortens the owner's refinery batch and ramp step intervals (CB-57). */
+  readonly productionSpeed: number;
+  /** Added to the health percent of units from the owner's producers. */
+  readonly unitHealth: number;
+}
+
+const NO_SPECIALIST_BONUS: OwnerSpecialistBonus = {
+  sourceSpeed: 0,
+  productionSpeed: 0,
+  unitHealth: 0,
+};
+
+function specialistBonusesOf(
+  teams: readonly TeamState[],
+  content: ArenaContent,
+): OwnerSpecialistBonus[][] {
+  return teams.map((team) =>
+    team.cores.map((_, owner) => {
+      const effects = specialistEffectsOf(team, content.specialists, owner);
+      return effects.length === 0
+        ? NO_SPECIALIST_BONUS
+        : {
+            sourceSpeed: specialistPercent(effects, 'source_speed_percent'),
+            productionSpeed: specialistPercent(
+              effects,
+              'production_speed_percent',
+            ),
+            unitHealth: specialistPercent(effects, 'unit_health_percent'),
+          };
+    }),
+  );
+}
+
+function specialistBonus(
+  ctx: ArenaContext,
+  side: number,
+  owner: number,
+): OwnerSpecialistBonus {
+  return ctx.specialist[side]?.[owner] ?? NO_SPECIALIST_BONUS;
+}
+
 interface RampInfo {
   /** The player who owns the building (PP-8: only this player gains). */
   readonly owner: number;
@@ -905,6 +964,11 @@ export interface ArenaContext {
   readonly producers: Map<number, ProducerInfo>;
   readonly turrets: Map<number, TurretInfo>;
   readonly ramps: Map<number, RampInfo>;
+  /**
+   * Per side and player index, the bonuses of the player's specialist
+   * (CB-51a): fixed for the battle, read at the moment they apply.
+   */
+  readonly specialist: OwnerSpecialistBonus[][];
   readonly flowEvents: SimEvent[][];
   /**
    * `ref` -> the building's maximum health (`maxHealthOf`: its tier's health
@@ -1121,6 +1185,7 @@ export function createArenaContext(
   const producers = new Map<number, ProducerInfo>();
   const turrets = new Map<number, TurretInfo>();
   const ramps = new Map<number, RampInfo>();
+  const specialist = specialistBonusesOf(sim.teams, content);
   sim.teams.forEach((team, side) => {
     for (const p of team.buildings) {
       const def = content.buildings.get(p.def);
@@ -1146,7 +1211,11 @@ export function createArenaContext(
           owner: p.owner,
           effect: def.effect.type,
           costPerStep: tier.costPerStep,
-          stepInterval: tier.stepIntervalTicks,
+          // The owner's Alchemist bonus shortens the step interval (CB-57).
+          stepInterval: scaledInterval(
+            tier.stepIntervalTicks,
+            specialist[side]?.[p.owner]?.productionSpeed ?? 0,
+          ),
           stepPercent: tier.stepPercent,
           maxSteps: tier.maxSteps,
         });
@@ -1203,6 +1272,7 @@ export function createArenaContext(
     producers,
     turrets,
     ramps,
+    specialist,
     flowEvents,
     world: { width: arena.geom.width, height: arena.geom.height, solid },
     air: {
@@ -1293,6 +1363,13 @@ function assertStrengthBounds(
       return def?.kind === 'economy' && def.effect.type === 'unit_strength';
     });
     const rampMax = hasRamp ? simConfig.maxUnitStrengthPercent : 0;
+    // The most health percent a player's specialist adds (CB-51a): the health
+    // bound must hold with it.
+    const healthBonus =
+      specialistBonusesOf([team], content)[0]?.reduce(
+        (m, b) => Math.max(m, b.unitHealth),
+        0,
+      ) ?? 0;
     for (const def of content.units.list()) {
       // Worst case per unit type: untargeted plus the targeted effects that
       // list this type.
@@ -1303,7 +1380,7 @@ function assertStrengthBounds(
         ),
         addInt(rampMax, pointMax),
       );
-      const stats = unitStats(0, def, strength);
+      const stats = unitStats(0, def, strength, 100, 0, 0, 0, 0, healthBonus);
       // Overload at the last possible tick scales every hit; one hit must
       // stay within MAX_HIT so the per-tick damage sums are exact.
       const hit = mulPct(
@@ -1694,7 +1771,8 @@ function flyRank(
 /**
  * One player's bonus percent for one effect (PP-8): the sum over the living
  * economy buildings of that effect owned by player `owner` on `side` of
- * `steps * stepPercent`, capped at the global maximum from `sim.json`. Each
+ * `steps * stepPercent` (plus, for `source_speed`, the owner's specialist
+ * bonus, CB-51a), capped at the global maximum from `sim.json`. Each
  * owner is capped on their own; buildings of a partner add nothing. Destroyed buildings are no longer in `sim.ramps`,
  * so their share leaves the total at once.
  */
@@ -1705,7 +1783,12 @@ export function rampBonus(
   effect: EconomyEffectType,
   owner: number,
 ): number {
-  let raw = 0;
+  // The owner's specialist adds to the collector-speed total before the cap,
+  // so a Flowmancer and an Overclocker never pass it together (EC-8b).
+  let raw =
+    effect === 'source_speed'
+      ? specialistBonus(ctx, side, owner).sourceSpeed
+      : 0;
   for (const r of sim.ramps) {
     if (r.side !== side) continue;
     const info = ctx.ramps.get(bkey(r.side, r.building));
@@ -2333,6 +2416,11 @@ function addUnit(
     unitDef,
     spawnStrength(sim, ctx, side, rampOwner, unitDef.id),
     healthPercent,
+    0,
+    0,
+    0,
+    0,
+    rampOwner === null ? 0 : specialistBonus(ctx, side, rampOwner).unitHealth,
   );
   const unit: UnitSim = {
     id: sim.nextUnitId,
@@ -2937,6 +3025,12 @@ export function spawnUnitForTest(
     args.side,
     def,
     spawnStrength(sim, ctx, args.side, owner, def.id),
+    100,
+    0,
+    0,
+    0,
+    0,
+    specialistBonus(ctx, args.side, owner).unitHealth,
   );
   const unit: UnitSim = {
     id: sim.nextUnitId,
@@ -3872,6 +3966,9 @@ function stepBothFlows(sim: ArenaSim, ctx: ArenaContext): void {
     if (flow === undefined) throw new Error('Arena: missing flow context.');
     flow.sourceSpeedPercent = sim.teams[side].cores.map((_, owner) =>
       rampBonus(sim, ctx, side, 'source_speed', owner),
+    );
+    flow.refinerySpeedPercent = sim.teams[side].cores.map(
+      (_, owner) => specialistBonus(ctx, side, owner).productionSpeed,
     );
     stepFlow(sim.boards[side], flow);
     if (events !== undefined && buf !== undefined) {

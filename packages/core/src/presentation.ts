@@ -525,6 +525,7 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   uiBonusesTotals: [],
   uiBonusesHeld: [],
   uiBonusStacks: ['name', 'count'],
+  uiBonusesSpecialist: ['name'],
   uiOpponentBonuses: [],
   uiShopFootnote: [],
   uiSlotJustBought: [],

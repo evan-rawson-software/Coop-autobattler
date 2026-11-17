@@ -117,8 +117,24 @@ describe('the run bar, the PvP panel and the run summary', () => {
     expect(barSpecialist(s.team, 0)).toEqual({
       name: 'Alchemist',
       title: 'Specialist: Alchemist',
+      bonusTitle: 'Specialist bonus: Alchemist',
+      bonusLines: ['Your refineries and ramp buildings: +15% speed'],
     });
     expect(barSpecialist(s.team, 1)).toBeNull();
+  });
+
+  test('the bonus lines say what each family bonus does (CB-51a)', () => {
+    const lines = (id: string) =>
+      barSpecialist({ specialists: [id] }, 0)?.bonusLines;
+    expect(lines('spec_flowmancer')).toEqual(['Your collectors: +10% speed']);
+    expect(lines('spec_wardsmith')).toEqual([
+      'Walls: +15% health',
+      'Gates: +15% health',
+      'Turrets: +15% health',
+    ]);
+    expect(lines('spec_beastbinder')).toEqual([
+      'Units from your producers: +10% health',
+    ]);
   });
 
   test('a team from before specialists says nothing', () => {

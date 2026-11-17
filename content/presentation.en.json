@@ -807,6 +807,7 @@
       "uiBonusesTotals": "Total",
       "uiBonusesHeld": "Taken",
       "uiBonusStacks": "{name} ×{count}",
+      "uiBonusesSpecialist": "Specialist bonus: {name}",
       "uiOpponentBonuses": "Opponent's bonuses",
       "uiShopFootnote": "Bought buildings go into the tray below the board. To sell one, select it and press Sell.",
       "uiSlotJustBought": "JUST BOUGHT",

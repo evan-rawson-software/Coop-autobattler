@@ -1331,6 +1331,28 @@ export async function runRunSmoke({
     );
   };
   await checkBonusItem('shop step');
+  {
+    // The specialist's family bonus (CB-51a) is in the same popover, labelled
+    // with the specialist; the run bar item is there with no Shrine bonus too.
+    await page.click('[data-field="bar-bonuses"] button');
+    const pop = await page
+      .locator('[data-field="bonus-popover"]')
+      .innerText()
+      .catch(() => '');
+    check(
+      /Specialist bonus: \w+/.test(pop) && /\+\d+%/.test(pop),
+      `shop step: the Bonuses popover shows the specialist bonus ("${pop.replace(/\s+/g, ' ').slice(0, 80)}")`,
+    );
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await settle();
+    await shot('run-bonuses-specialist-1280x720');
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await settle();
+    await page.keyboard.press('Escape');
+    await page
+      .waitForSelector('[data-field="bonus-popover"]', { state: 'detached' })
+      .catch(() => undefined);
+  }
   if (withFollow.type === 'shrine') {
     await page.click('[data-field="bar-bonuses"] button');
     const pop = await page

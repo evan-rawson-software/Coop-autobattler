@@ -9,6 +9,7 @@ import type { ArenaBuilding, ArenaContent } from './arena.js';
 import { addInt, divFloor, mulPct } from './int.js';
 import { assertWithin, MAX_HEALTH } from './limits.js';
 import { modifierPercent, type ModifierEffectKind } from './modifiers.js';
+import { specialistEffectsOf, specialistPercent } from './specialists.js';
 import type { TeamState } from './team-state.js';
 
 /**
@@ -17,7 +18,9 @@ import type { TeamState } from './team-state.js';
  * one), raised by the team's modifiers: for the Core
  * `core_health_percent`, for any other building `building_health_percent`
  * matching its defense type or kind. The percent sum is first raised to
- * `minModifierSumPercent` (the sim config's bound, EC-8). Rounded down. Throws a RangeError when
+ * `minModifierSumPercent` (the sim config's bound, EC-8); for a building the
+ * sum includes the `building_health_percent` effects of its owner's specialist
+ * (CB-51a, EC-8a). Rounded down. Throws a RangeError when
  * the result exceeds MAX_HEALTH, when the percent sum is too large to scale
  * the health exactly, or when an override is out of range, so a bad
  * combination fails at battle setup, never mid-battle.
@@ -54,6 +57,17 @@ export function maxHealthOf(
             kind,
             minModifierSumPercent,
             b.defenseType ?? b.kind,
+            // The owner's specialist (CB-51a): summed with the Shrine
+            // effects, then floored and applied once (EC-8a).
+            specialistPercent(
+              specialistEffectsOf(
+                team,
+                content.specialists,
+                placed?.owner ?? -1,
+              ),
+              'building_health_percent',
+              b.defenseType ?? b.kind,
+            ),
           );
     if (pct !== 0) {
       // Largest percent sum for which hp * (100 + pct) stays a safe integer.

@@ -45,9 +45,9 @@ export function RunBar(props: {
   // The acting player's specialist (RS-13b); none before the pick, and in a
   // run saved before specialists. Battle screens leave it out: their opponent
   // panel names the specialists, and the step title needs the bar's room.
-  const specialist = BATTLE_STEPS.has(state.step)
-    ? null
-    : barSpecialist(state.team, acting);
+  // The Bonuses popover keeps the specialist's bonus on every screen.
+  const pick = barSpecialist(state.team, acting);
+  const specialist = BATTLE_STEPS.has(state.step) ? null : pick;
   return (
     <span class="run-bar" id="run-bar">
       <span data-field="bar-lives">
@@ -69,7 +69,7 @@ export function RunBar(props: {
           {specialist.name}
         </span>
       )}
-      <BonusesItem modifiers={state.team.modifiers} />
+      <BonusesItem modifiers={state.team.modifiers} specialist={pick} />
       {props.session === undefined ? null : (
         <ActingSwitch
           run={state}

@@ -4,8 +4,9 @@
  *
  * Each player picks one specialist before Core placement. A specialist has a
  * family, owner-scoped bonus effects and the ID of a signature building. The
- * effects and the signature building have no effect on a battle or a shop yet
- * (later steps of issue #468): this file only holds and checks the numbers.
+ * effects act in a battle only on the buildings and units of the player who
+ * picked it (CB-51a, EC-8a): `specialistEffectsOf` and `specialistPercent`
+ * read them. The signature building has no effect yet (a later step of #468).
  */
 
 import { MODIFIER_TARGETS, type ModifierTarget } from './modifiers.js';
@@ -235,4 +236,46 @@ export function loadSpecialists(data: unknown): SpecialistsLoadResult {
 
 export function loadSpecialistsOrThrow(data: unknown): SpecialistConfig {
   return unwrapOrThrow('specialists', loadSpecialists(data));
+}
+
+/**
+ * The effects of the specialist `owner` picked, in file order; none when the
+ * team has no `specialists` list (a state from before specialists), the
+ * player has not picked, the ID is not in `roster` or `owner` is not a player
+ * index (CB-51a: the effect is the owner's only).
+ */
+export function specialistEffectsOf(
+  team: { readonly specialists?: readonly (string | null)[] },
+  roster: Pick<SpecialistConfig, 'get'> | undefined,
+  owner: number,
+): readonly SpecialistEffect[] {
+  const id = team.specialists?.[owner];
+  if (id === undefined || id === null || roster === undefined) return [];
+  return roster.get(id)?.effects ?? [];
+}
+
+/**
+ * The sum of the percents of `effects` of one kind. For
+ * `building_health_percent`, `target` is the defense type or kind of the
+ * building and an effect counts if its own target is `all` or equals it.
+ */
+export function specialistPercent(
+  effects: readonly SpecialistEffect[],
+  kind: SpecialistEffectKind,
+  target?: string,
+): number {
+  let total = 0;
+  for (const e of effects) {
+    if (e.kind !== kind) continue;
+    if (
+      e.kind === 'building_health_percent' &&
+      target !== undefined &&
+      e.target !== 'all' &&
+      e.target !== target
+    ) {
+      continue;
+    }
+    total += e.percent;
+  }
+  return total;
 }

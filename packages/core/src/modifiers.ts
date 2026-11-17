@@ -402,14 +402,18 @@ export function clampModifierSum(sum: number, minSum: number): number {
  * Sum of the percents of effects of `kind` (and `target`, if given), raised
  * to `minSum` if lower (EC-8), checked: a sum beyond the safe-integer bound
  * (2^53 - 1) throws a RangeError naming the kind and the bound.
+ * `extra` is an owner-scoped percent (a specialist's effect, EC-8a) that
+ * joins the sum before the floor, so the Shrine effects and the specialist's
+ * are summed and applied once.
  */
 export function modifierPercent(
   team: HasModifiers,
   kind: ModifierEffectKind,
   minSum: number,
   target?: string,
+  extra = 0,
 ): number {
-  let total = 0;
+  let total = extra;
   for (const m of team.modifiers ?? []) {
     for (const e of m.effects) {
       if (

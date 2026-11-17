@@ -506,6 +506,8 @@ export {
   SPECIALIST_EFFECT_KINDS,
   SPECIALIST_FAMILIES,
   SPECIALIST_ID_PATTERN,
+  specialistEffectsOf,
+  specialistPercent,
   type SpecialistConfig,
   type SpecialistDef,
   type SpecialistEffect,
