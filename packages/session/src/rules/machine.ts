@@ -16,6 +16,8 @@ import {
   placeFromStash,
   returnToStash,
   sealedProducers,
+  setSpecialist,
+  specialistOf,
   type Json,
 } from '@game/core';
 import {
@@ -119,7 +121,7 @@ export type CreateRunResult =
       readonly detail: string;
     };
 
-/** The initial state: `core_placement`, with the map generated from the seed. */
+/** The initial state: `specialist_pick`, with the map generated from the seed. */
 export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
   const bad = (detail: string): CreateRunResult => ({
     ok: false,
@@ -156,7 +158,7 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
     players: args.players.map((name, index) => ({ index, name })),
     host: args.host,
     round: 1,
-    step: 'core_placement',
+    step: 'specialist_pick',
     leg: 'pve',
     lives: deps.rules.startingLives,
     team: createTeamState(map),
@@ -165,8 +167,9 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
     upcomingPve: null,
     pvpOpponent: null,
     ghostsFought: [],
-    // Each player's pending Core position (PP-3), null until placed.
-    pending: { positions: Array.from({ length: n }, () => null) },
+    // Nothing is pending in the specialist pick: the picks are in the team
+    // state. The Core placement that follows has its own `pending`.
+    pending: null,
     history: [],
     thisRound: { pve: null, pvp: null },
     actionLog: [],
@@ -474,6 +477,21 @@ function placePending(
 /** The step has met its condition: apply what it owes and move on. */
 function completeStep(s: RunState, deps: RunDeps, fx: Effect[]): RunState {
   switch (s.step) {
+    case 'specialist_pick':
+      // Every player has picked (`ready` refuses otherwise) and is ready: on
+      // to the Core placement, with each player's pending position (PP-3)
+      // empty.
+      return enter(
+        {
+          ...s,
+          pending: {
+            positions: Array.from({ length: s.players.length }, () => null),
+          },
+        },
+        'core_placement',
+        deps,
+        fx,
+      );
     case 'core_placement': {
       // Every player is ready, so every player has a position (PP-3); `ready`
       // has already refused positions that cannot be placed.
@@ -721,6 +739,12 @@ function applyBuiltin(
       ) {
         return fail('ghost_selection_pending');
       }
+      if (
+        s.step === 'specialist_pick' &&
+        specialistOf(s.team, player) === null
+      ) {
+        return fail('specialist_not_picked');
+      }
       if (s.step === 'core_placement') {
         const pos = pendingList(s, 'positions')[player];
         if (!isRecord(pos)) return fail('core_not_placed');
@@ -753,6 +777,24 @@ function applyBuiltin(
       return { ok: true, state: setReady(s, player, false) };
     }
 
+    case 'pick_specialist': {
+      // The pick is an input, not a draw (RS-13): nothing is drawn. A player
+      // may pick again (change the pick) until they are Ready.
+      if (typeof intent.specialist !== 'string') return fail('invalid_intent');
+      if (content.specialists.get(intent.specialist) === undefined) {
+        return fail('unknown_specialist', intent.specialist);
+      }
+      if (specialistOf(s.team, player) !== intent.specialist) {
+        fx.push({
+          type: 'specialist_picked',
+          player,
+          specialist: intent.specialist,
+        });
+      }
+      return withTeam(
+        setSpecialist(s.team, content, player, intent.specialist),
+      );
+    }
     case 'place_core': {
       if (!isInteger(intent.x) || !isInteger(intent.y))
         return fail('invalid_intent');

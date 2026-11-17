@@ -13,6 +13,7 @@ import {
   rawBuildings,
   rawMapgen,
   rawPoints,
+  rawSpecialists,
   rawPresentationEn,
   rawResources,
   rawSim,
@@ -52,6 +53,7 @@ describe('sim-event.schema.json', () => {
       units: rawUnits,
       buildings: rawBuildings,
       points: rawPoints,
+      specialists: rawSpecialists,
       presentation: rawPresentationEn,
     });
     const kind = makeFlowSimKind(
@@ -81,6 +83,7 @@ describe('sim-event.schema.json', () => {
       units: rawUnits,
       buildings: rawBuildings,
       points: rawPoints,
+      specialists: rawSpecialists,
       presentation: rawPresentationEn,
     });
     const kind = makeArenaSimKind(
@@ -128,6 +131,7 @@ describe('sim-event.schema.json', () => {
       units: rawUnits,
       buildings: rawBuildings,
       points: rawPoints,
+      specialists: rawSpecialists,
       presentation: rawPresentationEn,
     });
     const kind = makeBattleKind(
@@ -211,6 +215,7 @@ describe('sim-event.schema.json', () => {
       units: rawUnits,
       buildings: rawBuildings,
       points: rawPoints,
+      specialists: rawSpecialists,
       presentation: rawPresentationEn,
     });
     const kind = makePveBattleKind(
@@ -252,6 +257,7 @@ describe('sim-event.schema.json', () => {
       units: rawUnits,
       buildings: rawBuildings,
       points: rawPoints,
+      specialists: rawSpecialists,
       presentation: rawPresentationEn,
     });
     const kind = makePveBattleKind(
@@ -295,6 +301,7 @@ describe('sim-event.schema.json', () => {
       units: rawUnits,
       buildings: rawBuildings,
       points: rawPoints,
+      specialists: rawSpecialists,
       presentation: rawPresentationEn,
     });
     const kind = makePveBattleKind(

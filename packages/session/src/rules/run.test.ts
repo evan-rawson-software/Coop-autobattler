@@ -10,6 +10,7 @@ import {
   deepFreeze,
   newRun,
   ok,
+  pickSpecialistAll,
   placeCoreAll,
   readyAll,
   runArgs,
@@ -28,9 +29,16 @@ import {
 } from './types.js';
 import { validateRunState } from './validate.js';
 
+/** A new run after the specialist pick, at the start of Core placement. */
+function atCores(players: readonly string[]): RunState {
+  return pickSpecialistAll(newRun(baseDeps, players), baseDeps);
+}
+
 /** The natural next action for every player. */
 function autoStep(s: RunState, deps: RunDeps, fx: Effect[] = []): RunState {
   switch (s.step) {
+    case 'specialist_pick':
+      return pickSpecialistAll(s, deps, fx);
     case 'core_placement':
       return placeCoreAll(s, deps, fx);
     case 'pve_choice':
@@ -74,11 +82,12 @@ describe('a solo run', () => {
       battle: fixedBattle(true),
     });
     let s = newRun(deps);
-    expect(s.step).toBe('core_placement');
+    expect(s.step).toBe('specialist_pick');
     expect(s.round).toBe(1);
     const fx: Effect[] = [];
-    // core_placement, build, then three full rounds, ending in round 4's choice.
-    for (let i = 0; i < 2 + 3 * 7; i++) s = autoStep(s, deps, fx);
+    // specialist_pick, core_placement, build, then three full rounds, ending
+    // in round 4's choice.
+    for (let i = 0; i < 3 + 3 * 7; i++) s = autoStep(s, deps, fx);
     const oneRound: Step[] = [
       'pve_battle',
       'pve_summary',
@@ -91,6 +100,7 @@ describe('a solo run', () => {
       'pve_choice',
     ];
     const expected: Step[] = [
+      'core_placement',
       'build',
       'pve_choice',
       ...oneRound,
@@ -114,13 +124,13 @@ describe('a solo run', () => {
     });
     let s = newRun(deps);
     const rounds: number[] = [];
-    for (let i = 0; i < 2 + 7; i++) {
+    for (let i = 0; i < 3 + 7; i++) {
       s = autoStep(s, deps);
       rounds.push(s.round);
     }
-    // core, build, then pve_choice, pve_summary, event, shop, pvp_summary,
+    // pick, core, build, then pve_choice, pve_summary, event, shop, pvp_summary,
     // event, shop(second, ends round) -> round 2.
-    expect(rounds).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 2]);
+    expect(rounds).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]);
     expect(s.step).toBe('pve_choice');
   });
 
@@ -165,7 +175,7 @@ describe('lives', () => {
 
   test('a life is only lost when the PvP summary ends', () => {
     let s = newRun(lose);
-    s = autoStep(autoStep(s, lose), lose);
+    s = autoStep(autoStep(autoStep(s, lose), lose), lose);
     for (let i = 0; i < 4; i++) s = autoStep(s, lose); // to the PvP summary
     expect(s.step).toBe('pvp_summary');
     expect(s.lives).toBe(5);
@@ -202,6 +212,7 @@ describe('lives', () => {
 describe('wrong_step', () => {
   const none = [] as const;
   const legal: Record<Step, readonly string[]> = {
+    specialist_pick: ['pick_specialist', 'ready', 'unready', 'abandon'],
     core_placement: ['place_core', 'ready', 'unready', 'abandon'],
     build: ['ready', 'unready', 'abandon', ...boardNames()],
     pve_choice: ['vote', 'abandon'],
@@ -228,6 +239,8 @@ describe('wrong_step', () => {
   function stateAt(step: Step): RunState {
     let s = newRun();
     const base = (): RunState => s;
+    if (step === 'specialist_pick') return base();
+    s = autoStep(s, baseDeps); // core_placement
     if (step === 'core_placement') return base();
     s = autoStep(s, baseDeps); // build
     if (step === 'build') return base();
@@ -247,6 +260,7 @@ describe('wrong_step', () => {
   }
 
   const samples: Intent[] = [
+    { type: 'pick_specialist', specialist: 'spec_flowmancer' },
     { type: 'place_core', x: 0, y: 0 },
     { type: 'vote', choice: 'easy' },
     { type: 'ready' },
@@ -303,22 +317,26 @@ describe('wrong_step', () => {
 
 describe('bookkeeping', () => {
   test('accepted intents are logged and counted; rejected ones are not', () => {
-    let s = newRun();
+    let s = atCores(['Ann']);
     const rejected = applyIntent(s, 0, { type: 'ready' }, baseDeps);
     expect(rejected).toMatchObject({ ok: false, reason: 'core_not_placed' });
-    expect(s.actionCounter).toBe(0);
+    // The pick and Ready of the specialist step were logged first.
+    expect(s.actionCounter).toBe(2);
     const pos = corePosition(s);
     s = ok(s, 0, { type: 'place_core', ...pos }).state;
-    expect(s.actionCounter).toBe(1);
-    expect(s.actionLog).toEqual([
-      { n: 1, player: 0, intent: { type: 'place_core', ...pos } },
-    ]);
+    expect(s.actionCounter).toBe(3);
+    expect(s.actionLog[2]).toEqual({
+      n: 3,
+      player: 0,
+      intent: { type: 'place_core', ...pos },
+    });
     // The position can be sent again until the player is ready.
     s = ok(s, 0, { type: 'place_core', ...pos }).state;
     s = ok(s, 0, { type: 'ready' }).state;
     expect(s.step).toBe('build');
-    expect(s.actionCounter).toBe(3);
-    expect(s.actionLog.map((a) => a.n)).toEqual([1, 2, 3]);
+    // 2 for the specialist pick (pick, ready), then 3 for the Core.
+    expect(s.actionCounter).toBe(5);
+    expect(s.actionLog.map((a) => a.n)).toEqual([1, 2, 3, 4, 5]);
   });
 
   test('nothing is mutated (deep-frozen inputs)', () => {
@@ -425,7 +443,10 @@ describe('state, JSON and replay', () => {
 
   test('the run rng advances as streams are drawn', () => {
     const s = newRun();
-    const built = autoStep(s, baseDeps);
+    // The pick step draws nothing; the first build step does (the kit).
+    const picked = autoStep(s, baseDeps);
+    expect(picked.rng).toEqual(s.rng);
+    const built = autoStep(picked, baseDeps);
     expect(built.rng).not.toEqual(s.rng);
   });
 
@@ -455,9 +476,10 @@ describe('state, JSON and replay', () => {
     const placing = (
       mutate: (o: Record<string, unknown>) => void,
     ): string[] => {
-      const o = JSON.parse(
-        JSON.stringify(newRun(baseDeps, ['A', 'B'])),
-      ) as Record<string, unknown>;
+      const o = JSON.parse(JSON.stringify(atCores(['A', 'B']))) as Record<
+        string,
+        unknown
+      >;
       mutate(o);
       const v = validateRunState(o, baseDeps);
       return v.ok ? [] : [...v.errors];
@@ -466,7 +488,7 @@ describe('state, JSON and replay', () => {
     expect(
       placing((o) => (o['pending'] = { positions: [null] })).join(),
     ).toMatch(/pending.positions/);
-    const two = newRun(baseDeps, ['A', 'B']);
+    const two = atCores(['A', 'B']);
     expect(
       placing(
         (o) =>
@@ -616,7 +638,7 @@ describe('three players', () => {
   });
 
   test('each player places their own Core: no vote, no random draw (PP-3)', () => {
-    let s = newRun(baseDeps, names);
+    let s = atCores(names);
     const rng = s.rng;
     const plots = s.team.map.plotWidth;
     for (const p of [2, 0, 1]) {
@@ -642,11 +664,11 @@ describe('three players', () => {
       [0, 1, 2].map((p) => ({
         type: 'core_placed',
         player: p,
-        ...corePosition(newRun(baseDeps, names), p),
+        ...corePosition(atCores(names), p),
       })),
     );
     expect(s.team.cores).toEqual(
-      [0, 1, 2].map((p) => corePosition(newRun(baseDeps, names), p)),
+      [0, 1, 2].map((p) => corePosition(atCores(names), p)),
     );
     expect(validateRunState(JSON.parse(JSON.stringify(s)), baseDeps).ok).toBe(
       true,
@@ -656,7 +678,7 @@ describe('three players', () => {
   });
 
   test('place_core emits core_position_changed only when the position changes', () => {
-    const s0 = newRun(baseDeps, ['A', 'B']);
+    const s0 = atCores(['A', 'B']);
     const legal = listLegalCorePositions(
       s0.team.map,
       baseDeps.content,
@@ -687,7 +709,7 @@ describe('three players', () => {
   });
 
   test('a position can change until the player is ready, and again after unready', () => {
-    let s = newRun(baseDeps, names);
+    let s = atCores(names);
     const legal = listLegalCorePositions(
       s.team.map,
       baseDeps.content,
@@ -719,7 +741,7 @@ describe('three players', () => {
   });
 
   test('ready without a position is core_not_placed; a position outside the plot is outside_own_plot', () => {
-    const s = newRun(baseDeps, names);
+    const s = atCores(names);
     expect(applyIntent(s, 1, { type: 'ready' }, baseDeps)).toMatchObject({
       ok: false,
       reason: 'core_not_placed',
@@ -741,7 +763,7 @@ describe('three players', () => {
   });
 
   test('a pending position that cannot be placed (tampered save) is refused, never thrown', () => {
-    let s = newRun(baseDeps, ['A', 'B']);
+    let s = atCores(['A', 'B']);
     const pos = corePosition(s, 0);
     s = ok(s, 0, { type: 'place_core', ...pos }).state;
     s = ok(s, 1, coreMove(s, 1)).state;
@@ -777,7 +799,7 @@ describe('three players', () => {
   });
 
   test('the Core vote is gone', () => {
-    const s = newRun(baseDeps, names);
+    const s = atCores(names);
     expect(
       applyIntent(s, 0, { type: 'vote', choice: corePosition(s) }, baseDeps),
     ).toEqual({ ok: false, reason: 'wrong_step' });
@@ -787,6 +809,202 @@ describe('three players', () => {
 function pendingPositions(s: RunState): unknown[] {
   return (s.pending as { positions: unknown[] }).positions;
 }
+
+describe('the specialist pick (RS-13)', () => {
+  const roster = baseDeps.content.specialists.ids();
+  const names2 = ['A', 'B'];
+
+  test('a new run starts in the pick step with nobody picked and nothing pending', () => {
+    const s = newRun(baseDeps, names2);
+    expect(s.step).toBe('specialist_pick');
+    expect(s.pending).toBeNull();
+    expect(s.team.specialists).toBeUndefined();
+    expect(validateRunState(s, baseDeps).ok).toBe(true);
+  });
+
+  test('a pick is an input: no draw, the generator does not move', () => {
+    const s = newRun(baseDeps, names2);
+    const r = ok(s, 0, {
+      type: 'pick_specialist',
+      specialist: roster[1] as string,
+    });
+    expect(r.state.rng).toEqual(s.rng);
+    expect(r.state.team.specialists).toEqual([roster[1], null]);
+    expect(r.effects).toEqual([
+      { type: 'specialist_picked', player: 0, specialist: roster[1] },
+    ]);
+  });
+
+  test('a player can change their pick until Ready; duplicates are allowed', () => {
+    let s = newRun(baseDeps, names2);
+    s = ok(s, 0, {
+      type: 'pick_specialist',
+      specialist: roster[0] as string,
+    }).state;
+    s = ok(s, 0, {
+      type: 'pick_specialist',
+      specialist: roster[2] as string,
+    }).state;
+    s = ok(s, 1, {
+      type: 'pick_specialist',
+      specialist: roster[2] as string,
+    }).state;
+    expect(s.team.specialists).toEqual([roster[2], roster[2]]);
+    // Picking the same one again changes nothing and reports nothing.
+    const again = ok(s, 1, {
+      type: 'pick_specialist',
+      specialist: roster[2] as string,
+    });
+    expect(again.effects).toEqual([]);
+  });
+
+  test('Ready needs a pick (no skip), and a pick is refused for an unknown ID', () => {
+    const s = newRun(baseDeps, names2);
+    expect(applyIntent(s, 0, { type: 'ready' }, baseDeps)).toMatchObject({
+      ok: false,
+      reason: 'specialist_not_picked',
+    });
+    for (const specialist of ['spec_nope', '', 'bld_extractor']) {
+      expect(
+        applyIntent(s, 0, { type: 'pick_specialist', specialist }, baseDeps),
+      ).toMatchObject({ ok: false, reason: 'unknown_specialist' });
+    }
+    expect(
+      applyIntent(
+        s,
+        0,
+        { type: 'pick_specialist', specialist: 7 as unknown as string },
+        baseDeps,
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid_intent' });
+  });
+
+  test('Ready locks the pick (CP-17a); Unready reopens it', () => {
+    let s = newRun(baseDeps, names2);
+    s = ok(s, 0, {
+      type: 'pick_specialist',
+      specialist: roster[0] as string,
+    }).state;
+    s = ok(s, 0, { type: 'ready' }).state;
+    expect(
+      applyIntent(
+        s,
+        0,
+        { type: 'pick_specialist', specialist: roster[1] as string },
+        baseDeps,
+      ),
+    ).toMatchObject({ ok: false, reason: 'locked_ready' });
+    expect(validateRunState(s, baseDeps).ok).toBe(true);
+    s = ok(s, 0, { type: 'unready' }).state;
+    s = ok(s, 0, {
+      type: 'pick_specialist',
+      specialist: roster[1] as string,
+    }).state;
+    expect(s.team.specialists?.[0]).toBe(roster[1]);
+  });
+
+  test('the step ends when everyone has picked and is Ready; the picks stay for the run', () => {
+    let s = newRun(baseDeps, names2);
+    s = ok(s, 0, {
+      type: 'pick_specialist',
+      specialist: roster[0] as string,
+    }).state;
+    s = ok(s, 0, { type: 'ready' }).state;
+    expect(s.step).toBe('specialist_pick');
+    // Player 1 is not ready, and has not picked.
+    expect(applyIntent(s, 1, { type: 'ready' }, baseDeps)).toMatchObject({
+      reason: 'specialist_not_picked',
+    });
+    s = ok(s, 1, {
+      type: 'pick_specialist',
+      specialist: roster[3] as string,
+    }).state;
+    const r = ok(s, 1, { type: 'ready' });
+    expect(r.state.step).toBe('core_placement');
+    expect(r.state.pending).toEqual({ positions: [null, null] });
+    expect(r.state.perPlayer.every((p) => !p.ready)).toBe(true);
+    expect(r.state.team.specialists).toEqual([roster[0], roster[3]]);
+    // Through the whole run the picks are unchanged.
+    let t = placeCoreAll(r.state);
+    for (let i = 0; i < 12 && t.step !== 'run_over'; i++)
+      t = autoStep(t, baseDeps);
+    expect(t.team.specialists).toEqual([roster[0], roster[3]]);
+  });
+
+  test('a solo player picks one too', () => {
+    const s = newRun();
+    expect(applyIntent(s, 0, { type: 'ready' }, baseDeps)).toMatchObject({
+      reason: 'specialist_not_picked',
+    });
+    let t = ok(s, 0, {
+      type: 'pick_specialist',
+      specialist: roster[0] as string,
+    }).state;
+    t = ok(t, 0, { type: 'ready' }).state;
+    expect(t.step).toBe('core_placement');
+  });
+
+  test('Core placement is not possible before the pick step ends', () => {
+    const s = newRun();
+    expect(
+      applyIntent(s, 0, { type: 'place_core', ...corePosition(s) }, baseDeps),
+    ).toEqual({ ok: false, reason: 'wrong_step' });
+  });
+
+  test('the host can abandon during the pick', () => {
+    const s = ok(newRun(baseDeps, names2), 0, { type: 'abandon' }).state;
+    expect(s.step).toBe('run_over');
+    expect(validateRunState(s, baseDeps).ok).toBe(true);
+  });
+
+  test('a replay of the log gives the same state', () => {
+    let s = newRun(baseDeps, names2);
+    s = placeCoreAll(s);
+    const again = replayRun(runArgs(names2), s.actionLog, baseDeps);
+    expect(again).toEqual({ ok: true, state: s });
+  });
+
+  test('validation: picks must be known, complete past the step, and Ready needs one', () => {
+    const picked = pickSpecialistAll(newRun(baseDeps, names2), baseDeps);
+    expect(validateRunState(picked, baseDeps).ok).toBe(true);
+    const bad = (state: unknown): boolean =>
+      validateRunState(state, baseDeps).ok;
+    // An unknown specialist.
+    expect(
+      bad({
+        ...picked,
+        team: { ...picked.team, specialists: ['spec_nope', roster[0]] },
+      }),
+    ).toBe(false);
+    // A missing pick past the pick step.
+    expect(
+      bad({
+        ...picked,
+        team: { ...picked.team, specialists: [roster[0], null] },
+      }),
+    ).toBe(false);
+    // A wrong number of entries.
+    expect(
+      bad({ ...picked, team: { ...picked.team, specialists: [roster[0]] } }),
+    ).toBe(false);
+    // A ready player without a pick.
+    const fresh = newRun(baseDeps, names2);
+    expect(
+      bad({
+        ...fresh,
+        perPlayer: fresh.perPlayer.map((p, i) =>
+          i === 0 ? { ...p, ready: true } : p,
+        ),
+      }),
+    ).toBe(false);
+    // Pending data in the pick step.
+    expect(bad({ ...fresh, pending: { positions: [null, null] } })).toBe(false);
+    // Old states: no `specialists` field past the pick step is still readable.
+    const oldTeam: Record<string, unknown> = { ...picked.team };
+    delete oldTeam['specialists'];
+    expect(bad({ ...picked, team: oldTeam })).toBe(true);
+  });
+});
 
 describe('extension handlers', () => {
   const testBuy = (advance: boolean) => ({

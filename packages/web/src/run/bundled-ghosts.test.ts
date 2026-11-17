@@ -43,6 +43,14 @@ function layered(): {
 }
 
 describe('the bundled ghost file', () => {
+  test('every snapshot carries a roster specialist for each of its players (MM-1e)', () => {
+    const roster = content.specialists.ids();
+    for (const s of snapshots as GhostSnapshot[]) {
+      expect(s.team.specialists).toHaveLength(s.partySize);
+      for (const id of s.team.specialists ?? []) expect(roster).toContain(id);
+    }
+  });
+
   test('every snapshot passes the real validation and the selection bounds', () => {
     const vctx = ghostContext(deps);
     expect(vctx).not.toBeNull();

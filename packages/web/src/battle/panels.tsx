@@ -29,6 +29,7 @@ import { resultFacts } from './result-why.js';
 import { SPEEDS } from './playback.js';
 import type { OpponentInfo } from './types.js';
 import { OpponentBonuses } from '../run/BonusList.js';
+import { OpponentSpecialists } from '../specialist/SpecialistList.js';
 import { useStore } from '../app-state.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { dismissPointHint, pointHintSeen } from './point-hint.js';
@@ -396,6 +397,8 @@ export function BattleRail(props: {
   readonly revealed: boolean;
   /** The opponent's modifiers, shown once the battle has started. */
   readonly opponentModifiers?: OpponentInfo['modifiers'];
+  /** The opponent's specialists, shown with the bonuses once revealed (MM-11a). */
+  readonly opponentSpecialists?: OpponentInfo['specialists'];
   readonly statsOpen: boolean;
   readonly onToggleStats: () => void;
   /** The drawer's contents; rendered only while open. */
@@ -447,6 +450,9 @@ export function BattleRail(props: {
         </p>
       </section>
       {props.revealed ? <PointsSection pb={pb} tps={props.tps} /> : null}
+      {props.revealed ? (
+        <OpponentSpecialists specialists={props.opponentSpecialists} />
+      ) : null}
       {props.revealed ? (
         <OpponentBonuses modifiers={props.opponentModifiers} />
       ) : null}
@@ -897,6 +903,7 @@ export function BattleSummaryView(props: SummaryProps) {
             })}
           </li>
         </ul>
+        <OpponentSpecialists specialists={opponent.specialists} />
         <OpponentBonuses modifiers={opponent.modifiers} />
         <button
           type="button"

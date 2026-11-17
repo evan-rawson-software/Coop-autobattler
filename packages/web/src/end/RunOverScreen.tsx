@@ -19,6 +19,7 @@ import { localIsoDate } from '../date.js';
 import { runHash, seedFromHash } from '../run/router.js';
 import { getServices } from '../run/services.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
+import { SpecialistLines } from '../specialist/SpecialistList.js';
 import './end.css';
 import {
   bestView,
@@ -240,6 +241,19 @@ export function RunOverScreen(props: {
               )}
             </p>
           </Panel>
+
+          {(state.team.specialists?.length ?? 0) === 0 ? null : (
+            <Panel
+              title={screenText(screenTexts, 'specialistListTitle')}
+              id="panel-specialists"
+            >
+              <SpecialistLines
+                specialists={state.team.specialists}
+                players={state.players.map((p) => p.name)}
+                field="run-specialists"
+              />
+            </Panel>
+          )}
 
           {(state.team.modifiers?.length ?? 0) === 0 ? null : (
             <Panel

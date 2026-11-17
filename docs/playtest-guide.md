@@ -6,7 +6,7 @@ Open <https://evan-rawson-software.github.io/Coop-autobattler/> in a current des
 
 ## What a run looks like
 
-For your first run, choose "Play the tutorial" in the main menu: it is a real run with tips. Place your Core and build, then repeat each round: pick a PvE battle (the game calls it a Stronghold), watch it, pick an event, shop and build, fight a PvP battle (against a Rival party), pick an event, and shop and build again. Losing a PvP battle costs one life; losing a PvE battle costs only the reward. You start with 5 lives, and the run ends at zero.
+For your first run, choose "Play the tutorial" in the main menu: it is a real run with tips. Pick a specialist (each player picks one; it has no effect yet), place your Core and build, then repeat each round: pick a PvE battle (the game calls it a Stronghold), watch it, pick an event, shop and build, fight a PvP battle (against a Rival party), pick an event, and shop and build again. Losing a PvP battle costs one life; losing a PvE battle costs only the reward. You start with 5 lives, and the run ends at zero.
 
 Each player has their own plot and Core on one battlefield. To try a party of 2 to 4 on one device, open the main menu with `#/?players=2` (or 3, 4) at the end of the address; the run bar then lets you switch which player you act as.
 

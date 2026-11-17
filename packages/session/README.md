@@ -26,7 +26,7 @@ own `saveFormatVersion` is separate and still 1.
 ## Steps
 
 A round is: PvE battle, event, shop, PvP battle, event, shop. The run starts
-with `core_placement` and a first `build`. Ready flags and votes reset when a
+with `specialist_pick`, then `core_placement` and a first `build`. Ready flags and votes reset when a
 step is entered. Voting: a vote counts at once and can be changed until the
 last player has voted. Then, if every player chose the same option, that
 option wins; otherwise ONE player's vote is picked at random, each player's vote being one equally likely ticket (so an option with
@@ -43,6 +43,7 @@ when a pick was made, `picked: { player, random: true }`.
 
 | Step             | Intents allowed (besides `abandon` by the host)   | How it ends                                                                                               |
 | ---------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `specialist_pick` | `pick_specialist`, `ready`, `unready`            | Each player picks one specialist (`pick_specialist`, an ID of `content/specialists.json`, stored in `team.specialists[player]`; changeable until Ready; `ready` without one is `specialist_not_picked`). All ready: `core_placement`. No random draw, `pending` is null (issue #470, RS-13). |
 | `core_placement` | `place_core`, `ready`, `unready`                  | Each player places their own Core in their own plot (`place_core` stores a pending position in `pending.positions[player]`, changeable until Ready; `ready` without one is `core_not_placed`). All ready: every Core is placed in player order, `startingKit` hook, then `build`. No vote, no random draw. |
 | `build`          | board edits, `ready`, `unready`, extension intents | All players ready: `pve_choice`.                                                                          |
 | `pve_choice`     | `vote` (an option id from `pending.options`)      | All voted: winner chosen, then `pve_battle`. The options were stored earlier in `upcomingPve` (see "Game deps"). |
@@ -55,7 +56,7 @@ when a pick was made, `picked: { player, random: true }`.
 | `pvp_summary`    | `ready`, `unready`                                | All ready: `rewards` hook; a loss costs `pvpLossLifeCost` lives; 0 lives gives `run_over`, else `event_choice`. |
 | `run_over`       | none                                              | Final. `outcome` is `defeated` or `abandoned`.                                                            |
 
-**Ready locks (issue #58).** In `core_placement`, `build` and `shop`, a player who is Ready can
+**Ready locks (issue #58).** In `specialist_pick`, `core_placement`, `build` and `shop`, a player who is Ready can
 only `unready` (the host can also `abandon`): their buy, sell, re-roll, board
 edits and extension intents are rejected with `locked_ready` until they
 unready. `applyIntent` enforces it for built-in and extension intents alike

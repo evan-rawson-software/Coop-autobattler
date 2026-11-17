@@ -70,6 +70,11 @@ interface Strategy {
   readonly description: string;
   /** Which legal Core position: back row, front row, middle or random. */
   readonly core: 'back' | 'front' | 'middle' | 'random';
+  /**
+   * The specialist every player of the party picks (RS-13): a fixed table, no
+   * random draw, so the strategy's streams do not move.
+   */
+  readonly specialist: string;
   /** How much the shop buys of each building definition (0 = never). */
   readonly want: Readonly<Record<string, number>>;
   /** Score added per building tier. */
@@ -151,6 +156,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     description:
       'Extractors feeding barracks and Golems, no defenses, hard PvE.',
     core: 'front',
+    specialist: 'spec_beastbinder',
     want: {
       bld_barracks: 10,
       bld_extractor: 8,
@@ -217,6 +223,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     description:
       'Turrets and walls around the Core, casters, then a slow ramp.',
     core: 'back',
+    specialist: 'spec_wardsmith',
     want: {
       bld_turret: 10,
       ...wantWalls(8),
@@ -278,6 +285,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
   siege: {
     description: 'Few, high-tier barracks and armories behind a wall screen.',
     core: 'back',
+    specialist: 'spec_alchemist',
     want: {
       bld_barracks: 9,
       bld_armory: 8,
@@ -345,6 +353,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
   weak: {
     description: 'Buys one thing at random and scatters it unconnected.',
     core: 'random',
+    specialist: 'spec_flowmancer',
     want: {},
     tierBonus: 0,
     maxBuys: 1,
@@ -1169,6 +1178,18 @@ function voteAll(d: Driver, choice: string): void {
 function playStep(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
   const st = d.state;
   switch (st.step) {
+    case 'specialist_pick': {
+      // Every player takes the strategy's specialist (a fixed table), then
+      // readies.
+      for (let p = 0; p < st.players.length; p++) {
+        d.send(p, { type: 'pick_specialist', specialist: s.specialist });
+      }
+      for (let p = 0; p < st.players.length; p++) {
+        if (d.state.step !== 'specialist_pick') break;
+        d.send(p, { type: 'ready' });
+      }
+      return;
+    }
     case 'core_placement': {
       // Each player places their own Core in their own plot, then readies.
       for (let p = 0; p < st.players.length; p++) {

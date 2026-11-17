@@ -6,6 +6,7 @@
 import type { Step } from '@game/session';
 
 export type RunScreenId =
+  | 'specialist'
   | 'core'
   | 'build'
   | 'pve_choice'
@@ -19,6 +20,8 @@ export type RunScreenId =
 /** The screen for a step. The shop step is the Build screen, shop open or not. */
 export function screenForStep(step: Step): RunScreenId {
   switch (step) {
+    case 'specialist_pick':
+      return 'specialist';
     case 'core_placement':
       return 'core';
     case 'build':
@@ -44,6 +47,8 @@ export function screenForStep(step: Step): RunScreenId {
 /** The name of a step for the top bar. */
 export function stepLabel(step: Step): string {
   switch (step) {
+    case 'specialist_pick':
+      return 'Pick a specialist';
     case 'core_placement':
       return 'Place the Core';
     case 'build':

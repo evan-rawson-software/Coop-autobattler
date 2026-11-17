@@ -18,6 +18,7 @@ import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { RunOverScreen } from '../end/RunOverScreen.js';
 import { EventChoiceScreen, EventResolveScreen } from '../event/EventScreen.js';
 import { CoreScreen } from '../placement/CoreScreen.js';
+import { SpecialistScreen } from '../specialist/SpecialistScreen.js';
 import { AppShell, Panel, RunBarContext } from '../shell/AppShell.js';
 import { GameFrame } from '../shell/GameFrame.js';
 import {
@@ -141,6 +142,7 @@ function ReadyRun(props: { run: ActiveRun }) {
           gold: state.perPlayer[run.session.acting]?.gold ?? 0,
           acting: run.session.acting,
           ready: state.perPlayer.map((p) => p.ready),
+          specialists: state.team.specialists ?? null,
           voted: state.votes?.choices.map((c) => c !== null) ?? null,
           actions: state.actionCounter,
           history: state.history.length,
@@ -207,6 +209,9 @@ function ReadyRun(props: { run: ActiveRun }) {
 
   let body: ComponentChildren;
   switch (screen) {
+    case 'specialist':
+      body = <SpecialistScreen run={run} />;
+      break;
     case 'core':
       body = <CoreScreen run={run} />;
       break;

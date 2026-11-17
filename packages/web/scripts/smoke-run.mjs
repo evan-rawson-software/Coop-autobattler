@@ -217,6 +217,37 @@ export async function runRunSmoke({
   };
   const waitStep = (step, p = page) =>
     p.waitForFunction((s) => window.__debug?.run?.state().step === s, step);
+  // The specialist pick (RS-13, issue #470): every player takes a specialist
+  // (the roster in turn) and readies; the Core placement opens after the last.
+  const SPECIALISTS = [
+    'spec_flowmancer',
+    'spec_wardsmith',
+    'spec_beastbinder',
+    'spec_alchemist',
+  ];
+  const pickSpecialists = async (players = 1) => {
+    await page.waitForSelector('#specialist-ready');
+    for (let p = 0; p < players; p++) {
+      if (players > 1) {
+        await page.click(
+          `#acting-switch [data-action="act-as"][data-player="${p}"]`,
+        );
+        await page.waitForFunction(
+          (n) => window.__debug?.run?.state().acting === n,
+          p,
+        );
+      }
+      await page.click(
+        `[data-action="pick-specialist"][data-specialist="${SPECIALISTS[p % 4]}"]`,
+      );
+      await page.waitForFunction(
+        () => !document.querySelector('#specialist-ready')?.disabled,
+      );
+      await page.click('#specialist-ready');
+      if (p < players - 1) await page.waitForSelector('#specialist-unready');
+    }
+    await page.waitForSelector('#core-confirm');
+  };
   const reloadSame = async (what) => {
     const before = await R.state();
     const screen = await R.screen();
@@ -682,9 +713,55 @@ export async function runRunSmoke({
   await shotDark('art2-menu');
 
   // ---------------------------------------------------------------------
-  // New run: Core placement
+  // New run: the specialist pick, then Core placement
   await page.click('#new-run-button');
+  await page.waitForSelector('#specialist-ready');
+  await settle();
+  const sp0 = await R.state();
+  check(
+    sp0.step === 'specialist_pick' &&
+      (await R.screen()) === 'specialist' &&
+      sp0.specialists === null,
+    `new run opens on the specialist pick (run ${sp0.runId})`,
+  );
+  check(
+    (await page.locator('[data-action="pick-specialist"]').count()) === 4 &&
+      /Pick a specialist/.test(
+        await page.locator('.topbar-title').innerText(),
+      ) &&
+      (await page.locator('#specialist-ready').isDisabled()) &&
+      (await page.locator('[data-field="bar-specialist"]').count()) === 0,
+    'specialist pick: four cards, Ready is off until a pick, the run bar names no specialist yet',
+  );
+  await page.click('[data-specialist="spec_wardsmith"]');
+  await page.waitForFunction(
+    () => window.__debug?.run?.state().specialists?.[0] === 'spec_wardsmith',
+  );
+  // A change before Ready is allowed; the bar shows the acting player's pick.
+  await page.click('[data-specialist="spec_flowmancer"]');
+  await page.waitForFunction(
+    () => window.__debug?.run?.state().specialists?.[0] === 'spec_flowmancer',
+  );
+  check(
+    (await page.locator('[data-field="bar-specialist"]').innerText()) ===
+      'Flowmancer' &&
+      (await page
+        .locator('[data-field="bar-specialist"]')
+        .getAttribute('title')) === 'Specialist: Flowmancer' &&
+      /Flowmancer/.test(
+        await page.locator('[data-field="party-pick"]').innerText(),
+      ),
+    'specialist pick: a pick (and a change of it) shows in the run bar and the party panel',
+  );
+  await shot('run-0-specialist-pick');
+  await reloadSame('Specialist pick');
+  await page.click('#specialist-ready');
   await page.waitForSelector('#core-confirm');
+  check(
+    (await page.locator('[data-field="bar-specialist"]').innerText()) ===
+      'Flowmancer',
+    'the run bar keeps the specialist on the later screens',
+  );
   await page.waitForFunction(() => window.__debug?.placement?.legal);
   await settle();
   const s0 = await R.state();
@@ -1495,7 +1572,7 @@ export async function runRunSmoke({
   await page.goto(`${baseUrl}#/?seed=${SEED}`);
   await page.waitForSelector('#new-run-button');
   await page.click('#new-run-button');
-  await page.waitForSelector('#core-confirm');
+  await pickSpecialists();
   await page.waitForFunction(() => window.__debug?.run?.state);
   const runB = (await R.state()).runId;
   check(runB !== runA, `a second run was started (${runB})`);
@@ -1945,12 +2022,12 @@ export async function runRunSmoke({
 
   // New run from the run-over screen goes to Core placement.
   await page.click('#over-new-run');
-  await page.waitForSelector('#core-confirm');
-  await waitStep('core_placement');
+  await page.waitForSelector('#specialist-ready');
+  await waitStep('specialist_pick');
   check(
-    (await R.state()).step === 'core_placement' &&
+    (await R.state()).step === 'specialist_pick' &&
       (await R.state()).runId !== runA,
-    'Run over: New run starts a fresh run',
+    'Run over: New run starts a fresh run, at the specialist pick',
   );
   await page.click('#menu-button');
   await page.waitForSelector('#main-menu');
@@ -2585,8 +2662,17 @@ export async function runRunSmoke({
   // switched from the top bar. Every step needs both players to act.
   await goMenu(`?seed=${SEED}&players=2`);
   await page.click('#new-run-button');
-  await page.waitForSelector('#core-confirm');
+  await pickSpecialists(2);
   await page.waitForFunction(() => window.__debug?.placement?.legal);
+  {
+    // Each player's pick is in the state and was visible to the party.
+    const picks = (await R.state()).specialists;
+    check(
+      JSON.stringify(picks) ===
+        JSON.stringify([SPECIALISTS[0], SPECIALISTS[1]]),
+      `two players: each picked through the acting-player switch (${JSON.stringify(picks)})`,
+    );
+  }
   const actAs = async (p) => {
     await page.click(
       `#acting-switch [data-action="act-as"][data-player="${p}"]`,

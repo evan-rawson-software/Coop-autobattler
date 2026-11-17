@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "specialists.schema.json",
+  "title": "Starting specialists",
+  "description": "The roster of starting specialists (RS-13, CB-51): every player picks one before Core placement. Each has a family, the owner-scoped bonus effects of that family (CB-51a, integer percents) and the ID of its signature building. The effects and the signature building act from later steps of issue #468; this file only holds the numbers.",
+  "type": "object",
+  "required": ["specialists"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "specialists": {
+      "description": "The roster in the order the pick screen shows it. Signature building IDs are unique.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "required": ["id", "family", "effects", "signature"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^spec_[a-z0-9_]+$",
+            "maxLength": 48
+          },
+          "family": {
+            "description": "The kind of building or unit the bonus touches.",
+            "enum": ["logistics", "defense", "units", "industry"]
+          },
+          "effects": {
+            "description": "The bonus on the owner's own buildings or units, in file order.",
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["kind", "target", "percent"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": { "const": "building_health_percent" },
+                    "target": {
+                      "enum": [
+                        "all",
+                        "wall",
+                        "gate",
+                        "turret",
+                        "source",
+                        "route",
+                        "unit_producer",
+                        "economy"
+                      ]
+                    },
+                    "percent": { "$ref": "#/$defs/percent" }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": ["kind", "percent"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "unit_health_percent",
+                        "source_speed_percent",
+                        "production_speed_percent"
+                      ]
+                    },
+                    "percent": { "$ref": "#/$defs/percent" }
+                  }
+                }
+              ]
+            }
+          },
+          "signature": {
+            "description": "The ID of the building only this specialist can buy.",
+            "type": "string",
+            "pattern": "^bld_[a-z0-9_]+$"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "percent": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    }
+  }
+}

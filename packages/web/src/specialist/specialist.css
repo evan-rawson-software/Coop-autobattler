@@ -1,0 +1,126 @@
+/* The specialist pick (wireframe 5b). Plain CSS on the shared custom properties. */
+
+.specialist-screen .specialist-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specialist-cards > li {
+  display: flex;
+}
+
+.specialist-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.specialist-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+}
+
+.specialist-card:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.specialist-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.2rem;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+}
+
+.specialist-card-head h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.specialist-card p {
+  margin: 0;
+}
+
+.specialist-label {
+  margin: 0.4rem 0 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.specialist-signature {
+  font-weight: 600;
+}
+
+.specialist-who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: auto 0 0;
+  padding: 0.5rem 0 0;
+  list-style: none;
+}
+
+.specialist-who li {
+  padding: 0.1rem 0.5rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.party-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.party-picks li {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.05rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.party-picks li.mine {
+  border-color: var(--accent);
+}
+
+.party-picks .who {
+  font-weight: 600;
+}
+
+.specialist-lines {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+@media (max-width: 900px) {
+  .specialist-screen .specialist-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

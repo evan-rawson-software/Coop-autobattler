@@ -19,6 +19,7 @@ import {
   rawEvents,
   rawMapgen,
   rawPoints,
+  rawSpecialists,
   rawPresentationEn,
   rawResources,
   rawSim,
@@ -51,6 +52,7 @@ export const content = loadAllContentOrThrow({
   units: rawUnits,
   buildings: rawBuildings,
   points: rawPoints,
+  specialists: rawSpecialists,
   presentation: rawPresentationEn,
 });
 export const mapgen = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });

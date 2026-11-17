@@ -345,6 +345,36 @@
       "name": "Pact of overcharge"
     }
   },
+  "specialists": {
+    "spec_flowmancer": {
+      "name": "Flowmancer",
+      "family": "Logistics",
+      "bonus": "Collectors produce about 10% faster.",
+      "signature": "Mana Well (1x1)",
+      "description": "A weak collector for any open cell, no node. You pick the resource."
+    },
+    "spec_wardsmith": {
+      "name": "Wardsmith",
+      "family": "Defense",
+      "bonus": "Walls, gates and turrets get about 15% more health.",
+      "signature": "Rune Ward (1x1)",
+      "description": "Enemies that hit a wall beside it take damage back."
+    },
+    "spec_beastbinder": {
+      "name": "Beastbinder",
+      "family": "Units",
+      "bonus": "Units from your producers get about 10% more health.",
+      "signature": "Familiar Roost (1x2)",
+      "description": "Makes Familiars: fast, fragile melee units."
+    },
+    "spec_alchemist": {
+      "name": "Alchemist",
+      "family": "Industry",
+      "bonus": "Refineries and ramp buildings work about 15% faster.",
+      "signature": "Transmuter (1x2)",
+      "description": "Turns one base resource into another at a loss. You pick the output."
+    }
+  },
   "templates": {
     "effects": {
       "splitter": "Splits one flow into {outs} outputs",
@@ -470,6 +500,8 @@
       "reason_ghost_selection_pending": "Still choosing your next opponent…",
       "reason_invalid_border": "That is not a border you can connect to.",
       "reason_invalid_choice": "That choice is not valid.",
+      "reason_specialist_not_picked": "Pick a specialist first.",
+      "reason_unknown_specialist": "That is not one of the specialists.",
       "reason_invalid_intent": "That action is not valid.",
       "reason_invalid_owner": "That owner does not exist.",
       "reason_invalid_path": "The path is not a valid line of free cells.",
@@ -963,6 +995,23 @@
       "uiKitRandomWall": "Random wall",
       "uiKitRandomWallTip": "Walls come in random shapes. You see them in the inventory after you place the Core.",
       "uiPrimaryPlaceCoreSub": "and start building",
+      "specialistTitle": "Pick a specialist",
+      "specialistSubtitle": "Choose one. Duplicates are allowed. There is no skip.",
+      "specialistFamily": "Family: {family}",
+      "specialistBonusLabel": "Bonus",
+      "specialistSignatureLabel": "Signature building",
+      "specialistPartyTitle": "Party picks",
+      "specialistNoneYet": "no pick yet",
+      "specialistStatusChoosing": "choosing",
+      "specialistStatusNotReady": "not ready",
+      "specialistStatusLocked": "ready · locked",
+      "specialistNote": "Ready locks your pick. Nothing is given to a partner.",
+      "specialistNeedPick": "Pick a specialist to continue.",
+      "specialistBar": "Specialist: {name}",
+      "specialistListTitle": "Specialists",
+      "specialistLine": "{player}: {specialist}",
+      "uiPrimaryPickReady": "Ready",
+      "uiPrimaryPickReadySub": "and place the Core",
       "coreTitle": "Place your Core",
       "coreAbout": "The Core is the heart of your base. If enemies destroy it, you lose the battle.",
       "coreClickPre": "Click the ",

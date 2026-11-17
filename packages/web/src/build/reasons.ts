@@ -82,6 +82,8 @@ export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   sealed_producer: reason('sealed_producer'),
   invalid_intent: reason('invalid_intent'),
   invalid_choice: reason('invalid_choice'),
+  specialist_not_picked: reason('specialist_not_picked'),
+  unknown_specialist: reason('unknown_specialist'),
   unknown_intent: reason('unknown_intent'),
   save_failed: reason('save_failed'),
   // Run controller and opponent selection

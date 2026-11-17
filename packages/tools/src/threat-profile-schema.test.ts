@@ -14,6 +14,7 @@ import {
   rawBuildings,
   rawMapgen,
   rawPoints,
+  rawSpecialists,
   rawPresentationEn,
   rawResources,
   rawTerrain,
@@ -42,6 +43,7 @@ describe('threat-profile.schema.json', () => {
     units: rawUnits,
     buildings: rawBuildings,
     points: rawPoints,
+    specialists: rawSpecialists,
     presentation: rawPresentationEn,
   });
   const mapgen = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });

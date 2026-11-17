@@ -10,6 +10,7 @@ import {
   rawBuildings,
   rawMapgen,
   rawPoints,
+  rawSpecialists,
   rawPresentationEn,
   rawResources,
   rawTerrain,
@@ -27,6 +28,7 @@ export function loadWebContent(): WebContent {
     units: rawUnits,
     buildings: rawBuildings,
     points: rawPoints,
+    specialists: rawSpecialists,
     presentation: rawPresentationEn,
   });
   const mapgen = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });

@@ -134,6 +134,7 @@ const OPTIONAL_KEYS = ['caravanCount', 'caravanFirst'];
 const NEXT_SHOP_STEPS: readonly Step[] = ['event_resolve', 'shop'];
 
 const READY_STEPS: readonly Step[] = [
+  'specialist_pick',
   'core_placement',
   'build',
   'shop',
@@ -498,12 +499,34 @@ function check(
     if (team.state.map.partySize !== n) {
       err('team: map party size does not match the number of players.');
     }
-    const coreRequired = st !== 'core_placement' && st !== 'run_over';
+    const coreRequired =
+      st !== 'specialist_pick' && st !== 'core_placement' && st !== 'run_over';
     if (coreRequired && team.state.cores.some((c) => c === null)) {
       err(`team: every player's Core must be placed in step "${st}".`);
     }
-    if (st === 'core_placement' && team.state.cores.some((c) => c !== null)) {
-      err('team: the Core is already placed in step "core_placement".');
+    if (
+      (st === 'core_placement' || st === 'specialist_pick') &&
+      team.state.cores.some((c) => c !== null)
+    ) {
+      err(`team: the Core is already placed in step "${st}".`);
+    }
+    // Specialists (RS-13): optional, so a state from before them has none.
+    // Past the pick step a state that has them has them all (Ready needs a
+    // pick). A ready player has picked.
+    const picks = team.state.specialists;
+    if (st !== 'specialist_pick' && st !== 'run_over' && picks !== undefined) {
+      if (picks.some((e) => e === null)) {
+        err(`team: every player's specialist must be picked in step "${st}".`);
+      }
+    }
+    if (st === 'specialist_pick' && Array.isArray(data['perPlayer'])) {
+      (data['perPlayer'] as unknown[]).forEach((pp, i) => {
+        if (isRecord(pp) && pp['ready'] === true && picks?.[i] == null) {
+          err(
+            `team.specialists[${String(i)}]: a ready player needs a specialist.`,
+          );
+        }
+      });
     }
   }
 
@@ -613,6 +636,9 @@ function check(
   const pending = data['pending'];
   if (!isJson(pending)) err('pending: must be JSON.');
   const p = isRecord(pending) ? pending : {};
+  if (st === 'specialist_pick' && pending !== null) {
+    err('pending: must be null in step "specialist_pick".');
+  }
   if (st === 'core_placement') {
     const positions = p['positions'];
     if (!Array.isArray(positions) || positions.length !== n) {
@@ -773,6 +799,7 @@ function check(
 
   // Leg
   const pveSteps: Step[] = [
+    'specialist_pick',
     'core_placement',
     'build',
     'pve_choice',

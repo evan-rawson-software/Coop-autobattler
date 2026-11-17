@@ -170,7 +170,7 @@ export function stepsDone(i: TutorialInput): readonly boolean[] {
     s === 'event_choice' ||
     s === 'event_resolve';
   return [
-    s !== 'core_placement',
+    s !== 'core_placement' && s !== 'specialist_pick',
     i.facts.extractor || fought,
     i.facts.barracksFed || fought,
     i.facts.turretPowered || i.turretSkipped || fought,

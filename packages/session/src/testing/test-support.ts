@@ -13,6 +13,7 @@ import economyJson from '../../../../content/economy.json';
 import eventsJson from '../../../../content/events.json';
 import mapgenJson from '../../../../content/mapgen.json';
 import pointsJson from '../../../../content/points.json';
+import specialistsJson from '../../../../content/specialists.json';
 import presentationJson from '../../../../content/presentation.en.json';
 import resourcesJson from '../../../../content/resources.json';
 import simJson from '../../../../content/sim.json';
@@ -36,6 +37,7 @@ export const content = loadAllContentOrThrow({
   units: unitsJson,
   buildings: buildingsJson,
   points: pointsJson,
+  specialists: specialistsJson,
   presentation: presentationJson,
 });
 export const mapgenConfig = loadMapgenOrThrow(mapgenJson, {
@@ -146,13 +148,46 @@ export function voteAll(
   return s;
 }
 
-/** Every player places their own Core and readies, reaching `build`. */
+/** The specialist player `player` picks in the helpers: the roster in turn. */
+export function testSpecialist(player: number): string {
+  const ids = content.specialists.ids();
+  return ids[player % ids.length] as string;
+}
+
+/**
+ * Every player picks a specialist (`testSpecialist`) and readies, reaching
+ * `core_placement`. A state that is not in `specialist_pick` is returned as is.
+ */
+export function pickSpecialistAll(
+  state: RunState,
+  deps: RunDeps = baseDeps,
+  effects: Effect[] = [],
+): RunState {
+  if (state.step !== 'specialist_pick') return state;
+  let cur = state;
+  for (let p = 0; p < cur.players.length; p++) {
+    const r = ok(
+      cur,
+      p,
+      { type: 'pick_specialist', specialist: testSpecialist(p) },
+      deps,
+    );
+    effects.push(...r.effects);
+    cur = r.state;
+  }
+  return readyAll(cur, deps, effects);
+}
+
+/**
+ * Every player picks a specialist if the run is still in that step, places
+ * their own Core and readies, reaching `build`.
+ */
 export function placeCoreAll(
   state: RunState,
   deps: RunDeps = baseDeps,
   effects: Effect[] = [],
 ): RunState {
-  let cur = state;
+  let cur = pickSpecialistAll(state, deps, effects);
   for (let p = 0; p < cur.players.length; p++) {
     const r = ok(cur, p, { type: 'place_core', ...corePosition(cur, p) }, deps);
     effects.push(...r.effects);

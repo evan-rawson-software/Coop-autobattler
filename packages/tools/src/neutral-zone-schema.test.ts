@@ -12,6 +12,7 @@ import {
   rawBuildings,
   rawMapgen,
   rawPoints,
+  rawSpecialists,
   rawPresentationEn,
   rawResources,
   rawTerrain,
@@ -39,6 +40,7 @@ describe('neutral-zone.schema.json', () => {
     units: rawUnits,
     buildings: rawBuildings,
     points: rawPoints,
+    specialists: rawSpecialists,
     presentation: rawPresentationEn,
   });
   const config = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });

@@ -68,7 +68,7 @@ describe('saved runs in IndexedDB, as a page reload sees them', () => {
     expect(list.map((x) => x.runId).sort()).toEqual(ids);
     for (const item of list) {
       expect(item.corrupt).toBe(false);
-      if (!item.corrupt) expect(item.summary.step).toBe('core_placement');
+      if (!item.corrupt) expect(item.summary.step).toBe('specialist_pick');
     }
   });
 
@@ -151,12 +151,12 @@ describe('saved runs in IndexedDB, as a page reload sees them', () => {
     // This tab still thinks it is at the start and makes a different move.
     const stale = await started.controller.dispatch(
       0,
-      { type: 'place_core', x: 0, y: 0 },
+      { type: 'pick_specialist', specialist: 'spec_wardsmith' },
       3,
     );
     expect(stale).toMatchObject({ ok: false, reason: 'stale' });
     expect(told).toBe(1);
-    expect(started.controller.state.step).toBe('core_placement');
+    expect(started.controller.state.step).toBe('specialist_pick');
   });
 });
 
@@ -169,7 +169,8 @@ describe('the run store', () => {
     expect(st.status).toBe('ready');
     if (st.status !== 'ready') return;
     expect(st.run.runId).toBe(r.runId);
-    expect(st.run.session.run.step).toBe('core_placement');
+    // A new run asks for a specialist first (RS-13).
+    expect(st.run.session.run.step).toBe('specialist_pick');
     expect(st.run.session.run.seed).toBe(12);
     closeRun();
     expect(runStore.get().status).toBe('idle');
@@ -177,7 +178,7 @@ describe('the run store', () => {
     await showRun(r.runId);
     const again = runStore.get();
     expect(again.status === 'ready' && again.run.session.run.step).toBe(
-      'core_placement',
+      'specialist_pick',
     );
     closeRun();
   });

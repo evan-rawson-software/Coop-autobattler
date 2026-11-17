@@ -42,6 +42,11 @@ export interface OpponentInfo {
   readonly boss?: string;
   /** The run modifiers a ghost opponent carries; absent for any other. */
   readonly modifiers?: readonly TeamModifier[];
+  /**
+   * A ghost opponent's specialists, one entry per player (MM-11a); absent for
+   * any other opponent and for a ghost from before specialists.
+   */
+  readonly specialists?: readonly (string | null)[];
 }
 
 export interface BattleViewProps {

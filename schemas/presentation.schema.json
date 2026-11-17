@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "presentation.schema.json",
   "title": "Presentation text (one language)",
-  "description": "Display text keyed by content ID, plus the sentence templates the screens fill in. No rules. Texts may mention a resource as {res_x}, which is replaced by its configured name. Cross-file checks require exactly one entry per building, unit, terrain feature, archetype, event type and run modifier, and that every template placeholder is a slot its template allows.",
+  "description": "Display text keyed by content ID, plus the sentence templates the screens fill in. No rules. Texts may mention a resource as {res_x}, which is replaced by its configured name. Cross-file checks require exactly one entry per building, unit, terrain feature, archetype, event type, run modifier and specialist, and that every template placeholder is a slot its template allows.",
   "type": "object",
   "required": [
     "buildings",
@@ -11,6 +11,7 @@
     "archetypes",
     "events",
     "modifiers",
+    "specialists",
     "templates"
   ],
   "additionalProperties": false,
@@ -52,6 +53,15 @@
       },
       "additionalProperties": {
         "$ref": "#/$defs/modifierEntry"
+      }
+    },
+    "specialists": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^spec_[a-z0-9_]+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/specialistEntry"
       }
     },
     "templates": {
@@ -169,6 +179,8 @@
             "reason_ghost_selection_pending",
             "reason_invalid_border",
             "reason_invalid_choice",
+            "reason_specialist_not_picked",
+            "reason_unknown_specialist",
             "reason_invalid_intent",
             "reason_invalid_owner",
             "reason_invalid_path",
@@ -680,6 +692,23 @@
             "uiKitRandomWall",
             "uiKitRandomWallTip",
             "uiPrimaryPlaceCoreSub",
+            "specialistTitle",
+            "specialistSubtitle",
+            "specialistFamily",
+            "specialistBonusLabel",
+            "specialistSignatureLabel",
+            "specialistPartyTitle",
+            "specialistNoneYet",
+            "specialistStatusChoosing",
+            "specialistStatusNotReady",
+            "specialistStatusLocked",
+            "specialistNote",
+            "specialistNeedPick",
+            "specialistBar",
+            "specialistListTitle",
+            "specialistLine",
+            "uiPrimaryPickReady",
+            "uiPrimaryPickReadySub",
             "coreTitle",
             "coreAbout",
             "coreClickPre",
@@ -887,6 +916,8 @@
             "reason_ghost_selection_pending": { "$ref": "#/$defs/screenText" },
             "reason_invalid_border": { "$ref": "#/$defs/screenText" },
             "reason_invalid_choice": { "$ref": "#/$defs/screenText" },
+            "reason_specialist_not_picked": { "$ref": "#/$defs/screenText" },
+            "reason_unknown_specialist": { "$ref": "#/$defs/screenText" },
             "reason_invalid_intent": { "$ref": "#/$defs/screenText" },
             "reason_invalid_owner": { "$ref": "#/$defs/screenText" },
             "reason_invalid_path": { "$ref": "#/$defs/screenText" },
@@ -1398,6 +1429,23 @@
             "uiKitRandomWall": { "$ref": "#/$defs/screenText" },
             "uiKitRandomWallTip": { "$ref": "#/$defs/screenText" },
             "uiPrimaryPlaceCoreSub": { "$ref": "#/$defs/screenText" },
+            "specialistTitle": { "$ref": "#/$defs/screenText" },
+            "specialistSubtitle": { "$ref": "#/$defs/screenText" },
+            "specialistFamily": { "$ref": "#/$defs/screenText" },
+            "specialistBonusLabel": { "$ref": "#/$defs/screenText" },
+            "specialistSignatureLabel": { "$ref": "#/$defs/screenText" },
+            "specialistPartyTitle": { "$ref": "#/$defs/screenText" },
+            "specialistNoneYet": { "$ref": "#/$defs/screenText" },
+            "specialistStatusChoosing": { "$ref": "#/$defs/screenText" },
+            "specialistStatusNotReady": { "$ref": "#/$defs/screenText" },
+            "specialistStatusLocked": { "$ref": "#/$defs/screenText" },
+            "specialistNote": { "$ref": "#/$defs/screenText" },
+            "specialistNeedPick": { "$ref": "#/$defs/screenText" },
+            "specialistBar": { "$ref": "#/$defs/screenText" },
+            "specialistListTitle": { "$ref": "#/$defs/screenText" },
+            "specialistLine": { "$ref": "#/$defs/screenText" },
+            "uiPrimaryPickReady": { "$ref": "#/$defs/screenText" },
+            "uiPrimaryPickReadySub": { "$ref": "#/$defs/screenText" },
             "coreTitle": { "$ref": "#/$defs/screenText" },
             "coreAbout": { "$ref": "#/$defs/screenText" },
             "coreClickPre": { "$ref": "#/$defs/screenText" },
@@ -1617,6 +1665,18 @@
         "flavour": {
           "type": "string"
         }
+      }
+    },
+    "specialistEntry": {
+      "type": "object",
+      "required": ["name", "family", "bonus", "signature", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "family": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "bonus": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "signature": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "description": { "type": "string", "minLength": 1, "pattern": "\\S" }
       }
     },
     "modifierEntry": {

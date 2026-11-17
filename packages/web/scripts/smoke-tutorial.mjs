@@ -35,6 +35,17 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
   };
   const title = async () =>
     (await card.locator('.tut-title').textContent()).trim();
+  // The specialist pick comes first in every new run (RS-13): take the first
+  // card and Ready; the Core placement opens.
+  const pickSpecialist = async () => {
+    await page.waitForSelector('#specialist-ready');
+    await page.click('[data-action="pick-specialist"]');
+    await page.waitForFunction(
+      () => !document.querySelector('#specialist-ready')?.disabled,
+    );
+    await page.click('#specialist-ready');
+    await page.waitForSelector('#core-confirm');
+  };
 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.evaluate(() => {
@@ -52,7 +63,7 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
   // A plain new run has no tutorial.
   await goMenu();
   await page.click('#new-run-button');
-  await page.waitForSelector('#core-confirm');
+  await pickSpecialist();
   await settle();
   check(
     (await card.count()) === 0,
@@ -62,7 +73,7 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
   // Step 1: Place your Core.
   await goMenu();
   await page.click('#tutorial-button');
-  await page.waitForSelector('#core-confirm');
+  await pickSpecialist();
   await page.waitForFunction(() => window.__debug?.placement?.legal);
   await settle();
   check(

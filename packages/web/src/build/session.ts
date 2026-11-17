@@ -140,7 +140,30 @@ export class BuildSession {
       '1.0.0',
     );
     if (!r.ok) throw new Error(`Could not start a run: ${r.reason}`);
-    return new BuildSession(r.controller, now);
+    const session = new BuildSession(r.controller, now);
+    await session.pickSpecialists();
+    return session;
+  }
+
+  /**
+   * The dev runs start at the Core placement: every player takes a specialist
+   * (the roster in turn) and readies, as the pick screen would (RS-13).
+   */
+  private async pickSpecialists(): Promise<void> {
+    const state = this.controller.state;
+    if (state.step !== 'specialist_pick') return;
+    const ids = content.specialists.ids();
+    for (let p = 0; p < state.players.length; p++) {
+      const r = await this.dispatchAs(p, {
+        type: 'pick_specialist',
+        specialist: ids[p % ids.length] as string,
+      });
+      if (!r.ok) throw new Error(`Could not pick a specialist: ${r.reason}`);
+    }
+    for (let p = 0; p < state.players.length; p++) {
+      const r = await this.dispatchAs(p, { type: 'ready' });
+      if (!r.ok) throw new Error(`Could not ready the pick: ${r.reason}`);
+    }
   }
 
   get run(): RunState {

@@ -21,6 +21,7 @@ import {
   rawBuildings,
   rawMapgen,
   rawPoints,
+  rawSpecialists,
   rawPresentationEn,
   rawResources,
   rawTerrain,
@@ -50,6 +51,7 @@ describe('run-state.schema.json', () => {
     units: rawUnits,
     buildings: rawBuildings,
     points: rawPoints,
+    specialists: rawSpecialists,
     presentation: rawPresentationEn,
   });
   const mapgenConfig = loadMapgenOrThrow(rawMapgen, {
@@ -96,6 +98,10 @@ describe('run-state.schema.json', () => {
     };
     const pos = listLegalCorePositions(s.team.map, content, mapgenConfig, 0)[0];
     if (pos === undefined) throw new Error('no core position');
+    send(0, { type: 'pick_specialist', specialist: 'spec_flowmancer' });
+    send(1, { type: 'pick_specialist', specialist: 'spec_flowmancer' });
+    send(0, { type: 'ready' });
+    send(1, { type: 'ready' });
     send(0, { type: 'place_core', ...pos });
     const pos1 = listLegalCorePositions(
       s.team.map,

@@ -9,7 +9,7 @@ import { defaultDraftPick } from '../rules/caravan.js';
 import { applyIntent, createRun } from '../rules/machine.js';
 import { startRun, type RunController } from '../app/run-controller.js';
 import { createMemorySaveStore } from '../app/save-store-memory.js';
-import { coreMove, makeGameDeps } from './test-support.js';
+import { coreMove, makeGameDeps, testSpecialist } from './test-support.js';
 import type {
   CreateRunArgs,
   Effect,
@@ -77,6 +77,16 @@ export async function stepOnce(g: Game): Promise<void> {
   const n = s.players.length;
   const all = Array.from({ length: n }, (_, i) => i);
   switch (s.step) {
+    case 'specialist_pick': {
+      for (const p of all) {
+        await send(g, p, {
+          type: 'pick_specialist',
+          specialist: testSpecialist(p),
+        });
+      }
+      for (const p of all) await send(g, p, { type: 'ready' });
+      return;
+    }
     case 'core_placement': {
       for (const p of all) await send(g, p, coreMove(s, p));
       for (const p of all) await send(g, p, { type: 'ready' });
@@ -223,6 +233,16 @@ export function botStep(
     return true;
   };
   switch (s.step) {
+    case 'specialist_pick': {
+      for (let p = 0; p < n; p++) {
+        if (!put(p, { type: 'pick_specialist', specialist: testSpecialist(p) }))
+          return null;
+      }
+      for (let p = 0; p < n; p++) {
+        if (!put(p, { type: 'ready' })) return null;
+      }
+      return s;
+    }
     case 'core_placement': {
       for (let p = 0; p < n; p++) {
         if (!put(p, coreMove(s, p))) return null;
