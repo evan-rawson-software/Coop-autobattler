@@ -58,6 +58,7 @@ describe('Core lookups when drawing a battle with several Cores', () => {
   const d: BattleDescription = {
     kind: 'versus',
     input: {
+      round: 1,
       teamA: cores(3, 3),
       teamB: cores(4, 3),
       seed: 7,

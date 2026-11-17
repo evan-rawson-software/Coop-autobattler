@@ -381,7 +381,18 @@ validate:content` always does; the generator also treats a band with no column
 left as having no point); `buffs` has 1 to 16 entries, each with a unique `id`
 matching `poi_[a-z0-9_]+`, a `kind` of `unit_strength` or `heal`, and an
 integer `weight` from 1 to 1000. `neutralZone.depth` in `mapgen.json` must be
-odd (the loader and `mapgen.schema.json` refuse an even one).
+odd (the loader and `mapgen.schema.json` refuse an even one). `guards` (CB-8e):
+`baseBudget` 1 to 1 000 000, `growthPercent` 100 to 1000, `maxGuardsPerPoint` 1
+to 9 (the point's cell and its 8 neighbours), `leashCells` 1 to 8, `units`
+1 to 16 entries with a unit ID of the unit file that does not fly, an integer
+`cost` from 1 to 1 000 000, a `weight` from 1 to 1000, no unit twice. The
+guard budget is clamped like the threat budget so that every product of the
+budget math stays below `2^53` (`growBudget` with the limit `floor((2^53 - 1) /
+100000)`). A guard's strength percent that would take its health above
+`MAX_HEALTH` or its damage above `MAX_DAMAGE` is **capped** to the largest
+that does not (never an error, see "Neutral guards"); a guard never hits
+harder than `MAX_DAMAGE`, which is below `MAX_HIT`, since Overload does not
+affect it.
 
 `offerWeights[].fromRound` in `economy.json` is an integer of at least 1 (no
 upper bound; a value above the last round just never offers the entry); the
@@ -1913,7 +1924,11 @@ integer; it never goes below 0. A building at 0 is destroyed (step 6 below).
 
 ### Units
 
-A unit is `{id, side, def, px, py, hp, damage, attackCooldown, owner, target}`.
+A unit is `{id, side, def, px, py, hp, damage, attackCooldown, owner, target}`
+(a neutral guard also has `post`, see "Neutral guards"). `side` is 0 or 1, or
+**2 for a neutral guard** (CB-8e), which has `owner = -1` and `target = -1`;
+guards are in the same list, sorted by `id`, with ids from the same counter
+(they are placed before tick 0, so they take the first ids).
 `owner` is a player index of the unit's own side and `target` the player index
 of the enemy Core it heads for, or `-1` when none stands (PP-11, "Goals and
 movement fields"). `(px, py)` is
@@ -2140,6 +2155,9 @@ state at tick 0:
   pair indexed by side (`buildingDamageDealt[s]` is the damage the units of side
   `s` have applied to the enemy's buildings, see step 4 and "Tiebreak
   counters");
+- `guards`: present **only** after `placeGuards` was called, that is, for a
+  battle whose zone has points of interest: `{leashCells, posts, killed,
+  lostToGuards}`, see "Neutral guards";
 - `sideOptions`: present **only** when a side was given options (PvE battles, see
   "Side options"); a ghost battle's state has no such field, so its hash is
   unchanged;
@@ -2157,6 +2175,23 @@ exactly like the original.
 
 `stepArena(sim, ctx)` changes the state in place, in exactly this order. Let
 `T` be `sim.tick` at the start; every event of the step has `tick = T`.
+
+**Neutral units (CB-8e).** Wherever a rule below says "side 0 first, then
+side 1", the neutral side 2 comes **after side 1, in unit-id order**. The
+steps in which that matters are: step 1 (flow) and step 2 (production,
+turret and ramp charging) have no neutral part (guards have no board, no
+producer and no building; they are placed before tick 0); step 3 decides
+guards with the rules of "Neutral guards" (pass 1 to 3 in id order with the
+other units; enemy sets `[1, 2]`, `[0, 2]`, `[0, 1]`, guards last), and turret
+fire never targets them; step 4 resolves guard attacks in unit-id order with the
+others (guards first, as they have the lowest ids), without the Overload
+escalation, and splash reaches every unit of an enemy side of the attacker,
+neutral included; step 5 treats guards as a third side in the push pass
+(different sides are enemies, ids decide a coincident pair with the same
+frame); step 6 removes dead units in id order, guards included
+(`unit_died {side: 2}` for a guard, counters in "Neutral guards"), and the
+destruction of buildings and the retargeting of units skip guards (their
+`target` is -1); step 7 counts the cooldown of guards down like any unit's.
 
 0. **Overload level.** `level = overloadLevel(T)` (see "Overload"). On a tick
    where `T >= overloadStartTick` and `(T - overloadStartTick) mod
@@ -2391,15 +2426,17 @@ exactly like the original.
 4. **Resolve attacks simultaneously.** Every unit that chose (a) or (b) and has
    `attackCooldown = 0` deals its `damage` (the unit's own stored `damage`)
    escalated by Overload, `mulPct(damage, 100 + level * overloadDamageStepPercent)`
-   (see "Overload"), to its target; when the target is a unit, that hit is then
+   (see "Overload"; **a neutral guard's hit is its plain `damage`**, no
+   escalation), to its target; when the target is a unit, that hit is then
    reduced by the target's armor (`armorHit`, "Order of damage modifiers"), and
    the `unit_attacked` event carries the value actually dealt (after Overload
    and armor for a unit target; after Overload only for a building or Core).
    **Splash damage.** When the attacker's definition has `splash` and its
    target is a unit (not a building or a Core; turrets and buildings never
    splash), the target takes the hit as above, and then every other unit of the
-   **opposing** side (the other side's units, ground or flying; neutral guards do
-   not exist yet; the attacker's own side is never hurt) whose centre is
+   **opposing** side (the other side's units, ground or flying, and the neutral
+   guards; for a guard attacker, the units of sides 0 and 1; the attacker's own
+   side is never hurt) whose centre is
    within the radius takes `part = mulPct(hit, percent)`, where `hit` is the
    damage after Overload and before the primary target's armor. The test is
    exact, in integers on the centres: `dx*dx + dy*dy <= radiusSub*radiusSub`
@@ -3056,7 +3093,8 @@ shot is recorded in step 3, before the step 4 attack events):
 | `core_hit_blocked`   | `unit`, `side`, `core`, `damage`: a unit's hit on a Core shielded by a standing pylon did nothing (MM-9d); recorded in step 4 right after the `unit_attacked` of the same hit (an event only: the shipped targeting never aims at a shielded Core, see "Units, combat and destruction") |
 | `splash`             | `attacker` (the unit with `splash`), `x`, `y` (the primary target's centre, sub-cell units), `targets` (a list of `{unit, damage}` of the secondary targets in unit id order, damage after their armor; may be empty); recorded right after the attacker's `unit_attacked` event, only when the attack was on a unit |
 | `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`   |
-| `unit_died`          | `unit`                                                          |
+| `guard_spawned`      | `unit`, `point` (the point's id), `def`, `px`, `py` (the centre, sub-cell units); recorded by a battle at tick 0 right after `zone_revealed`, one per placed neutral guard (CB-8e, "Neutral guards") |
+| `unit_died`          | `unit`; and `side` = 2 for a neutral guard (a unit of a side has no `side` field) |
 | `building_destroyed` | `side`, `building`                                              |
 | `pylon_destroyed`    | `side`, `building`, `core` (the player index of the Core it shielded), `standing` (the pylons of that Core still alive); recorded in step 6 right after the pylon's `building_destroyed` (MM-9d) |
 | `core_shield_down`   | `side`, `core`; recorded right after the `pylon_destroyed` whose `standing` is 0 (MM-9d) |
@@ -3090,7 +3128,7 @@ removed.)
 
 Input: `{ teamA, teamB, gapRows, ticks }` where each team is a `team-state-ops`
 script (`seed`, `partySize`, `ops`) and the two boards must have the same size;
-optionally `units`, a list of `{side, def, x, y}` (arena cell; the unit is placed at the
+optionally `guards` (neutral guards, CB-8e; see "Neutral guards", "Golden vectors"), `units`, a list of `{side, def, x, y}` (arena cell; the unit is placed at the
 cell's centre) or `{side, def, px, py}` (an exact position in sub-cell units) placed at tick 0 in list order (a position where the unit does not fit, or that overlaps a unit placed earlier, is an error), `buildingHealth`, a list of `{side,
 building, hp}` (or `{side, core, hp}` for a Core, `core` the player index) that sets the current health of those buildings (`hp` from 1 to the maximum) before the battle starts, and
 `restoreAt`, a list of tick counts
@@ -3201,9 +3239,9 @@ terrain, a wall, a gate and a turret; a sealed base with one weak wall; four plo
 bonus at spawn). `stepArena` does not assume the gap is open ground (blocked
 gap cells are how the neutral zone enters), and does not end the battle: the
 neutral zone, the battle end and the top-level entry point are in "The neutral
-zone" and "Battles". The zone holds points of interest (CB-8d), but the arena
-ignores them: they do not block movement and nothing reads them yet. Guards,
-capture and buffs are deferred (CB-8e to CB-8g).
+zone" and "Battles". The zone holds points of interest (CB-8d); they do not
+block movement, and each starts the battle with neutral guards ("Neutral
+guards", CB-8e). Capture and buffs are deferred (CB-8f, CB-8g).
 
 ### Decided simplifications
 
@@ -3279,8 +3317,8 @@ JSON `{ width, depth, features, pointsOfInterest }`:
   middle row `(depth - 1) / 2`; `x` is the column; `buff` is a buff ID of
   `content/points.json`. A point is one cell. It does **not** block movement
   and units walk over it; it never lies on a feature. There is at most one per
-  band. The arena ignores points for now (a battle plays out as if there were
-  none).
+  band. Each point starts the battle with neutral guards ("Neutral guards");
+  nothing else reads points yet.
 
 ### Parameters (`content/mapgen.json`, `neutralZone`)
 
@@ -3299,7 +3337,10 @@ The points of interest read `content/points.json` (schema
 `bandMarginCells` (2) and `buffs` (a list of `{id, kind, weight}`; `poi_strength`
 of kind `unit_strength` and `poi_heal` of kind `heal`, both weight 1). The tries
 per point are `placementTries` of `mapgen.json`. The numbers of each buff kind
-are not in the file yet (CB-8g). `generateNeutralZone` takes the loaded points
+are not in the file yet (CB-8g). `guards` holds the neutral guards of every
+point (CB-8e, "Neutral guards"): `baseBudget` (44), `growthPercent` (125),
+`maxGuardsPerPoint` (5), `leashCells` (3) and `units`, the list of `{unit,
+cost, weight}` (`unit_soldier` 10 / 3 and `unit_archer` 14 / 1). `generateNeutralZone` takes the loaded points
 in its `content` argument (`content.points`); `startBattle` therefore needs
 `content.points` too.
 
@@ -3434,6 +3475,222 @@ this picture, with the point list, under the board map:
 ................................................
 ```
 
+## Neutral guards
+
+Implemented in `packages/core/src/guards.ts` (planning: how many of which
+unit, from the content) and `arena-sim.ts` (`placeGuards`, the behaviour);
+numbers in `content/points.json` under `guards` (schema
+`schemas/points.schema.json`, loader `points.ts`). CB-8c and CB-8e (issue
+#372). Guards hold the points of interest of the neutral zone ("The neutral
+zone"). In this issue killing the guards does nothing more: capture and buffs
+are later parts (CB-8f, CB-8g).
+
+### Model
+
+- A unit's `side` is 0, 1 or **2 (neutral)**. Guards are ordinary entries of
+  the one unit list, sorted by `id`, with ids from the shared counter
+  (`nextUnitId`); the guards are placed before the first tick, so they have
+  the **lowest ids** of the battle (1, 2, ...).
+- A guard has `owner = -1`, `target = -1` and `post`, the `id` of the point it
+  guards. No other unit has `post` (the field is absent, so the state and hash
+  of a unit of a side are unchanged). A guard's `hp` and `damage` are fixed at
+  placement like any unit's, through `unitStats(2, def, strengthPercent)`.
+- The state gets `guards` **only when the zone has points**: `{leashCells,
+  posts, killed, lostToGuards}` where `posts` lists `{id, x, y}` (the point
+  as an arena cell: `x` the zone `x`, `y = boardHeight + zone y`), sorted by
+  `id`, and `killed` and `lostToGuards` are pairs indexed by side (see
+  "Counters"). A state without it (a battle with no point, every arena-sim
+  scenario that places no guards) is unchanged, so its hash is as before.
+  `leashCells` is stored so that a restored state needs nothing else.
+- Guards never count toward `spawned[s]` or `unitsDied[s]`, in the timeline's
+  unit counts, or in the tiebreak ladder (PP-10), and they never decide a
+  battle's end (only Cores, the ladder and the time limit do).
+- **Enemies.** Every unit of side 0 and 1 is an enemy of every guard and the
+  other way round; guards are not enemies of each other. The enemy sides of a
+  unit of side 0 are `[1, 2]`, of side 1 `[0, 2]`, of a guard `[0, 1]`.
+  Wherever "the other side" is searched (contact, aggro, splash) these sets
+  are meant; the searches take the best candidate over all of them (smallest
+  squared distance, ties by lowest id), so the order of the sets does not
+  matter. Guards are not enemies of a side's buildings or Cores.
+- **Frame.** A guard has no own frame: wherever a rule reads "the unit's own
+  frame" (cell of a position, tie keys, steering, collision and push-out
+  sweeps) it uses **side 0's frame**. Its solid grid is its own (below).
+
+### Placement at tick 0
+
+`startBattle` calls `placeGuards` after `zone_revealed` is recorded, only when
+`zone.pointsOfInterest` is not empty. For each point in `id` order and each of
+its guards in plan order (below):
+
+1. The cells tried, in order: the point's cell, then its 8 neighbours N, E,
+   S, W, NE, SE, SW, NW, as offsets `(0, 0)`, `(0, +1)`, `(+1, 0)`, `(0,
+   -1)`, `(-1, 0)`, `(+1, +1)`, `(+1, -1)`, `(-1, -1)`, `(-1, +1)` in arena
+   coordinates (north is `+y`, towards side 1, as everywhere in the rules). A
+   cell outside the zone's rows, outside the arena or blocked is skipped.
+2. In a cell, the first free position of step 2.2 of the tick (the spawn
+   offsets in side 0's frame, the fit test for the guard's solid grid, and
+   not **heavily blocked** by a living unit: the guards placed before count).
+   The first cell with a free position gives the guard's position.
+3. A guard with no free position in any of the 9 cells is **not placed**
+   (no event; the point has fewer guards).
+4. The guard is created (next id, `attackCooldown = 0`) and `guard_spawned
+   {unit, point, def, px, py}` is recorded with the tick of the call, 0.
+
+The first five guards of a point all fit on its cell (the spawn offsets give
+five free positions), which is why guards usually start in a tight cluster.
+
+### Composition (CB-8c, CB-8e)
+
+Per point, with the battle's `round` (an input of `startBattle` and
+`simulateBattle`, an integer from 1; `startPveBattle` takes it too, a
+RangeError for anything else; the zone does not depend on it):
+
+1. **Budget.** `guardBudget(round)` has the integer math of the threat
+   budget (SC-1): `v = baseBudget`; repeat `min(round, R) - 1` times `v =
+   floor(v * growthPercent / 100)` (`mulDiv`), where `R` is the last round
+   whose growth-only value is at most `floor((2^53 - 1) / 100000)`; later
+   rounds keep the budget of `R`. (`threatBudget` uses the same helper
+   `growBudget` with its own limit; there is no type multiplier or party
+   size here: every point gets the same budget.) With the shipped numbers:
+   44, 55, 68, 85, 106, 132, ... (`baseBudget` 44, `growthPercent` 125).
+2. **Units.** `left = budget`, a list of drawn units, and the stream `rng =
+   Rng.fromSeed(battleSeed).child("guards").child(pointId)` (so a point's
+   guards do not depend on the other points). While fewer than
+   `maxGuardsPerPoint` (5) are drawn: let `affordable` be the entries of
+   `guards.units` (file order) with `cost <= left`; if none, stop; else one
+   `pickWeightedIndex(rng, weights of affordable)` picks the next guard, and
+   `left -= cost`. Shipped: `unit_soldier` cost 10 weight 3, `unit_archer` cost
+   14 weight 1; no flyers (the loader refuses one). Round 1 therefore buys
+   about three soldiers and one archer (44 = 3 * 10 + 14).
+3. **Strength.** With `spent = budget - left`: `strengthPercent =
+   mulDiv(left, 100, spent)` when `spent > 0` and `left > 0`, else 0; the same
+   percent for every guard of the point. Each guard's percent is then
+   **capped** (never an error) at the largest `P` for which `mulPct(health, 100
+   + P)` is at most `MAX_HEALTH` and `mulPct(damage, 100 + P)` at most
+   `MAX_DAMAGE` (`maxGuardStrength`: `floor(((bound + 1) * 100 - 1) / value) -
+   100` for each of the two, the smaller, at least 0). The guard spawns through
+   `unitStats(2, def, P)`: health and damage are `mulPct(base, 100 + P)`.
+
+The plan is a list `{point, guards: [{unit, strengthPercent}]}` in point `id`
+order; `battle.sim.units` shows the result.
+
+### Behaviour
+
+Guards take part in step 3 (decide) like units, with these differences. Let
+`post` be the guard's point and `centre` its cell's centre `(240 x + 120, 240
+y + 120)`. A guard is **leashed** iff `dx^2 + dy^2 > (leashCells * 240)^2` with
+`(dx, dy)` its centre minus `centre` (`leashCells` is 3).
+
+- **Pass 1 (a, contact).** A leashed guard chooses nothing. Otherwise as for
+  any unit: it attacks the nearest enemy unit in contact (units of both
+  sides), a flying enemy only if the guard is ranged.
+- **Pass 2 (a2, aggro).** A leashed guard chooses nothing. Otherwise the
+  nearest visible enemy within `aggroRangeCells` is its aggro target (the same
+  test as for any unit; the line of sight uses the guard's own solid grid).
+  **Rule b does not exist for a guard**: it never aims at a building or a Core
+  and does not breach.
+- **Pass 3 (move).** An aggro target is chased like any unit's (the
+  steering of "Steering", the guard's allies are guards). A guard with nothing
+  else to do **holds or walks back**: when its centre is in the point's cell
+  or one of its 8 neighbours (the 3x3 block where guards are placed) it does
+  not move; otherwise it takes one step of `fieldStep` along the **movement
+  field to the point's cell** (below) from the cell that holds it (heading
+  `240 * (k - c)` as in rule c, steered), or, if that cell has no route,
+  heads straight for `centre`. A leashed guard therefore drops its target and
+  walks back until it is inside the 3x3 block, and with no enemy a guard
+  walking back or standing is the only thing it does.
+- **Turrets do not shoot guards** (step 3, turret fire): a turret's candidates
+  are enemy units of side 0 or 1 only; a guard is not an enemy of a side's
+  buildings (PP-13 lets turrets engage enemy *units* in the zone, and
+  guards are not).
+- **Overload does not affect guards.** A guard's attack deals its stored
+  `damage` (before armor), not `mulPct(damage, 100 + level *
+  overloadDamageStepPercent)`. (The Core decay is of Cores only.)
+- **Soft collision (step 5).** Guards are in the push pass like any unit and
+  count as enemies of both sides (weights of step 5.3.1 for different sides).
+  Coinciding centres: the sign of a unit is `f` (+1 for sides 0 and 2, -1 for
+  side 1) as before, and for two units of different sides **with the same
+  `f`** (a guard and a side-0 unit) it is decided by the ids as for one side
+  (`f` for the higher id, `-f` for the lower), so the two separate.
+- **The neutral zone.** A guard's solid grid is solid for every cell outside
+  the gap rows and for every blocked gap cell (lakes, cliffs): the guard
+  never leaves the zone, whatever pushes it (fit test, spawn, push-out).
+  Other units' grids are as before.
+
+**The movement field to a point** is `computeCellField(arena, 2, cell)`: the
+least-cost map of "Goals and movement fields" (steps 10 and 14, 8 directions, a
+diagonal only if both orthogonal cells are open, distance 0 at the cell
+itself) seeded with the point's cell, over the cells open for side 2 (as for
+side 0 and 1 a cell is open when it is not blocked terrain and not covered by
+a building that blocks it; side 2 has no gates). It is built **once per
+point on first use** and cached in the context (`postFields`, keyed by point
+id); it is dropped with the other fields when a building is destroyed (the
+boards' open cells then change); a restored state rebuilds it. The point's
+cell is `y * width + x`.
+
+### Counters and the tiebreak
+
+- `guards.killed[s]` (`guardsKilled` in the summary): guards killed by side
+  `s`. In the tick a guard dies, let `d0` and `d1` be the damage side 0's and
+  side 1's units dealt to it in step 4 (primary and splash hits, each side's
+  hits summed with the saturating rule); `killed[0]` increases when `d0 >= d1` and
+  `killed[1]` when `d1 >= d0`, so an exact tie counts for both. A guard death
+  never adds to `unitsDied`.
+- `guards.lostToGuards[s]`: units of side `s` that died mainly to guards.
+  In the tick a unit dies, let `g` be the damage the guards dealt to it and
+  `D` its total damage that tick (`g > 0`); when `g > D - g` the death counts
+  here (it is still in `unitsDied[s]`). **The kills rung of the tiebreak and
+  `unitsKilled[s]`** are `unitsDied[1 - s] - lostToGuards[1 - s]`: a unit the
+  guards killed is a loss of its side but not a kill of the other side, so
+  guards stay out of the ladder (PP-10). The other rungs read cores, overkill
+  and `buildingDamageDealt` only.
+
+### Events
+
+- `guard_spawned {unit, point, def, px, py}` at tick 0, right after
+  `zone_revealed`, one per placed guard in placement order.
+- A guard's death is `unit_died {unit, side: 2}` (a unit of a side has no
+  `side` field in `unit_died`). Its attacks and the hits on it are the usual
+  `unit_attacked` (with `target {kind: "unit"}` for hits on units; guards
+  never hit buildings) and `splash` events.
+- `unit_died` is recorded in unit id order, guards first.
+
+### Notes for a port
+
+- A guard is a unit with `side = 2`; keep the one list sorted by id and the
+  three-sided enemy table above rather than two separate lists, so every
+  id-ordered pass (decisions, attack events, deaths) stays the same.
+- Everything that reads "side 0 first, then side 1" in "One battle tick" and
+  "Resolution order" concerns buildings, flows, producers, turrets and Cores,
+  which guards do not have; where such a rule meets neutral units they come
+  **after side 1, in id order** (the enemy sets `[1, 2]` and `[0, 2]` list the
+  guards last). Any rule ordered by unit id is over the whole list, in which
+  the guards come first (lowest ids).
+- Do not iterate a map or set of guards or posts: `posts` is a list sorted by
+  `id`, plans are lists in point order, the enemy sides are a fixed table.
+- Distances stay squared integers; the leash test is
+  `dx*dx + dy*dy > (leashCells * 240)^2`.
+- The caps of `maxGuardStrength` use integer division of numbers below
+  `2^53`: `(MAX_HEALTH + 1) * 100 - 1 = 100000000000099`.
+
+### Golden vectors
+
+`arena-sim` gets the optional input `guards` (`{posts: [{id, x, y}] (arena
+cells), leashCells (default 3), units: [{post, def, x, y | px, py,
+strengthPercent?}]}`): the posts are recorded and the guards are placed in list
+order with `spawnGuardForTest` (a position that does not fit for guards or
+overlaps a unit placed earlier is an error; no event), after the `units` list.
+Its result gains `guards: {alive, killed}` when the input has `guards`. The
+`battle` kind takes `round` (default 1) and, test-only, `zone`. Vectors:
+`arena-sim.guards-walk-past-not-drawn-in`, `arena-sim.guards-soldier-kills-guard`,
+`arena-sim.guards-leashed-guard-returns`,
+`arena-sim.guards-archer-hits-drone-soldier-cannot`,
+`arena-sim.guards-turret-ignores-guard`,
+`arena-sim.guards-both-sides-near-same-guards`, and for battles
+`battle.guards-two-points-round-1`, `battle.guards-two-points-round-8` (a
+hand-made zone with two points, the same boards in two rounds) and
+`battle.generated-zone-round-6`.
+
 ## Battles
 
 **Status (#124).** This section describes the code on `main`. The rules
@@ -3447,14 +3704,17 @@ changed this section; all of them are implemented.
 Implemented in `packages/core/src/battle.ts` (golden kind `battle`:
 `packages/golden/src/kinds/battle.ts`). **Side 0 is always the party and side 1 the opponent** (the
 defender, also called the ghost when the opponent is a recorded team). A
-battle is a pure function of `(teamA, teamB, seed)`, the content and the
-configuration (CB-30).
+battle is a pure function of `(teamA, teamB, seed, round)`, the content and the
+configuration (CB-30); `round` (from 1) only scales the neutral guards
+("Neutral guards"), the zone derives from the seed and the width alone.
 
 ### Assembly
 
-`startBattle({teamA, teamB, seed}, content, {sim, mapgen}, options?)` sets a
-battle up at tick 0, or returns `{ok: false, error}`. The checks run in this
-order and the first failure is reported:
+`startBattle({teamA, teamB, seed, round}, content, {sim, mapgen}, options?)`
+sets a battle up at tick 0, or returns `{ok: false, error}`. A `round` that is
+not an integer from 1 is a `RangeError` (a programming error, before the
+checks below). The checks run in this order and the first failure is
+reported:
 
 1. `party_size_mismatch`: the boards differ in width. Equal party sizes (1 to
    4) run; different ones never do. This is checked before anything else.
@@ -3468,12 +3728,13 @@ order and the first failure is reported:
 Then the neutral zone is generated from `seed` and the width (above), the
 arena is built with `gapRows = zone.depth` and the zone's blocked cells as the
 gap (see "The arena"), and the first event `zone_revealed {zone}` is recorded
-at tick 0.
+at tick 0, followed by the `guard_spawned` events of the neutral guards of the
+zone's points (none for a zone without points; "Neutral guards").
 
 These follow from the arena rules and are checked by tests: nothing can be
 built in the zone (a board is exactly its own `h` rows); no building has cells
 or conduits in a zone row; no building produces or flows in the zone (production and flow stay on the
-boards; turrets may shoot units standing in the zone, never units on the enemy's board); only units fight there. A unit producer on a front row may spawn a
+boards; turrets may shoot units of the other side standing in the zone, never units on the enemy's board and never the neutral guards); only units fight there. A unit producer on a front row may spawn a
 unit onto the first zone row.
 
 The only test-only switch is `options.zone`: a zone to use instead of the
@@ -3567,7 +3828,8 @@ can only differ at the time limit.
 ### Tiebreak counters
 
 Two integers per side, both part of the saved state (`buildingDamageDealt` is
-a field of `ArenaSim`; the kills are derived from `unitsDied`):
+a field of `ArenaSim`; the kills are derived from `unitsDied` and, with neutral guards, from
+`lostToGuards`):
 
 - **`buildingDamageDealt[s]`**: the damage that side `s`'s units have applied
   to the other side's buildings, **the Core included**, over the whole battle,
@@ -3587,12 +3849,15 @@ a field of `ArenaSim`; the kills are derived from `unitsDied`):
   `min(A, pool)` once (never more than the pool had, whatever the number of
   Cores hit).
 - **`unitsKilled[s]`**: the number of enemy units that died from side `s`'s
-  damage. A unit takes damage only from the other side's units and turrets (no
-  unit attacks its own side, Overload does not damage units), so every unit
-  death is the kill of exactly one side and the case of one unit killed by
+  damage. A unit takes damage only from the other side's units and turrets and from
+  neutral guards (no unit attacks its own side, Overload does not damage
+  units), so every unit death is the kill of exactly one side or of the guards and the case of one unit killed by
   both sides in the same tick cannot occur. Hence `unitsKilled[s] =
-  unitsDied[1 - s]` (units that died, whatever blow finished them; a unit that
-  took the blows of several enemies in its last tick is one kill).
+  unitsDied[1 - s] - lostToGuards[1 - s]` (units that died, whatever blow of
+  the other side finished them; a unit that took the blows of several enemies
+  in its last tick is one kill; `lostToGuards` is 0 when the zone has no
+  point, and a unit that died mainly to neutral guards is nobody's kill, see
+  "Neutral guards").
 
 Bounds (see "Content bounds"): per building the credited total is at most its
 maximum health (every credit `min(A, h)` also takes at least that much from
@@ -3641,7 +3906,8 @@ vector's `eventLogHash`.
 | `coreOverkill`  | The overkill of the Cores destroyed in the latest tick, summed with saturation; see "Core health and overkill". |
 | `rampSteps`     | `ramp_step` events of the side (steps of destroyed buildings count). |
 | `buildingDamageDealt` | Damage the side's units applied to the enemy's buildings, Core included; see "Tiebreak counters". |
-| `unitsKilled`   | Enemy units that died from the side's damage (`unitsDied` of the other side). |
+| `unitsKilled`   | Enemy units that died from the side's damage (`unitsDied` of the other side less `lostToGuards`). |
+| `guardsKilled`  | Neutral guards the side's units killed (CB-8e): a guard's death counts for the side that dealt it the most damage in that tick, for both on a tie; 0 without points. Not a tiebreak counter. |
 
 `timeline` is a list of samples `{tick, sides: [s0, s1]}` with `s = {units,
 unitHealth, buildings}`: units alive, the sum of their current health, and
@@ -3652,7 +3918,9 @@ the timeline out.
 
 ### Golden kind `battle`
 
-Input `{teamA, teamB, seed}` and optionally `sideOptions` (`[side0, side1]`,
+Input `{teamA, teamB, seed}`, optionally `round` (an integer from 1, default 1:
+the guards scale with it) and a test-only `zone` (a hand-made neutral zone, passed
+as `options.zone`), and optionally `sideOptions` (`[side0, side1]`,
 each `null` or an object of the side options of "Side options": `scheduledWaves`,
 `freePower`, `unitStrengthPercent`, `coreHealths`; absent in the older vectors);
 each team is a `team-state-ops` script (`map` or
@@ -3671,15 +3939,16 @@ equal overkill, `battle.tiebreak-building-damage` (a soldier wave hits a turret
 and dies: side 1 has the building damage although side 0 has the kill),
 `battle.tiebreak-kills` (free-power turrets kill a wave: side 1 wins on kills
 with no building damage on either side) and `battle.tiebreak-attacker` (two
-bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front row: the units that find no room wait in the `entering` queue and come in later); party sizes 1 and 2 refused; for several Cores (issue #132) `battle.two-plot-core-falls` (one Core falls at tick 2000 and the battle goes on; an earlier fall adds no overkill), `battle.walled-four-cores-overload` (eight walled Cores fall at tick 3100), `battle.time-limit-cores-standing-side0` and `-side1` (rung 1, the defender can win), `battle.time-limit-core-share` (rung 2) and `battle.overkill-two-cores` (rung 3); `battle.golem-chain-push` (issue #382: the Golem chain of `arena-sim.golem-chain-push` as a whole battle); `battle.spire-chain-push` (issue #387: the Spire chain of `arena-sim.spire-chain-casters` as a whole battle).
+bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front row: the units that find no room wait in the `entering` queue and come in later); party sizes 1 and 2 refused; for several Cores (issue #132) `battle.two-plot-core-falls` (one Core falls at tick 2000 and the battle goes on; an earlier fall adds no overkill), `battle.walled-four-cores-overload` (eight walled Cores fall at tick 3100), `battle.time-limit-cores-standing-side0` and `-side1` (rung 1, the defender can win), `battle.time-limit-core-share` (rung 2) and `battle.overkill-two-cores` (rung 3); `battle.golem-chain-push` (issue #382: the Golem chain of `arena-sim.golem-chain-push` as a whole battle); `battle.spire-chain-push` (issue #387: the Spire chain of `arena-sim.spire-chain-casters` as a whole battle); with the neutral guards (issue #372) `battle.guards-two-points-round-1` and `-round-8` (a hand-made zone with two points) and `battle.generated-zone-round-6`.
 
 ### Decided simplifications
 
 - The neutral zone is not symmetric, so a mirrored pair of boards does not
   give an exactly symmetric battle with a generated zone; symmetry holds only
   for an empty or point-symmetric zone (the test-only option).
-- Units in the zone have no special rules: it is open ground (or lake and
-  cliff) like any board cell.
+- Units of the two sides have no special rules in the zone: it is open ground
+  (or lake and cliff) like any board cell; only the neutral guards of its
+  points of interest are special ("Neutral guards").
 - The Core health fraction in the time-limit rule uses each Core's health
   at the start of the battle as its maximum (`battle.ts`, `coreMax`), after
   side options (`coreHealths`) and `core_health_percent` modifiers, so the
@@ -4228,8 +4497,10 @@ number), walls, turrets}`.
 
 ### PvE battles
 
-`startPveBattle({team, threat, seed}, content, {sim, mapgen})` and
-`simulatePveBattle(...)` extend `startBattle`/`simulateBattle` (they call
+`startPveBattle({team, threat, seed, round}, content, {sim, mapgen})` and
+`simulatePveBattle(...)` (`round` as for `startBattle`: the guards of the
+zone's points scale with it; the session passes the run's round, the golden
+kind and the tools the threat's) extend `startBattle`/`simulateBattle` (they call
 `startBattle`; there is no second tick loop). Side 0 is the party, side 1 the
 threat (so it is the defender, who wins no tie). The stronghold is built as
 above and becomes side 1's team state; side 1 gets the side options
@@ -4440,13 +4711,17 @@ All of it is fixed by "One battle tick" and uses no random numbers. Every tie is
 broken as follows:
 
 - **Same step, many things:** units act in ascending unit `id` (decisions,
-  attacks, moves, deaths); producers in side then building-ID order; buildings
+  attacks, moves, deaths; the neutral guards have the lowest ids, so they come
+  first, and where an order lists the sides, side 2 follows side 1, "Neutral
+  guards"); producers in side then building-ID order; buildings
   are destroyed in side then `health`-list order (Core first, then instance
   ID); conduits of a destroyed building are reported in conduit-ID order.
 - **Which enemy unit to hit or chase:** the nearest by squared centre distance,
-  then the lowest unit `id`. A turret picks its target by the squared distance
+  then the lowest unit `id`, over the enemy sides of the unit (the other side's
+  units and the neutral guards for sides 0 and 1; both sides for a guard). A turret picks its target by the squared distance
   from the unit's centre to its nearest cell (ties: lowest unit `id`), only
-  among units on its owner's board rows.
+  among enemy units of the other side on its owner's board rows or the gap;
+  guards are never a target.
 - **Which building to hit:** an enemy Core when it is within reach (with
   several: the unit's target Core, else the nearest by `buildingDist2`, ties by
   `(|q - opposite(owner)|, -q)`, PP-11); in breach mode
@@ -4492,7 +4767,8 @@ broken as follows:
   turret shot (step 3), after Overload, before the hit joins the target's
   summed damage. The armor of a unit is on its definition and is not scaled
   by `unit_strength`. Hits on buildings and Cores are not reduced (they have
-  no armor), and there are no neutral guards yet.
+  no armor); a neutral guard's hit skips step 2 (Overload does not affect
+  guards, CB-8e).
 - **Simultaneous attacks:** all damage (unit attacks and turret shots) is
   computed from the same snapshot and applied together; nobody's death during
   the tick changes another unit's or turret's action in that tick.
@@ -4503,8 +4779,9 @@ broken as follows:
   decisions; each picks its own target without seeing the others' (so several
   turrets may shoot one unit, overkilling it); the turret events precede the
   unit attack events of the tick.
-- **Spawn order and IDs:** side 0's producers spawn before side 1's within a
-  tick, so at equal times side 0's units have the lower IDs. Because the
+- **Spawn order and IDs:** the neutral guards are placed before tick 0, in
+  point-id order, so they have the lowest ids; side 0's producers spawn before
+  side 1's within a tick, so at equal times side 0's units have the lower IDs. Because the
   relative order of IDs inside a side is the same on both sides, a mirrored
   battle (same team, 180-degree rotated) stays exactly symmetric.
 - **Breach routes:** least total cost; equal-cost neighbours by tie key. The

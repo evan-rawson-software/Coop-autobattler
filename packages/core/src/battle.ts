@@ -11,12 +11,14 @@ import {
   poolOf,
   createArenaContext,
   createArenaSim,
+  placeGuards,
   stepArena,
   type ArenaContext,
   type ArenaEvent,
   type ArenaSim,
   type SideOptions,
 } from './arena-sim.js';
+import { planGuards } from './guards.js';
 import {
   generateNeutralZone,
   neutralZoneProblem,
@@ -68,6 +70,11 @@ export interface BattleInput {
   readonly teamB: TeamState;
   /** The battle seed (CB-8a): the zone derives from it and the width only. */
   readonly seed: number;
+  /**
+   * The run's round, from 1: the guards of the zone's points scale with it
+   * (CB-8e). The zone itself does not depend on it.
+   */
+  readonly round: number;
   /**
    * General per-side arena options (waves, free power, strength, Core
    * health); used by PvE threats, absent for ghost battles.
@@ -139,8 +146,17 @@ export interface BattleSideSummary {
    * health): the first tiebreak counter. See "Battles", "Tiebreak counters".
    */
   readonly buildingDamageDealt: number;
-  /** Enemy units that died from this side's damage: the second counter. */
+  /**
+   * Enemy units that died from this side's damage: the second counter. The
+   * units the neutral guards killed are not counted (CB-8e).
+   */
   readonly unitsKilled: number;
+  /**
+   * Neutral guards (CB-8e) this side's units killed: the guard's death is
+   * credited to the side that dealt it the most damage in that tick, to both
+   * on a tie. Not a tiebreak counter (PP-10).
+   */
+  readonly guardsKilled: number;
 }
 
 export interface TimelineSide {
@@ -221,7 +237,10 @@ export function startBattle(
   config: BattleConfig,
   options: BattleOptions = {},
 ): StartBattleResult {
-  const { teamA, teamB, seed } = input;
+  const { teamA, teamB, seed, round } = input;
+  if (!Number.isInteger(round) || round < 1) {
+    throw new RangeError('Battle: round must be an integer >= 1.');
+  }
   const a = teamA.map;
   const b = teamB.map;
   if (a.width !== b.width) {
@@ -273,6 +292,26 @@ export function startBattle(
     events: eventLog,
   });
   eventLog.push({ tick: 0, type: 'zone_revealed', zone });
+  // CB-8e: the neutral guards of the zone's points are placed before the
+  // first tick, in point id order, so they take the first unit IDs.
+  if (zone.pointsOfInterest.length > 0) {
+    const points = zone.pointsOfInterest;
+    placeGuards(sim, ctx, {
+      leashCells: content.points.guards.leashCells,
+      posts: points.map((p) => ({
+        id: p.id,
+        x: p.x,
+        y: ctx.arena.geom.boardHeight + p.y,
+      })),
+      plans: planGuards(
+        content.points.guards,
+        content.units,
+        round,
+        seed,
+        points.map((p) => p.id),
+      ),
+    });
+  }
 
   // Per side, the placed Cores by player index (the health list order).
   const coreMax: [CoreMax[], CoreMax[]] = [[], []];
@@ -338,6 +377,12 @@ export function startBattle(
         .map((c) => 0 - (ctx.coreRemaining[s]?.[c.player] ?? 0)),
     );
 
+  /** Enemy units that died from `s`'s units' damage: not those the guards killed. */
+  const killsOf = (s: 0 | 1): number => {
+    const o = s === 0 ? 1 : 0;
+    return sim.unitsDied[o] - (sim.guards?.lostToGuards[o] ?? 0);
+  };
+
   /**
    * The ladder of PP-10 from rung `from` on; the first rung on which the
    * sides differ decides. Rungs 1 and 2 only matter at the time limit.
@@ -369,10 +414,10 @@ export function startBattle(
         reason: 'tiebreak_building_damage',
       };
     }
-    // A unit's damage always comes from the other side, so a side's kills are
-    // the other side's deaths.
-    const k0 = sim.unitsDied[1];
-    const k1 = sim.unitsDied[0];
+    // A unit's damage comes from the other side, so a side's kills are the
+    // other side's deaths, except the units the neutral guards killed.
+    const k0 = killsOf(0);
+    const k1 = killsOf(1);
     if (k0 !== k1) {
       return { winner: k0 > k1 ? 0 : 1, reason: 'tiebreak_kills' };
     }
@@ -417,7 +462,8 @@ export function startBattle(
         coreOverkill: overkillSum(s),
         rampSteps: rampSteps[s],
         buildingDamageDealt: sim.buildingDamageDealt[s],
-        unitsKilled: sim.unitsDied[s === 0 ? 1 : 0],
+        unitsKilled: killsOf(s),
+        guardsKilled: sim.guards?.killed[s] ?? 0,
       };
     };
     return { sides: [side(0), side(1)], timeline: timeline.slice() };

@@ -176,7 +176,12 @@ function describeStoredBattle(
   if (source.type === 'ghost') {
     battle = {
       kind: 'versus',
-      input: { teamA: run.team, teamB: source.team, seed: detail.seed },
+      input: {
+        teamA: run.team,
+        teamB: source.team,
+        seed: detail.seed,
+        round: detail.round,
+      },
     };
   } else {
     let threat;
@@ -195,7 +200,12 @@ function describeStoredBattle(
     }
     battle = {
       kind: 'pve',
-      input: { team: run.team, threat, seed: detail.seed },
+      input: {
+        team: run.team,
+        threat,
+        seed: detail.seed,
+        round: detail.round,
+      },
     };
   }
 

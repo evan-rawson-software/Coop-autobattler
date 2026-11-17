@@ -38,6 +38,7 @@ const describeBare = (
 ): BattleDescription => ({
   kind: 'versus',
   input: {
+    round: 1,
     teamA: bare(3, players),
     teamB: bare(4, players),
     seed: 9,

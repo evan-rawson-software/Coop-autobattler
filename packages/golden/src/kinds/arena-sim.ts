@@ -36,6 +36,8 @@
  * stateHash }` with the same Core health lists and state hash as the result.
  */
 import {
+  placeGuards,
+  spawnGuardForTest,
   createArenaContext,
   createArenaSim,
   hashJson,
@@ -210,6 +212,72 @@ export function makeArenaSimKind(
         }
       }
     }
+    const guardsRaw = field(input, 'guards');
+    if (guardsRaw !== undefined) {
+      if (
+        guardsRaw === null ||
+        typeof guardsRaw !== 'object' ||
+        Array.isArray(guardsRaw)
+      ) {
+        throw new TypeError('arena-sim: guards must be an object');
+      }
+      const g = guardsRaw as Record<string, Json>;
+      const posts = g['posts'];
+      if (!Array.isArray(posts)) {
+        throw new TypeError('arena-sim: guards.posts must be an array');
+      }
+      placeGuards(sim, ctx, {
+        leashCells:
+          g['leashCells'] === undefined
+            ? 3
+            : nonNegative(g['leashCells'], 'guards.leashCells'),
+        posts: (posts as Json[]).map((raw) => {
+          const p = raw as Record<string, Json>;
+          return {
+            id: nonNegative(p['id'], 'guards.posts.id'),
+            x: nonNegative(p['x'], 'guards.posts.x'),
+            y: nonNegative(p['y'], 'guards.posts.y'),
+          };
+        }),
+        plans: [],
+      });
+      const list = g['units'] ?? [];
+      if (!Array.isArray(list)) {
+        throw new TypeError('arena-sim: guards.units must be an array');
+      }
+      for (const raw of list as Json[]) {
+        const u = raw as Record<string, Json>;
+        const def = u['def'];
+        if (typeof def !== 'string') {
+          throw new TypeError('arena-sim: guard.def must be a string');
+        }
+        const common = {
+          def,
+          post: nonNegative(u['post'], 'guard.post'),
+          ...(u['strengthPercent'] === undefined
+            ? {}
+            : {
+                strengthPercent: nonNegative(
+                  u['strengthPercent'],
+                  'guard.strengthPercent',
+                ),
+              }),
+        };
+        if (u['px'] !== undefined || u['py'] !== undefined) {
+          spawnGuardForTest(sim, ctx, {
+            ...common,
+            px: nonNegative(u['px'], 'guard.px'),
+            py: nonNegative(u['py'], 'guard.py'),
+          });
+        } else {
+          spawnGuardForTest(sim, ctx, {
+            ...common,
+            x: nonNegative(u['x'], 'guard.x'),
+            y: nonNegative(u['y'], 'guard.y'),
+          });
+        }
+      }
+    }
     const restoreRaw = field(input, 'restoreAt');
     const restoreAt = new Set<number>();
     if (restoreRaw !== undefined) {
@@ -251,6 +319,12 @@ export function makeArenaSimKind(
       events: events.length,
       sides: summarizeArena(sim),
     };
+    if (sim.guards !== undefined) {
+      result['guards'] = {
+        alive: sim.units.filter((u) => u.side === 2).length,
+        killed: [...sim.guards.killed],
+      };
+    }
     if (field(input, 'report') === 'positions') {
       result['positions'] = sim.units.map((u) => [u.id, u.px, u.py]);
     }

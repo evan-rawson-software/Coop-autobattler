@@ -46,8 +46,12 @@ export function truncDivSmall(a: number, b: number): number {
 export interface World {
   readonly width: number;
   readonly height: number;
-  /** Per side: 1 where a cell is solid for that side's units. */
-  readonly solid: readonly [Uint8Array, Uint8Array];
+  /**
+   * Per side: 1 where a cell is solid for that side's units. Index 2 is the
+   * neutral guards' grid (CB-8e): the cells of the two boards are solid for
+   * them, so they never leave the neutral zone.
+   */
+  readonly solid: readonly Uint8Array[];
 }
 
 /** The cell coordinate of a position coordinate, clamped to `0 .. n - 1`. */
@@ -58,14 +62,15 @@ export function cellCoord(v: number, n: number): number {
 
 /**
  * The cell coordinate of a position coordinate in the frame of `side`: for
- * side 0 it is `cellCoord`; for side 1 the coordinate is rotated first (the
+ * side 0 (and the neutral side 2, which uses side 0's frame) it is
+ * `cellCoord`; for side 1 the coordinate is rotated first (the
  * arena rotation, `n * 240 - v`) and the cell mapped back, so a position
  * exactly on a cell boundary belongs to the lower cell of its own side's
  * frame. This keeps a mirrored battle exactly symmetric: every cell lookup of
  * a unit's decisions uses it.
  */
 export function ownCellCoord(side: number, v: number, n: number): number {
-  return side === 0 ? cellCoord(v, n) : n - 1 - cellCoord(n * S - v, n);
+  return side === 1 ? n - 1 - cellCoord(n * S - v, n) : cellCoord(v, n);
 }
 
 /** Squared distance from point `(x, y)` to the closed square of cell `(cx, cy)`. */
@@ -91,24 +96,34 @@ export function buildingDist2(
   return best;
 }
 
-/** The per-side solid grids of an arena (a cell not open for the side). */
-export function buildSolid(arena: Arena): [Uint8Array, Uint8Array] {
+/**
+ * The solid grids of an arena: per side 0 and 1 the cells not open for the
+ * side, and for the neutral guards (index 2) every cell outside the gap rows
+ * and every blocked gap cell.
+ */
+export function buildSolid(arena: Arena): Uint8Array[] {
   const n = arena.geom.width * arena.geom.height;
-  const out: [Uint8Array, Uint8Array] = [new Uint8Array(n), new Uint8Array(n)];
+  const out = [new Uint8Array(n), new Uint8Array(n), new Uint8Array(n)];
   fillSolid(arena, out);
   return out;
 }
 
 /** Recompute the per-side solid grids in place (after a building was destroyed). */
-export function fillSolid(
-  arena: Arena,
-  out: readonly [Uint8Array, Uint8Array],
-): void {
-  const n = arena.geom.width * arena.geom.height;
+export function fillSolid(arena: Arena, out: readonly Uint8Array[]): void {
+  const { width, boardHeight, gapRows } = arena.geom;
+  const n = width * arena.geom.height;
   for (let side = 0; side < 2; side++) {
     const grid = out[side];
     if (grid === undefined) continue;
     for (let k = 0; k < n; k++) grid[k] = openFor(arena, side, k) ? 0 : 1;
+  }
+  const neutral = out[2];
+  if (neutral !== undefined) {
+    const lo = boardHeight * width;
+    const hi = (boardHeight + gapRows) * width;
+    for (let k = 0; k < n; k++) {
+      neutral[k] = k < lo || k >= hi || arena.blocked[k] === 1 ? 1 : 0;
+    }
   }
 }
 
@@ -202,9 +217,9 @@ export function pushOutSolid(
     const r2 = r * r;
     // Side 1 visits the cells in the opposite order and prefers the opposite
     // faces: the same rule in its own (rotated) frame.
-    const dir = side === 0 ? 1 : -1;
-    const cyFirst = side === 0 ? y0 : y1;
-    const cxFirst = side === 0 ? x0 : x1;
+    const dir = side === 1 ? -1 : 1;
+    const cyFirst = side === 1 ? y1 : y0;
+    const cxFirst = side === 1 ? x1 : x0;
     const rows = y1 - y0;
     const cols = x1 - x0;
     for (let iy = 0; iy <= rows; iy++) {
@@ -232,7 +247,7 @@ export function pushOutSolid(
           const down = y - ly;
           const up = ly + S - y;
           const m = Math.min(left, right, down, up);
-          if (side === 0) {
+          if (side !== 1) {
             if (left === m) x = lx - r;
             else if (right === m) x = lx + S + r;
             else if (down === m) y = ly - r;

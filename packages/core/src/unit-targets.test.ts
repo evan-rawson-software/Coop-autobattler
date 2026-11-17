@@ -571,6 +571,7 @@ describe('symmetry and restore with several Cores', () => {
     const mk = () => team([5, 17], [0, 1]);
     const r = startBattle(
       {
+        round: 1,
         teamA: mk(),
         teamB: mk(),
         seed: 1,

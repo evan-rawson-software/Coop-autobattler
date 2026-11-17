@@ -2129,7 +2129,9 @@ try {
       }
 
       // The boss mechanics (issue #402): each boss battle is opened a few
-      // ticks before its moment, paused there and photographed.
+      // ticks before its moment, paused there and photographed. (The first
+      // pylon falls at tick 214 and the shield at 303 since the neutral guards
+      // of the points slow the rush board a little, #372; the ticks follow.)
       const bossBattle = async (id, tick, field, shotName, dark = false) => {
         await open(`#battle?p=rush&o=pve:${id}:3:boss&s=1&t=${tick}`);
         await waitPhase('playing');
@@ -2169,7 +2171,7 @@ try {
         );
         const pylons = await bossBattle(
           'arch_boss_pylons',
-          205,
+          225,
           'pylons-1',
           'battle-9-boss-pylons',
           true,
@@ -2181,7 +2183,7 @@ try {
         );
         await bossBattle(
           'arch_boss_pylons',
-          268,
+          310,
           'pylons-1',
           'battle-10-boss-shield-down',
         );

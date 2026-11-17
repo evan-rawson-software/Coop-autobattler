@@ -94,7 +94,12 @@ export function startDescribed(
   config: BattleConfig,
 ): Started {
   return desc.kind === 'versus'
-    ? startBattle(desc.input, content, config)
+    ? startBattle(
+        desc.input,
+        content,
+        config,
+        desc.zone === undefined ? {} : { zone: desc.zone },
+      )
     : startPveBattle(desc.input, content, config);
 }
 

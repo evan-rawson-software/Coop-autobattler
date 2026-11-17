@@ -50,7 +50,7 @@ function threat(
 
 function fight(board: ReferenceBoardName, t: ThreatProfile) {
   const r = simulatePveBattle(
-    { team: boards[board], threat: t, seed: 7 + t.round },
+    { round: t.round, team: boards[board], threat: t, seed: 7 + t.round },
     content,
     config,
   );
@@ -107,7 +107,7 @@ describe('running a PvE battle', () => {
   test('startPveBattle stepped by hand matches simulatePveBattle', () => {
     const t = threat('arch_rusher', 'medium', 4);
     const started = startPveBattle(
-      { team: boards.rush, threat: t, seed: 11 },
+      { round: t.round, team: boards.rush, threat: t, seed: 11 },
       content,
       config,
     );
@@ -115,7 +115,7 @@ describe('running a PvE battle', () => {
     expect(started.battle.threat).toBe(t);
     while (!started.battle.isOver()) started.battle.step();
     const whole = simulatePveBattle(
-      { team: boards.rush, threat: t, seed: 11 },
+      { round: t.round, team: boards.rush, threat: t, seed: 11 },
       content,
       config,
     );
@@ -129,7 +129,7 @@ describe('running a PvE battle', () => {
   test('side 1 is the threat: stronghold Core health and buildings', () => {
     const t = threat('arch_fortress', 'hard', 6);
     const r = startPveBattle(
-      { team: boards.poor, threat: t, seed: 1 },
+      { round: t.round, team: boards.poor, threat: t, seed: 1 },
       content,
       config,
     );
@@ -150,7 +150,7 @@ describe('running a PvE battle', () => {
   test('a party size that differs from the threat is refused', () => {
     const t = threat('arch_rusher', 'easy', 1, 2);
     const r = startPveBattle(
-      { team: boards.rush, threat: t, seed: 1 },
+      { round: t.round, team: boards.rush, threat: t, seed: 1 },
       content,
       config,
     );
@@ -170,7 +170,7 @@ describe('running a PvE battle', () => {
     };
     expect(() =>
       startPveBattle(
-        { team: boards.rush, threat: bad, seed: 1 },
+        { round: bad.round, team: boards.rush, threat: bad, seed: 1 },
         content,
         config,
       ),
@@ -183,7 +183,7 @@ describe('waves along the whole front', () => {
     for (const arch of ['arch_rusher', 'arch_escalator', 'arch_boss']) {
       const t = threat(arch, 'hard', 12, 4);
       const s = startPveBattle(
-        { team: denseParty(), threat: t, seed: 3 },
+        { round: t.round, team: denseParty(), threat: t, seed: 3 },
         content,
         config,
       );
@@ -234,7 +234,7 @@ describe('waves along the whole front', () => {
   test('an ASCII snapshot of a Rusher wave arriving', () => {
     const t = threat('arch_rusher', 'medium', 5);
     const s = startPveBattle(
-      { team: boards.rush, threat: t, seed: 3 },
+      { round: t.round, team: boards.rush, threat: t, seed: 3 },
       content,
       config,
     );
@@ -285,6 +285,7 @@ describe('late rounds stay inside the performance budget', () => {
           const t = threat(arch, type, sampleRound, party);
           const s = startPveBattle(
             {
+              round: t.round,
               team: party === 1 ? boards.rush : denseParty(),
               threat: t,
               seed: 5,
@@ -357,7 +358,9 @@ function sweep(): Row[] {
 /** The last round at which a board wins any threat in the sweep (pinned). */
 const LAST_WIN: Record<ReferenceBoardName, number> = {
   rush: 13,
-  fortify: 11,
+  // 11 before the neutral guards (CB-8e, #372): they hold a point with a
+  // round-scaled strength and cost the fortify board its round 11 win.
+  fortify: 10,
   poor: 8,
 };
 
@@ -405,8 +408,9 @@ describe('sweep of reference boards against every threat', () => {
     // was round 16 before the Escalator's waves came forward). The counts
     // include the Brood boss (issue #398), the Pylons boss (issue #400) and
     // the Warlord boss (issue #401); without the Warlord they were 327, 190,
-    // 19.
-    expect(blocks).toEqual([377, 216, 22, 0, 0]);
+    // 19. With the neutral guards of the points (CB-8e, #372) they are 368,
+    // 194 and 19 (were 377, 216, 22): guards fight units of both sides.
+    expect(blocks).toEqual([368, 194, 19, 0, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {
@@ -436,7 +440,11 @@ describe('sweep of reference boards against every threat', () => {
     // them end at tick 2401 or 2701. The decay hits both Cores equally and the Core with less
     // health falls first: shipped strongholds are often below the party's 500,
     // so outlasting a smaller Core is a legitimate, intended way to win;
-    // decided in #75.)
+    // decided in #75.) With the neutral guards (CB-8e, #372) the rush board
+    // loses time at a point where the fortify board does not: in easy round 2
+    // the fortify board is 36 ticks shorter (407 against 443) and in medium
+    // round 2 4 ticks (466 against 470); "never shorter" is now "at most 36
+    // ticks shorter".
     let ratioSum = 0;
     let cases = 0;
     for (const type of ['easy', 'medium', 'hard'] as const) {
@@ -444,7 +452,7 @@ describe('sweep of reference boards against every threat', () => {
         const rush = get('rush', 'arch_fortress', type, round);
         const fort = get('fortify', 'arch_fortress', type, round);
         expect(rush.won && fort.won).toBe(true);
-        expect(fort.endTick).toBeGreaterThanOrEqual(rush.endTick);
+        expect(fort.endTick).toBeGreaterThanOrEqual(rush.endTick - 36);
         ratioSum += fort.endTick / rush.endTick;
         cases += 1;
       }

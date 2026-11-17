@@ -41,7 +41,11 @@ const PILE = 10;
 const LONG_PILE = 100;
 
 function stacking(a: TeamState, b: TeamState, seed: number): Stack {
-  const s = startBattle({ teamA: a, teamB: b, seed }, content, config);
+  const s = startBattle(
+    { round: 1, teamA: a, teamB: b, seed },
+    content,
+    config,
+  );
   if (!s.ok) throw new Error('refused');
   const { battle } = s;
   const out: Stack = {
@@ -198,14 +202,22 @@ describe('stacking duration, tier 3 and mixed', () => {
     const t3 = heavy.state;
     const a = stacking(t3, t3, 1);
     const b = stacking(t1, t3, 1);
+    // Re-measured with the neutral guards (CB-8e, #372): the battles changed
+    // course (units stop at points to fight guards), so the same board pairs
+    // crowd a little more: tier 3 28 longest, 9.73 percent over 50, 0.523
+    // over 90, 12.95 percent in piles, longest pile 110, 4 long piles, 32 in
+    // a cell (before: 9.0, 0.5, 12, 143, 2 and 30 at most); tier 1 against
+    // tier 3: longest 17, the shares unchanged. The crowded pairs are
+    // soldiers of one side, not guards (idle guards settle to no overlap
+    // within 5 ticks).
     expect(a.longest).toBeLessThanOrEqual(34);
-    expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.09);
-    expect(a.over90 / a.unitTicks).toBeLessThanOrEqual(0.005);
-    expect(a.pileUnitTicks / a.unitTicks).toBeLessThanOrEqual(0.12);
+    expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.098);
+    expect(a.over90 / a.unitTicks).toBeLessThanOrEqual(0.0053);
+    expect(a.pileUnitTicks / a.unitTicks).toBeLessThanOrEqual(0.13);
     expect(a.longestPile).toBeLessThanOrEqual(143);
-    expect(a.longPiles).toBeLessThanOrEqual(2);
-    expect(a.maxInCell).toBeLessThanOrEqual(30);
-    expect(b.longest).toBeLessThanOrEqual(6);
+    expect(a.longPiles).toBeLessThanOrEqual(4);
+    expect(a.maxInCell).toBeLessThanOrEqual(32);
+    expect(b.longest).toBeLessThanOrEqual(17);
     expect(b.over50 / b.unitTicks).toBeLessThanOrEqual(0.009);
     expect(b.over90 / b.unitTicks).toBeLessThanOrEqual(0.0002);
     expect(b.pileUnitTicks / b.unitTicks).toBeLessThanOrEqual(0.0059);

@@ -5,6 +5,7 @@ import {
   runTeamStateOps,
   type BattleInput,
   type Json,
+  type NeutralZone,
   type TeamState,
   type ThreatInput,
 } from '@game/core';
@@ -75,7 +76,12 @@ function describeVector(kind: 'battle' | 'pve', v: Vector): BattleDescription {
   if (kind === 'battle') {
     return {
       kind: 'versus',
+      // Vectors may carry a `round` and a hand-made `zone` (test-only).
+      ...(input['zone'] === undefined
+        ? {}
+        : { zone: input['zone'] as unknown as NeutralZone }),
       input: {
+        round: (input['round'] as number | undefined) ?? 1,
         teamA: team(input['teamA'] as Json, input['modifiersA']),
         teamB: team(input['teamB'] as Json, input['modifiersB']),
         seed,
@@ -97,7 +103,12 @@ function describeVector(kind: 'battle' | 'pve', v: Vector): BattleDescription {
   );
   return {
     kind: 'pve',
-    input: { team: team(input['team'] as Json), threat, seed },
+    input: {
+      round: threat.round,
+      team: team(input['team'] as Json),
+      threat,
+      seed,
+    },
   };
 }
 

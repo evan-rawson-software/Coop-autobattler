@@ -50,6 +50,7 @@ describe('"My base" centres on the acting player\'s Core', () => {
     const d: BattleDescription = {
       kind: 'versus',
       input: {
+        round: 1,
         teamA: team(3, 2),
         teamB: team(4, 2),
         seed: 3,

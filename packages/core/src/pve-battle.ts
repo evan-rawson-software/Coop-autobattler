@@ -26,6 +26,8 @@ export interface PveBattleInput {
   readonly team: TeamState;
   readonly threat: ThreatProfile;
   readonly seed: number;
+  /** The run's round, from 1: the guards of the zone's points scale with it (CB-8e). */
+  readonly round: number;
 }
 
 export interface PveBattle extends Battle {
@@ -94,13 +96,14 @@ export function startPveBattle(
   content: BattleContent,
   config: BattleConfig,
 ): StartPveBattleResult {
-  const { team, threat, seed } = input;
+  const { team, threat, seed, round } = input;
   const stronghold = buildStronghold(threat, content, config.mapgen);
   const started = startBattle(
     {
       teamA: team,
       teamB: stronghold,
       seed,
+      round,
       sideOptions: [null, threatSideOptions(threat)],
     },
     content,

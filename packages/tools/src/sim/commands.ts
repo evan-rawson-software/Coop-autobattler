@@ -191,7 +191,7 @@ export function battleCommand(
 ): CommandOutput {
   const battle = started(
     startBattle(
-      { teamA: args.a.team, teamB: args.b.team, seed: args.seed },
+      { teamA: args.a.team, teamB: args.b.team, seed: args.seed, round: 1 },
       ctx.content,
       { sim: ctx.sim, mapgen: ctx.mapgen },
     ),
@@ -299,7 +299,12 @@ export function pveCommand(
   const label = `${threat.archetype}/${threat.type}/r${String(threat.round)}`;
   const battle = started(
     startPveBattle(
-      { team: args.team.team, threat, seed: args.seed },
+      {
+        team: args.team.team,
+        threat,
+        seed: args.seed,
+        round: threat.round,
+      },
       ctx.content,
       {
         sim: ctx.sim,
@@ -394,7 +399,11 @@ export function batchCommand(
   if (args.b !== null) {
     const b = args.b;
     const stats = runBatch(args.count, args.seed, (seed) =>
-      startBattle({ teamA: party, teamB: b.team, seed }, ctx.content, config),
+      startBattle(
+        { teamA: party, teamB: b.team, seed, round: 1 },
+        ctx.content,
+        config,
+      ),
     );
     return {
       text: formatBatch(
@@ -410,7 +419,11 @@ export function batchCommand(
   // The threat is generated once per battle seed unless --threat-seed fixes it.
   const stats = runBatch(args.count, args.seed, (seed) => {
     const threat = makeThreat(ctx, t, seed, party.map.partySize);
-    return startPveBattle({ team: party, threat, seed }, ctx.content, config);
+    return startPveBattle(
+      { team: party, threat, seed, round: threat.round },
+      ctx.content,
+      config,
+    );
   });
   const label = `${t.archetype}/${t.type}/r${String(t.round)}`;
   return {

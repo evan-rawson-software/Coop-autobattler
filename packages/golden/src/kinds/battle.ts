@@ -1,5 +1,7 @@
 /**
- * Golden-vector kind `battle`. Input `{ teamA, teamB, seed }` where each team
+ * Golden-vector kind `battle`. Input `{ teamA, teamB, seed, round? }` (`round`
+ * from 1, default 1: the guards of the zone's points scale with it, CB-8e)
+ * and an optional test-only `zone` (a hand-made neutral zone) where each team
  * is a `team-state-ops` script, plus an optional `sideOptions`: `[side0, side1]`
  * where each is `null` or an object of the arena side options (`scheduledWaves`,
  * `freePower`, `unitStrengthPercent`, `coreHealths`; see "Side options"), so a
@@ -20,6 +22,7 @@ import {
   type BattleContent,
   type Json,
   type MapgenConfig,
+  type NeutralZone,
   type ScheduledWave,
   type SideOptions,
   type SimConfig,
@@ -177,16 +180,36 @@ export function makeBattleKind(
       runTeamStateOps(b, content, mapgen).state,
       field(input, 'modifiersB'),
     );
+    // The run's round (CB-8e): the guards scale with it. Optional, default 1.
+    const givenRound = field(input, 'round');
+    if (
+      givenRound !== undefined &&
+      (typeof givenRound !== 'number' ||
+        !Number.isInteger(givenRound) ||
+        givenRound < 1)
+    ) {
+      throw new TypeError('battle: round must be an integer >= 1');
+    }
+    const round = givenRound ?? 1;
     const given = field(input, 'sideOptions');
     const sideOptions =
       given === undefined ? {} : { sideOptions: parseSideOptionsPair(given) };
+    // Test-only: a hand-made zone (`{ width, depth, features,
+    // pointsOfInterest }`, checked like a generated one) replaces the
+    // generated zone.
+    const zoneGiven = field(input, 'zone');
+    const options =
+      zoneGiven === undefined
+        ? {}
+        : { zone: zoneGiven as unknown as NeutralZone };
     const started = startBattle(
-      { teamA, teamB, seed, ...sideOptions },
+      { teamA, teamB, seed, round, ...sideOptions },
       content,
       {
         sim: simConfig,
         mapgen,
       },
+      options,
     );
     if (!started.ok) {
       return {

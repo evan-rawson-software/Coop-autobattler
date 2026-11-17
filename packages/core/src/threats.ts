@@ -211,20 +211,59 @@ export function budgetLimit(config: ThreatsConfig): number {
 
 /**
  * The largest round with its own budget: the last round `r` whose growth-only
- * value `V_r` (see `threatBudget`) is at most `budgetLimit`. Later rounds are
- * clamped to it, so the budget stops growing there (a round that high is far
- * beyond any run that can be survived).
+ * value `V_r` (see `growBudget`) is at most `limit`. Later rounds are clamped
+ * to it, so the budget stops growing there (a round that high is far beyond
+ * any run that can be survived).
  */
-export function maxThreatRound(config: ThreatsConfig): number {
-  const limit = budgetLimit(config);
-  let v = config.baseBudget;
+export function maxGrowthRound(
+  baseBudget: number,
+  growthPercent: number,
+  limit: number,
+): number {
+  let v = baseBudget;
   let round = 1;
   for (;;) {
-    const next = mulDiv(v, config.growthPercent, 100);
+    const next = mulDiv(v, growthPercent, 100);
     if (next > limit) return round;
     v = next;
     round += 1;
   }
+}
+
+/**
+ * The growth part of SC-1, shared by threats and the guards of points of
+ * interest (CB-8e): `v = baseBudget`; repeat `min(round, maxGrowthRound) - 1`
+ * times: `v = floor(v * growthPercent / 100)`.
+ */
+export function growBudget(
+  baseBudget: number,
+  growthPercent: number,
+  round: number,
+  limit: number,
+): number {
+  if (!Number.isInteger(round) || round < 1) {
+    throw new RangeError(`growBudget: round must be an integer >= 1.`);
+  }
+  const steps =
+    Math.min(round, maxGrowthRound(baseBudget, growthPercent, limit)) - 1;
+  let v = baseBudget;
+  for (let i = 0; i < steps; i++) v = mulDiv(v, growthPercent, 100);
+  return v;
+}
+
+/** The largest growth-only budget with percent headroom, for any budget (see `budgetLimit`). */
+export const GENERIC_BUDGET_LIMIT = divFloor(
+  Number.MAX_SAFE_INTEGER,
+  HEADROOM * 100,
+);
+
+/** See `growBudget`: the threat budget's largest round. */
+export function maxThreatRound(config: ThreatsConfig): number {
+  return maxGrowthRound(
+    config.baseBudget,
+    config.growthPercent,
+    budgetLimit(config),
+  );
 }
 
 /**
@@ -254,9 +293,12 @@ export function threatBudget(
       `threatBudget: party size must be an integer from 1 to ${String(config.maxPartySize)}.`,
     );
   }
-  const steps = Math.min(round, maxThreatRound(config)) - 1;
-  let v = config.baseBudget;
-  for (let i = 0; i < steps; i++) v = mulDiv(v, config.growthPercent, 100);
+  let v = growBudget(
+    config.baseBudget,
+    config.growthPercent,
+    round,
+    budgetLimit(config),
+  );
   v = mulDiv(v, config.typeMultiplierPercent[type], 100);
   return v * partySize;
 }

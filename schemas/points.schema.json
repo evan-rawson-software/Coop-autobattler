@@ -2,12 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "points.schema.json",
   "title": "Points of interest",
-  "description": "How points of interest are placed in the neutral zone (CB-8c, CB-8d): the chance that a plot band gets one, the margin from the band edges and the buffs a point can have. The tries per point are mapgen.json placementTries. The numbers of each buff kind are not here yet (CB-8g).",
+  "description": "How points of interest are placed in the neutral zone (CB-8c, CB-8d) and guarded (CB-8e): the chance that a plot band gets one, the margin from the band edges, the buffs a point can have and the neutral guards each point starts with. The tries per point are mapgen.json placementTries. The numbers of each buff kind are not here yet (CB-8g).",
   "type": "object",
-  "required": ["chancePercent", "bandMarginCells", "buffs"],
+  "required": ["chancePercent", "bandMarginCells", "buffs", "guards"],
   "additionalProperties": false,
   "properties": {
-    "$schema": { "type": "string" },
+    "$schema": {
+      "type": "string"
+    },
     "chancePercent": {
       "description": "Chance in percent that a plot band gets a point.",
       "type": "integer",
@@ -29,9 +31,83 @@
         "required": ["id", "kind", "weight"],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "pattern": "^poi_[a-z0-9_]+$" },
-          "kind": { "enum": ["unit_strength", "heal"] },
-          "weight": { "type": "integer", "minimum": 1, "maximum": 1000 }
+          "id": {
+            "type": "string",
+            "pattern": "^poi_[a-z0-9_]+$"
+          },
+          "kind": {
+            "enum": ["unit_strength", "heal"]
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        }
+      }
+    },
+    "guards": {
+      "description": "The neutral guards of every point (CB-8e). The budget of a point is baseBudget grown by growthPercent per round after round 1 (like the threat budget, SC-1); it buys units from the weighted list, at most maxGuardsPerPoint of them; what is left over becomes a strength percent of the point's guards.",
+      "type": "object",
+      "required": [
+        "baseBudget",
+        "growthPercent",
+        "maxGuardsPerPoint",
+        "leashCells",
+        "units"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "baseBudget": {
+          "description": "Budget of one point in round 1.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "growthPercent": {
+          "description": "Percent of the budget kept each round (125 grows it by 25%).",
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 1000
+        },
+        "maxGuardsPerPoint": {
+          "description": "Most guards at one point.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9
+        },
+        "leashCells": {
+          "description": "A guard farther than this many cells from its point drops its target and walks back.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "units": {
+          "description": "The guard units, in file order (the order of the weighted draw). Ground units only.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "required": ["unit", "cost", "weight"],
+            "additionalProperties": false,
+            "properties": {
+              "unit": {
+                "type": "string"
+              },
+              "cost": {
+                "description": "Budget the unit costs.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000000
+              },
+              "weight": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              }
+            }
+          }
         }
       }
     }

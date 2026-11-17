@@ -105,6 +105,10 @@ function wiring(r: BotRunResult, id: number): { into: number; out: number } {
 // again over 1 to 300 (chains on the board at the end of the run, no rejected
 // intent): 34, 95, 133, 153, 178, 227, 236 (137 no longer builds it). Rush
 // Composite 17 and Foundry 31 still build theirs.
+// The neutral guards (#372) changed the battles, so the rush Foundry seed was
+// searched again over 1 to 7 (the first that builds it with no rejected
+// intent and heavies on the field): 4 (153 heavies); 31 no longer builds it.
+// The rush Composite 17 and the fortify Aether 34 still build theirs.
 describe('the bot builds the Foundry and the refining chains (issue #384)', () => {
   test('rush builds the Composite chain and its Golems fight', () => {
     for (const seed of [17]) {
@@ -127,7 +131,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('a Foundry is built and its heavies fight', () => {
-    const r = play('rush', 31);
+    const r = play('rush', 4);
     expect(r.rejected).toEqual([]);
     expect(onBoard(r, 'bld_foundry')).toBeGreaterThan(0);
     expect(r.spawned['unit_heavy'] ?? 0).toBeGreaterThan(0);

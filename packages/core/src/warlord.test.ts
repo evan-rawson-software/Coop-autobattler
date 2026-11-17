@@ -140,10 +140,14 @@ describe('Warlord champion (MM-9d)', () => {
       mapgen,
     );
     expect(stronghold.buildings.length).toBeGreaterThan(0);
-    const started = startPveBattle({ team, threat: p, seed: 3 }, content, {
-      sim: simConfig,
-      mapgen,
-    });
+    const started = startPveBattle(
+      { round: p.round, team, threat: p, seed: 3 },
+      content,
+      {
+        sim: simConfig,
+        mapgen,
+      },
+    );
     if (!started.ok) throw new Error('battle refused');
     const { battle } = started;
     const firstWaveTick = got(p.waves[0]).tick;

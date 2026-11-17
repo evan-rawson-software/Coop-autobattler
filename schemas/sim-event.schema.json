@@ -464,8 +464,45 @@
       }
     },
     {
+      "title": "guard_spawned",
+      "description": "A neutral guard (CB-8e) was placed at its point of interest at tick 0, before the first tick, in point id order. Its centre is in arena sub-cell units (240 per cell). Guards have side 2 and take the first unit IDs; they are not counted as spawned units of a side.",
+      "type": "object",
+      "required": ["tick", "type", "unit", "point", "def", "px", "py"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "guard_spawned"
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "point": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The id of the point of interest the guard guards."
+        },
+        "def": {
+          "type": "string"
+        },
+        "px": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Centre, arena sub-cell units (CELL_UNITS = 240 per cell)."
+        },
+        "py": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
       "title": "unit_died",
-      "description": "A unit's health reached 0 or less and it was removed.",
+      "description": "A unit's health reached 0 or less and it was removed. A neutral guard's death (CB-8e) carries side 2; the death of a unit of a side has no side.",
       "type": "object",
       "required": ["tick", "type", "unit"],
       "additionalProperties": false,
@@ -480,6 +517,10 @@
         "tick": {
           "type": "integer",
           "minimum": 0
+        },
+        "side": {
+          "const": 2,
+          "description": "Only for a neutral guard (CB-8e)."
         }
       }
     },

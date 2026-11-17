@@ -72,9 +72,10 @@ export function tieKey(
   y: number,
 ): number {
   const { width, height } = arena.geom;
-  return side === 0
-    ? (height - 1 - y) * width + x
-    : y * width + (width - 1 - x);
+  // The neutral side 2 uses side 0's frame.
+  return side === 1
+    ? y * width + (width - 1 - x)
+    : (height - 1 - y) * width + x;
 }
 
 /**
@@ -279,6 +280,61 @@ export function computeField(arena: Arena, side: number, core: number): Field {
   assertWithin(n, 1, MAX_ARENA_CELLS, 'Field: arena cell count');
   const dist = new Int32Array(n).fill(-1);
   const isGoal = new Uint8Array(arena.buildings.length);
+  const seeds: number[] = [];
+  for (const g of goalBuildings(arena, side, core)) {
+    isGoal[g.ref] = 1;
+    for (const c of g.cells) {
+      for (const [dx, dy] of NEIGHBORS) {
+        const x = c.x + dx;
+        const y = c.y + dy;
+        if (x < 0 || y < 0 || x >= width || y >= height) continue;
+        const k = y * width + x;
+        if (dist[k] !== -1 || !openFor(arena, side, k)) continue;
+        dist[k] = 0;
+        seeds.push(k);
+      }
+    }
+  }
+  spreadField(arena, side, dist, seeds);
+  return { dist, isGoal };
+}
+
+/**
+ * Movement field towards one cell (a point of interest, CB-8e): the same
+ * least-cost map as `computeField` (steps 10 and 14, a diagonal only if both
+ * orthogonal cells are open for `side`) with distance 0 at `cell` itself and
+ * no goal building. `cell` is an arena cell index; a blocked cell gives an
+ * all -1 field.
+ */
+export function computeCellField(
+  arena: Arena,
+  side: number,
+  cell: number,
+): Field {
+  const { width, height } = arena.geom;
+  const n = width * height;
+  assertWithin(n, 1, MAX_ARENA_CELLS, 'Field: arena cell count');
+  const dist = new Int32Array(n).fill(-1);
+  const isGoal = new Uint8Array(arena.buildings.length);
+  if (openFor(arena, side, cell)) {
+    dist[cell] = 0;
+    spreadField(arena, side, dist, [cell]);
+  }
+  return { dist, isGoal };
+}
+
+/**
+ * The shared Dijkstra of the movement fields: the cells of `seeds` already
+ * have their distance in `dist`; every open cell reached from them gets its
+ * least cost. The values are exact whatever order the cells are processed in.
+ */
+function spreadField(
+  arena: Arena,
+  side: number,
+  dist: Int32Array,
+  seeds: readonly number[],
+): void {
+  const { width, height } = arena.geom;
   // Binary min-heap of packed keys `distance * 8192 + cell` (a distance is at
   // most 14 * 8192 and a cell index below 8192: the key stays below 2^30).
   const heap: number[] = [];
@@ -310,20 +366,7 @@ export function computeField(arena: Arena, side: number, core: number): Field {
     }
     return top;
   };
-  for (const g of goalBuildings(arena, side, core)) {
-    isGoal[g.ref] = 1;
-    for (const c of g.cells) {
-      for (const [dx, dy] of NEIGHBORS) {
-        const x = c.x + dx;
-        const y = c.y + dy;
-        if (x < 0 || y < 0 || x >= width || y >= height) continue;
-        const k = y * width + x;
-        if (dist[k] !== -1 || !openFor(arena, side, k)) continue;
-        dist[k] = 0;
-        push(k);
-      }
-    }
-  }
+  for (const k of seeds) push((dist[k] ?? 0) * 8192 + k);
   while (heap.length > 0) {
     const key = pop();
     const k = key % 8192;
@@ -347,7 +390,6 @@ export function computeField(arena: Arena, side: number, core: number): Field {
       }
     }
   }
-  return { dist, isGoal };
 }
 
 /** Cost of stepping onto a cell on a breach route (cell must be passable). */

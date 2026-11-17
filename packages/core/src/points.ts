@@ -3,6 +3,7 @@
  * content/points.json. See docs/rules-reference.md, "The neutral zone".
  */
 
+import type { UnitConfig, UnitId } from './units.js';
 import {
   isRecord,
   readId,
@@ -23,6 +24,32 @@ export interface PointBuff {
   readonly weight: number;
 }
 
+/** One kind of guard a point can have, with what it costs (CB-8e). */
+export interface GuardUnit {
+  readonly unit: UnitId;
+  /** Budget the unit costs. */
+  readonly cost: number;
+  /** Weight of the draw. */
+  readonly weight: number;
+}
+
+/**
+ * The guards of a point (CB-8e): a budget that grows like the threat budget
+ * (SC-1) buys units from a weighted list; what is left over becomes a
+ * strength percent.
+ */
+export interface GuardsConfig {
+  /** The budget of one point in round 1. */
+  readonly baseBudget: number;
+  /** Percent of the budget kept each round (125 = grows 25%). */
+  readonly growthPercent: number;
+  readonly maxGuardsPerPoint: number;
+  /** A guard farther than this many cells from its post walks back. */
+  readonly leashCells: number;
+  /** The units a guard can be, in file order (the order of the draw). */
+  readonly units: readonly GuardUnit[];
+}
+
 export interface PointsConfig {
   /** Chance in percent that a plot band gets a point. */
   readonly chancePercent: number;
@@ -31,11 +58,14 @@ export interface PointsConfig {
   /** The buffs a point can have, in file order (the order of the pick). */
   readonly buffs: readonly PointBuff[];
   readonly buff: ReadonlyMap<string, PointBuff>;
+  readonly guards: GuardsConfig;
 }
 
 export interface PointsLoadContext {
   /** When given, `bandMarginCells` must leave a column in the band. */
   readonly plotWidth?: number;
+  /** When given, every guard unit must exist and must not fly. */
+  readonly units?: UnitConfig;
 }
 
 export type PointsLoadResult = LoadResult<PointsConfig>;
@@ -48,7 +78,122 @@ const TOP_KEYS = new Set([
   'chancePercent',
   'bandMarginCells',
   'buffs',
+  'guards',
 ]);
+const GUARD_KEYS = new Set([
+  'baseBudget',
+  'growthPercent',
+  'maxGuardsPerPoint',
+  'leashCells',
+  'units',
+]);
+const GUARD_UNIT_KEYS = new Set(['unit', 'cost', 'weight']);
+
+/** Largest `guards.baseBudget`, `cost` and `leashCells`; bounds the budget math. */
+export const MAX_GUARD_BASE_BUDGET = 1_000_000;
+export const MAX_GUARD_COST = 1_000_000;
+export const MAX_GUARDS_PER_POINT = 9;
+export const MAX_GUARD_LEASH_CELLS = 8;
+export const MAX_GUARD_UNITS = 16;
+/** The smallest and largest `guards.growthPercent`. */
+export const MIN_GUARD_GROWTH_PERCENT = 100;
+export const MAX_GUARD_GROWTH_PERCENT = 1000;
+
+function loadGuards(
+  data: unknown,
+  context: PointsLoadContext,
+  errors: string[],
+): GuardsConfig | undefined {
+  if (!isRecord(data)) {
+    errors.push('points: "guards" must be an object.');
+    return undefined;
+  }
+  const before = errors.length;
+  rejectUnknownKeys(data, GUARD_KEYS, 'guards', errors);
+  const baseBudget = readInt(
+    data,
+    'baseBudget',
+    1,
+    'guards',
+    errors,
+    MAX_GUARD_BASE_BUDGET,
+  );
+  const growthPercent = readInt(
+    data,
+    'growthPercent',
+    MIN_GUARD_GROWTH_PERCENT,
+    'guards',
+    errors,
+    MAX_GUARD_GROWTH_PERCENT,
+  );
+  const maxGuardsPerPoint = readInt(
+    data,
+    'maxGuardsPerPoint',
+    1,
+    'guards',
+    errors,
+    MAX_GUARDS_PER_POINT,
+  );
+  const leashCells = readInt(
+    data,
+    'leashCells',
+    1,
+    'guards',
+    errors,
+    MAX_GUARD_LEASH_CELLS,
+  );
+  const units: GuardUnit[] = [];
+  const raw = data['units'];
+  if (!Array.isArray(raw) || raw.length < 1 || raw.length > MAX_GUARD_UNITS) {
+    errors.push(
+      `guards: "units" must be a list of 1 to ${String(MAX_GUARD_UNITS)} units.`,
+    );
+  } else {
+    const seen = new Set<string>();
+    raw.forEach((entry: unknown, i) => {
+      const at = `guards.units[${String(i)}]`;
+      if (!isRecord(entry)) {
+        errors.push(`${at}: must be an object.`);
+        return;
+      }
+      rejectUnknownKeys(entry, GUARD_UNIT_KEYS, at, errors);
+      const unit = entry['unit'];
+      let unitOk = typeof unit === 'string' && unit !== '';
+      if (!unitOk) errors.push(`${at}: "unit" must be a unit ID.`);
+      if (unitOk && context.units !== undefined) {
+        const def = context.units.get(unit as string);
+        if (def === undefined) {
+          errors.push(`${at}: unknown unit "${unit as string}".`);
+          unitOk = false;
+        } else if (def.flying) {
+          errors.push(`${at}: guards do not fly ("${unit as string}").`);
+          unitOk = false;
+        }
+      }
+      const cost = readInt(entry, 'cost', 1, at, errors, MAX_GUARD_COST);
+      const weight = readInt(entry, 'weight', 1, at, errors, 1000);
+      if (unitOk) {
+        if (seen.has(unit as string)) {
+          errors.push(`${at}: duplicate unit "${unit as string}".`);
+        }
+        seen.add(unit as string);
+      }
+      if (unitOk && cost !== undefined && weight !== undefined) {
+        units.push({ unit: unit as UnitId, cost, weight });
+      }
+    });
+  }
+  if (
+    errors.length > before ||
+    baseBudget === undefined ||
+    growthPercent === undefined ||
+    maxGuardsPerPoint === undefined ||
+    leashCells === undefined
+  ) {
+    return undefined;
+  }
+  return { baseBudget, growthPercent, maxGuardsPerPoint, leashCells, units };
+}
 const BUFF_KEYS = new Set(['id', 'kind', 'weight']);
 const BUFF_ID = /^poi_[a-z0-9_]+$/;
 
@@ -113,10 +258,12 @@ export function loadPoints(
       }
     });
   }
+  const guards = loadGuards(data['guards'], context, errors);
   if (
     errors.length > 0 ||
     chancePercent === undefined ||
-    bandMarginCells === undefined
+    bandMarginCells === undefined ||
+    guards === undefined
   ) {
     return { ok: false, errors };
   }
@@ -127,6 +274,7 @@ export function loadPoints(
       bandMarginCells,
       buffs,
       buff: new Map(buffs.map((b) => [b.id, b])),
+      guards,
     },
   };
 }

@@ -21,7 +21,11 @@ const ctx = loadSimContext();
 const config = { sim: ctx.sim, mapgen: ctx.mapgen };
 
 function start(a: TeamState, b: TeamState, seed: number) {
-  const s = startBattle({ teamA: a, teamB: b, seed }, ctx.content, config);
+  const s = startBattle(
+    { teamA: a, teamB: b, seed, round: 1 },
+    ctx.content,
+    config,
+  );
   if (!s.ok) throw new Error(s.error.message);
   return s.battle;
 }
@@ -34,9 +38,14 @@ function shape(a: TeamState, b: TeamState, seed: number) {
   while (!battle.isOver()) {
     battle.step();
     unitTicks += battle.sim.units.length;
+    // Per side: the neutral guards of the points (side 2) are on neither.
     let n0 = 0;
-    for (const u of battle.sim.units) if (u.side === 0) n0 += 1;
-    peak = Math.max(peak, n0, battle.sim.units.length - n0);
+    let n1 = 0;
+    for (const u of battle.sim.units) {
+      if (u.side === 0) n0 += 1;
+      else if (u.side === 1) n1 += 1;
+    }
+    peak = Math.max(peak, n0, n1);
   }
   return {
     ticks: battle.sim.tick,

@@ -5,5 +5,15 @@
   "buffs": [
     { "id": "poi_strength", "kind": "unit_strength", "weight": 1 },
     { "id": "poi_heal", "kind": "heal", "weight": 1 }
-  ]
+  ],
+  "guards": {
+    "baseBudget": 44,
+    "growthPercent": 125,
+    "maxGuardsPerPoint": 5,
+    "leashCells": 3,
+    "units": [
+      { "unit": "unit_soldier", "cost": 10, "weight": 3 },
+      { "unit": "unit_archer", "cost": 14, "weight": 1 }
+    ]
+  }
 }
