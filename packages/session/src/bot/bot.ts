@@ -19,7 +19,15 @@ import {
   sealedProducers,
   tierPrice,
 } from '@game/core';
-import { defaultDraftPick, openDraft } from '../rules/caravan.js';
+import { openDraft, type CaravanKind } from '../rules/caravan.js';
+import {
+  blueprintPick,
+  caravanPick,
+  drillPick,
+  eventVote,
+  veinPick,
+  type EventTastes,
+} from './bot-events.js';
 import {
   chainPlaceable,
   isChainPiece,
@@ -31,7 +39,13 @@ import {
 import { planLinks } from './bot-links.js';
 import { applyIntent, createRun } from '../rules/machine.js';
 import { readShop } from '../rules/economy.js';
-import { SKIP_CHOICE } from '../rules/events.js';
+import {
+  BLUEPRINT_PROMPT,
+  DRILL_PROMPT,
+  RICH_VEIN_PROMPT,
+  SKIP_CHOICE,
+} from '../rules/events.js';
+import { shopEffectCount } from '../rules/shop-effects.js';
 import { SELECT_GHOST } from '../rules/ghosts.js';
 import { eventFollowUp, openVote } from '../rules/selectors.js';
 import { replayLastBattle } from '../rules/replay.js';
@@ -71,6 +85,10 @@ interface Strategy {
   readonly events: readonly string[];
   /** Shrine modifiers in order of preference. */
   readonly modifiers: readonly string[];
+  /** The pacts it takes: the benefit fits the strategy (#416). */
+  readonly pacts: readonly string[];
+  /** What a Caravan reward of each kind is worth to it (0 = never; #416). */
+  readonly caravan: Readonly<Record<CaravanKind, number>>;
   readonly layout: LayoutStyle;
   /**
    * Split a party into donors and receivers (even players buy more
@@ -143,8 +161,20 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     maxRerolls: 0,
     random: false,
     pve: ['hard', 'medium', 'easy'],
-    events: ['windfall', 'workshop', 'shrine'],
+    events: [
+      'pact',
+      'windfall',
+      'drill',
+      'caravan',
+      'blueprint',
+      'workshop',
+      'market_day',
+      'rich_vein',
+      'shrine',
+    ],
     modifiers: ['mod_drilled_troops', 'mod_reinforced_frames'],
+    pacts: ['mod_pact_fury'],
+    caravan: { modifier: 9, upgrade: 8, building: 7, gold: 6, node: 5 },
     layout: {
       connect: true,
       walls: false,
@@ -182,7 +212,19 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     maxRerolls: 2,
     random: false,
     pve: ['medium', 'easy', 'hard'],
-    events: ['shrine', 'workshop', 'windfall'],
+    events: [
+      'pact',
+      'shrine',
+      'drill',
+      'workshop',
+      'caravan',
+      'rich_vein',
+      'market_day',
+      'blueprint',
+      'windfall',
+    ],
+    pacts: ['mod_pact_bastion', 'mod_pact_overcharge'],
+    caravan: { modifier: 9, upgrade: 8, node: 7, building: 6, gold: 5 },
     modifiers: [
       'mod_stout_walls',
       'mod_sharp_turrets',
@@ -222,8 +264,20 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     maxRerolls: 3,
     random: false,
     pve: ['hard', 'medium', 'easy'],
-    events: ['workshop', 'shrine', 'windfall'],
+    events: [
+      'workshop',
+      'blueprint',
+      'drill',
+      'caravan',
+      'pact',
+      'shrine',
+      'market_day',
+      'rich_vein',
+      'windfall',
+    ],
     modifiers: ['mod_drilled_troops', 'mod_reinforced_frames'],
+    pacts: ['mod_pact_bastion'],
+    caravan: { building: 9, upgrade: 8, gold: 7, modifier: 6, node: 5 },
     layout: {
       connect: true,
       walls: true,
@@ -253,8 +307,20 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     maxRerolls: 0,
     random: true,
     pve: ['easy', 'medium', 'hard'],
-    events: ['windfall', 'shrine', 'workshop'],
+    events: [
+      'windfall',
+      'caravan',
+      'shrine',
+      'workshop',
+      'drill',
+      'blueprint',
+      'market_day',
+      'rich_vein',
+      'pact',
+    ],
     modifiers: [],
+    pacts: [],
+    caravan: { gold: 9, building: 8, upgrade: 4, modifier: 0, node: 0 },
     layout: {
       connect: false,
       walls: true,
@@ -330,6 +396,37 @@ export interface BotRunResult {
   readonly linkHalves: number;
   /** Per battle; empty unless `trackBattles` was set. */
   readonly battles: readonly BattleStat[];
+  /** Every event the party took (#416): its type, the round, what it recorded. */
+  readonly events: readonly TakenEvent[];
+}
+
+/** An event the party voted for. */
+export interface TakenEvent {
+  readonly type: string;
+  readonly round: number;
+  /** The offer as voted for (Pact: `pact`; Rich vein: `resource`; ...). */
+  readonly offer: Record<string, Json>;
+  /**
+   * What the follow-up applied, per player (`event_resolved`'s `applied`):
+   * `{ player, result: 'node' | 'skip' | 'blueprint' | 'upgrade' ... }`.
+   * Empty for an event without a follow-up.
+   */
+  readonly applied: readonly Json[];
+}
+
+/** The offer a vote on `state` picked, or undefined. */
+function eventOfferOf(
+  state: RunState,
+  choice: Json,
+): (Record<string, Json> & { type: string }) | undefined {
+  const list = isRecord(state.pending) ? state.pending['options'] : undefined;
+  if (!Array.isArray(list)) return undefined;
+  for (const o of list) {
+    if (isRecord(o) && o['id'] === choice && typeof o['type'] === 'string') {
+      return o as Record<string, Json> & { type: string };
+    }
+  }
+  return undefined;
 }
 
 class Driver {
@@ -340,6 +437,7 @@ class Driver {
   /** Round in which each player bought the first piece of a chain. */
   readonly chainSince = new Map<number, number>();
   readonly battles: BattleStat[] = [];
+  readonly events: TakenEvent[] = [];
   trackBattles = false;
   readonly rejected: Rejection[] = [];
   readonly snapshots: GhostSnapshot[] = [];
@@ -351,6 +449,7 @@ class Driver {
   }
 
   send(player: number, intent: Intent): boolean {
+    const before0 = this.state;
     const r = applyIntent(this.state, player, intent, this.deps);
     if (r.ok) {
       const before = this.state.step;
@@ -359,6 +458,24 @@ class Driver {
       if (this.trackBattles && r.state.step !== before) this.recordBattle();
       for (const fx of r.effects) {
         if (fx.type === 'ghost_snapshot') this.snapshots.push(fx.snapshot);
+        if (fx.type === 'vote_resolved' && fx.topic === 'event') {
+          const offer = eventOfferOf(before0, fx.choice);
+          if (offer !== undefined) {
+            this.events.push({
+              type: offer.type,
+              round: before0.round,
+              offer,
+              applied: [],
+            });
+          }
+        }
+        if (fx.type === 'custom' && fx.name === 'event_resolved') {
+          const last = this.events[this.events.length - 1];
+          const applied = isRecord(fx.data) ? fx.data['applied'] : undefined;
+          if (last !== undefined && Array.isArray(applied)) {
+            this.events[this.events.length - 1] = { ...last, applied };
+          }
+        }
       }
       return true;
     }
@@ -880,6 +997,13 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
         } else break;
         continue;
       }
+      // A Market day's free re-rolls cost nothing, so they are always used.
+      if (
+        shopEffectCount(me, 'free_rerolls') > 0 &&
+        d.send(p, { type: 'reroll' })
+      ) {
+        continue;
+      }
       const cost = opts.rerollCost;
       if (
         cost !== undefined &&
@@ -989,22 +1113,43 @@ function playStep(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
     }
     case 'event_choice': {
       const options = openVote(st)?.options ?? [];
-      const id = preferred(options, s.events, 'type');
+      const id = eventVote(d.state, d.deps, tastesOf(d.deps, s, rng), options);
       if (id !== undefined) voteAll(d, id);
       return;
     }
     case 'event_resolve': {
       if (openDraft(st) !== null) {
-        caravanTurns(d);
+        caravanTurns(d, tastesOf(d.deps, s, rng));
         return;
       }
       for (let p = 0; p < st.players.length; p++) {
         if (d.state.step !== 'event_resolve') break;
         const view = eventFollowUp(d.state, p, d.deps);
         if (view === null) break;
-        const choice = view.perPlayer
-          ? workshopPick(s, view.options, p, rng)
-          : (preferred(view.options, s.modifiers, 'id') ?? SKIP_CHOICE);
+        let choice: string;
+        if (!view.perPlayer) {
+          choice = preferred(view.options, s.modifiers, 'id') ?? SKIP_CHOICE;
+        } else if (view.prompt === DRILL_PROMPT) {
+          choice = drillPick(
+            d.state,
+            d.deps,
+            tastesOf(d.deps, s, rng),
+            view.options,
+            p,
+          );
+        } else if (view.prompt === RICH_VEIN_PROMPT) {
+          choice = veinPick(d.state, d.deps, tastesOf(d.deps, s, rng), p);
+        } else if (view.prompt === BLUEPRINT_PROMPT) {
+          choice = blueprintPick(
+            d.state,
+            d.deps,
+            tastesOf(d.deps, s, rng),
+            view.options,
+            p,
+          );
+        } else {
+          choice = workshopPick(s, view.options, p, rng);
+        }
         d.send(p, { type: 'event_choose', choice });
       }
       return;
@@ -1027,10 +1172,64 @@ function playStep(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
   }
 }
 
-/** A Caravan draft: each player in turn takes the reward `defaultDraftPick` names. */
-function caravanTurns(d: Driver): void {
+/**
+ * What the event code needs to know of a strategy (#416). The score is the
+ * shop's, so a noisy (random) strategy draws from the bot's generator.
+ */
+function tastesOf(deps: RunDeps, s: Strategy, rng: Rng): EventTastes {
+  return {
+    events: s.events,
+    modifiers: s.modifiers,
+    pacts: s.pacts,
+    caravan: s.caravan,
+    random: s.random,
+    connect: s.layout.connect,
+    score: (def, tier) => buildScore(s, def, tier, rng),
+    consumers: CONSUMERS,
+    chainPartner,
+    isChainPiece: (def) => isChainPiece(deps.content, def),
+    placeable(state, player, def, tier) {
+      const kind = CONSUMERS.includes(def)
+        ? 'consumer'
+        : def === 'bld_splitter'
+          ? 'splitter'
+          : deps.content.buildings.get(def)?.kind === 'source'
+            ? 'collector'
+            : undefined;
+      if (kind === undefined) return true;
+      // A style that does not connect places no collector at all.
+      if (!s.layout.connect) return kind !== 'collector';
+      return wouldPlace(
+        state.team,
+        player,
+        deps.content,
+        state.team.map.plotWidth,
+        s.layout,
+        kind,
+        { def, tier },
+      );
+    },
+  };
+}
+
+/**
+ * The event tastes of a bot with `strategy` (#416), for the answers of
+ * `bot-events.ts` when a party mixes bots and people: the people's picks come
+ * from the screen, the bots' from `caravanPick` and its siblings.
+ */
+export function botEventTastes(
+  deps: RunDeps,
+  strategy: BotStrategyName,
+  seed = 1,
+): EventTastes {
+  const rng = Rng.fromSeed(seed).child(strategy);
+  return tastesOf(deps, STRATEGIES[strategy], rng);
+}
+
+/** A Caravan draft: each player in turn takes the reward their strategy values most. */
+function caravanTurns(d: Driver, t: EventTastes): void {
   for (let guard = 0; guard < 8; guard++) {
-    const pick = defaultDraftPick(d.state, d.deps);
+    const pick = caravanPick(d.state, d.deps, t);
     if (pick === null) return;
     if (!d.send(pick.player, { type: 'event_choose', choice: pick.choice })) {
       return;
@@ -1118,5 +1317,6 @@ export function playBotRun(
     strategy: options.strategy,
     linkHalves: d.linkHalves,
     battles: d.battles,
+    events: d.events,
   };
 }
