@@ -27,8 +27,8 @@
     "expected": {
       "result": {
         "easy": "arch_skirmishers",
-        "medium": "arch_swarm",
-        "hard": "arch_escalator"
+        "medium": "arch_maze",
+        "hard": "arch_swarm"
       }
     }
   },

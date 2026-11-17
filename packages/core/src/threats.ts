@@ -23,7 +23,7 @@ export const THREAT_TYPES: readonly ThreatType[] = [
   'hard',
   'boss',
 ];
-export type LayoutId = 'ring' | 'line' | 'open';
+export type LayoutId = 'ring' | 'line' | 'open' | 'maze';
 export type ArchetypeId = string;
 
 export interface UnitCost {
@@ -150,6 +150,20 @@ export interface OpenLayoutConfig {
   readonly coreRow: number;
   readonly turretMinDistance: number;
 }
+export interface MazeLayoutConfig {
+  readonly coreRow: number;
+  /** Wall rows across the plot, from `firstRow` toward the Core. */
+  readonly rows: number;
+  /** Distance in rows between two wall rows. */
+  readonly rowSpacing: number;
+  /** Cells in each row's gap. */
+  readonly gapWidth: number;
+  /** The `y` of the first (front) wall row. */
+  readonly firstRow: number;
+  readonly turretMinDistance: number;
+  /** Replaces `maxWallsPerPlot` for this layout (a full maze is long). */
+  readonly maxWallsPerPlot: number;
+}
 
 /**
  * From `fromRound` on, scheduled waves (not signature waves) set aside
@@ -180,6 +194,7 @@ export interface ThreatsConfig {
     readonly ring: RingLayoutConfig;
     readonly line: LineLayoutConfig;
     readonly open: OpenLayoutConfig;
+    readonly maze: MazeLayoutConfig;
   };
   readonly archetypes: readonly ArchetypeDef[];
 }
@@ -333,7 +348,7 @@ const KEYS = new Set([
   'archetypes',
 ]);
 const ARCH_ID = /^arch_[a-z0-9_]+$/;
-const LAYOUTS: readonly string[] = ['ring', 'line', 'open'];
+const LAYOUTS: readonly string[] = ['ring', 'line', 'open', 'maze'];
 
 function complete(o: Record<string, unknown>): boolean {
   return sortedKeys(o).every((k) => o[k] !== undefined);
@@ -539,7 +554,13 @@ export function loadThreats(
     const ring = readRecord(lay, 'ring', 'threats.layouts', errors);
     const line = readRecord(lay, 'line', 'threats.layouts', errors);
     const open = readRecord(lay, 'open', 'threats.layouts', errors);
-    if (ring !== undefined && line !== undefined && open !== undefined) {
+    const maze = readRecord(lay, 'maze', 'threats.layouts', errors);
+    if (
+      ring !== undefined &&
+      line !== undefined &&
+      open !== undefined &&
+      maze !== undefined
+    ) {
       const ringKeys = [
         'coreRow',
         'firstRingDistance',
@@ -556,9 +577,19 @@ export function loadThreats(
         'turretMinDistance',
       ];
       const openKeys = ['coreRow', 'turretMinDistance'];
+      const mazeKeys = [
+        'coreRow',
+        'rows',
+        'rowSpacing',
+        'gapWidth',
+        'firstRow',
+        'turretMinDistance',
+        'maxWallsPerPlot',
+      ];
       rejectUnknownKeys(ring, new Set(ringKeys), 'layouts.ring', errors);
       rejectUnknownKeys(line, new Set(lineKeys), 'layouts.line', errors);
       rejectUnknownKeys(open, new Set(openKeys), 'layouts.open', errors);
+      rejectUnknownKeys(maze, new Set(mazeKeys), 'layouts.maze', errors);
       const r = (
         rec: Record<string, unknown>,
         k: string,
@@ -584,11 +615,38 @@ export function loadThreats(
         coreRow: r(open, 'coreRow', 'layouts.open', 0),
         turretMinDistance: r(open, 'turretMinDistance', 'layouts.open', 1),
       };
-      if (complete(ringV) && complete(lineV) && complete(openV)) {
+      const mazeV = {
+        coreRow: r(maze, 'coreRow', 'layouts.maze', 0),
+        rows: r(maze, 'rows', 'layouts.maze', 1),
+        rowSpacing: r(maze, 'rowSpacing', 'layouts.maze', 2),
+        gapWidth: r(maze, 'gapWidth', 'layouts.maze', 1),
+        firstRow: r(maze, 'firstRow', 'layouts.maze', 1),
+        turretMinDistance: r(maze, 'turretMinDistance', 'layouts.maze', 1),
+        maxWallsPerPlot: r(maze, 'maxWallsPerPlot', 'layouts.maze', 1),
+      };
+      for (const [k, max] of [
+        ['rows', 16],
+        ['rowSpacing', 16],
+        ['gapWidth', 64],
+        ['firstRow', 64],
+        ['maxWallsPerPlot', 1024],
+      ] as const) {
+        const v = mazeV[k];
+        if (v !== undefined && v > max) {
+          errors.push(`layouts.maze: "${k}" must be at most ${String(max)}.`);
+        }
+      }
+      if (
+        complete(ringV) &&
+        complete(lineV) &&
+        complete(openV) &&
+        complete(mazeV)
+      ) {
         layouts = {
           ring: ringV as RingLayoutConfig,
           line: lineV as LineLayoutConfig,
           open: openV as OpenLayoutConfig,
+          maze: mazeV as MazeLayoutConfig,
         };
       }
     }

@@ -497,7 +497,9 @@ export function generateThreat(
   const fp = coreFootprint(content.buildings);
   const wallsTotal = Math.min(
     divFloor(mulPct(strongholdBudget, sh.wallSharePercent), wall.price),
-    threats.maxWallsPerPlot * partySize,
+    (sh.layout === 'maze'
+      ? threats.layouts.maze.maxWallsPerPlot
+      : threats.maxWallsPerPlot) * partySize,
   );
   const turretsTotal = Math.min(
     divFloor(mulPct(strongholdBudget, sh.turretSharePercent), turret.price),

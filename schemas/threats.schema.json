@@ -109,7 +109,7 @@
     },
     "layouts": {
       "type": "object",
-      "required": ["ring", "line", "open"],
+      "required": ["ring", "line", "open", "maze"],
       "additionalProperties": false,
       "properties": {
         "ring": {
@@ -157,6 +157,32 @@
           "properties": {
             "coreRow": { "type": "integer", "minimum": 0 },
             "turretMinDistance": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "maze": {
+          "type": "object",
+          "required": [
+            "coreRow",
+            "rows",
+            "rowSpacing",
+            "gapWidth",
+            "firstRow",
+            "turretMinDistance",
+            "maxWallsPerPlot"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "coreRow": { "type": "integer", "minimum": 0 },
+            "rows": { "type": "integer", "minimum": 1, "maximum": 16 },
+            "rowSpacing": { "type": "integer", "minimum": 2, "maximum": 16 },
+            "gapWidth": { "type": "integer", "minimum": 1, "maximum": 64 },
+            "firstRow": { "type": "integer", "minimum": 1, "maximum": 64 },
+            "turretMinDistance": { "type": "integer", "minimum": 1 },
+            "maxWallsPerPlot": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1024
+            }
           }
         }
       }
@@ -342,7 +368,7 @@
                 "minimum": 0,
                 "maximum": 100
               },
-              "layout": { "enum": ["ring", "line", "open"] }
+              "layout": { "enum": ["ring", "line", "open", "maze"] }
             }
           }
         }

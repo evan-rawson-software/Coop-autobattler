@@ -253,6 +253,30 @@ describe('waves along the whole front', () => {
   });
 });
 
+describe('Maze (issue #432)', () => {
+  test('units walk the maze through its gaps: the Core falls with every wall standing', () => {
+    // Measured: the rush board beats medium Maze in rounds 4 and 6 (threat seed
+    // 100 + round, battle seed 7 + round); no unit attacks a wall, since the
+    // path is never sealed.
+    for (const round of [4, 6]) {
+      const t = threat('arch_maze', 'medium', round);
+      const walls = t.stronghold.buildings.filter(
+        (b) => b.def === 'bld_wall_block',
+      );
+      expect(walls.length).toBeGreaterThan(10);
+      expect(t.stronghold.buildings.some((b) => b.def === 'bld_turret')).toBe(
+        true,
+      );
+      const r = fight('rush', t);
+      expect(r.result.winner).toBe(0);
+      expect(r.eventLog.some((e) => e.type === 'core_destroyed')).toBe(true);
+      expect(r.eventLog.some((e) => e.type === 'building_destroyed')).toBe(
+        false,
+      );
+    }
+  }, 60_000);
+});
+
 describe('the threat fights back', () => {
   test('stronghold turrets fire with no flow', () => {
     const t = threat('arch_fortress', 'hard', 5);
@@ -279,9 +303,14 @@ describe('late rounds stay inside the performance budget', () => {
           // cost more per unit, so fewer units per wave): Fortress hard at
           // round 15 now has unitStrengthPercent 100 (party 1) and 96
           // (party 4), which fail "> 100" (117 and 121 without the mix);
-          // round 16 has 142 and 144.
+          // round 16 has 142 and 144. Maze hard (issue #432) has 100 at round
+          // 15 for both party sizes (its waves are light: a quarter of the
+          // budget in four waves) and 150 and 155 at round 16.
           const sampleRound =
-            arch === 'arch_fortress' && type === 'hard' ? round + 1 : round;
+            (arch === 'arch_fortress' || arch === 'arch_maze') &&
+            type === 'hard'
+              ? round + 1
+              : round;
           const t = threat(arch, type, sampleRound, party);
           const s = startPveBattle(
             {
@@ -420,7 +449,8 @@ describe('sweep of reference boards against every threat', () => {
     // the points diverting units (CB-8f, #373) the middle block is 195. The
     // Skirmishers and Swarm archetypes (issue #431) add 86, 41 and 1 wins
     // (454, 236 and 20): two more archetypes in the sweep, nothing else moved.
-    expect(blocks).toEqual([454, 236, 20, 0, 0]);
+    // Maze (issue #432) adds 54, 19 and 0 (508, 255 and 20), likewise.
+    expect(blocks).toEqual([508, 255, 20, 0, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {
