@@ -21842,5 +21842,1500 @@
       },
       "eventLogHash": "46433c45"
     }
+  },
+  {
+    "id": "arena-sim.specialist-flowmancer-collectors",
+    "kind": "arena-sim",
+    "description": "Two plots, three unconnected ore extractors each (tiers 1, 2 and 3, intervals 20, 14 and 10; their items are lost at their own cadence). Player 0 picked the Flowmancer (+10 percent collector speed): after the first item their intervals are floor(2000 / 110) = 18, floor(1400 / 110) = 12 and floor(1000 / 110) = 9 (tier 1 items at 19, 37, 55, ...; tier 3 at 9, 18, 27, ...). Player 1 has no specialist and stays on 20, 14 and 10 (CB-51a, EC-8a).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 0,
+              "y": 0,
+              "resource": "res_a"
+            },
+            {
+              "x": 2,
+              "y": 0,
+              "resource": "res_a"
+            },
+            {
+              "x": 4,
+              "y": 0,
+              "resource": "res_a"
+            },
+            {
+              "x": 12,
+              "y": 0,
+              "resource": "res_a"
+            },
+            {
+              "x": 14,
+              "y": 0,
+              "resource": "res_a"
+            },
+            {
+              "x": 16,
+              "y": 0,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_flowmancer"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 2,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 4,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 4,
+            "x": 12,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 2,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 5,
+            "x": 14,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 6,
+            "x": 16,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 200
+    },
+    "expected": {
+      "result": {
+        "tick": 200,
+        "stateHash": "5e308a79",
+        "events": 186,
+        "sides": [
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          }
+        ]
+      },
+      "eventLogHash": "9f384c11"
+    }
+  },
+  {
+    "id": "arena-sim.specialist-flowmancer-overclocker-cap",
+    "kind": "arena-sim",
+    "description": "Player 0 is a Flowmancer (+10 percent) and has a tier 3 Overclocker (+5 percent per step, five steps) fed by a fast flux extractor, and an unconnected ore extractor. The specialist bonus is part of the owner's collector speed total, which is capped at 25 percent: the ore extractor starts at 10 percent (interval 18), rises with the steps and stops at 25 (interval 16); the sum never goes beyond the cap (EC-8b).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 0,
+              "y": 0,
+              "resource": "res_a"
+            },
+            {
+              "x": 10,
+              "y": 0,
+              "resource": "res_c"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_flowmancer"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 10,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_overclocker",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 2,
+              "side": "north"
+            },
+            "to": {
+              "building": 3,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 900
+    },
+    "expected": {
+      "result": {
+        "tick": 900,
+        "stateHash": "dff4ebe0",
+        "events": 164,
+        "sides": [
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          }
+        ]
+      },
+      "eventLogHash": "eccbe839"
+    }
+  },
+  {
+    "id": "arena-sim.specialist-wardsmith-health-stacks-with-shrine",
+    "kind": "arena-sim",
+    "description": "Both plots have a wall, a one-cell wall, a gate, a tier 2 turret, a tier 2 Mortar and a Barracks; the side holds Stout walls (+25 percent wall health). Player 0 is a Wardsmith (+15 percent on walls, gates and turrets). Player 0's walls have 250 * 140 / 100 = 350 and 100 * 140 / 100 = 140 health (25 and 15 summed, applied once), their gate and turrets +15 percent, their Barracks and Core nothing. Player 1's walls get only the Shrine's 25 percent (312 and 125); nothing else of theirs changes (CB-51a, EC-8a).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_wardsmith"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_i",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 5,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_gate",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 6,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 7,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mortar",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 8,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 0,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_i",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 7,
+            "x": 12,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 8,
+            "x": 17,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_gate",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 9,
+            "x": 18,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 2,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 10,
+            "x": 19,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mortar",
+            "tier": 2,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 11,
+            "x": 20,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 12,
+            "x": 12,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 60,
+      "modifiersA": [
+        {
+          "id": "mod_stout_walls",
+          "effects": [
+            {
+              "kind": "building_health_percent",
+              "target": "wall",
+              "percent": 25
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 60,
+        "stateHash": "bbe8573d",
+        "events": 0,
+        "sides": [
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          }
+        ]
+      },
+      "eventLogHash": "741638a5"
+    }
+  },
+  {
+    "id": "arena-sim.specialist-beastbinder-unit-health",
+    "kind": "arena-sim",
+    "description": "Each plot has an ore extractor feeding a Barracks. Player 0 is a Beastbinder (+10 percent unit health): their soldiers spawn with 40 * 110 / 100 = 44 health and the usual damage 6; player 1's soldiers have 40 (CB-51a).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 0,
+              "y": 0,
+              "resource": "res_a"
+            },
+            {
+              "x": 12,
+              "y": 0,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_beastbinder"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 0,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 3,
+            "x": 12,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 4,
+            "x": 12,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 250,
+      "report": "stats"
+    },
+    "expected": {
+      "result": {
+        "tick": 250,
+        "stateHash": "4f4f9d67",
+        "events": 52,
+        "sides": [
+          {
+            "spawned": 4,
+            "alive": 4,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          }
+        ],
+        "stats": [
+          [1, 44, 44, 6],
+          [2, 40, 40, 6],
+          [3, 44, 44, 6],
+          [4, 40, 40, 6]
+        ]
+      },
+      "eventLogHash": "a93d2aeb"
+    }
+  },
+  {
+    "id": "arena-sim.specialist-beastbinder-with-armory",
+    "kind": "arena-sim",
+    "description": "The ramp-armory-stronger-units scenario with a Beastbinder: the soldiers spawned at ticks 99, 199 and 299 have 40 * (100 + 5 * k + 10) / 100 = 46, 48 and 50 health (the Armory's strength and the specialist's health percent are summed and applied once); the soldiers of ticks 399 and 499 have 52 and 54. The damage follows the Armory's strength alone (6, 6, 6, 7, 7).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 0,
+              "y": 0,
+              "resource": "res_a"
+            },
+            {
+              "x": 4,
+              "y": 0,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_beastbinder"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 0,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 4,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_armory",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 4,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 500,
+      "report": "stats"
+    },
+    "expected": {
+      "result": {
+        "tick": 500,
+        "stateHash": "3236a57b",
+        "events": 154,
+        "sides": [
+          {
+            "spawned": 5,
+            "alive": 5,
+            "unitsDied": 0,
+            "buildingDamageDealt": 270,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [230]
+          }
+        ],
+        "stats": [
+          [1, 46, 46, 6],
+          [2, 48, 48, 6],
+          [3, 50, 50, 6],
+          [4, 52, 52, 7],
+          [5, 54, 54, 7]
+        ]
+      },
+      "eventLogHash": "feb15a7d"
+    }
+  },
+  {
+    "id": "arena-sim.specialist-alchemist-ramp-steps",
+    "kind": "arena-sim",
+    "description": "The ramp-overclocker-own-plot-only scenario with player 0 an Alchemist (+15 percent production speed): their Overclocker takes a step at the earliest every floor(4000 / 115) = 34 ticks instead of 40 (the step size and cap are unchanged); player 1 has no specialist (CB-57).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 0,
+              "y": 0,
+              "resource": "res_a"
+            },
+            {
+              "x": 10,
+              "y": 0,
+              "resource": "res_c"
+            },
+            {
+              "x": 12,
+              "y": 0,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_alchemist"
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 0,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 10,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_overclocker",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 5,
+            "x": 12,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 600
+    },
+    "expected": {
+      "result": {
+        "tick": 600,
+        "stateHash": "bb939285",
+        "events": 246,
+        "sides": [
+          {
+            "spawned": 6,
+            "alive": 6,
+            "unitsDied": 0,
+            "buildingDamageDealt": 486,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 14]
+          }
+        ]
+      },
+      "eventLogHash": "74226e13"
+    }
+  },
+  {
+    "id": "arena-sim.specialist-alchemist-refinery-batches",
+    "kind": "arena-sim",
+    "description": "The refinery-ab-feeds-units scenario with a tier 1 Composite refinery (its two tier 3 collectors fill it faster than its interval) and an Alchemist (+15 percent production speed): the refinery's minimum time between batches is floor(6000 / 115) = 52 ticks instead of 60. Saved and restored at tick 300 like the original (CB-57).",
+    "input": {
+      "gapRows": 4,
+      "ticks": 1000,
+      "teamA": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": [
+            {
+              "x": 3,
+              "y": 2,
+              "resource": "res_b"
+            },
+            {
+              "x": 5,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_alchemist"
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 5,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 3,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_refinery_ab",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 5,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_test_sink_ab",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 5,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 3,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 4
+              }
+            ]
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 2,
+              "side": "north"
+            },
+            "to": {
+              "building": 3,
+              "side": "west"
+            },
+            "cells": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 5,
+                "y": 9
+              }
+            ]
+          }
+        ]
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          }
+        ]
+      },
+      "extraBuildings": [
+        {
+          "id": "bld_test_sink_ab",
+          "kind": "unit_producer",
+          "unit": "unit_soldier",
+          "footprint": {
+            "width": 1,
+            "height": 1
+          },
+          "inputs": [
+            {
+              "side": "south",
+              "resource": "res_ab_refined"
+            }
+          ],
+          "outputs": [],
+          "tiers": [
+            {
+              "health": 20,
+              "price": 0,
+              "costPerUnit": 1,
+              "productionIntervalTicks": 10
+            },
+            {
+              "health": 20,
+              "price": 0,
+              "costPerUnit": 1,
+              "productionIntervalTicks": 10
+            },
+            {
+              "health": 20,
+              "price": 0,
+              "costPerUnit": 1,
+              "productionIntervalTicks": 10
+            }
+          ]
+        }
+      ],
+      "report": "positions",
+      "restoreAt": [300]
+    },
+    "expected": {
+      "result": {
+        "tick": 1000,
+        "stateHash": "4d9dd7c6",
+        "events": 506,
+        "sides": [
+          {
+            "spawned": 38,
+            "alive": 38,
+            "unitsDied": 0,
+            "buildingDamageDealt": 500,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0]
+          }
+        ],
+        "positions": [
+          [1, 3495, 8087],
+          [2, 3228, 8316],
+          [3, 3351, 8095],
+          [4, 3417, 8028],
+          [5, 3301, 8377],
+          [6, 3322, 8185],
+          [7, 3126, 8186],
+          [8, 3234, 8221],
+          [9, 2972, 7532],
+          [10, 2692, 7252],
+          [11, 1516, 6076],
+          [12, 1320, 5760],
+          [13, 1320, 4080],
+          [14, 1320, 3680],
+          [15, 1326, 2750],
+          [16, 1310, 2847],
+          [17, 1232, 2780],
+          [18, 1403, 2830],
+          [19, 1252, 2687],
+          [20, 1397, 2687],
+          [21, 1086, 2510],
+          [22, 1061, 2610],
+          [23, 994, 2533],
+          [24, 1153, 2587],
+          [25, 1009, 2438],
+          [26, 1153, 2442],
+          [27, 1577, 2507],
+          [28, 1550, 2609],
+          [29, 1487, 2538],
+          [30, 1644, 2589],
+          [31, 1487, 2439],
+          [32, 1642, 2438],
+          [33, 1324, 2259],
+          [34, 1309, 2353],
+          [35, 1235, 2294],
+          [36, 1404, 2353],
+          [37, 1249, 2198],
+          [38, 1399, 2202]
+        ]
+      },
+      "eventLogHash": "be94a8c2"
+    }
   }
 ]

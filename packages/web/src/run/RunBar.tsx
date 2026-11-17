@@ -69,7 +69,7 @@ export function RunBar(props: {
           {specialist.name}
         </span>
       )}
-      <BonusesItem modifiers={state.team.modifiers} />
+      <BonusesItem modifiers={state.team.modifiers} specialist={specialist} />
       {props.session === undefined ? null : (
         <ActingSwitch
           run={state}

@@ -7,6 +7,7 @@ import type { TeamState } from '@game/core';
 import type { RunState } from '@game/session';
 import { screenText, screenTexts, playerName } from '../build/texts.js';
 import { content } from '../content.js';
+import { specialistEffectLine } from '../run/display-text.js';
 
 /** The display name of a specialist ID; the ID itself when it has no text. */
 export function specialistName(id: string): string {
@@ -110,6 +111,10 @@ export interface BarSpecialist {
   readonly name: string;
   /** "Specialist: Flowmancer", for the tooltip and the accessible name. */
   readonly title: string;
+  /** "Specialist bonus: Flowmancer", the heading of the bonus lines. */
+  readonly bonusTitle: string;
+  /** What the family bonus does, one line per effect (CB-51a). */
+  readonly bonusLines: readonly string[];
 }
 
 /** The specialist of a player for the run bar, or null before the pick. */
@@ -123,6 +128,10 @@ export function barSpecialist(
   return {
     name,
     title: screenText(screenTexts, 'specialistBar', { name }),
+    bonusTitle: screenText(screenTexts, 'uiBonusesSpecialist', { name }),
+    bonusLines: (content.specialists.get(id)?.effects ?? []).map(
+      specialistEffectLine,
+    ),
   };
 }
 

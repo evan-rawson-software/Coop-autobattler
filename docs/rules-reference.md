@@ -623,8 +623,10 @@ middle:
   `max-health.ts`) and used for the health it starts with, its breach cost in
   the simulation, and its breach cost in the enemy-path preview: the tier's health (the Core is tier 1), or the `coreHealths` side
   option entry of its player for the Core, then raised by the team's `core_health_percent` (Core)
-  or matching `building_health_percent` effects (any other building), as
-  `floor(value * (100 + sum) / 100)`. The percent sum is accumulated with
+  or matching `building_health_percent` effects (any other building) plus,
+  for a building, the matching `building_health_percent` effects of its
+  owner's specialist (summed, then applied once; "Specialists", "Family
+  bonuses"), as `floor(value * (100 + sum) / 100)`. The percent sum is accumulated with
   `addInt`; a sum beyond 2^53 - 1, or one for which `value * (100 + sum)`
   would leave the safe range, is a `RangeError` naming the modifier kind. The
   result must not exceed `MAX_HEALTH`;
@@ -1811,8 +1813,10 @@ by resource ID, `counters` its counters in the same order:
 The first item of a batch is released on the **next** tick (step 3a.2 runs
 before step 3a.3), which is also why a direct connection into a merger is
 "ready" (step 0) by its `store`. The Overclocker's `source_speed` modifier is
-read only by step 3 (sources): a refinery's `productionIntervalTicks` is never
-scaled. A refinery is paced in every consumer mode: in `drain` mode (below) its
+read only by step 3 (sources): a refinery's `productionIntervalTicks` is not
+scaled by it. Only the owner's Alchemist scales it (`FlowContext.refinerySpeedPercent`,
+"Specialists", "Family bonuses"): the cooldown set in step 3a.3 is `scaledInterval(
+productionIntervalTicks, P)` with the `P` of the refinery's owner. A refinery is paced in every consumer mode: in `drain` mode (below) its
 buffers are not drained and in `need` mode it has no pacer.
 
 **Consumers.** With `consumers: "drain"` (tests and dry runs), after step 3a
@@ -1930,7 +1934,8 @@ Rules (step 3a of `stepFlow`, "One tick: `stepFlow`"):
   every counter has filled, so its output is limited by the input that takes
   longest to fill its counter, never more than the top speed.
   The Overclocker (`source_speed`) speeds up collectors only; a refinery is
-  not scaled.
+  not scaled by it. The owner's Alchemist shortens the interval above to
+  `max(1, floor(interval * 100 / (100 + P)))` (issue #471, CB-57).
 - **Typing (CB-5b).** A conduit leaving a refinery carries its `output`
   resource ("Resource typing"). A refined conduit feeds only a building whose
   input names that refined resource (any other input, including the input of
@@ -2195,7 +2200,8 @@ issue #82): see "Unit geometry" and step 5 of the tick. There is no
 A unit also stores `damage`, its attack damage **fixed at spawn**. All reads
 of a unit's stats (health, damage, range, cooldowns) go through one function,
 `unitStats(side, def, strengthPercent, healthPercent = 100, moveSpeedPercent =
-0, attackSpeedPercent = 0, armorBonus = 0, splashBonusPercent = 0)`. With
+0, attackSpeedPercent = 0, armorBonus = 0, splashBonusPercent = 0,
+healthBonusPercent = 0)`. With
 `strengthPercent = P` above 0 it returns the definition with `health =
 mulPct(health, 100 + P)` and `damage = mulPct(damage, 100 + P)` (rounded
 down). With `moveSpeedPercent = S` or `attackSpeedPercent = S` above 0 the
@@ -2206,7 +2212,9 @@ speed"); everything else is unchanged. A `healthPercent = hp` other than 100
 one) is applied **after** the strength percent and to health only: `health =
 mulPct(mulPct(health, 100 + P), hp)` (two roundings down; with `P = 0` just
 `mulPct(health, hp)`); damage, armor and every other stat are unchanged, and a
-result above `MAX_HEALTH` is a `RangeError`. With `P = 0`, `hp = 100` and both speed percents 0 the
+result above `MAX_HEALTH` is a `RangeError`. A `healthBonusPercent = H` above 0 (the owner's specialist, issue #471) makes the
+strength-scaled health `mulPct(health, 100 + P + H)`: one rounding, damage
+unchanged ("Specialists", "Family bonuses"). With `P = 0`, `hp = 100`, `H = 0` and both speed percents 0 the
 definition is returned as is. A scaled `health` above `MAX_HEALTH` or `damage` above `MAX_DAMAGE`
 is an error (`RangeError`), see "Content bounds". A spawn passes the side's
 current `unit_strength` bonus (see "In-battle ramp"; plus the side's
@@ -2621,7 +2629,8 @@ interest (CB-8f, "Points of interest") add the diversion of rule c in step 3
    each, take `min(input buffer count, costPerStep - charge)` items out of
    the buffer (`takeFromBuffer`) and add them to `charge`. If `charge =
    costPerStep` **and `cooldown = 0`** afterwards: `steps += 1`, `charge = 0`,
-   `cooldown = stepIntervalTicks` and `ramp_step {side, building, effect,
+   `cooldown = stepIntervalTicks` (for an owner with an Alchemist
+   `scaledInterval(stepIntervalTicks, P)`, "Specialists") and `ramp_step {side, building, effect,
    steps}` is recorded. Intake continues while the cooldown runs, up to
    `costPerStep`. So a building takes at most one step per
    `stepIntervalTicks` ticks. A building with `steps = maxSteps` takes nothing, so
@@ -3330,7 +3339,9 @@ modifiers and the side's point bonus (CB-8g); pinned by a test in `ramp.test.ts`
 
 **`source_speed`.** Before each tick's flow step the arena sets the board's
 source interval modifiers to one value per player index: each owner's
-`source_speed` bonus. A source whose countdown is reset after producing uses the
+`source_speed` bonus (the capped ramp total, in which the owner's Flowmancer
+bonus is part of the raw total before the cap: `min(cap, raw + specialist)`,
+issue #471, "Specialists"). A source whose countdown is reset after producing uses the
 bonus `P` of its owner, so a player's Overclocker leaves a partner's collectors
 unchanged: `max(1, floor(intervalTicks * 100 /
 (100 + P)))` (integer division rounds down; at least 1, so at most one item
@@ -4252,7 +4263,8 @@ per point and a cap of 40 with the shipped numbers, so a third point adds
 nothing). `spawnStrength` of a unit of side `s` (producer units, units of a
 scheduled wave, test spawns) is `rampBonus(owner) + unitStrengthPercent option
 + run modifiers + pointBonus(s)`, with `rampBonus` 0 for a wave unit; this
-single number is the `strengthPercent` given to `unitStats`. The point bonus is
+single number is the `strengthPercent` given to `unitStats` (the owner's
+specialist health percent is passed separately, as `healthBonusPercent`). The point bonus is
 outside the Armory cap `maxUnitStrengthPercent`. It is read at the moment of the
 spawn (step 2 of the tick for producers and waves; a wave unit waiting in `entering` reads it when it is placed on the field; the capture step that gives
 or takes a point runs at the end of step 6, so a point captured in tick `T`
@@ -5992,7 +6004,10 @@ agree.
 Each side's modifiers come from its own team state (`TeamState.modifiers`):
 the party's from the run, and a ghost from `findPvpOpponent` brings its own,
 which apply to side 1. Generated threats (PvE options and the PvP boss) have
-none. An extractor-speed kind is not implemented.
+none. An extractor-speed kind is not implemented as a run modifier; the
+specialist's `source_speed_percent` (issue #471) is an owner-scoped effect, not
+a modifier. A specialist's `building_health_percent` is summed with the
+modifiers above for its owner's buildings and applied once ("Specialists").
 
 **The modifier list** (issue #423; numbers are proposals, see EC-8 in the
 spec). Definitions are in `content/events.json`, in file order, with an
@@ -6651,11 +6666,11 @@ if it differs.
 
 ## Specialists
 
-Issue #470 (umbrella #468; RS-13, CP-31, CB-51, MM-1e). Each player picks one
-starting specialist before placing their Core. This step adds the choice and
-stores it; a specialist has **no effect on a shop or a battle yet** (its
-bonus and its signature building come in later steps of #468), so every
-battle outcome is unchanged.
+Issues #470 and #471 (umbrella #468; RS-13, CP-31, CB-51, MM-1e). Each player
+picks one starting specialist before placing their Core. The pick is stored
+(#470) and its **family bonus** acts in every battle (#471, "Family bonuses"
+below). The signature building comes in a later step of #468; a specialist has
+no effect on a shop yet.
 
 ### Content (`content/specialists.json`, `schemas/specialists.schema.json`)
 
@@ -6723,8 +6738,121 @@ entries are equal. The size limit of "Validation" has the term
 ID plus a comma), well inside the margin. A snapshot of a real run has every
 entry set (a run cannot leave `specialist_pick` otherwise).
 
+### Family bonuses (issue #471; CB-51a, CB-57, EC-8a, EC-8b)
+
+A specialist's `effects` are **owner-scoped**: each acts only on the buildings
+and units **owned by the player who picked it** (a building's owner is
+`PlacedBuilding.owner`; a unit's owner is the owner of the building that made
+it, CB-15a). It never touches a partner's, the other side's, a scheduled
+wave's or burst's, a guard's or a boss's things. The effects are read from the
+roster of the loaded content at the start of a battle, by the ID in the
+team's `specialists` list (`specialistEffectsOf(team, roster, owner)`; none
+when the team has no list, the entry is null, the ID is not in the roster or
+`owner` is not a player index). A ghost's team carries its list, so a ghost's
+bonuses act for that party exactly as they did for it, and a team without the
+list (a save or snapshot from before specialists) plays as it always did.
+Nothing is stored for them in a battle state: the sums below are derived from
+the team and fixed for the battle (`ArenaContext.specialist`, per side and
+player index; they are not part of the state hash or of a saved state).
+
+A sum of effects is `specialistPercent(effects, kind, target?)`: the plain sum
+of the `percent` of the effects of that kind (for `building_health_percent`
+only those whose `target` is `all` or equals the building's target, below).
+
+| Kind | What it changes, for the owner's things only | Rule |
+| --- | --- | --- |
+| `building_health_percent` (`target`) | the maximum (and so starting) health of a matching building, not the Core | `maxHealthOf`: **summed with the Shrine effects of the same kind and target, floored at `minModifierSumPercent`, applied once** (below) |
+| `unit_health_percent` | the health of a unit spawned by one of the owner's unit producers | health only, **summed with the strength percent and applied once** (below) |
+| `source_speed_percent` | the owner's collectors (sources) | added to the owner's `source_speed` ramp total **before the cap** (below) |
+| `production_speed_percent` | the owner's refineries and the owner's economy (ramp) buildings | shortens the batch interval of a refinery and the step interval of an Overclocker or Armory by the interval rule (below) |
+
+**The interval rule.** For a bonus `P` and a whole interval `T` of at least 1,
+the interval becomes `scaledInterval(T, P) = max(1, floor(T * 100 / (100 +
+P)))`: the same function as the collector rule of "One tick: `stepFlow`". It
+rounds in favour of the owner, never goes below 1 tick, and a short interval
+can gain more than the stated percent. For `P = 10`: 20, 14, 10 become 18, 12,
+9. For `P = 15`: the Overclocker step 40, 42, 40 (tiers 1 to 3) become 34, 36,
+34; the Armory step 80, 70, 60 become 69, 60, 52; a refinery interval 60, 42,
+30 becomes 52, 36, 26. A countdown or cooldown that is already running is
+never changed; only the next reset reads the value. The first countdown of a
+battle is the plain interval.
+
+**Building health (Wardsmith).** `maxHealthOf(team, building, content,
+minModifierSumPercent)` for a building that is not a Core takes `target =
+defenseType ?? kind` (a defense matches its defense type, `wall`, `gate`,
+`turret` (the Mortar too) or `ward`/`pylon`; any other building its kind).
+`sum = max(minModifierSumPercent, shrine + specialist)`, where `shrine` is the
+sum of the team's `building_health_percent` effects whose target is `all` or
+`target`, and `specialist` is `specialistPercent(effects of the building's
+owner, building_health_percent, target)`; then `health = floor(tier health *
+(100 + sum) / 100)`, one rounding. So with Stout walls (+25) and the
+Wardsmith (+15) a wall has `floor(250 * 140 / 100) = 350`, not 359; a partner's
+wall has the Shrine's 25 only. The `sum` is checked like any modifier sum
+(`RangeError` beyond the safe range or `MAX_HEALTH`). The raised health is the
+health the building starts the battle with and the health its breach cost is
+computed from (the Build screen's enemy-path preview calls the same
+function). A side option health override (a pylon or Core override) is raised
+the same way. The Rune Ward is a defense of type `ward` and is not boosted.
+
+**Unit health (Beastbinder).** `unitStats(side, def, strengthPercent,
+healthPercent, move, attack, armor, splash, healthBonusPercent = 0)`: with
+`H = healthBonusPercent` above 0 the health is `mulPct(base health, 100 + P +
+H)` (one rounding, `P` the strength percent) instead of `mulPct(base health,
+100 + P)`; damage uses `P` only; a champion's `healthPercent` is then applied
+as before. `H` is the owner's `unit_health_percent` sum, read at the moment
+the unit is spawned from one of the owner's producers (`addUnit`, and
+`spawnUnitForTest` with an `owner`); a unit without a producer (a scheduled
+wave, a burst, a guard) gets `H = 0`. It is **outside** the Armory cap
+`maxUnitStrengthPercent` and the point-bonus cap. The up-front check of
+`createArenaSim` (`assertStrengthBounds`) includes the largest `H` of the
+side's players, so a bound is failed at setup, never mid-battle.
+
+**Collector speed (Flowmancer).** `rampBonus(sim, ctx, side, 'source_speed',
+owner)` is `min(maxSourceSpeedPercent, raw)` with `raw` = the owner's ramp
+total (`steps * stepPercent` of the owner's living Overclockers) **plus** the
+owner's `source_speed_percent` sum. With no Overclocker the bonus is the
+specialist's alone (10); with a tier 3 Overclocker at five steps (+25) it is
+`min(25, 35) = 25`: the two never go past the cap. Each owner is computed on
+their own and a partner gets nothing from it. The arena puts this number into
+`FlowContext.sourceSpeedPercent[owner]` before every flow step, from the first
+tick of the battle (before any ramp step), so the first reset of a collector
+already reads it. `rampBonus` for `unit_strength` is unchanged.
+
+**Production speed (Alchemist).** The arena puts each owner's
+`production_speed_percent` sum into `FlowContext.refinerySpeedPercent[owner]`
+(a list by player index, a missing entry or an absent list is 0; a dry run
+leaves it unset) before every flow step. In step 3a.3 a refinery that makes a
+batch sets `cooldown = scaledInterval(productionIntervalTicks, P)` with the `P`
+of its owner (`PlanRefinery.owner`); this is the shortest time between
+batches, supply still decides whether it is reached. At the start of a battle
+`createArenaContext` sets the step interval of each of the owner's economy
+buildings (`RampInfo.stepInterval`) to `scaledInterval(stepIntervalTicks, P)`
+for the same owner sum, so the ramp reaches its steps sooner. The step size
+(`stepPercent`), each building's `maxSteps`, `costPerStep` and the owner caps
+are unchanged: the ramp reaches its cap sooner and never goes beyond it. Unit
+producers, turrets and collectors are not changed by it.
+
+**Display.** The run bar's Bonuses popover shows the acting player's family
+bonus, one line per effect, under "Specialist bonus: <name>", apart from the
+party's modifiers.
+
+**Golden vectors** (`arena-sim.specialist-*`): `flowmancer-collectors` (the
+18, 12, 9 intervals and the neighbour on the base cadence),
+`flowmancer-overclocker-cap`, `wardsmith-health-stacks-with-shrine` (the
+Shrine sum and the neighbour with the Shrine only), `beastbinder-unit-health`
+(44 against 40), `beastbinder-with-armory` (46, 48, 50, 52, 54), 
+`alchemist-ramp-steps` and `alchemist-refinery-batches`.
+
 ### Notes for a port
 
+- Family bonuses (#471): all sums are integers; keep the order of the
+  operations of "Family bonuses": health `floor(tier health * (100 + max(floor,
+  shrine + specialist)) / 100)`; unit health `floor(base * (100 + P + H) /
+  100)`; collector speed `min(cap, ramp raw + specialist)`; every speed
+  interval `max(1, floor(T * 100 / (100 + P)))`. Never compound a specialist
+  with a Shrine effect. An owner index outside the list, a null entry, an
+  unknown ID or a missing list means no bonus. Iterate the players by index
+  and the effects in file order (no map or set iteration order).
 - A port reads `specialists` as an optional list of `partySize` nullable
   strings and omits it when every entry is null (the canonical JSON and the
   hash depend on this).
@@ -7566,6 +7694,8 @@ and border links are the only way to help a partner (CP-29):
   effect, capped by `maxSourceSpeedPercent` or `maxUnitStrengthPercent`.
 - `source_speed` of owner `p` applies to the sources owned by `p`: `stepFlow`
   takes one source interval modifier per player index, not one per board.
+  The same goes for a specialist's family bonus (issue #471): it applies to
+  the things of the player who picked it only.
 - `unit_strength` of owner `p` applies to units spawned by `p`'s unit
   producers. The side option `unitStrengthPercent` and the team's
   `unit_strength_percent` modifiers stay side-wide. The modifiers come only

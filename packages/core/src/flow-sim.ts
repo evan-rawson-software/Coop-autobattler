@@ -217,6 +217,8 @@ interface PlanRefinery {
   readonly costs: readonly CostEntry[];
   readonly interval: number;
   readonly outputPerBatch: number;
+  /** The player who owns the refinery (CB-57: whose production speed applies). */
+  readonly owner: number;
 }
 
 export interface FlowPlan {
@@ -278,6 +280,14 @@ export interface FlowContext {
    * `source_speed` total; a dry run leaves it unset.
    */
   sourceSpeedPercent?: readonly number[];
+  /**
+   * Refinery interval modifier, in percent, one value per player index (CB-57;
+   * a missing entry or an absent list is 0): when a refinery makes a batch its
+   * cooldown is `max(1, floor(interval * 100 / (100 + percent)))` with the
+   * percent of the refinery's owner. Set by the arena from each owner's
+   * specialist `production_speed_percent`; a dry run leaves it unset.
+   */
+  refinerySpeedPercent?: readonly number[];
   /** Present in `'need'` mode: one pacer per consumer, in `sim.consumers` order. */
   readonly pacers?: ConsumerPacer[];
 }
@@ -560,6 +570,7 @@ function compile(
       costs,
       interval: tier.productionIntervalTicks,
       outputPerBatch: tier.outputPerBatch,
+      owner: b.owner,
     });
     refinerySims.push({
       building: b.id,
@@ -1099,7 +1110,10 @@ function stepRefinery(
     pr.costs.every((e, k) => r.counters[k] === e.cost)
   ) {
     r.counters.fill(0);
-    r.cooldown = pr.interval;
+    r.cooldown = scaledInterval(
+      pr.interval,
+      ctx.refinerySpeedPercent?.[pr.owner] ?? 0,
+    );
     r.store = pr.outputPerBatch;
     r.produced += pr.outputPerBatch;
     r.batches += 1;

@@ -73,7 +73,11 @@ describe('Splitter placement (#178)', () => {
   // placed. With the new buildings (#443: the shop offers a Lancer hall, a
   // Mortar, a Tunnel and a Grand barracks, and rush keeps two nodes back for a
   // Grand barracks) 65 of 76 (13/14, 17/20, 35/42): 85.5%, party 4 is 83%, so
-  // the floor per party size is 0.83 and the overall one 0.85.
+  // the floor per party size is 0.83 and the overall one 0.85. With the
+  // specialists' family bonuses (#471; the rush bot is a Beastbinder, its
+  // units have +10% health, so its battles, lives and events differ) 66 of 78
+  // (13/14, 18/21, 35/43): 84.6%, party 4 is 81.4%, so the floor per party
+  // size is 0.81 and the overall one 0.84 (measured, not rounded up).
   test('rush: Splitters are bought and nearly all are placed, at every party size', () => {
     let bought = 0;
     let placedAll = 0;
@@ -88,7 +92,7 @@ describe('Splitter placement (#178)', () => {
       bought += placed + stashed;
       placedAll += placed;
       expect(placed, `rush party ${String(party)}`).toBeGreaterThanOrEqual(
-        0.83 * (placed + stashed),
+        0.81 * (placed + stashed),
       );
     }
     // The ratio means nothing if nothing is bought.
@@ -97,7 +101,7 @@ describe('Splitter placement (#178)', () => {
     // Drill (#411) 71 of 78.
     expect(bought).toBeGreaterThanOrEqual(72);
     expect(placedAll).toBeGreaterThanOrEqual(62);
-    expect(placedAll / bought).toBeGreaterThanOrEqual(0.85);
+    expect(placedAll / bought).toBeGreaterThanOrEqual(0.84);
   });
 
   // Siege buys few Splitters (its barracks and armories are high tier), so
