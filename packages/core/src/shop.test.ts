@@ -479,3 +479,217 @@ describe('offerWeightsAt and rareOfferDefs (Blueprint, RS-4i5)', () => {
     expect(rareOfferDefs(e, 4, 1)).toEqual([]);
   });
 });
+
+describe('signature buildings by specialist (issue #472, EC-3b)', () => {
+  const FLOW = 'spec_flowmancer';
+  const withWell = (fromRound = 2): EconomyConfig => ({
+    ...economy,
+    shopOfferCount: 5,
+    offerWeights: [
+      { def: 'bld_extractor', weight: 3, fromRound: 1 },
+      { def: 'bld_mana_well', weight: 6, fromRound, specialist: FLOW },
+      { def: 'bld_gate', weight: 2, fromRound: 1 },
+    ],
+  });
+  const without: EconomyConfig = {
+    ...withWell(),
+    offerWeights: withWell().offerWeights.filter(
+      (w) => w.def !== 'bld_mana_well',
+    ),
+  };
+  const defsOf = (
+    seed: number,
+    round: number,
+    specialist: string | null,
+    e: EconomyConfig = withWell(),
+  ) =>
+    rollOffers(Rng.fromSeed(seed), round, content, e, 0, specialist).map(
+      (o) => o.def,
+    );
+
+  test('only the owner specialist is offered its building', () => {
+    const seen = new Set<string>();
+    for (let seed = 0; seed < 100; seed++) {
+      for (const d of defsOf(seed, 2, FLOW)) seen.add(d);
+      for (const other of [null, 'spec_wardsmith', 'spec_alchemist']) {
+        expect(defsOf(seed, 2, other)).not.toContain('bld_mana_well');
+      }
+    }
+    expect(seen.has('bld_mana_well')).toBe(true);
+  });
+
+  test('fromRound applies together with the specialist', () => {
+    for (let seed = 0; seed < 100; seed++) {
+      expect(defsOf(seed, 1, FLOW)).not.toContain('bld_mana_well');
+    }
+  });
+
+  test('another player rolls exactly what it rolls without the entry (same draws)', () => {
+    for (const other of [null, 'spec_beastbinder']) {
+      for (let seed = 0; seed < 50; seed++) {
+        const a = Rng.fromSeed(seed);
+        const b = Rng.fromSeed(seed);
+        expect(rollOffers(a, 2, content, withWell(), 0, other)).toEqual(
+          rollOffers(b, 2, content, without, 0, other),
+        );
+        expect(a.getState()).toEqual(b.getState());
+      }
+    }
+  });
+
+  test('a roll without a specialist argument is the old roll', () => {
+    const a = Rng.fromSeed(3);
+    const b = Rng.fromSeed(3);
+    expect(rollOffers(a, 2, content, withWell())).toEqual(
+      rollOffers(b, 2, content, withWell(), 0, null),
+    );
+  });
+
+  test('a re-roll uses the specialist too', () => {
+    const shop: PlayerShop = { gold: 100, offers: [] };
+    let seen = false;
+    for (let seed = 0; seed < 60; seed++) {
+      const mine = rerollOffers(
+        shop,
+        Rng.fromSeed(seed),
+        2,
+        content,
+        withWell(),
+        { specialist: FLOW },
+      );
+      const theirs = rerollOffers(
+        shop,
+        Rng.fromSeed(seed),
+        2,
+        content,
+        withWell(),
+        { specialist: 'spec_wardsmith' },
+      );
+      if (!mine.ok || !theirs.ok) throw new Error('re-roll failed');
+      if (mine.shop.offers.some((o) => o?.def === 'bld_mana_well')) seen = true;
+      expect(theirs.shop.offers.some((o) => o?.def === 'bld_mana_well')).toBe(
+        false,
+      );
+    }
+    expect(seen).toBe(true);
+  });
+
+  test('the wall-shape redraw also leaves another specialist out', () => {
+    const e: EconomyConfig = {
+      ...economy,
+      shopOfferCount: 8,
+      offerWeights: [
+        { def: 'bld_wall_o', weight: 1, fromRound: 1 },
+        { def: 'bld_wall_t', weight: 1, fromRound: 1 },
+        { def: 'bld_wall_s', weight: 1, fromRound: 1 },
+        { def: 'bld_mana_well', weight: 50, fromRound: 1, specialist: FLOW },
+        { def: 'bld_extractor', weight: 1, fromRound: 1 },
+      ],
+    };
+    for (let seed = 0; seed < 60; seed++) {
+      expect(defsOf(seed, 1, 'spec_alchemist', e)).not.toContain(
+        'bld_mana_well',
+      );
+    }
+  });
+
+  test('event pools (no specialist) never see a signature building', () => {
+    const e = withWell();
+    expect(
+      offerWeightsAt(e, 3).find((w) => w.def === 'bld_mana_well')?.weight,
+    ).toBe(0);
+    expect(
+      offerWeightsAt(e, 3, FLOW).find((w) => w.def === 'bld_mana_well')?.weight,
+    ).toBe(6);
+    expect(rareOfferDefs(e, 3, 100)).not.toContain('bld_mana_well');
+  });
+
+  test('the shipped content lists no signature building yet', () => {
+    for (const w of economy.offerWeights) {
+      expect(w.specialist).toBeUndefined();
+    }
+  });
+});
+
+describe('loadEconomy: the specialist of an entry (issue #472)', () => {
+  const ctx = {
+    buildings: content.buildings,
+    specialists: content.specialists,
+  };
+  type Rows = Record<string, unknown>[];
+  function errorsFor(change: (rows: Rows) => void): string {
+    const d = clone(economyJson) as unknown as Record<string, unknown>;
+    change(d['offerWeights'] as Rows);
+    const r = loadEconomy(d, ctx);
+    return r.ok ? '' : r.errors.join('\n');
+  }
+  test('an entry may name the owner of a signature building', () => {
+    const d = clone(economyJson) as unknown as Record<string, unknown>;
+    (d['offerWeights'] as Rows).push({
+      def: 'bld_mana_well',
+      weight: 4,
+      fromRound: 2,
+      specialist: 'spec_flowmancer',
+    });
+    const r = loadEconomy(d, ctx);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.config.offerWeights.at(-1)).toEqual({
+        def: 'bld_mana_well',
+        weight: 4,
+        fromRound: 2,
+        specialist: 'spec_flowmancer',
+      });
+      expect(r.config.offerWeights[0]).not.toHaveProperty('specialist');
+    }
+  });
+  test('refuses an unknown specialist, a wrong building and a bad ID', () => {
+    expect(
+      errorsFor((rows) =>
+        rows.push({
+          def: 'bld_mana_well',
+          weight: 1,
+          specialist: 'spec_nobody',
+        }),
+      ),
+    ).toContain('unknown specialist "spec_nobody"');
+    expect(
+      errorsFor((rows) =>
+        rows.push({
+          def: 'bld_mana_well',
+          weight: 1,
+          specialist: 'spec_wardsmith',
+        }),
+      ),
+    ).toContain('not the signature building of "spec_wardsmith"');
+    expect(
+      errorsFor((rows) =>
+        rows.push({ def: 'bld_mana_well', weight: 1, specialist: 'Flow' }),
+      ),
+    ).toContain('"specialist" must be a specialist ID');
+    expect(
+      errorsFor((rows) => {
+        (rows[0] as Record<string, unknown>)['specialist'] = 'spec_flowmancer';
+      }),
+    ).toContain('is not the signature building');
+  });
+  test('a signature building must name its specialist', () => {
+    expect(
+      errorsFor((rows) => rows.push({ def: 'bld_rune_ward', weight: 1 })),
+    ).toContain('signature building of "spec_wardsmith" and must name');
+  });
+  test('some entry must be offered from round 1 to every player', () => {
+    const d = clone(economyJson) as unknown as Record<string, unknown>;
+    d['offerWeights'] = [
+      {
+        def: 'bld_mana_well',
+        weight: 1,
+        specialist: 'spec_flowmancer',
+      },
+    ];
+    const r = loadEconomy(d, ctx);
+    expect(r.ok ? '' : r.errors.join('\n')).toContain(
+      'at least one entry offered from round 1 to every player',
+    );
+  });
+});

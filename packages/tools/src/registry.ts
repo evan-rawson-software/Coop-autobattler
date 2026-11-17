@@ -149,9 +149,14 @@ export const contentRegistry: readonly ContentEntry[] = [
     key: 'economy',
     contentFile: 'economy.json',
     schemaFile: 'economy.schema.json',
-    needs: ['buildings'],
+    needs: ['buildings', 'specialists'],
     load: (data, loaded) =>
-      wrap(loadEconomy(data, { buildings: need(loaded, 'buildings') })),
+      wrap(
+        loadEconomy(data, {
+          buildings: need(loaded, 'buildings'),
+          specialists: need(loaded, 'specialists'),
+        }),
+      ),
   },
   {
     key: 'events',

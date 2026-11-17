@@ -174,6 +174,9 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_lancer_hall: 7,
       bld_grand_barracks: 7,
       bld_merger: 7,
+      // The Beastbinder's signature building (#472): a unit producer, wanted
+      // as much as the Lancer hall and placed beside it.
+      bld_familiar_roost: 7,
     },
     tierBonus: 1,
     maxBuys: 8,
@@ -208,6 +211,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       priority: [
         'bld_barracks',
         'bld_lancer_hall',
+        'bld_familiar_roost',
         'bld_range',
         'bld_armory',
         'bld_overclocker',
@@ -238,6 +242,9 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       // A Mortar at the back, behind the walls, and a Lancer hall (#443).
       bld_mortar: 9,
       bld_lancer_hall: 4,
+      // The Wardsmith's signature building (#472): a defence, placed with
+      // the turrets and the Mortar.
+      bld_rune_ward: 8,
     },
     tierBonus: 2,
     maxBuys: 8,
@@ -273,6 +280,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       priority: [
         'bld_turret',
         'bld_mortar',
+        'bld_rune_ward',
         'bld_range',
         'bld_overclocker',
         'bld_barracks',
@@ -301,6 +309,9 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_mortar: 4,
       bld_grand_barracks: 8,
       bld_merger: 8,
+      // The Alchemist's signature building (#472): an industry building,
+      // wanted like the Foundry.
+      bld_transmuter: 4,
     },
     tierBonus: 6,
     maxBuys: 5,
@@ -354,7 +365,9 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     description: 'Buys one thing at random and scatters it unconnected.',
     core: 'random',
     specialist: 'spec_flowmancer',
-    want: {},
+    // The Flowmancer's signature building (#472); this strategy buys at
+    // random and ignores the weights.
+    want: { bld_mana_well: 1 },
     tierBonus: 0,
     maxBuys: 1,
     maxRerolls: 0,
@@ -382,6 +395,16 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     },
   },
 };
+
+/** The specialist every player of a bot party of `name` picks (RS-13). */
+export function botSpecialist(name: BotStrategyName): string {
+  return STRATEGIES[name].specialist;
+}
+
+/** How much a strategy's shop wants of a building (0 = never). */
+export function botWant(name: BotStrategyName, def: string): number {
+  return STRATEGIES[name].want[def] ?? 0;
+}
 
 /** One line describing each strategy, for help text. */
 export function describeBotStrategy(name: BotStrategyName): string {

@@ -705,6 +705,93 @@
       "inputs": [],
       "outputs": [],
       "tiers": [{ "health": 500 }]
+    },
+    {
+      "id": "bld_mana_well",
+      "kind": "source",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [],
+      "outputs": ["north"],
+      "tiers": [
+        { "health": 20, "price": 8, "intervalTicks": 40 },
+        { "health": 30, "price": 20, "intervalTicks": 28 },
+        { "health": 40, "price": 40, "intervalTicks": 20 }
+      ]
+    },
+    {
+      "id": "bld_rune_ward",
+      "kind": "defense",
+      "defenseType": "wall",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 120, "price": 8 },
+        { "health": 200, "price": 18 },
+        { "health": 300, "price": 36 }
+      ]
+    },
+    {
+      "id": "bld_familiar_roost",
+      "kind": "unit_producer",
+      "unit": "unit_raider",
+      "footprint": { "width": 1, "height": 2 },
+      "inputs": [{ "resource": "res_b", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 40,
+          "price": 20,
+          "costPerUnit": 4,
+          "productionIntervalTicks": 80
+        },
+        {
+          "health": 60,
+          "price": 40,
+          "costPerUnit": 4,
+          "productionIntervalTicks": 56
+        },
+        {
+          "health": 80,
+          "price": 70,
+          "costPerUnit": 4,
+          "productionIntervalTicks": 40
+        }
+      ]
+    },
+    {
+      "id": "bld_transmuter",
+      "kind": "refinery",
+      "output": "res_ab_refined",
+      "footprint": { "width": 1, "height": 2 },
+      "inputs": [
+        { "resource": "res_a", "side": "south" },
+        { "resource": "res_b", "side": "west" }
+      ],
+      "outputs": ["north"],
+      "tiers": [
+        {
+          "health": 40,
+          "price": 25,
+          "costs": { "res_a": 2, "res_b": 2 },
+          "productionIntervalTicks": 60,
+          "outputPerBatch": 1
+        },
+        {
+          "health": 60,
+          "price": 50,
+          "costs": { "res_a": 2, "res_b": 2 },
+          "productionIntervalTicks": 42,
+          "outputPerBatch": 1
+        },
+        {
+          "health": 80,
+          "price": 90,
+          "costs": { "res_a": 2, "res_b": 2 },
+          "productionIntervalTicks": 30,
+          "outputPerBatch": 1
+        }
+      ]
     }
   ]
 }

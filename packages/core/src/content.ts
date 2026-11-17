@@ -86,6 +86,16 @@ export function loadAllContent(raw: RawContent): ContentLoadResult {
     return { ok: false, errors };
   }
 
+  // A signature building is a building of the content (EC-3b).
+  for (const sp of specialists.config.specialists) {
+    if (buildings.config.get(sp.signature) === undefined) {
+      errors.push(
+        `specialists: "${sp.id}" names the signature building "${sp.signature}", which is not in buildings.`,
+      );
+    }
+  }
+  if (errors.length > 0) return { ok: false, errors };
+
   const presentation = loadPresentation(raw.presentation, {
     buildings: buildings.config,
     units: units.config,

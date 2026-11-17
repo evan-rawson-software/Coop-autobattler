@@ -16,6 +16,7 @@ export const simConfig: SimConfig = loadSimConfigOrThrow(rawSim);
 
 export const economy: EconomyConfig = loadEconomyOrThrow(rawEconomy, {
   buildings: content.buildings,
+  specialists: content.specialists,
 });
 
 /** Everything `createGameDeps` needs besides the content. */

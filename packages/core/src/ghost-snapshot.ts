@@ -976,6 +976,23 @@ function plausibility(
       );
     }
   }
+  // A signature building is bought only in its specialist's own shop (EC-3b)
+  // and is never given or moved to another player (CP-29), so its owner must
+  // have that specialist: a snapshot cannot carry another's building.
+  const signatureOwner = new Map<string, string>();
+  for (const sp of ctx.content.specialists.specialists) {
+    signatureOwner.set(sp.signature, sp.id);
+  }
+  for (const b of [...s.team.buildings, ...s.team.stash]) {
+    const need = signatureOwner.get(b.def);
+    if (need === undefined) continue;
+    const has = s.team.specialists?.[b.owner] ?? null;
+    if (has !== need) {
+      errors.push(
+        `team: player ${String(b.owner)} has "${b.def}", the signature building of "${need}", but the specialist of that player is ${has === null ? 'none' : `"${has}"`}.`,
+      );
+    }
+  }
   const tiers = ghostTierBound(s.round, ctx.economy, ctx.events);
   const excess = new Map<number, number>();
   for (const b of [...s.team.buildings, ...s.team.stash]) {

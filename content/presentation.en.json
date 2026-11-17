@@ -45,6 +45,22 @@
       "name": "Grand barracks",
       "description": "Consumes {res_a} to train two soldiers at a time, for less {res_a} each than a Barracks. Needs the {res_a} of two collectors of its tier; with one it runs at half speed."
     },
+    "bld_mana_well": {
+      "name": "Mana Well",
+      "description": "The Flowmancer's own collector: a weak one that works on any open cell, no node needed."
+    },
+    "bld_rune_ward": {
+      "name": "Rune Ward",
+      "description": "The Wardsmith's own ward: enemy units that hit a wall next to it take damage back."
+    },
+    "bld_familiar_roost": {
+      "name": "Familiar Roost",
+      "description": "The Beastbinder's own producer: consumes {res_b} to raise Familiars, fast and fragile fighters."
+    },
+    "bld_transmuter": {
+      "name": "Transmuter",
+      "description": "The Alchemist's own refinery: turns one base resource into another at a loss."
+    },
     "bld_lancer_hall": {
       "name": "Lancer hall",
       "description": "Consumes {res_a} to train lancers. Long and thin, so it fits along walls and plot edges."
