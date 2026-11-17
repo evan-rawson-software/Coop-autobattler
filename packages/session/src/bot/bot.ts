@@ -172,7 +172,14 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       'rich_vein',
       'shrine',
     ],
-    modifiers: ['mod_drilled_troops', 'mod_reinforced_frames'],
+    modifiers: [
+      'mod_quick_march',
+      'mod_vanguard',
+      'mod_drilled_troops',
+      'mod_stone_skin',
+      'mod_rapid_fire',
+      'mod_reinforced_frames',
+    ],
     pacts: ['mod_pact_fury'],
     caravan: { modifier: 9, upgrade: 8, building: 7, gold: 6, node: 5 },
     layout: {
@@ -229,7 +236,10 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       'mod_stout_walls',
       'mod_sharp_turrets',
       'mod_fortified_core',
+      'mod_wide_arcs',
+      'mod_tithe',
       'mod_reinforced_frames',
+      'mod_scrap_dealer',
     ],
     layout: {
       connect: true,
@@ -275,7 +285,14 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       'rich_vein',
       'windfall',
     ],
-    modifiers: ['mod_drilled_troops', 'mod_reinforced_frames'],
+    modifiers: [
+      'mod_sharpshooters',
+      'mod_hornet_swarm',
+      'mod_drilled_troops',
+      'mod_tithe',
+      'mod_claimstakers',
+      'mod_reinforced_frames',
+    ],
     pacts: ['mod_pact_bastion'],
     caravan: { building: 9, upgrade: 8, gold: 7, modifier: 6, node: 5 },
     layout: {

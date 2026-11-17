@@ -109,6 +109,10 @@ function wiring(r: BotRunResult, id: number): { into: number; out: number } {
 // searched again over 1 to 7 (the first that builds it with no rejected
 // intent and heavies on the field): 4 (153 heavies); 31 no longer builds it.
 // The rush Composite 17 and the fortify Aether 34 still build theirs.
+// The bots prefer the new Shrine modifiers (#427), which moved the fortify
+// draws: the fortify Aether seed was searched again over 1 to 80 (chains on the
+// board, casters spawned, no rejected intent): 5, 10, 47 (34 no longer builds
+// it). Rush Composite 17 and Foundry 4 still build theirs.
 describe('the bot builds the Foundry and the refining chains (issue #384)', () => {
   test('rush builds the Composite chain and its Golems fight', () => {
     for (const seed of [17]) {
@@ -121,7 +125,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('fortify builds the Aether chain and its casters fight', () => {
-    for (const seed of [34]) {
+    for (const seed of [5]) {
       const r = play('fortify', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_bc')).toBeGreaterThan(0);
