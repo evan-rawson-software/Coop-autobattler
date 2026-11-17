@@ -492,6 +492,46 @@ describe('validation', () => {
     if (!r.ok) expect(r.errors.join()).toMatch(/not offered before round/);
   });
 
+  test('speed modifiers (issue #424): held like any modifier, checked against the definition and round', async () => {
+    const { ctx, good } = await setup();
+    // The ghost bound counts no modifier strength: a modifier is checked by
+    // its definition, its round and the number of event slots.
+    const quick = ctx.events.modifiers.find((m) => m.id === 'mod_quick_march');
+    const rapid = ctx.events.modifiers.find((m) => m.id === 'mod_rapid_fire');
+    const withMods = (mods: readonly object[]) => ({
+      ...clone(good),
+      team: { ...clone(good.team), modifiers: mods },
+    });
+    const q = { id: 'mod_quick_march', effects: quick?.effects };
+    const r = { id: 'mod_rapid_fire', effects: rapid?.effects };
+    expect(validateGhostSnapshot(withMods([q]), ctx).ok).toBe(true);
+    const tooMany = validateGhostSnapshot(
+      withMods(Array.from({ length: 2 * good.round }, () => q)),
+      ctx,
+    );
+    expect(tooMany.ok).toBe(false);
+    // Rapid fire is offered from round 2, and only once.
+    expect(validateGhostSnapshot(withMods([r, r]), ctx).ok).toBe(false);
+    const early = validateGhostSnapshot(withMods([r]), {
+      ...ctx,
+      events: {
+        ...ctx.events,
+        modifiers: ctx.events.modifiers.map((m) =>
+          m.id === 'mod_rapid_fire' ? { ...m, fromRound: good.round + 1 } : m,
+        ),
+      },
+    });
+    expect(early.ok).toBe(false);
+    // A changed percent, or a slower kind, is not the definition.
+    const edited = withMods([
+      {
+        id: 'mod_quick_march',
+        effects: [{ kind: 'unit_move_speed_percent', percent: 11 }],
+      },
+    ]);
+    expect(validateGhostSnapshot(edited, ctx).ok).toBe(false);
+  });
+
   test('the control snapshots are valid', async () => {
     const { ctx, good } = await setup();
     expect(validateGhostSnapshot(clone(good), ctx).ok).toBe(true);

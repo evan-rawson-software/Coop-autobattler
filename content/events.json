@@ -133,6 +133,17 @@
       ]
     },
     {
+      "id": "mod_quick_march",
+      "stackable": true,
+      "effects": [{ "kind": "unit_move_speed_percent", "percent": 10 }]
+    },
+    {
+      "id": "mod_rapid_fire",
+      "stackable": false,
+      "fromRound": 2,
+      "effects": [{ "kind": "unit_attack_speed_percent", "percent": 15 }]
+    },
+    {
       "id": "mod_pact_fury",
       "stackable": false,
       "pact": true,

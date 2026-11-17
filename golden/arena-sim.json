@@ -19430,5 +19430,253 @@
       },
       "eventLogHash": "0f4b9ec4"
     }
+  },
+  {
+    "id": "arena-sim.quick-march",
+    "kind": "arena-sim",
+    "description": "Side 0 holds three Quick march stacks (+30% move speed: soldier and archer move cooldown 6 to 4), side 1 none. Same units at the same cells, so side 0 arrives first; the final positions and the state hash pin the cooldowns (a unit with a changed cooldown carries it in its state).",
+    "input": {
+      "gapRows": 4,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 400,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_archer",
+          "x": 3,
+          "y": 22
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 22
+        },
+        {
+          "side": 1,
+          "def": "unit_archer",
+          "x": 3,
+          "y": 13
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 13
+        }
+      ],
+      "modifiersA": [
+        {
+          "id": "mod_quick_march",
+          "effects": [
+            {
+              "kind": "unit_move_speed_percent",
+              "percent": 10
+            }
+          ]
+        },
+        {
+          "id": "mod_quick_march",
+          "effects": [
+            {
+              "kind": "unit_move_speed_percent",
+              "percent": 10
+            }
+          ]
+        },
+        {
+          "id": "mod_quick_march",
+          "effects": [
+            {
+              "kind": "unit_move_speed_percent",
+              "percent": 10
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "ad1a83cf",
+        "events": 141,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 401,
+            "buildingsDestroyed": 0,
+            "coreHealth": [127]
+          },
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 373,
+            "buildingsDestroyed": 0,
+            "coreHealth": [99]
+          }
+        ],
+        "positions": [
+          [1, 882, 7482],
+          [2, 1628, 8052],
+          [3, 1204, 1236],
+          [4, 1640, 605]
+        ]
+      },
+      "eventLogHash": "75fa1a25"
+    }
+  },
+  {
+    "id": "arena-sim.rapid-fire",
+    "kind": "arena-sim",
+    "description": "Side 0 holds Rapid fire (+15% attack speed: soldier and archer attack cooldown 10 to 8), side 1 none. Same units at the same cells; side 0 hits more often.",
+    "input": {
+      "gapRows": 4,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 400,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_archer",
+          "x": 3,
+          "y": 22
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 22
+        },
+        {
+          "side": 1,
+          "def": "unit_archer",
+          "x": 3,
+          "y": 13
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 13
+        }
+      ],
+      "modifiersA": [
+        {
+          "id": "mod_rapid_fire",
+          "effects": [
+            {
+              "kind": "unit_attack_speed_percent",
+              "percent": 15
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "1ee71222",
+        "events": 154,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 472,
+            "buildingsDestroyed": 0,
+            "coreHealth": [127]
+          },
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 373,
+            "buildingsDestroyed": 0,
+            "coreHealth": [28]
+          }
+        ],
+        "positions": [
+          [1, 868, 7468],
+          [2, 1640, 8035],
+          [3, 1204, 1236],
+          [4, 1640, 605]
+        ]
+      },
+      "eventLogHash": "32070058"
+    }
   }
 ]

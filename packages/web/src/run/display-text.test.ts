@@ -41,6 +41,22 @@ describe('effectLine', () => {
     );
   });
 
+  test('speed effects read as move speed and attack speed', () => {
+    expect(effectLine({ kind: 'unit_move_speed_percent', percent: 10 })).toBe(
+      'Your units: +10% move speed',
+    );
+    expect(effectLine({ kind: 'unit_attack_speed_percent', percent: 15 })).toBe(
+      'Your units: +15% attack speed',
+    );
+    expect(
+      effectLine({
+        kind: 'unit_move_speed_percent',
+        percent: 10,
+        units: ['unit_raider', 'unit_drone'],
+      }),
+    ).toBe('+10% raider and drone move speed');
+  });
+
   test('a negative percent reads with a real minus sign', () => {
     expect(effectLine({ kind: 'core_health_percent', percent: -15 })).toBe(
       'Your Core: −15% health',

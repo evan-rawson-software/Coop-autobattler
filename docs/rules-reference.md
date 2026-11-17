@@ -573,7 +573,9 @@ middle:
   largest `P` a unit allows: the largest `P` with `floor(health * (100 + P) /
   100) <= MAX_HEALTH` and `floor(damage * (100 + P) / 100) <= MAX_DAMAGE`
   (a unit with 0 damage does not limit on damage). The same per-type `P`
-  covers the units of a scheduled wave.
+  covers the units of a scheduled wave. Speed percents (issue #424) need no
+  such check: they only shorten a cooldown, never below 1 tick, and their sum
+  is accumulated with `addInt`.
 - **Event definitions** (`content/events.json`): `fromRound`, if present, is an
   integer from 1 to 1000 (absent means 1). Market day's `params.extraOffers`
   and `params.freeRerolls` are integers from 1 to `MAX_SHOP_EFFECT_COUNT` (10),
@@ -609,7 +611,11 @@ middle:
   duplicates, each a unit of `units.json`, **in the order of `units.json`**
   (the loader rejects any other order, so every definition has one canonical
   form and a held effect compares equal to it, see "Ghosts"). `units` is
-  allowed on no other effect kind. A team state parses `units` the same way,
+  allowed on `unit_strength_percent`, `unit_move_speed_percent` and
+  `unit_attack_speed_percent` (issue #424) and on no other effect kind. The two
+  speed kinds have their own range: `percent` an integer from 1 to
+  `MAX_SPEED_MODIFIER_PERCENT` (100), never negative (no drawback form, so no
+  pact uses them). A team state parses `units` the same way,
   except that the unit IDs are not checked against `units.json` and their
   order is not checked (a held effect must equal its definition anyway).
   **Stacking has no cap** (issue #423): the percent sum of a kind is bounded
@@ -1945,22 +1951,31 @@ the **centre of the unit's circle** in arena **sub-cell units** (see "Unit
 geometry"). `id` is a positive integer taken from one counter shared by both
 sides, in spawn order (the counter starts at 1, is never reused); the unit list
 is kept sorted by `id`. `hp` starts at the unit definition's `health`; `maxHp` (CB-8g) is the same number, **fixed at spawn** from `unitStats` (so it includes the strength percent and a champion's health percent) and never changes: healing never takes `hp` above it. It is stored in the unit's state, so the state hash of every battle with units includes it; no saved format stores an arena state (the run state and the ghost snapshot store teams).
-`attackCooldown` counts down in ticks. **Units are circles that may overlap
+`attackCooldown` counts down in ticks. A unit spawned by a side that holds a
+speed modifier (issue #424, "Unit move and attack speed") also stores the
+optional `moveCooldownTicks` and `attackCooldownTicks`, **fixed at spawn**,
+each only when it differs from the unit definition's value; a unit without
+them uses the definition's. A port must not write them otherwise, so the state
+hash of every battle without speed modifiers is unchanged. **Units are circles that may overlap
 each other a little for a while but never solid ground** (soft collision,
 issue #82): see "Unit geometry" and step 5 of the tick. There is no
 `moveCooldown`: movement is continuous, at the unit's `speed`.
 
 A unit also stores `damage`, its attack damage **fixed at spawn**. All reads
 of a unit's stats (health, damage, range, cooldowns) go through one function,
-`unitStats(side, def, strengthPercent, healthPercent = 100)`. With
+`unitStats(side, def, strengthPercent, healthPercent = 100, moveSpeedPercent =
+0, attackSpeedPercent = 0)`. With
 `strengthPercent = P` above 0 it returns the definition with `health =
 mulPct(health, 100 + P)` and `damage = mulPct(damage, 100 + P)` (rounded
-down); everything else is unchanged. A `healthPercent = hp` other than 100
+down). With `moveSpeedPercent = S` or `attackSpeedPercent = S` above 0 the
+result's `moveCooldownTicks` or `attackCooldownTicks` becomes
+`max(1, floor(base * 100 / (100 + S)))` (issue #424, see "Unit move and attack
+speed"); everything else is unchanged. A `healthPercent = hp` other than 100
 (a champion, MM-9d "Warlord", passed only for a scheduled-wave entry that has
 one) is applied **after** the strength percent and to health only: `health =
 mulPct(mulPct(health, 100 + P), hp)` (two roundings down; with `P = 0` just
 `mulPct(health, hp)`); damage, armor and every other stat are unchanged, and a
-result above `MAX_HEALTH` is a `RangeError`. With `P = 0` and `hp = 100` the
+result above `MAX_HEALTH` is a `RangeError`. With `P = 0`, `hp = 100` and both speed percents 0 the
 definition is returned as is. A scaled `health` above `MAX_HEALTH` or `damage` above `MAX_DAMAGE`
 is an error (`RangeError`), see "Content bounds". A spawn passes the side's
 current `unit_strength` bonus (see "In-battle ramp"; plus the side's
@@ -2482,7 +2497,8 @@ interest (CB-8f, "Points of interest") add the diversion of rule c in step 3
    cap `2^52` is exact, and a larger one is `2^52`) and applied together
    (so two units can kill each other in the same tick; a target that is killed
    this tick still receives every blow aimed at it). Each attacker's `attackCooldown` becomes
-   `attackCooldownTicks`. A building's health stops at 0 (a Core's health
+   its `attackCooldownTicks` (the unit's own stored value if it has one, else
+   the definition's, issue #424). A building's health stops at 0 (a Core's health
    value after all damage of the tick, which may be negative, is also kept for
    the tiebreak, see "Battles"). **Building damage dealt:** for each building
    (a Core too) that took unit attacks this tick, let `A` be the saturating
@@ -2587,7 +2603,8 @@ interest (CB-8f, "Points of interest") add the diversion of rule c in step 3
       **mover**. Every other unit (it chose d, or to move with `v = (0, 0)`)
       is **idle** (waiting).
    2. **Desire.** A unit that chose to move has a target `(tx, ty)`, a speed
-      `s = floor(240 / moveCooldownTicks)` and `(dx, dy) = (tx - px, ty - py)`.
+      `s = floor(240 / moveCooldownTicks)` (the unit's own stored
+      `moveCooldownTicks` if it has one, else the definition's) and `(dx, dy) = (tx - px, ty - py)`.
       If `dx^2 + dy^2 <= s^2` the step is `v = (dx, dy)`; otherwise, with
       `L = isqrtCeil(dx^2 + dy^2)`, `v = (truncDiv(dx * s, L), truncDiv(dy * s,
       L))` (length at most `s`). The tentative position `T` of a mover is
@@ -3281,7 +3298,7 @@ terrain, a wall, a gate and a turret; a sealed base with one weak wall; four plo
 ### Seams for later issues
 
 `unitStats` is the single place unit stats are modified (the `unit_strength`
-bonus at spawn). `stepArena` does not assume the gap is open ground (blocked
+bonus and the speed modifiers at spawn). `stepArena` does not assume the gap is open ground (blocked
 gap cells are how the neutral zone enters), and does not end the battle: the
 neutral zone, the battle end and the top-level entry point are in "The neutral
 zone" and "Battles". The zone holds points of interest (CB-8d); they do not
@@ -5352,6 +5369,8 @@ compounded, so each extra stack is worth relatively less than the one before:
 | `building_health_percent` (`target`: `all`, `wall`, `gate`, `turret`, `source`, `route`, `unit_producer`, `economy`) | to the maximum (and so the starting) health of matching placed buildings (not the Core; a defense matches its defense type, so `wall` matches every wall shape, issue #291; others their kind; `all` matches every building); at tick 0 in `createArenaSim` |
 | `core_health_percent` | to the maximum (and so the starting) Core health (after a side-option Core override) |
 | `unit_strength_percent` (optional `units`: unit IDs) | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena"); side-wide, and it comes only from run modifiers, never from an economy building (PP-8). A unit of type `u` spawns with the sum of the side's effects with no `units` plus those whose `units` list `u`, summed and applied once (never one application per effect). Without `units` an effect applies to every unit type, as before; a battle whose modifiers have no `units` is bit-identical to one before the field existed |
+| `unit_move_speed_percent` (optional `units`) | percent 1 to 100; shortens the move cooldown of units of the side at spawn, see "Unit move and attack speed" below |
+| `unit_attack_speed_percent` (optional `units`) | percent 1 to 100; shortens the attack cooldown of units of the side at spawn, same section |
 | `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
 
 **The sum floor** (EC-8). `minModifierSumPercent` (`sim.json`, an integer from
@@ -5388,6 +5407,8 @@ optional `fromRound` (the first round the Shrine may offer it, default 1):
 | `mod_sharpshooters` | `unit_strength_percent` +25, `units: [unit_archer]` | no | 1 |
 | `mod_hornet_swarm` | `unit_strength_percent` +25, `units: [unit_drone]` | no | 1 |
 | `mod_vanguard` | `unit_strength_percent` +20, `units: [unit_soldier, unit_raider]` | no | 1 |
+| `mod_quick_march` | `unit_move_speed_percent` +10 (issue #424) | yes | 1 |
+| `mod_rapid_fire` | `unit_attack_speed_percent` +15 (issue #424) | no | 2 |
 
 **Pacts** (issue #413, RS-4i6). A modifier definition may carry `pact: true`
 (optional, absent means false). The loader requires a pact to be not
@@ -5402,8 +5423,7 @@ through the Pact event.
 | `mod_pact_overcharge` | `turret_damage_percent` +40 | `building_health_percent` `turret` -20 |
 
 Planned, and entering the content only when the feature each needs has
-landed: quick march (+10% unit move speed, stacks), rapid fire (+15% unit
-attack speed, from round 2), tithe (+1 gold per shop for every player,
+landed: tithe (+1 gold per shop for every player,
 stacks), scrap dealer (sell refund 50% to 75% for every player), stone skin
 (+1 Golem armor, from round 3), wide arcs (+50% caster splash, from round 3)
 and claimstakers (points of interest captured 50% faster). Gold modifiers are
@@ -5418,6 +5438,56 @@ negative: read it as a signed integer and keep the floor division of
 `floor(value * (100 + sum) / 100)` (the factor is at least 50, so no overflow
 beyond the positive case, and the floor is the usual round-down of a
 non-negative product).
+
+**Unit move and attack speed** (issue #424). Two effect kinds, each with the
+optional `units` of `unit_strength_percent`: `unit_move_speed_percent` and
+`unit_attack_speed_percent`, `percent` an integer from 1 to 100. At the
+spawn of a unit of type `u` (producers, scheduled waves and test spawns; not
+neutral guards, which have no side modifiers), `unitStats` gets
+`S_move` and `S_attack`, each the sum of the side's effects of that kind with
+no `units` or with `units` listing `u` (checked `addInt`, no floor, since the
+percents are positive), and returns
+
+```
+moveCooldownTicks   = max(1, floor(base * 100 / (100 + S_move)))
+attackCooldownTicks = max(1, floor(base * 100 / (100 + S_attack)))
+```
+
+in integers, from the definition's `moveCooldownTicks` and
+`attackCooldownTicks`. The unit stores each only if it differs from the
+definition (see "The arena", unit state) and keeps it for its lifetime, as
+strength; taking a modifier later changes no unit already on the field. The
+walking speed is then `floor(240 / moveCooldownTicks)` and an attacker's
+cooldown after a hit is `attackCooldownTicks`. Turrets are buildings and are
+not affected (their damage has its own kind). Sums are per side: a unit
+spawned by side 0 reads only side 0's modifiers.
+
+The rounding is lumpy on short cooldowns, because every result is a whole
+number of ticks. The move cooldowns of the shipped units, at 0 to 3 stacks of
+Quick march (`S` = 0, 10, 20, 30) and the speed each gives
+(`floor(240 / ticks)` sub-cell units per tick):
+
+| Unit | 0 stacks | 1 stack | 2 stacks | 3 stacks |
+| --- | --- | --- | --- | --- |
+| `unit_soldier`, `unit_heavy`, `unit_archer`, `unit_caster` | 6 (40) | 5 (48) | 5 (48) | 4 (60) |
+| `unit_raider`, `unit_drone` | 4 (60) | 3 (80) | 3 (80) | 3 (80) |
+| `unit_golem` | 10 (24) | 9 (26) | 8 (30) | 7 (34) |
+
+So one stack of Quick march gives a raider or drone 33% more speed (+10% asked)
+and a second and third stack give them nothing more; two stacks give the
+soldier the same as one. The attack cooldowns at Rapid fire (`S` = 15):
+soldier, heavy and archer 10 to 8, raider and drone 8 to 6, golem 14 to 12,
+caster 20 to 17. A table test pins the move cooldowns (`speed-modifiers.test.ts`).
+
+Notes for a port: read the two new kinds like `unit_strength_percent` (same
+`units` rules), sum per kind and per unit type at each spawn with checked
+addition, and use floor division of non-negative integers; do not store a
+cooldown in a unit when it equals the definition's, and treat an absent
+`moveCooldownTicks`/`attackCooldownTicks` as the definition's wherever a speed
+or an attack cooldown is read. Ghost snapshots need nothing new: a held
+modifier must equal its definition, be unlocked by the snapshot round
+(`fromRound`), and the number held is bounded by the event slots; no modifier
+adds to the ghost value bound (unit strength does not either).
 
 ### Party votes (CP-16)
 

@@ -51,7 +51,7 @@
           "player": 0,
           "intent": {
             "type": "event_choose",
-            "choice": "mod_sharp_turrets"
+            "choice": "mod_quick_march"
           }
         }
       ]
@@ -67,7 +67,7 @@
           ["0 bld_wall_l t1 8", "1 bld_merger t1 5", "2 bld_extractor t1 10", "3 bld_range t1 24", "4 bld_crossover t1 8"]
         ],
         "rng": [948592740, 1408725001, 4049329563, 240181589],
-        "stateHash": "77d48b4e"
+        "stateHash": "29c39157"
       }
     }
   },
@@ -1161,21 +1161,21 @@
           "player": 0,
           "intent": {
             "type": "event_choose",
-            "choice": "mod_hornet_swarm"
+            "choice": "mod_drilled_troops"
           }
         },
         {
           "player": 1,
           "intent": {
             "type": "event_choose",
-            "choice": "mod_hornet_swarm"
+            "choice": "mod_drilled_troops"
           }
         },
         {
           "player": 2,
           "intent": {
             "type": "event_choose",
-            "choice": "mod_hornet_swarm"
+            "choice": "mod_drilled_troops"
           }
         }
       ]
@@ -1193,7 +1193,7 @@
           ["0 bld_turret t1 15", "1 bld_hangar t1 30", "2 bld_turret t1 15", "3 bld_merger t1 5", "4 bld_range t1 24"]
         ],
         "rng": [4183173375, 1530242370, 2692292519, 2946822902],
-        "stateHash": "6904d409"
+        "stateHash": "e85dd487"
       }
     }
   },

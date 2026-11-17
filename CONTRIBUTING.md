@@ -234,6 +234,11 @@ The rule for a change that makes saved data unreadable:
   `addedNodes` list of the team state (nodes added by the Rich vein event,
   issue #414), which covers both the run state and ghost snapshots: it is
   omitted when empty, so records without it stay readable and hash as before.
+  The unit speed modifiers (issue #424) add two allowed effect kinds,
+  `unit_move_speed_percent` and `unit_attack_speed_percent` (percent 1 to 100,
+  optional `units` as above), to a held modifier's effects: a new allowed
+  value, not a changed shape, so old records stay readable and no format
+  number is raised.
   The Blueprint event (issue #412) adds one more entry shape to `nextShop`,
   `{kind: "held_offer", def}`: it is the same optional field, present only
   between the event and the end of that shop, so no format number is raised.

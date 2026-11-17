@@ -260,6 +260,12 @@
     "mod_vanguard": {
       "name": "Vanguard"
     },
+    "mod_quick_march": {
+      "name": "Quick march"
+    },
+    "mod_rapid_fire": {
+      "name": "Rapid fire"
+    },
     "mod_pact_fury": {
       "name": "Pact of fury"
     },

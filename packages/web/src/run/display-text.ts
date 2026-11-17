@@ -96,6 +96,14 @@ export function effectLine(effect: ModifierEffect): string {
       return effect.units === undefined
         ? `Your units: ${pct} strength`
         : `${pct} ${unitNames(effect.units)} strength`;
+    case 'unit_move_speed_percent':
+      return effect.units === undefined
+        ? `Your units: ${pct} move speed`
+        : `${pct} ${unitNames(effect.units)} move speed`;
+    case 'unit_attack_speed_percent':
+      return effect.units === undefined
+        ? `Your units: ${pct} attack speed`
+        : `${pct} ${unitNames(effect.units)} attack speed`;
     case 'turret_damage_percent':
       return `Turrets: ${pct} damage`;
   }

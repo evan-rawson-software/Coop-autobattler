@@ -222,6 +222,8 @@ export {
   type ModifierEffectKind,
   modifierPercent,
   unitStrengthPercent,
+  unitSpeedPercent,
+  MAX_SPEED_MODIFIER_PERCENT,
   type ModifierTarget,
   parseModifierEffect,
   parseTeamModifiers,
