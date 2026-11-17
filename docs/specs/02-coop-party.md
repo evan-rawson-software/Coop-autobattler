@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v5.1
+Status: Draft v5.2
 
 ## Party basics
 
@@ -23,25 +23,25 @@ Status: Draft v5.1
   builds a factory in their own plot, with their own Core. Units, and enemy
   units, walk freely across all plots. (Replaces CP-4.)
 - **CP-5 [PROPOSED]** Board area scales with party size: each player adds one
-  **plot** of the same size (starting proposal: about 24×16 cells, CB-4),
-  so the front edge gets wider with each player. Player `p` (counted from 0)
+  **plot** of the same size (CB-4; 24×16 cells now, `plotWidth` and
+  `plotDepth` in `content/mapgen.json`), so the front edge gets wider with each player. Player `p` (counted from 0)
   owns plot `p`, counted from the left. Solo plays on one plot.
   Everything therefore scales linearly from 1 to 4 players.
 - **CP-6 [PROPOSED]** The party's **team state** is that one board: its map
   (terrain, resource nodes, natural features; Rich vein can add nodes, RS-4i4), one Core position per player,
-  buildings with owner, tier, position and orientation, every conduit with
-  its owner (border links included), and run modifiers. It is what combat
+  buildings with owner, tier, position and orientation, each player's stash,
+  every conduit with its owner (border links included), and run modifiers. It is what combat
   consumes and what a snapshot stores (CB-32, MM-1).
 - **CP-7 [PROPOSED]** Opponents are scaled to party size: ghosts match on
   party size and so have the same number of plots (MM-2); PvE threats are
   scaled by the number of plots (SC-1) and have one Core per plot (CB-29).
   An opponent's plots face the party's plots one to one (CB-8b).
 - **CP-8 [DECIDED]** The party has **one Core per player** and fights **one
-  battle** against one opponent. Each Core has the same health (500 for
-  now) at every party size. A side loses the battle when **all** of its
-  Cores are destroyed (CB-17). There are no lanes and no per-player
-  results: the party wins or loses as one. (Replaces the earlier "one Core
-  for the party".)
+  battle** against one opponent. Each Core has the same health at every
+  party size (the `bld_core` health in `content/buildings.json`, 500 now).
+  A side loses the battle when **all** of its Cores are destroyed (CB-17).
+  There are no lanes and no per-player results: the party wins or loses as
+  one. (Replaces the earlier "one Core for the party".)
 - **CP-8a [DECIDED]** **A destroyed Core switches nothing off.** The Core is
   only health. A player whose Core is destroyed keeps everything running
   for the rest of the battle: their buildings keep producing and shooting
@@ -122,8 +122,9 @@ Status: Draft v5.1
   step.**
 - **CP-17a [DECIDED]** All players act at the same time within a step
   (everyone shops and builds simultaneously). **Ready locks a player's own
-  editing:** in a build or shop step, once a player is Ready, their buy,
-  sell, re-roll and board-editing actions are refused (reason
+  editing:** in the Core placement, build and shop steps, once a player is
+  Ready, their Core placement, buy, sell, re-roll and board-editing actions
+  are refused (reason
   `locked_ready`) until they Unready. A player can Unready for as long as at
   least one other player is not ready; the moment the last player readies the
   step ends, so with one player Ready advances at once. Other players keep
@@ -145,9 +146,9 @@ Status: Draft v5.1
   but cannot be edited. Two players can affect each other only at a border
   spot (CP-30): the first action the host receives is applied first, and a
   player whose action is refused is shown why.
-- **CP-19 [DECIDED for now]** **Players do not see each other's shop
-  screens.** Each player sees only their own offers. This may change after
-  playtesting.
+- **CP-19 [DECIDED]** **Players do not see each other's shops.** Each
+  player sees only their own offers. This is final; it is not revisited
+  after playtests (issue #392).
 - **CP-19a [PROPOSED]** Coordination aids that remain: teammates' gold and
   stashes are visible; pings and markers on board cells, including border
   spots ("link here, I can send Ore"); a shared view of what the factories
@@ -184,9 +185,9 @@ Status: Draft v5.1
   can build in their own plots, but cannot continue past the shop. Nobody
   can move, rotate, return or sell a disconnected player's buildings or
   erase their conduits.** A remaining player can still erase their own half
-  of a border link with the absent player. (Replaces CP-21f. To be revisited
-  when online play exists: an absent player's plot cannot be repaired by
-  anyone else, which may need an exception.)
+  of a border link with the absent player. **This holds also once online
+  play exists: nobody can move or change an absent player's buildings, and
+  there is no exception for repairs** (issue #392). (Replaces CP-21f.)
 - **CP-21g [PROPOSED]** Details of waiting:
   - CP-21i applies during the shop step: if a player drops there, or has
     dropped by then, the others can go on shopping and building but cannot
@@ -237,7 +238,9 @@ Status: Draft v5.1
 - **CP-23c [DECIDED]** **The host carries the save for the run; the other
   players do not.** The party already trusts the host (TA-14), so there is
   one save, in one place.
-- **CP-23b [PROPOSED]** A saved run can only be played by the **host and the
+- **CP-23b [PROPOSED]** **Transferring a run to another host: not for now
+  [DECIDED, issue #392].** A run stays with its host (CP-23c, CP-23g).
+  A saved run can only be played by the **host and the
   same players** (checked by Steam ID). It cannot be continued with fewer
   players, different players, or solo, which also keeps party size fixed
   for ghost matching (CP-2). The host can open the run's lobby before
@@ -252,7 +255,8 @@ Status: Draft v5.1
   - If the host loses the save (for example by deleting it), the run is
     over for everyone. Steam Cloud keeps it safe across the host's own
     computers.
-  - Handing a run over to a different host is not supported for now.
+  - Handing a run over to a different host is not supported for now
+    (CP-23b, [DECIDED]).
 - **CP-23d [DECIDED]** **The number of saved runs is not limited.** (This
   replaces the earlier five-slot limit.)
 - **CP-23f [PROPOSED]** The host abandons a run by ending it from the menu or
@@ -321,7 +325,7 @@ it follows from CP-25 to CP-30.
 | A link that makes a neighbour's change illegal | One player's new conduit would mix two resources, or close a loop, further along in the neighbour's plot. | The change that would cause it is refused and the reason shown (CB-9d). The player can always undo by erasing their own half. |
 | Sealing in a neighbour's unit producer | A wall line across a neighbour's exits. | A player's walls stand only in their own plot (CP-27), and every plot's open ground reaches its own front row inside the plot (SC-11). A producer can therefore be sealed only by its owner's own buildings, and the sealed-producer check blocks only that owner (CP-17a). |
 | Holding the party at a step | One player never readies up. | Unchanged: every player must ready up (CP-17). This is a game among friends; there is no timer and no kick. |
-| A disconnected player's plot | Their plot cannot be repaired or re-planned by anyone else. | Accepted for now (CP-21i). Their buildings and links keep working. To be revisited when online play exists. |
+| A disconnected player's plot | Their plot cannot be repaired or re-planned by anyone else. | Accepted (CP-21i): nobody else can change it, also once online play exists, with no exception for repairs. Their buildings and links keep working. |
 | Four solo games | Players build side by side and never interact. | The risk to pillar 1. Border links must be worth using (a plot rich in collectors feeding a plot rich in consumers). Checked in the first party playtest; if links are not enough, the design is revisited. |
 
 ## Risks specific to the per-player design

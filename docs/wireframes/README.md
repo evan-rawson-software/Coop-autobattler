@@ -13,12 +13,26 @@ starting kit, threat pips, "an even chance to double it", "overload begins
 The specs are the source of truth. Where a wireframe and a spec disagree,
 the spec wins and the wireframe should be corrected.
 
-**Most images predate the per-player design (issue #124); 1, 3, 4, 6 and 8
-are redrawn.** The others still show
-one shared board, one Core per side and a vote on the Core position. The text below has been updated to the current design
-(each player has their own plot and Core, builds only there, and can link to
-a neighbour across the plot border; there is no giving); the images and
-`screens.html` are redrawn with the screens themselves.
+The sketches follow the per-player design (issue #124): each player has their
+own plot and Core, builds only there, and can link to a neighbour across the
+plot border; there is no giving. The images are exported from `screens.html`
+and match it.
+
+Some sketches are drawn ahead of the code, and the web proof of concept
+differs from them in places:
+
+- It has no lobby, Join or Settings: the menu starts a solo run (a party of
+  2 to 4 is played from one device with `#/?players=N`), and adds "Play the
+  tutorial" and a short "How a round works".
+- Shop and Build are one screen: the shop opens as a panel over the board.
+  The stash is called the "Inventory", and a building is sold by selecting it
+  and pressing Sell.
+- The battle summary is a result card over the board at the end of playback.
+- The screens call a PvE battle a "Stronghold" battle and a PvP battle a
+  "Rival party" battle; a phase stepper (Set up, Build, Fight, Reward) shows
+  where the round is.
+- The Caravan draft (2b) and the four new buildings (4b, issue #437) are
+  planned, not built.
 
 Order in a run: 5 main menu → 6 Core placement → 4 build → then each round:
 7 PvE choice → 1 battle → 8 summary → 2 event (and 2b to 2d, if the event has a follow-up) → 3 shop + 4 build → PvP
@@ -161,7 +175,7 @@ Where the factory is laid out. Everything of yours except your Core can be moved
 
 ## 4b. Build: new footprints
 
-Four new base buildings (CB-9f, issue #437), with working names. Their shapes make the layout a real decision: a 1×3, a 3×3, a two-piece Tunnel and a turret with a blind spot. The image shows four placement previews on the Build screen. As always, each helps only its owner and goes only in its owner's plot.
+Four planned base buildings (CB-9f, issue #437), with working names. Their shapes make the layout a real decision: a 1×3, a 3×3, a two-piece Tunnel and a turret with a blind spot. The image shows four placement previews on the Build screen. As always, each helps only its owner and goes only in its owner's plot.
 
 ![Build footprints wireframe](4b-build-footprints.png)
 

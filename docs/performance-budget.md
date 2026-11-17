@@ -197,7 +197,7 @@ Resource flow events (`produced` and `delivered`, always equal in count) are a
 bit over half of an economy-heavy log. `unit_attacked` is about a third.
 
 Logs are not saved. The budgets are met with margin: the largest one plot log
-is 38% of its 1 MB budget and the dense tier 3 log is 58% of its 12 MB budget.
+is 38% of its 1 MB budget and the stress tier 3 log is 58% of its 12 MB budget.
 The size is accepted for now.
 
 Coalescing flow events per building is the known option if co-op transport or
@@ -209,7 +209,8 @@ roughly 30 to 40% and would change the golden event log hashes.
 The Battle screen no longer runs `simulateRecord` on the main thread: it asks a
 module Worker (`packages/web/src/sim-worker/`) and shows "Preparing the
 battle" meanwhile. Browser smoke test, Chromium headless, the dense `stress`
-sample (917 units alive at peak; run with `pnpm smoke`, single runs, shared
+sample as it was then (917 units alive at peak; the sample is now smaller,
+about 390, see "Unit budget"; run with `pnpm smoke`, single runs, shared
 machine):
 
 | Measure                                   | Main thread (fallback) | Worker             |
@@ -229,7 +230,7 @@ Transfer: the event log (plain objects) is copied by structured clone, about 30
 ms for the stress battle's log (about 1 to 1.5 MB as JSON). The three typed
 arrays of the record (`coreHp`, `tickStart`) are transferred, not copied. The
 clone cost is roughly linear in the log size, so the largest log in this
-document (5.1 MB, dense tier 3) should take about 100 to 150 ms in total, split
+document (6.9 MB, the stress board with four Cores at tier 3) should take about 100 to 150 ms in total, split
 between the worker (serialising) and the page (deserialising, which is the
 part that blocks); this was estimated, not measured. If it ever matters, send
 the log in chunks of a few thousand events.

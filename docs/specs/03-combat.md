@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v5.2
+Status: Draft v5.3
 
 ## Direction
 
@@ -31,14 +31,15 @@ Status: Draft v5.2
 - **CB-3g [DECIDED]** **Conduits** — the connections that carry resources
   between buildings — are **free and unlimited**. They **take up space**
   and **cannot cross each other**, except through a building made for it
-  (a splitter, a merger, or a building that lets two conduits pass at 90
+  (a Splitter, a Merger, or a Crossover, which lets two conduits pass at 90
   degrees). **A conduit never branches: the Splitter building is the only
   way to split one** (CB-9e). Organizing conduit paths well is meant to be
   one of the main limits on a factory and a skill the game rewards.
 - **CB-3h [DECIDED]** **Conduits cannot be targeted by enemies** (otherwise
   players could spam them to delay enemy units).
 - **CB-3i [DECIDED]** **Gold is not a building resource.** Gold is spent only
-  at shops between battles, to purchase buildings. A player can place only
+  between battles: on buildings and re-rolls at shops, and on Workshop tier
+  raises at an event (EC-2). It never runs a building. A player can place only
   buildings they have purchased themselves, plus their own starting kit, and placing costs nothing. Conduits
   are the one exception: unlimited, never purchased.
 - **CB-3j [DECIDED]** **No long-range buildings.** Buildings never attack
@@ -59,28 +60,43 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 ## The map
 
-- **CB-4** At the start of a run the party's board is generated from a seed:
-  a grid of terrain with resource nodes and natural features. The whole
-  map is visible from the start, each plot is buildable by its player from
-  the start, and it is **fairly large**
-  [DECIDED] — early on a player has far more room than buildings. Starting
-  proposal for size: one plot is about 24 cells wide × 16 deep, and plots
-  join side by side, so a four-player board is 96 × 16 (CP-5). Sizes are
-  placeholders for the prototype to tune.
+- **CB-4 [DECIDED]** **One plot per player, side by side, the same size at
+  any party size** (issue #392). At the start of a run the party's board is
+  generated from a seed: a grid of terrain with resource nodes and natural
+  features. The whole map is visible from the start, and each plot is
+  buildable by its player from the start.
+  - **Size.** The shape is decided. The size stays **24 × 16** (`plotWidth`
+    × `plotDepth` in `content/mapgen.json`), so a four-player board is
+    96 × 16 (CP-5). It is tuned only from playtest data on when space runs
+    out.
+  - **Why this size** (design pillar 6, `00-vision.md`): the factory grows in
+    complexity until placement becomes a tough choice. A plot is **fairly
+    large** [DECIDED], so early on a player has far more room than
+    buildings; the size is tuned so that by the mid-run space runs out and
+    the player must choose what goes where and what to leave out.
+  - (The earlier text called 24 × 16 a placeholder for the prototype to tune
+    freely. [SUPERSEDED by the decision above.])
 - **CB-5** **Resource nodes** are cells where a source building can be
   built. Sources can only be placed on nodes, so node positions shape the
   whole factory. Each node yields one of the resources (CB-5a). A node
-  belongs to the plot it is in (CP-14), and every plot has the same number
-  of nodes (SC-11), so every player's supply has the same ceiling.
+  belongs to the plot it is in (CP-14), and every plot starts with the same
+  number of nodes (SC-11; `nodesPerPlot` in `content/mapgen.json`: 3 of each
+  common resource and 1 of the rare one), so every player's supply starts
+  with the same ceiling. The Rich vein event can later add a node to a
+  player's plot, up to `maxAddedNodesPerPlot` (RS-4i4).
 - **CB-5a [DECIDED for now]** **Three resources** (CB-3k): **Ore, Power,
   and Flux**. The names are working names and must be **renameable in one
   configuration file** (TA-27a). The roles:
 
-  | Resource | Nodes | Mainly used for |
+  | Resource | Nodes | Used by (the `inputs` in `content/buildings.json`) |
   |----------|-------|-----------------|
-  | **Ore** | Common | Bodies: units, walls, repairs |
-  | **Power** | Common | Running things: turrets firing, production speed |
-  | **Flux** | Rare | Economy buildings, advanced units, upgrades |
+  | **Ore** | Common | Most units (Barracks, Range, Foundry), the Armory, the Composite Refinery |
+  | **Power** | Common | Turrets firing, drones (Hangar), the Foundry, both refineries |
+  | **Flux** | Rare | The Overclocker and the Aether Refinery |
+
+  (The earlier roles, "Ore for bodies: units, walls, repairs" and "Power for
+  production speed", do not match the content: walls need nothing (CB-10c)
+  and there is no repair building.)
 
   **Most buildings take a single resource type. Some rarer buildings
   require inputs of more than one type** [DECIDED] (e.g. a heavy-unit
@@ -139,11 +155,14 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     because they are slower to come online in a battle and harder to fit.
   - A destroyed refinery cuts everything downstream of it (CB-9a), which is
     what makes a breach through a factory costly.
-  - **Proposed content** [PROPOSED, working names]: `bld_refinery_ab`
-    (2x2, Ore + Power, makes Composite); `bld_refinery_bc` (2x2, Power +
-    Flux, makes Aether); `bld_foundry` (2x2, Ore + Power, trains
-    `unit_heavy`); `bld_golem_forge` (2x2, takes Composite, trains
-    `unit_golem`); `bld_spire` (2x2, takes Aether, trains `unit_caster`).
+  - **Content** (built; numbers in `content/buildings.json` and
+    `content/units.json`, to be tuned): the Composite Refinery
+    `bld_refinery_ab` (2x2, Ore + Power, makes Composite); the Aether
+    Refinery `bld_refinery_bc` (2x2, Power + Flux, makes Aether); the
+    Foundry `bld_foundry` (2x2, Ore + Power, trains the Heavy); the Golem
+    forge `bld_golem_forge` (2x2, takes Composite, trains the Golem); the
+    Spire `bld_spire` (2x2, takes Aether, trains the Caster). The shop
+    offers all five from round 3 (`fromRound` in `content/economy.json`).
     The roles counter each other: casters beat swarms, the Golem's armor
     shrugs off splash, and fast melee units catch fragile casters.
 - **CB-5e [PROPOSED]** **Two-input consumers.** A building that takes two
@@ -152,17 +171,20 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   (CB-5b) and its own part of the store (CB-10b). Its need is stated per
   resource (CB-10a). The rebalance principle (SC-13a) holds: for a
   two-input building, one collector of each input resource fully feeds it.
+  Implemented (issue #380, and #381 for the refineries).
 - **CB-5f [PROPOSED]** **The refinery's batch and output.** A refinery
   consumes one batch of each input, and after its minimum production time
   emits refined items into its output conduit. Its output buffer is small:
   when the buffer is full (the conduit has backed up, CB-9e) the refinery
   stalls and draws no more input. Refining makes fewer items than it takes
   in, set so that a refined chain beats a base chain per raw item (SC-13a).
+  Implemented (issue #381; rules reference, "Refineries").
 - **CB-5g [PROPOSED]** **The Golem and armor.** Armor is a flat amount taken
   off every hit the unit takes: damage dealt is `max(1, damage - armor)`.
   The Golem has huge health, high armor, low damage and a very low speed, so
   it leads a push and soaks up fire. Many weak hits do almost nothing to it;
   a few strong hits still hurt.
+  Implemented (issue #382; the Golem's `armor` is in `content/units.json`).
 - **CB-5h [PROPOSED]** **The caster and area damage.** A caster is a ranged
   unit (CB-16b) with area damage: when it hits a target, other units within
   a radius of the target take a percent of the hit as well. Area damage hits
@@ -170,6 +192,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   fragile, so it needs a front line to stand behind. Order of damage
   modifiers: `unit_strength` at spawn (CB-24a), then Overload (CB-12), then
   the splash percent, then armor (CB-5g), applied to each unit hit.
+  Implemented (issue #387; the Caster's `splash` is in `content/units.json`).
 - **CB-5i [PROPOSED]** **The Flux trade-off.** A plot has one Flux node, and
   both the Overclocker and the Aether refinery want Flux. Running both means
   sharing Flux with a partner over a border link (CB-9d, PP-4).
@@ -187,7 +210,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   with the whole map visible (CB-3e, CP-26). A Core's footprint must lie
   wholly inside its player's plot; apart from that the legal positions are
   the same as before (buildable ground, not on a resource node, in the back
-  half of the plot). Deep and sheltered is safer; forward and central
+  half of the plot: `coreFrontClearance` in `content/mapgen.json`). Deep and sheltered is safer; forward and central
   shortens the player's own supply lines. Generation guarantees that every
   plot has at least one legal Core position and at least one walkable path
   from the front edge to every legal Core position.
@@ -202,7 +225,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     and no reason to rearrange the whole factory for each battle.
   - It can also contain **points of interest** that **give buffs to the
     side that controls them**, and that are **guarded by neutral units**.
-- **CB-8c [PROPOSED]** Points of interest:
+    Not built yet: the zone holds only lakes and cliffs today, and its
+    format keeps an empty `pointsOfInterest` list for them (TA-41a).
+- **CB-8c [PROPOSED]** Points of interest (not built yet, CB-8):
   - **Aggro** [DECIDED]: units are not sent to points of interest. A unit
     goes to one only if its path takes it **near enough to "aggro"** — within
     the point's aggro range — in which case it diverts to fight there.
@@ -235,8 +260,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   - Nothing can be built in it. The only buildings that act in it are
     turrets, which can shoot enemy units there (CB-3j, CB-18a); otherwise
     only units fight there.
-  - It is as wide as the front edges and only a few cells deep (starting
-    proposal: 6–8, enough to hold a point of interest and its guards).
+  - It is as wide as the front edges and only a few cells deep (`neutralZone`
+    `depth` in `content/mapgen.json`, 7 today, enough to hold a point of
+    interest and its guards). It has up to one lake and one cliff per plot
+    of front width (same file).
   - Generation guarantees open paths across it, and that its features can
     shift where units arrive along a front edge but cannot seal part of an
     edge off entirely.
@@ -255,16 +282,20 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-9** Buildings have a **footprint**, a **tier**, **health**,
   and a **kind**:
 
-| Kind | Role | Examples |
-|------|------|----------|
-| **Source** (collector) | Built on a resource node; produces that node's resource at a flow rate set by its tier | Extractor |
-| **Route** | Splits, joins, or crosses conduits | Splitter (one in, several out); Merger (several in, one out); Crossover (two conduits pass at 90°); Tunnel (two 1x1 ends, carries a conduit under buildings) |
-| **Refinery** | Turns one resource (common) or two (rare) into a refined resource | Composite refinery (Ore + Power → Composite); Aether refinery (Power + Flux → Aether); Smelter (Ore → Alloy, later) |
-| **Modifier** | Changes the flow passing through | Booster (more per tick); Buffer (stores, then releases a burst) |
-| **Unit producer** | Consumes resources → spawns units | Barracks (cheap swarm); Grand barracks (3x3, two soldiers at a time); Lancer hall (1x3, long-reach melee); Foundry (Ore + Power, heavy bruiser); Golem forge (Composite, tanky front-liner); Spire (Aether, area-damage caster) |
-| **Defense** | Blocks or kills enemy units | Wall; Gate; Turret (needs Power to fire); Mortar (2x2 turret, long range and splash, blind spot up close); Repair station |
-| **Economy** | Consumes resources (often Flux) → the factory gets stronger for the rest of this battle | Overclocker (sources faster, up to a low cap, SC-12); Refit bay (later units spawn stronger); Reactor (becomes a new source once fed enough) |
-| **Core** | One per player: that player's health. Fixed position (CB-3e). Needs no resources. | — |
+| Kind | Role | In the game (`content/buildings.json`) | Not built yet |
+|------|------|----------|----------|
+| **Source** (collector) | Built on a resource node; produces that node's resource at a flow rate set by its tier | Extractor | — |
+| **Route** | Splits, joins, or crosses conduits | Splitter (one in, three out); Merger (three in, one out); Crossover (two conduits pass at 90°) | Tunnel (two 1x1 ends, carries a conduit under buildings; CB-9g) |
+| **Refinery** | Turns one resource (common) or two (rare) into a refined resource | Composite Refinery (Ore + Power → Composite); Aether Refinery (Power + Flux → Aether) | One-input refineries such as a Smelter (Ore → Alloy), CB-5d |
+| **Modifier** | Changes the flow passing through | — | Booster (more per tick); Buffer (stores, then releases a burst) |
+| **Unit producer** | Consumes resources → spawns units | Barracks (Soldier, cheap swarm); Range (Archer, ranged); Hangar (Drone, flying); Foundry (Ore + Power, Heavy, a bruiser); Golem forge (Composite, Golem, tanky front-liner); Spire (Aether, Caster, area damage) | Grand barracks (3x3, two soldiers at a time); Lancer hall (1x3, long-reach melee); CB-9f |
+| **Defense** | Blocks or kills enemy units | Walls (seven four-cell shapes, I, O, T, S, Z, L, J, and a one-cell wall that is not sold); Gate; Turret (needs Power to fire); Pylon (boss strongholds only, never in a shop, CB-29) | Mortar (2x2 turret, long range and splash, blind spot up close; CB-9f); Repair station |
+| **Economy** | Consumes resources → the factory gets stronger for the rest of this battle | Overclocker (Flux; collectors faster, up to a low cap, SC-12); Armory (Ore; later units spawn stronger) | Reactor (becomes a new source once fed enough) |
+| **Core** | One per player: that player's health. Fixed position (CB-3e). Needs no resources. | Core | — |
+
+Units in the content (`content/units.json`): the Soldier, Archer, Drone,
+Heavy, Golem and Caster, each from the producer above, and the Raider, which
+no building makes and only PvE waves field.
 
 - **CB-9a** **Conduits** (CB-3g, CB-3h) are not buildings: players draw
   them between buildings at no cost and in any quantity.
@@ -290,7 +321,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   - Like all battle damage, destroyed conduits and buildings are restored
     for the next battle (CB-11).
 - **CB-9f [PROPOSED]** **Four new base buildings** (working names; theme
-  issue #393 renames them; issue #437). All four consume resources (V-15), help
+  issue #393 renames them; issue #437). **None of the four is built yet**: they
+  are not in the content, and the rules below (CB-9g, CB-10f, CB-13a,
+  CB-16e, CB-18b) are the plan for them. All four consume resources (V-15), help
   only their owner (PP-8) and are placed only in their owner's plot (CP-27,
   CP-28). Each is offered in the shop from a given round (EC-3a). Footprints
   are chosen so that where a building goes is a real decision.
@@ -309,7 +342,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   it needs a 3x3 hole and a Merger feeding it (CB-10f). The Tunnel is
   described in CB-9g. Considered and left out: adjacency boosters, a repair
   station, a Bulwark turret.
-- **CB-9g [PROPOSED]** **The Tunnel.** A Tunnel is a route building made of
+- **CB-9g [PROPOSED]** **The Tunnel** (not built yet, CB-9f). A Tunnel is a route building made of
   two separate 1x1 pieces, an **entrance** and an **exit**, placed together
   as a pair.
   - It carries **one conduit** of **one resource** (CB-5b) from the entrance
@@ -395,9 +428,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-10** Time advances in fixed **ticks**. A **collector** (source)
   produces one item of its node's resource every so many ticks; the number
   is set by its **tier**, so a collector has a fixed **flow rate** (items
-  per second) that a higher tier raises [DECIDED]. Resources move one cell per
+  per second) that a higher tier raises [DECIDED] (`intervalTicks` per tier in
+  `content/buildings.json`). Resources move one cell per
   tick along the conduits the players lay out, so longer conduits mean a
-  longer delay. A resource sent down a conduit that leads nowhere is
+  longer delay. A resource sent out of a side that has no conduit is
   lost; a building nothing feeds does nothing. Routes must go around
   natural features, which is half of the layout puzzle.
 - **CB-10a [DECIDED]** **Need and top speed.** Every building that consumes
@@ -411,22 +445,23 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-10b [DECIDED]** **Store.** A building holds a small store: the
   resources for one production, plus a few items waiting at its inputs.
   When the store is full the building accepts nothing more, and the conduit
-  feeding it backs up (CB-9e). Store sizes are tuning numbers, to be set in
-  the rebalance. Nothing in a store carries over to the next battle
-  (CB-11).
-- **CB-10f [PROPOSED]** **The Grand barracks exception.** The rebalance
+  feeding it backs up (CB-9e). The number of items that can wait at each
+  input is `inputBufferUnits` in `content/sim.json`. Nothing in a store
+  carries over to the next battle (CB-11).
+- **CB-10f [PROPOSED]** **The Grand barracks exception** (not built yet,
+  CB-9f). The rebalance
   principle (SC-13a) is that a collector fully feeds exactly one consumer of
   its own tier. The Grand barracks is the stated exception: it is fed by
   exactly two collectors of its tier, joined by a Merger (CB-9) or by two
   conduits. One collector alone feeds it only half the time (CB-10d).
 - **CB-10c [DECIDED]** **Which buildings need resources.** Only buildings
   that do something: unit producers, turrets, and economy buildings. Walls,
-  gates, Splitters and other route buildings, and the Core need nothing.
-  There is no cap on the number of walls for now. Refineries and modifiers
-  (CB-9), which are not in the content yet, consume resources by their
-  nature: when they are added they get a cost per input resource and a
-  minimum time between productions like any consumer (CB-10a, CB-5e,
-  CB-5f).
+  gates, Splitters and other route buildings, pylons and the Core need
+  nothing. There is no cap on the number of walls for now. Refineries also
+  consume resources: each has a cost per input resource and a minimum time
+  between batches like any consumer (CB-10a, CB-5e, CB-5f). Modifiers
+  (CB-9), which are not in the content yet, will get the same when they are
+  added.
 - **CB-10d [DECIDED]** **Under-supplied buildings wait.** A building that
   gets less than its need collects what arrives until it has the full cost
   of one production, then produces at full strength. It is slower, never
@@ -439,9 +474,11 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   start of each battle: stored resources, economy upgrades, units, damage. What
   persists is the layout and the buildings' permanent tiers. Buildings
   destroyed in a battle are back for the next one.
-- **CB-12** **Overload**: late in a battle, both sides' units and damage
-  escalate, so that two fortified sides cannot stall forever. Overload
-  starts at 3 minutes [DECIDED].
+- **CB-12** **Overload**: late in a battle, both sides' units deal more and
+  more damage (turret damage does not grow) and every Core decays, so that
+  two fortified sides cannot stall forever. Overload starts at 3 minutes
+  [DECIDED]. The timing and step sizes are the `overload...` keys in
+  `content/sim.json`.
   - **[DECIDED] Overload takes its full amount from every living Core.** At
     every beat (from tick 1800, 3 minutes, at every 100th tick) each Core
     still standing, on both sides, takes the same flat amount: 5, then 10,
@@ -449,7 +486,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     Core of 500 health therefore dies from the decay alone at tick 3100
     (3 minutes 10 seconds; 14 beats take 525), whatever the party size, and
     a side whose Cores all have 500 health has lost all of them by then at
-    the latest.
+    the latest. (The Bonded boss shares one health pool and takes
+    the amount once, from the pool, MM-9d.)
   - **[DECIDED] In PvE the Overload decay is a deadline** (CB-29, #43; decided
     in #75: turtling is a justified strategy). The decay applies equally to
     every Core, so a Core with less health falls sooner. A stronghold Core
@@ -470,7 +508,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   input means more units only up to the building's top speed; beyond that,
   more output takes more or better buildings, and the supply to run them.
   Stronger units come from economy buildings (the factory's ramp).
-- **CB-13a [PROPOSED]** **Several units per production.** A unit producer may
+- **CB-13a [PROPOSED]** **Several units per production** (not built yet,
+  CB-9f). A unit producer may
   spawn more than one unit each time it produces. The Grand barracks spawns
   two soldiers per production, for a cost of about 75% of two Barracks
   productions (about 25% more efficient per Ore). Its need is high enough
@@ -546,8 +585,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   destroyed the unit resumes its walk to its own target, which has not
   changed. A unit may therefore stay at a non-target Core on its way until
   it falls. Other enemy buildings are still attacked only when they block
-  the way (CB-20). (Owner decision 18 on issue #124. Not yet implemented,
-  issue #133.)
+  the way (CB-20). (Owner decision 18 on issue #124. Implemented, issue
+  #133.)
 - **CB-16 [DECIDED]** **Units fight units.** Opposing units that meet engage
   each other, so a front line forms between the bases and moves with the
   balance of production. A melee unit attacks when the gap between its circle
@@ -561,16 +600,18 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-16d [PROPOSED]** **Armor and area damage are unit stats**, next to
   health, damage, reach and speed. Armor is flat damage reduction per hit
   (CB-5g); area damage is a radius and a percent of the hit passed to other
-  units near the target (CB-5h).
-- **CB-16e [PROPOSED]** **The Lancer.** A melee unit (CB-16) with a long
+  units near the target (CB-5h). Implemented: `armor` and `splash` in
+  `content/units.json`.
+- **CB-16e [PROPOSED]** **The Lancer** (not built yet, CB-9f). A melee unit (CB-16) with a long
   reach (a few cells, edge to edge, more than other melee units), low health
   and moderate damage. It stands behind a front line of other units and hits
   over them. It still cannot hit flying units (CB-16b). Trained by the
   Lancer hall from Ore (CB-9f). Numbers [PROPOSED], set in content.
 - **CB-16b [DECIDED]** **Ranged units.** A unit is melee or ranged. A ranged
   unit attacks from a distance (its reach is its range, edge to edge) and
-  stops to fire while it has a target in range. Placeholder: the Archer, from
-  the Range building. Only ranged attackers can hit flying units: ranged
+  stops to fire while it has a target in range. In the content: the Archer
+  (a placeholder, from the Range) and the Caster (from the Spire, CB-5h).
+  Only ranged attackers can hit flying units: ranged
   ground units, flying units (always ranged) and turrets. A melee unit whose
   only remaining enemies are flyers ignores them and goes on to its goal.
 - **CB-16c [DECIDED]** **Flying units.** A flying unit is always ranged, can
@@ -580,8 +621,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   nothing against it; turrets and ranged units are the defense. Placeholder:
   the Drone, from the Hangar building. A flyer picks its next Core by
   straight-line distance, and a Hangar walled in on every side still sends
-  its drones out (it is never "sealed"). PvE waves from round 4 on spend
-  about 25% of the wave budget on archers and 15% on drones (placeholders).
+  its drones out (it is never "sealed"). PvE waves from a set round on spend
+  part of the wave budget on archers and drones (placeholders; `rangedMix`
+  in `content/threats.json`: from round 4, about 25% and 15%).
 - **CB-16a** **Production and room.** A unit appears next to the building that
   made it, at the nearest free spot. When there is none the finished unit is
   held, production stops drawing resources and the factory backs up like any
@@ -604,7 +646,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   units in range (CB-18a) and need Power. A turret shoots any enemy unit in
   range, in its owner's plot or a teammate's. **Gates** block enemies but
   let all of the party's units through, whoever owns the gate or the unit.
-- **CB-18b [PROPOSED]** **Minimum range and splash (the Mortar).** A turret
+- **CB-18b [PROPOSED]** **Minimum range and splash (the Mortar)** (not built
+  yet, CB-9f). A turret
   may have a **minimum range**: a blind spot around it, in which it cannot
   target a unit, and a **maximum range** beyond it. It may also have splash:
   when its shot hits a unit, other units within a radius of that unit take a
@@ -649,7 +692,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 ## Space and building
 
 - **CB-24 [DECIDED]** **Resources are the main limiter; space is the
-  second.** A plot has a fixed number of resource nodes, a collector's flow
+  second.** A plot has a fixed number of resource nodes (only the Rich vein
+  event adds one, RS-4i4), a collector's flow
   rate is fixed by its tier, and every building that does something has a
   need (CB-10a). A player can therefore keep running only as many buildings
   as their collectors, plus what partners send over border links, can
@@ -660,14 +704,16 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   far more factory into the same plot than a tangled one; buildings also
   shape where units can walk. (Replaces "space is the limiter".)
 - **CB-24a [DECIDED]** **Economy buildings help only their owner.** A
-  player's Overclocker, unit-strength building and similar affect only that
+  player's Overclocker, Armory and similar affect only that
   player's collectors and units, and the cap applies per player (SC-12). To
   help a partner, a player sends resources over a border link (CP-29,
-  CP-30). (Owner decision 19 on issue #124. Not yet implemented, issue
-  #137.)
+  CP-30). (Owner decision 19 on issue #124. Implemented, issue #137; the
+  caps are `maxSourceSpeedPercent` and `maxUnitStrengthPercent` in
+  `content/sim.json`.)
 - **CB-25 [DECIDED]** **The board never expands.** It starts fairly large and
-  stays that size for the whole run. Running out of room is intended to be
-  one of the constraints on long endgame play.
+  stays that size for the whole run. Running out of room is intended: by the
+  mid-run space runs out and placement becomes a tough choice (design
+  pillar 6, CB-4).
 - **CB-26** Buildings are bought with gold in shops between battles and go into the owning player's stash. Placing, moving, and
   rotating them costs nothing; gold plays no part in building or in battle
   (CB-3i). Only the owner can place, move, rotate, return or sell a
@@ -677,19 +723,20 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-26a [DECIDED]** **Buildings have tiers, and there is no combining.**
   Owning several identical buildings never merges them. Higher-tier
   buildings come from shops (which offer higher tiers as the run goes on),
-  and from the Workshop event, which raises one
-  building by a tier. The factory layout therefore only changes when
+  from the Workshop event, which raises one building by a tier, and from
+  the Drill event, which raises one collector by a tier. The factory layout therefore only changes when
   players change it.
 - **CB-26c [DECIDED for now]** There are **three tiers**. Nothing can raise
   a building above tier 3. The cap may change later.
 - **CB-26d [PROPOSED]** What a tier is: the same building with better
   numbers (for example health, rate, or output), set per tier in content
   data. Every building exists at all three tiers and keeps its footprint
-  and inputs at each. Tiers apply to buildings only.
+  and inputs at each; the Core is the exception, with one tier. Tiers apply
+  to buildings only.
 - **CB-27** Moving and rotating buildings between battles is free; sources
   must stay on nodes, buildings stay in their owner's plot, and a Core
-  never moves (CB-3e). The map itself never
-  changes during a run.
+  never moves (CB-3e). The map's terrain never changes during a run; only
+  the Rich vein event adds resource nodes (RS-4i4).
 
 ## Opponents
 
@@ -700,8 +747,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   factories**:
   a **wave schedule** (which units arrive at the party's front edge, and
   when) plus a **stronghold** for the party's units to attack (Cores with
-  health and pre-placed defenses on a small authored map). Both are scaled
-  by the budget curve (SC-1) and party size.
+  health and pre-placed defenses on a board of the party's size with no
+  terrain, laid out from the archetype's layout in `content/threats.json`).
+  Both are scaled by the budget curve (SC-1) and party size.
   - **One Core per player, always** [DECIDED]: a stronghold has as many
     plots as the party has players and one Core in each, bosses included.
   - **Health split evenly** [DECIDED]: the stronghold's total Core health is
@@ -717,10 +765,12 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     Core.
   - **Boss strongholds may differ in two ways** [DECIDED] (MM-9a–MM-9d):
     a boss stronghold may contain **boss-only buildings** (pylons) that are
-    never in a shop, and its Cores may share one health pool (Linked Cores)
+    never in a shop, and its Cores may share one health pool (Bonded)
     instead of splitting it. Party units target the pylons of a shielded
     Core until they are down (Pylons); this is the only targeting change.
-    Nothing a boss does changes the party's factory.
+    Other bosses change their units instead: the Brood's Cores release
+    bursts of units as their health drops, and the Warlord's waves are led
+    by a champion Golem. Nothing a boss does changes the party's factory.
 
   Archetypes test the three strategies:
   - **Rusher** — heavy early waves; tests defense.
@@ -878,4 +928,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-50** Three base resources (refining, issue #378, and points of interest come
   after the first playable, TA-41a); ~15 buildings across the kinds; 3–4 unit types;
   lakes and cliffs; 3 PvE archetypes; 1 boss. Enough to validate the loop;
-  no more.
+  no more. (Status: the content has grown past this budget. Refining is in,
+  with the two compounds (CB-5d), and so are more unit types and buildings
+  (`content/units.json`, `content/buildings.json`) and five bosses
+  (`content/threats.json`). Points of interest are not built yet.)

@@ -6,17 +6,21 @@ A pnpm workspace. The packages mirror the layer boundaries in
 [`docs/specs/06-technical-architecture.md`](docs/specs/06-technical-architecture.md)
 (TA-52).
 
-| Path               | Package         | Role                                                                  |
-| ------------------ | --------------- | --------------------------------------------------------------------- |
-| `packages/core`    | `@game/core`    | Pure game logic: simulation, run rules, generators, content loading.  |
-| `packages/session` | `@game/session` | Owns a run in progress; exposes intents and state. Solo only for now. |
-| `packages/web`     | `@game/web`     | Presentation: a static site built with Vite.                          |
-| `packages/content` | `@game/content` | Exports the parsed `content/*.json` files for `web` and tests.        |
-| `packages/tools`   | `@game/tools`   | Node scripts: content validation, source scans. May use Node I/O.     |
-| `content/`         |                 | Data files (see its README).                                          |
-| `schemas/`         |                 | Schemas for those files (see its README).                             |
-| `packages/golden`  | `@game/golden`  | Golden vector runner and update command. May use Node I/O.            |
-| `golden/`          |                 | Golden vectors (JSON). See docs/rules-reference.md.                   |
+| Path               | Package         | Role                                                                 |
+| ------------------ | --------------- | -------------------------------------------------------------------- |
+| `packages/core`    | `@game/core`    | Pure game logic: simulation, run rules, generators, content loading. |
+| `packages/session` | `@game/session` | Owns a run in progress; exposes intents and state. 1 to 4 players.   |
+| `packages/web`     | `@game/web`     | Presentation: a static site built with Vite.                         |
+| `packages/content` | `@game/content` | Exports the parsed `content/*.json` files for `web` and tests.       |
+| `packages/tools`   | `@game/tools`   | Node scripts: content checks, `pnpm sim`, ghosts. May use Node I/O.  |
+| `packages/art`     | `@game/art`     | Generates the sprites in `assets/sprites/` (`pnpm art:build`).       |
+| `content/`         |                 | Data files (see its README).                                         |
+| `schemas/`         |                 | Schemas for those files (see its README).                            |
+| `packages/golden`  | `@game/golden`  | Golden vector runner and update command. May use Node I/O.           |
+| `golden/`          |                 | Golden vectors (JSON). See docs/rules-reference.md.                  |
+| `boards/`          |                 | Reference boards for `pnpm sim` (JSON).                              |
+| `assets/`          |                 | Generated sprites (see its README).                                  |
+| `scripts/`         |                 | `check.mjs`, the `pnpm check` chain.                                 |
 
 `core` and `session` are consumed as TypeScript source (no build step).
 
@@ -26,6 +30,7 @@ Requires Node 22+ and pnpm (the version is pinned in `package.json`).
 
 ```
 pnpm install        # install dependencies
+pnpm --filter @game/web dev   # development server for the web app
 pnpm typecheck      # tsc in every package
 pnpm lint           # eslint, including the layer rule
 pnpm test           # vitest in every package
@@ -33,7 +38,9 @@ pnpm build          # static site into packages/web/dist
 pnpm preview        # serve that build locally (run pnpm build first)
 pnpm smoke          # browser smoke test of the web app (see below)
 pnpm check          # the whole CI chain (see below)
-pnpm golden:update   # regenerate golden/ expected values (deliberate)
+pnpm golden:update  # regenerate golden/ expected values (deliberate)
+pnpm ghosts:update  # regenerate the bundled ghosts (see below)
+pnpm art:build      # regenerate assets/sprites/ (see assets/README.md)
 pnpm format         # prettier --write
 pnpm format:check   # prettier --check
 pnpm validate:content  # check content/ against schemas/ and the core loaders
@@ -151,8 +158,12 @@ and its benchmark are in [`docs/performance-budget.md`](docs/performance-budget.
 `packages/web` is a Preact app (TypeScript JSX, plain CSS with custom
 properties for light and dark) that draws the board on a `<canvas>`. Panels,
 the top bar and menus are ordinary DOM. State lives in plain modules (no
-router or state library). The page you land on is the debug screen
-(`#debug`); real screens register in `src/shell/screens.ts`. The pure camera
+router or state library). The page you land on is the main menu (`#/`); a run
+is at `#run/<id>`, and `#/?players=N` (2 to 4) makes the next new run a party
+that one person plays from one device. Screens register in
+`src/shell/screens.ts`; besides the menu and the run, these are sandbox
+screens for development (`#debug`, `#build`, `#shop`, `#battle`,
+`#sprites`). The pure camera
 and gesture code (`src/board/camera.ts`, `gestures.ts`, `layout.ts`) has unit
 tests that run with `pnpm test`.
 
@@ -268,4 +279,4 @@ from a sub-path and on any other static host.
 - One-time setup for the repository owner: Settings -> Pages -> Build and
   deployment -> Source: "GitHub Actions".
 
-The Build screen (`#build`, `packages/web/src/build/`) is where the layout is edited. It starts a solo run in memory with a fixed seed (change it in the dev strip), asks for a Core position, then offers the action tray (tools and inventory), the "Before you fight" checklist and Selected in the info rail, and the overlays as map rail toggles. Everything it knows about legality comes from `core` (pure operations called on the current state) and every change is an intent through the run controller; `reasons.ts` is the only place reason codes become text.
+The Build screen (`packages/web/src/build/`) is where the layout is edited, in a run (with the shop as a panel over it) and on its dev entry `#build`. The dev entry starts a solo run in memory with a fixed seed (change it in the dev strip) and asks for a Core position. The screen offers the action tray (tools and inventory), the "Before you fight" checklist and Selected in the info rail, and the overlays as map rail toggles. Everything it knows about legality comes from `core` (pure operations called on the current state) and every change is an intent through the run controller; `reasons.ts` is the only place reason codes become text.

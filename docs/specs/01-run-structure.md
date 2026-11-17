@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v5.2
+Status: Draft v5.3
 
 ## Core loop
 
@@ -9,7 +9,7 @@ player places their own Core in their own plot; the Cores then stay put for
 the whole run (CB-3e, CB-7, CP-26).
 
 ```
-Lobby -> Map + Core placement ->
+Lobby -> Map + Core placement -> First build ->
   [ PvE battle -> Event -> Shop -> PvP battle -> Event -> Shop ] x N
 -> Defeat -> Run summary
 ```
@@ -51,21 +51,24 @@ Lobby -> Map + Core placement ->
 - **RS-4 [DECIDED]** An event follows every battle. Events are separate from
   the shop: the shop is its own guaranteed step, not an event type.
 - **RS-4a [DECIDED]** An event is a short non-combat moment that changes the
-  run in some way other than buying. The set is nine types (the numbers in
-  RS-4i are PROPOSED, and the names are working names):
+  run in some way other than buying. The game has eight types, listed with
+  the names the game shows; their definitions and numbers are in
+  `content/events.json` (the numbers in RS-4i are PROPOSED). A ninth,
+  **Caravan**, is PROPOSED and not in the content yet:
   - **Workshop** — every player may raise one building they own by one
     tier (never above tier 3), paying 80% of that tier's shop price from
     their own gold, or skip. The party votes on the event; each player then
     chooses for themselves, and it is offered only if some player can afford
     an upgrade.
   - **Shrine** — choose one of several run modifiers (RS-4k).
-  - **Windfall** — every player gets some gold at once. No follow-up.
+  - **Windfall** — every player gets some gold at once (`params.gold`). No
+    follow-up.
   - **Market day** — each player's next shop has one extra offer and a free
     first re-roll (RS-4i1).
-  - **Drill** — each player may raise one of their own collectors by one tier
-    for free (RS-4i2).
-  - **Caravan** — a draft of rewards: each player takes one in turn
-    (RS-4h, RS-4i3).
+  - **Drill** — each player may raise one of their own collectors
+    (Extractors) by one tier for free (RS-4i2).
+  - **Caravan** [PROPOSED, not in the content yet] — a draft of rewards:
+    each player takes one in turn (RS-4h, RS-4i3).
   - **Rich vein** — each player may add one resource node of a named type to
     their own plot (RS-4i4).
   - **Blueprint** — each player picks one of three rare buildings and finds it
@@ -98,7 +101,9 @@ Lobby -> Map + Core placement ->
   rest go to the player who took them, from the event and not from a teammate
   (CP-29).
 - **RS-4i [PROPOSED]** The new events, with their numbers. Each is offered only
-  from its first round (RS-4g), and the numbers are configuration.
+  from its first round (RS-4g), and the numbers are configuration: the
+  shipped values are in `content/events.json` (and `maxAddedNodesPerPlot` in
+  `content/mapgen.json`). All but the Caravan are in the game.
   - **RS-4i1 [PROPOSED] Market day** (from round 2). Each player's next shop,
     the one right after this event, has one extra offer and a free first
     re-roll. No follow-up.
@@ -116,9 +121,10 @@ Lobby -> Map + Core placement ->
     on an empty cell of their own plot, or skip. At most 3 added nodes per plot
     per run.
   - **RS-4i5 [PROPOSED] Blueprint** (from round 3). Each player chooses one of
-    3 rare buildings eligible at this round. It is held in a fixed slot of
-    their next shop that re-rolls do not replace, and it is still paid for. It
-    helps finish a refining chain.
+    3 rare buildings eligible at this round (rare: a shop offer weight of at
+    most `maxOfferWeight`, among the buildings the shop offers at this round).
+    It is held in a fixed slot of their next shop that re-rolls do not
+    replace, and it is still paid for. It helps finish a refining chain.
   - **RS-4i6 [PROPOSED] Pact** (from round 4). One strong run modifier paired
     with a drawback, for example +20% unit strength and -15% Core health. Take
     both or skip; the party vote on the event is the choice. Each pact can be
@@ -134,7 +140,9 @@ Lobby -> Map + Core placement ->
   when the pool is not empty, and its offers are drawn from the pool at
   random.
 - **RS-4l [PROPOSED]** The modifier list, with first numbers (configuration).
-  Stacks are summed, never compounded (RS-4e).
+  Stacks are summed, never compounded (RS-4e). The first eight rows (Stout
+  walls to Vanguard) are in `content/events.json` today, all from round 1.
+  The other seven are feature-linked and wait for their feature (RS-4m).
 
   | Modifier | Effect | Stacks | From round |
   | --- | --- | --- | --- |
@@ -186,8 +194,9 @@ Lobby -> Map + Core placement ->
   all of the party's Cores are destroyed (CB-17). Cores destroyed in a
   battle the party went on to win cost nothing; like all battle damage they
   are restored for the next battle (CB-11).
-- **RS-5a [PROPOSED]** A boss that replaces a ghost (V-4) is the PvP battle
-  for that round and has the same stakes: losing costs one life.
+- **RS-5a [DECIDED]** A boss that replaces a ghost (V-4) is the PvP battle
+  for that round and has the same stakes: **losing to the boss costs one
+  life**, the same as losing to a ghost (issue #392).
 - **RS-5b [PROPOSED]** There is one PvP battle per round.
 - **RS-5c [PROPOSED]** Winning a PvP battle grants a reward (EC-7).
 
@@ -211,8 +220,9 @@ Lobby -> Map + Core placement ->
   count is 5 regardless of party size.
 - **RS-7b [DECIDED]** There is no victory condition. PvE scaling guarantees
   eventual defeat (V-5). The run ends when lives reach 0.
-- **RS-7c [PROPOSED]** No way to regain lives in the first playable. (A rare,
-  expensive event option could be added later.)
+- **RS-7c [DECIDED for now]** **Lives are never regained**, for now (issue
+  #392). A rare, expensive event option that gives a life back is only a
+  possible later idea, not a plan.
 - **RS-7d [DECIDED]** Players can leave a run at any time. Only the host can
   fully abandon a run; an abandoned run is recorded at its current depth
   (CP-21d) and counts toward depth records and ghosts like a defeat. A save

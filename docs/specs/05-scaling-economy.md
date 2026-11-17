@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v5.3
+Status: Draft v5.4
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -70,11 +70,13 @@ the missed reward (RS-3a). The exponential curve still ends every run:
    party loses a life per round.
 4. Lives reach 0. Depth is recorded.
 
-- **SC-7 [PROPOSED]** Guard against a stable ghost-only endgame: if deep
-  buckets ever stay well populated, parties with stalled income would mostly
-  meet other stalled parties and runs could drag on. Options if this shows up
-  in data: force a boss every Nth round, or serve a boss whenever the
-  party's round exceeds a threshold. Not needed for the first playable.
+- **SC-7 [DECIDED for now / OPEN]** Guard against a stable ghost-only
+  endgame: if deep buckets ever stay well populated, parties with stalled
+  income would mostly meet other stalled parties and runs could drag on.
+  **No guard for now** (issue #392): the decision is made from online data,
+  and issue #368 adds the metric. It stays open until that data exists.
+  Options if this shows up in data: force a boss every Nth round, or serve a
+  boss whenever the party's round exceeds a threshold.
 
 ## In-battle ramp
 
@@ -136,20 +138,28 @@ first. Gold (next section) is never produced by the factory.
 
 ## Economy (gold)
 
-- **EC-0 [DECIDED]** Gold is spent **only at shops between battles**, to
-  purchase buildings. It is never a resource for placing buildings or for
-  anything during a battle. Only purchased buildings, plus the starting kit, can be placed;
+- **EC-0 [DECIDED]** Gold is spent **only between battles**: at shops, to
+  purchase buildings and re-rolls, and on a Workshop upgrade (RS-4a). It is
+  never a resource for placing buildings or for anything during a battle. Only purchased buildings, plus the starting kit, can be placed;
   conduits are free and unlimited (CB-3g, CB-3i).
-- **EC-1 [PROPOSED]** One currency: **gold**, earned from base income each
-  round, PvE wins, PvP wins, the consolation payout after a PvP loss
-  (EC-6), selling buildings back, and some events.
-- **EC-2 [DECIDED]** Gold buys two things: **buildings** and **shop
-  re-rolls**. It does not buy board expansion (there is none, CB-25).
-- **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools
-  whose odds of higher-tier buildings improve with the round number (CB-26a). Whether building pools are finite and
-  shared within the party (contested draws) or infinite is **[OPEN]** (Q5).
+- **EC-1 [PROPOSED]** One currency: **gold**, earned from base income at
+  each shop (two per round), PvE wins, PvP wins, the consolation payout after
+  a PvP loss (EC-6), selling buildings back, and some events (the Windfall).
+  The amounts are in `content/economy.json` (`startingGold`,
+  `baseIncomePerShop`, `rewards`, `sellRefundPercent`) and
+  `content/events.json`.
+- **EC-2 [DECIDED]** Gold buys **buildings** and **shop re-rolls**, and
+  pays for a **Workshop** tier raise (RS-4a). It does not buy board
+  expansion (there is none, CB-25).
+- **EC-3 [DECIDED]** Shop offers are per player and drawn from tiered pools
+  whose odds of higher-tier buildings improve with the round number (CB-26a).
+  **Shop pools are unlimited, per player** (issue #392, was Q5): there are no
+  finite or shared copies, so teammates never compete for a building. A
+  building may enter the pool only from a round (`fromRound` in
+  `offerWeights`, issue #383); weights, tier odds and those rounds are in
+  `content/economy.json`.
 - **EC-3a [PROPOSED]** **The four new buildings in the shop** (CB-9f,
-  issue #437). Each is offered from a round, through the shop's per-offer
+  issue #437). They are planned and not in the content yet. Each is offered from a round, through the shop's per-offer
   `fromRound` (issue #383): before that round its weight is 0. Simple pieces
   come early, puzzle pieces later. Each is offered at the tier shown, and
   gains better tiers like any building (CB-26a).
@@ -180,8 +190,9 @@ first. Gold (next section) is never produced by the factory.
   buildings are acquired in the shop (RS-6). Proposed detail: a PvE win pays
   gold by difficulty (easy < medium < hard); a PvE loss pays nothing
   (RS-3a); a PvP win pays gold. Amounts are configuration.
-- **EC-9 [PROPOSED]** Base income per round is deliberately small relative to
-  PvE rewards, so that PvE results are what drive a party's growth.
+- **EC-9 [PROPOSED]** Base income (`baseIncomePerShop`, paid at both shops of
+  a round) is deliberately small relative to PvE rewards, so that PvE
+  results are what drive a party's growth.
 - **EC-8 [PROPOSED]** Run modifiers that affect combat are part of team state
   (CB-32) and therefore travel with snapshots. A modifier may have a negative
   effect (a Pact, RS-4i6). **[PROPOSED]** The total for any stat has a floor: it
@@ -189,9 +200,10 @@ first. Gold (next section) is never produced by the factory.
   and target is raised to **-50%** (`minModifierSumPercent`) before it is
   applied. The floor value is set in content and tested.
   **[PROPOSED]** The modifiers, their numbers, which stack and the round each
-  unlocks at are the table in RS-4l. All five of the first modifiers stack; the
-  new ones are mostly one-time, with a few small stackable ones (Quick march,
-  Tithe). A modifier may have a first round (`fromRound`), and the Shrine pool
+  unlocks at are the table in RS-4l. In the content today the five first
+  modifiers stack, and Sharpshooters, Hornet swarm, Vanguard and the three
+  pacts are one-time; the small stackable ones planned (Quick march, Tithe)
+  wait for their features (RS-4m). A modifier may have a first round (`fromRound`), and the Shrine pool
   is the modifiers that are unlocked and either not held or stackable (RS-4k);
   pacts are never offered by it. Stacks are summed, not compounded (RS-4e).
   Gold modifiers are party-wide and act for every player. A modifier linked to
