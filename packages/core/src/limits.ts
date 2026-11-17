@@ -64,6 +64,9 @@ export const MAX_SPLASH_RADIUS = 480;
  * four inputs, so the sum stays far below 2^53. */
 export const MAX_TIER_COST = 1_000_000;
 
+/** Largest `unitsPerProduction` of a unit producer tier (CB-13a). */
+export const MAX_UNITS_PER_PRODUCTION = 4;
+
 /** Largest `outputPerBatch` of a refinery tier (CB-5d): the items of one batch
  * wait in its output store and leave one per tick. */
 export const MAX_OUTPUT_PER_BATCH = 1000;

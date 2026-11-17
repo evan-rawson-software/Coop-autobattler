@@ -20,6 +20,7 @@ import {
   MAX_HEALTH,
   MAX_OUTPUT_PER_BATCH,
   MAX_TIER_COST,
+  MAX_UNITS_PER_PRODUCTION,
 } from './limits.js';
 import type { ResourceConfig, ResourceId } from './resources.js';
 import type { UnitConfig, UnitId } from './units.js';
@@ -134,6 +135,12 @@ export interface UnitProducerTier extends TierBase {
   readonly costs?: Readonly<Record<ResourceId, number>>;
   /** Minimum ticks between two units made (PP-6). */
   readonly productionIntervalTicks: number;
+  /**
+   * Units spawned by one production (CB-13a), 1 to `MAX_UNITS_PER_PRODUCTION`;
+   * 1 when the content leaves it out. One production costs `costPerUnit`
+   * (or each of `costs`) times this.
+   */
+  readonly unitsPerProduction: number;
 }
 export interface TurretTier extends TierBase {
   readonly damage: number;
@@ -947,7 +954,23 @@ function parseBuilding(
           if (value === undefined) ok = false;
           else rec[key] = value;
         }
+        if (kind === 'unit_producer' && 'unitsPerProduction' in raw) {
+          // Optional (CB-13a): absent means 1.
+          const n = readInt(
+            raw,
+            'unitsPerProduction',
+            1,
+            where,
+            errors,
+            MAX_UNITS_PER_PRODUCTION,
+          );
+          if (n === undefined) ok = false;
+          else rec['unitsPerProduction'] = n;
+        }
         for (const key of sortedKeys(raw)) {
+          if (kind === 'unit_producer' && key === 'unitsPerProduction') {
+            continue;
+          }
           if (
             key === 'costs' &&
             (kind === 'unit_producer' || kind === 'refinery')
@@ -1051,6 +1074,7 @@ function parseBuilding(
                   : sortedKeys(costs).reduce((n, k) => n + (costs[k] ?? 0), 0),
               ...(costs === undefined ? {} : { costs }),
               productionIntervalTicks: num(t, 'productionIntervalTicks'),
+              unitsPerProduction: t['unitsPerProduction'] ?? 1,
             };
           }),
         ),
@@ -1181,7 +1205,12 @@ export function productionOf(
   switch (def.kind) {
     case 'unit_producer': {
       const t = def.tiers[tier - 1];
-      return t && { cost: t.costPerUnit, interval: t.productionIntervalTicks };
+      return (
+        t && {
+          cost: t.costPerUnit * t.unitsPerProduction,
+          interval: t.productionIntervalTicks,
+        }
+      );
     }
     case 'economy': {
       const t = def.tiers[tier - 1];
@@ -1224,11 +1253,15 @@ export function costEntries(
   tier: number,
 ): readonly CostEntry[] | undefined {
   if (def.kind !== 'unit_producer' && def.kind !== 'refinery') return undefined;
-  const costs = def.tiers[tier - 1]?.costs;
-  if (costs === undefined) return undefined;
+  const t = def.tiers[tier - 1];
+  const costs = t?.costs;
+  if (t === undefined || costs === undefined) return undefined;
+  // A unit producer's production costs its per-unit costs times the units it
+  // makes (CB-13a).
+  const n = 'unitsPerProduction' in t ? t.unitsPerProduction : 1;
   return sortedKeys(costs).map((resource) => ({
     resource,
-    cost: costs[resource] ?? 0,
+    cost: (costs[resource] ?? 0) * n,
   }));
 }
 

@@ -87,6 +87,12 @@
         "productionIntervalTicks": {
           "description": "Minimum ticks between two units made by this producer (PP-6).",
           "$ref": "#/$defs/positive"
+        },
+        "unitsPerProduction": {
+          "description": "Units spawned by one production (CB-13a); absent means 1. One production costs costPerUnit (or each of costs) times this.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
         }
       }
     },

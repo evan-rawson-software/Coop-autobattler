@@ -364,6 +364,7 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 | `MAX_BREACH_BASE_COST` | 1 000 000           | `breachBaseCost` and `breachHealthPerCost` in `sim.json`                  |
 | `MAX_TIER_COST`        | 1 000 000           | each value of `costs` of a unit producer tier (CB-5e); at most four of them |
 | `MAX_OUTPUT_PER_BATCH` | 1 000               | `outputPerBatch` of a refinery tier (CB-5d)                               |
+| `MAX_UNITS_PER_PRODUCTION` | 4               | `unitsPerProduction` of a unit producer tier (CB-13a); 1 when absent      |
 | `MAX_ARMOR`            | 1 000               | `armor` of a unit (CB-5h); 0 when absent                                  |
 | `MAX_SPLASH_RADIUS`    | 480                 | `splash.radiusSub` of a unit (CB-5h): 1 to 480 sub-cell units (two cells); `splash.percent` is 1 to 100 |
 | `MAX_ARENA_CELLS`      | 8 192               | arena cells (`width * height`) for which a breach field is computed       |
@@ -509,6 +510,13 @@ resource, at most one resource per input (so at most four); the combined cost
 `4 * 1 000 000`. `productionIntervalTicks` and the one-cost `costPerUnit`
 keep their bound of an integer of at least 1. `needPer1000 = floor(1000 * cost
 / interval)` is at most `1000 * 4 * 1e6`, far below 2^53.
+
+A unit producer tier's optional `unitsPerProduction` (CB-13a) is an integer from
+1 to `MAX_UNITS_PER_PRODUCTION` (4); absent means 1 and the loader gives every
+tier the field (1 when absent). The cost of one production, `costPerUnit *
+unitsPerProduction` (and each `costs` value times it), is then at most `4 * 4 *
+1e6`, so `needPer1000` stays far below 2^53. The field is refused on any other
+kind of building ("field ... is not valid").
 
 A refinery tier's `costs` (CB-5d) is checked like those of a unit producer: one
 integer from 1 to `MAX_TIER_COST` per input resource, at most one per input (a
@@ -1872,6 +1880,7 @@ remainder (about 90 per 1000 ticks)), `need-top-speed-all-backs-up` (a tier 3 an
 collector, 171 per 1000 ticks, into two tier 1 barracks: both reach their top
 speed, the collectors stall, nothing is lost)
 and `need-three-way-unconnected` (one of the three outputs has no conduit).
+Two vectors with the Grand barracks (issue #440, CB-10f, CB-13a; 1000 ticks, a tier 2 Grand barracks that takes 8 items per production every 56 ticks, need 142 per 1000 ticks) pin the stated exception to the rebalance rule: `grand-barracks-two-collectors-need` (two tier 2 collectors, 71 per 1000 ticks each, joined by a Merger: 142 delivered, 17 productions, no source stalls) and `grand-barracks-one-collector-need` (one collector: 71 delivered, about half the productions, 8).
 Six vectors with the Foundry (issue #380, CB-5e; one-cost buildings are
 unchanged) pin two-input consumers: `foundry-ore-only` (Power never arrives:
 the Ore counter fills, the Ore buffer fills, the collector stalls, nothing is
@@ -2287,8 +2296,16 @@ interest (CB-8f, "Points of interest") add the diversion of rule c in step 3
    not interact. Their events are appended side 0 first, each tagged `side`
    (see Events).
 2. **Production.** For each living unit producer, side 0 first and each side in
-   instance-ID order:
-   1. **Intake.** Only if `progress < costPerUnit` (no finished unit is
+   instance-ID order. In this step the **cost of a production** is the tier's
+   `costPerUnit * unitsPerProduction` (CB-13a; for a two-input producer each
+   `cost_r` times `unitsPerProduction`), and `costPerUnit` below means that
+   figure; with `unitsPerProduction` 1 (every producer but the Grand barracks)
+   nothing differs from before. A producer also has `held`, the number of units
+   of a finished production still to spawn (0, and absent from a saved arena
+   state while 0). A producer with `held > 0` skips step 2.1 and the cost and
+   cooldown tests of step 2.2 and goes straight to spawning (see "Several
+   units per production" below):
+   1. **Intake.** Only if `held = 0` and `progress < costPerUnit` (no finished unit is
       waiting): go through its inputs clockwise from north and, for each, take
       `min(input buffer count, costPerUnit - progress)` items
       (`takeFromBuffer`) and add them to `progress` (all resources count
@@ -2308,7 +2325,7 @@ interest (CB-8f, "Points of interest") add the diversion of rule c in step 3
       place it, or its cooldown is running) takes nothing, so its buffers fill
       and its conduits back up (the source stalls), exactly like a fully
       charged turret.
-   2. **Produce.** At most once per tick: if `progress = costPerUnit` (the
+   2. **Produce.** A production starts at most once per tick (several units per production: 3. below): if `progress = costPerUnit` (the
       building's tier) **and `cooldown = 0`** and the unit finds a **spawn
       position**, set `progress = 0` (every counter of a two-input producer to
       0), set `cooldown = productionIntervalTicks`
@@ -2348,7 +2365,48 @@ interest (CB-8f, "Points of interest") add the diversion of rule c in step 3
       placed. Only
       the cells next to the producer are tried, so a jam at the exit holds the
       unit rather than letting it appear farther away.
-   3. A new unit has `attackCooldown = 0` and gets the next ID. It is placed
+   3. **Several units per production (CB-13a; `unitsPerProduction = n`).**
+      Step 2.2 spawns the `n` units one after another in the same tick, each
+      by the whole procedure of 2.2 (the spawn cells, the offsets, the first
+      free candidate), the units already placed by this production counting as
+      living units, so the second unit takes the next free candidate. In
+      detail, per producer and tick:
+      a. If `held > 0`: go to d. with `held` as it is.
+      b. Else the production starts only if `progress = costPerUnit` and
+         `cooldown = 0` (as in 2.2); if not, nothing more happens.
+      c. Find the spawn position of the first unit. If there is none the
+         production does **not** start: nothing is spawned, `progress` stays
+         full and `cooldown` stays 0, exactly as in 2.2 for one unit. If there
+         is one: set `progress = 0` (every counter to 0), `cooldown =
+         productionIntervalTicks` and `held = n`, and spawn the first unit
+         there.
+      d. While `held > 0`: find a spawn position; if there is none, stop.
+         Otherwise spawn a unit there and subtract 1 from `held`. (When c.
+         spawned the first unit, d. spawns the others in the same tick.)
+      e. At the end `held` is stored (the field is omitted when it is 0).
+      So a production is paid for and its cooldown starts when its first unit
+      spawns; if there is room for fewer than `n`, the producer **holds the
+      rest** and spawns them in later ticks as room appears, one after another
+      and in the first tick with room, **before it starts taking items for
+      the next production** (a producer with `held > 0` takes nothing, so its
+      buffers fill and its conduits back up, as for one held unit, and it does
+      not wait for the cooldown, which keeps counting down meanwhile). Each
+      unit's strength percent (ramp, side option, point bonus, modifiers) is
+      read at the moment **that** unit spawns, so a unit that waited has the
+      bonus of its own tick. The held units of a producer that is destroyed
+      are lost with it (the producer leaves `producers`). With `n = 1` the
+      rules reduce exactly to 2.2: the unit spawns in the tick the production
+      starts or not at all, and `held` is never stored.
+      The need of such a producer (PP-6, PP-7, CB-43) is `floor(1000 * cost /
+      interval)` with the cost of the whole production, in the flow dry run
+      too (the pacer of "need" mode does not spawn, so `held` plays no part
+      there).
+      Notes for a port: keep `held` in the producer's saved arena state (it is
+      an optional field: absent means 0, so a state without it restores as
+      before); run a. to e. in this order for every producer in instance-ID
+      order, with no early exit between the units of a production other than
+      the missing spawn position; do not iterate a map to find the cells.
+   4. A new unit has `attackCooldown = 0` and gets the next ID. It is placed
       immediately and takes part in this tick's decisions. (`inputBufferUnits`
       is smaller than some `costPerUnit` values, so the progress counter is
       what makes those producers work.)
@@ -3266,7 +3324,7 @@ corner cell between a healthy and a damaged wall of equal maximum health that
 attacks the healthy one because the breach step prices buildings by maximum
 health).
 
-Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result. Vectors added with two-input consumers (issue #380, CB-5e): `arena-sim.foundry-spawns-heavies`, `arena-sim.foundry-ore-only-spawns-nothing`, `arena-sim.foundry-mixed-network` (a Foundry and a Barracks sharing Ore through a splitter; saved and restored twice), `arena-sim.foundry-border-link-feeds-power` (Power over a border link, PP-4; saved and restored) and `arena-sim.foundry-destroyed-mid-battle` (the Foundry is the weak point of a sealed base and is destroyed while holding a full Power counter; "Mid-battle removal"; saved and restored twice). Vectors added with the refineries (issue #381, CB-5d), each with a test consumer defined by `extraBuildings` (a list of building definitions in the format of `content/buildings.json`, added to the content for the run, because no shipped building took a refined resource when they were made): `arena-sim.refinery-ab-feeds-units` and `arena-sim.refinery-bc-feeds-units` (a chain of two collectors, a refinery and the consumer, which spawns soldiers; saved and restored) and `arena-sim.refinery-destroyed-mid-battle` (a refinery is the weak point of a sealed base, stalled and holding two items when it is destroyed; the items are lost with two `lost` events and its conduits go with it; saved and restored twice). Vectors added with the Golem (issue #382, CB-5h; `bld_golem_forge` is shipped content, so none needs `extraBuildings`): `arena-sim.golem-chain-push` (Ore and Power collectors, a Composite refinery and a Golem forge, Golems marching with the soldiers of a Barracks against a base making soldiers; saved and restored), `arena-sim.golem-turrets-armor` (the turret-kills-wave board with Golems: every shot takes 3 less), `arena-sim.golem-passes-one-cell-gap` (a Golem and a soldier cross a wall line with a one-cell gap) and `arena-sim.golem-armor-vs-unit-hits` (a Golem against a soldier, an archer and a raider: hits of 3, 2 and 5). Vectors added with the Spire and the caster (issue #387, CB-5h; `bld_spire` is shipped content): `arena-sim.spire-chain-casters` (a Power and a Flux collector, an Aether refinery and a Spire; casters against a base that makes soldiers; saved and restored), `arena-sim.caster-splash-cluster` (a caster hits a soldier in a tight group: neighbours within one cell, a drone and a Golem included, take their share; a soldier 241 away and the caster's own soldier do not) and `arena-sim.caster-hits-wall-only` (casters against a closed wall line: only the wall is hit, no splash event). Vectors added with the Lancer (issue #439, CB-16e; `bld_lancer_hall` is shipped content): `arena-sim.lancer-second-rank` (two Lancers stand behind a soldier each and hit the enemy soldier against it over the ally; a drone within reach is not hit) and `arena-sim.lancer-hall-rotations` (four Lancer halls, one in each rotation, each fed through its rotated Ore input by a collector of tier 1, 3, 2 and 1; saved and restored).
+Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result. Vectors added with two-input consumers (issue #380, CB-5e): `arena-sim.foundry-spawns-heavies`, `arena-sim.foundry-ore-only-spawns-nothing`, `arena-sim.foundry-mixed-network` (a Foundry and a Barracks sharing Ore through a splitter; saved and restored twice), `arena-sim.foundry-border-link-feeds-power` (Power over a border link, PP-4; saved and restored) and `arena-sim.foundry-destroyed-mid-battle` (the Foundry is the weak point of a sealed base and is destroyed while holding a full Power counter; "Mid-battle removal"; saved and restored twice). Vectors added with the refineries (issue #381, CB-5d), each with a test consumer defined by `extraBuildings` (a list of building definitions in the format of `content/buildings.json`, added to the content for the run, because no shipped building took a refined resource when they were made): `arena-sim.refinery-ab-feeds-units` and `arena-sim.refinery-bc-feeds-units` (a chain of two collectors, a refinery and the consumer, which spawns soldiers; saved and restored) and `arena-sim.refinery-destroyed-mid-battle` (a refinery is the weak point of a sealed base, stalled and holding two items when it is destroyed; the items are lost with two `lost` events and its conduits go with it; saved and restored twice). Vectors added with the Golem (issue #382, CB-5h; `bld_golem_forge` is shipped content, so none needs `extraBuildings`): `arena-sim.golem-chain-push` (Ore and Power collectors, a Composite refinery and a Golem forge, Golems marching with the soldiers of a Barracks against a base making soldiers; saved and restored), `arena-sim.golem-turrets-armor` (the turret-kills-wave board with Golems: every shot takes 3 less), `arena-sim.golem-passes-one-cell-gap` (a Golem and a soldier cross a wall line with a one-cell gap) and `arena-sim.golem-armor-vs-unit-hits` (a Golem against a soldier, an archer and a raider: hits of 3, 2 and 5). Vectors added with the Spire and the caster (issue #387, CB-5h; `bld_spire` is shipped content): `arena-sim.spire-chain-casters` (a Power and a Flux collector, an Aether refinery and a Spire; casters against a base that makes soldiers; saved and restored), `arena-sim.caster-splash-cluster` (a caster hits a soldier in a tight group: neighbours within one cell, a drone and a Golem included, take their share; a soldier 241 away and the caster's own soldier do not) and `arena-sim.caster-hits-wall-only` (casters against a closed wall line: only the wall is hit, no splash event). Vectors added with the Lancer (issue #439, CB-16e; `bld_lancer_hall` is shipped content): `arena-sim.lancer-second-rank` (two Lancers stand behind a soldier each and hit the enemy soldier against it over the ally; a drone within reach is not hit) and `arena-sim.lancer-hall-rotations` (four Lancer halls, one in each rotation, each fed through its rotated Ore input by a collector of tier 1, 3, 2 and 1; saved and restored). Vectors added with the Grand barracks (issue #440, CB-13a; `bld_grand_barracks` is shipped content): `arena-sim.grand-barracks-two-collectors` (a tier 2 Grand barracks fed by two tier 2 collectors through a Merger spawns two soldiers in one tick every 56 ticks against a base that makes soldiers; saved and restored) and `arena-sim.grand-barracks-held-no-room` (a Grand barracks in a wall pen whose exit cell holds an enemy post: the first production spawns two soldiers, the next finds no room and starts nothing, and after the post dies the last has room for one soldier, spawns it and holds the other; saved and restored twice).
 
 The team scripts of this kind and of `team-state-ops` may give an explicit
 `map` (in the map format) instead of `seed` and `partySize`; the vectors that
@@ -4323,7 +4381,7 @@ equal overkill, `battle.tiebreak-building-damage` (a soldier wave hits a turret
 and dies: side 1 has the building damage although side 0 has the kill),
 `battle.tiebreak-kills` (free-power turrets kill a wave: side 1 wins on kills
 with no building damage on either side) and `battle.tiebreak-attacker` (two
-bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front row: the units that find no room wait in the `entering` queue and come in later); party sizes 1 and 2 refused; for several Cores (issue #132) `battle.two-plot-core-falls` (one Core falls at tick 2000 and the battle goes on; an earlier fall adds no overkill), `battle.walled-four-cores-overload` (eight walled Cores fall at tick 3100), `battle.time-limit-cores-standing-side0` and `-side1` (rung 1, the defender can win), `battle.time-limit-core-share` (rung 2) and `battle.overkill-two-cores` (rung 3); `battle.golem-chain-push` (issue #382: the Golem chain of `arena-sim.golem-chain-push` as a whole battle); `battle.spire-chain-push` (issue #387: the Spire chain of `arena-sim.spire-chain-casters` as a whole battle); `battle.lancer-hall-rotations` (issue #439: the four Lancer halls of `arena-sim.lancer-hall-rotations` as a whole battle); with the neutral guards (issue #372) `battle.guards-two-points-round-1` and `-round-8` (a hand-made zone with two points) and `battle.generated-zone-round-6`.
+bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front row: the units that find no room wait in the `entering` queue and come in later); party sizes 1 and 2 refused; for several Cores (issue #132) `battle.two-plot-core-falls` (one Core falls at tick 2000 and the battle goes on; an earlier fall adds no overkill), `battle.walled-four-cores-overload` (eight walled Cores fall at tick 3100), `battle.time-limit-cores-standing-side0` and `-side1` (rung 1, the defender can win), `battle.time-limit-core-share` (rung 2) and `battle.overkill-two-cores` (rung 3); `battle.golem-chain-push` (issue #382: the Golem chain of `arena-sim.golem-chain-push` as a whole battle); `battle.spire-chain-push` (issue #387: the Spire chain of `arena-sim.spire-chain-casters` as a whole battle); `battle.lancer-hall-rotations` (issue #439: the four Lancer halls of `arena-sim.lancer-hall-rotations` as a whole battle); `battle.grand-barracks-two-collectors` (issue #440: the Grand barracks chain of `arena-sim.grand-barracks-two-collectors` as a whole battle); with the neutral guards (issue #372) `battle.guards-two-points-round-1` and `-round-8` (a hand-made zone with two points) and `battle.generated-zone-round-6`.
 
 ### Decided simplifications
 
@@ -6861,6 +6919,7 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Golem forge `bld_golem_forge` and `unit_golem` (issue #382, proposed, to be tuned) | `buildings.json`, `units.json` | `res_ab_refined` 4 per Golem, every tier, per 120 / 84 / 60 ticks; price 45 / 90 / 160, health 70 / 105 / 140; 2x2, Composite on the south side; Golem health 260, damage 6, attack cooldown 14, move cooldown 10 (speed 24), radius 110, collision radius 80 (diameter 160, under one cell), reach 80, melee, armor 3 | `armor` an integer from 0 to `MAX_ARMOR`; a Golem with the largest strength bonus stays within `MAX_HEALTH`; in the shop from round 3 (issue #383) and in the bot's builds |
 | Spire `bld_spire` and `unit_caster` (issue #387, proposed, to be tuned) | `buildings.json`, `units.json` | `res_bc_refined` 4 per caster, every tier, per 120 / 84 / 60 ticks; price 50 / 95 / 170, health 70 / 105 / 140; 2x2, Aether on the south side; caster health 28, damage 9, attack cooldown 20, move cooldown 6, radius 66, collision radius 43, reach 720, ranged, splash radius 240 sub-cell units and 50 percent | `splash.radiusSub` 1 to `MAX_SPLASH_RADIUS`, `splash.percent` 1 to 100; in the shop from round 3 (issue #383) and in the bot's builds |
 | Lancer hall `bld_lancer_hall` and `unit_lancer` (issue #439, proposed, to be tuned) | `buildings.json`, `units.json` | `res_a` 6 per Lancer, every tier, per 110 / 77 / 55 ticks (need 54 / 77 / 109 per 1000 ticks, against a collector's 50 / 71 / 100); price 25 / 50 / 90, health 60 / 90 / 120; 1x3, Ore on the south side (the box and the side turn with the rotation); Lancer health 35, damage 7, attack cooldown 12, move cooldown 6, radius 70, collision radius 46, reach 300 (1.25 cells), melee | reach at most `MAX_UNIT_REACH`; not in the shop or the bot yet (the shop offer is issue #437, sub-issue 6) |
+| Grand barracks `bld_grand_barracks` and `unitsPerProduction` (issue #440, CB-9f, CB-10f, CB-13a, proposed, to be tuned) | `buildings.json` | `res_a` 4 per soldier and 2 soldiers per production (8 items), every tier, per 80 / 56 / 40 ticks; need 100 / 142 / 200 per 1000 ticks, exactly the output of two collectors of the tier (50 / 71 / 100 each; 2 x 1/20, 2 x 1/14, 2 x 1/10 items per tick = 8 / 80, 8 / 56, 8 / 40), twice a Barracks' soldiers per tick at 80% of its interval and 80% of its cost per unit; price 70 / 140 / 240, health 150 / 225 / 300; 3x3, Ore on the south side (the whole side, any of its three cells; the box and the side turn with the rotation) | `unitsPerProduction` an integer from 1 to `MAX_UNITS_PER_PRODUCTION` (4), absent means 1; the stated exception to SC-13a: two collectors of its tier joined by a Merger fully feed it, one feeds it half the time; not in the shop or the bot yet (the shop offer is issue #437, sub-issue 6) |
 | Refineries `bld_refinery_ab` (Composite from `res_a` + `res_b`) and `bld_refinery_bc` (Aether from `res_b` + `res_c`): `costs` / `productionIntervalTicks` / `outputPerBatch` (issue #381, proposed, to be tuned) | `buildings.json` | 3 of each input per batch of 2 items, every tier, per 60 / 42 / 30 ticks (need 50 / 71 / 100 per input per 1000 ticks, output 33 / 47 / 66 per 1000 ticks); price 35 / 75 / 130, health 60 / 90 / 120; 2x2, the first input south, the second west, the output north | `costs` as for the Foundry, `outputPerBatch` 1 to `MAX_OUTPUT_PER_BATCH`; in the shop from round 3 (issue #383) and in the bot's builds |
 | Turret `cooldownTicks` / `costPerShot` / `damage` | `buildings.json` | 10 / 7 / 5 ticks, 1 item per shot, damage 5 / 8 / 10 (need 1.00 / 1.42 / 2.00 while firing: two collectors of its tier) | integers >= 1 |
 | Overclocker `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 2 / 3 / 4 items per step, a step per 40 / 42 / 40 ticks, 2x5 / 3x5 / 5x5 = +10 / +15 / +25 percent | fits under `maxSourceSpeedPercent` |

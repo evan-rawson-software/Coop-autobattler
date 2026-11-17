@@ -852,10 +852,12 @@ describe('validation', () => {
     expect(table[0]?.[1]).toBe(34);
     // round 2: 10 + 5*3 + 13*2 + 8*1 + 6*3 = 77, plus one Drill step (from
     // round 2) worth the largest free collector raise, 25, plus one Caravan
-    // step (from round 2) worth the dearest free building or raise, 75.
-    expect(table[1]?.[1]).toBe(77 + 25 + 75);
-    // No margin: the limit is players * (gold + kit) = 177 + 79.
-    expect(table[1]?.[3]).toBe(77 + 25 + 75 + 79);
+    // step (from round 2) worth the dearest free building or raise: 100, the
+    // largest price step of any building (the Grand barracks, tier 2 to 3:
+    // 240 - 140; before it, the refineries' 75).
+    expect(table[1]?.[1]).toBe(77 + 25 + 100);
+    // No margin: the limit is players * (gold + kit) = 202 + 79.
+    expect(table[1]?.[3]).toBe(77 + 25 + 100 + 79);
     // A party of two has twice the bound.
     // Without a Drill or Caravan event there is no free raise or building to
     // count, and the best event gold is the Windfall's 4 again.

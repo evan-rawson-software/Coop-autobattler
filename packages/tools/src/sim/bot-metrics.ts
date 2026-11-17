@@ -208,6 +208,8 @@ export function shopLines(tally: ShopTally): string[] {
 interface Tracked {
   readonly need: number;
   readonly interval: number;
+  /** Units one production spawns (producers; 1 for a turret). */
+  readonly units?: number;
 }
 
 /** The party's producers and turrets with their cost and interval. */
@@ -224,8 +226,9 @@ function trackedBuildings(
       const tier = def.tiers[b.tier - 1];
       if (tier !== undefined) {
         producers.set(b.id, {
-          need: tier.costPerUnit,
+          need: tier.costPerUnit * tier.unitsPerProduction,
           interval: tier.productionIntervalTicks,
+          units: tier.unitsPerProduction,
         });
       }
     } else if (def.kind === 'defense' && def.defenseType === 'turret') {
@@ -293,7 +296,9 @@ export function measureBattle(
     for (const p of battle.sim.producers) {
       if (p.side !== 0 || readyProducers.get(p.building) !== true) continue;
       const need = producers.get(p.building)?.need ?? 0;
-      if (!acted.has(p.building) && p.progress < need) producerWaiting++;
+      // A producer holding units of a finished production waits for room.
+      if (!acted.has(p.building) && p.held === undefined && p.progress < need)
+        producerWaiting++;
     }
     turretTicks += readyTurrets.size;
     for (const t of battle.sim.turrets) {
@@ -307,7 +312,10 @@ export function measureBattle(
   let unitsTopSpeed = 0;
   for (const [id, ticks] of life) {
     const interval = producers.get(id)?.interval ?? 0;
-    if (interval > 0) unitsTopSpeed += Math.floor(ticks / interval);
+    if (interval > 0) {
+      unitsTopSpeed +=
+        Math.floor(ticks / interval) * (producers.get(id)?.units ?? 1);
+    }
   }
   let firstTick = Number.POSITIVE_INFINITY;
   const firstSides = new Set<number>();

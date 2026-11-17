@@ -529,6 +529,37 @@
       ]
     },
     {
+      "id": "bld_grand_barracks",
+      "kind": "unit_producer",
+      "unit": "unit_soldier",
+      "footprint": { "width": 3, "height": 3 },
+      "inputs": [{ "resource": "res_a", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 150,
+          "price": 70,
+          "costPerUnit": 4,
+          "unitsPerProduction": 2,
+          "productionIntervalTicks": 80
+        },
+        {
+          "health": 225,
+          "price": 140,
+          "costPerUnit": 4,
+          "unitsPerProduction": 2,
+          "productionIntervalTicks": 56
+        },
+        {
+          "health": 300,
+          "price": 240,
+          "costPerUnit": 4,
+          "unitsPerProduction": 2,
+          "productionIntervalTicks": 40
+        }
+      ]
+    },
+    {
       "id": "bld_refinery_ab",
       "kind": "refinery",
       "output": "res_ab_refined",

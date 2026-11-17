@@ -1097,9 +1097,25 @@
       "id": "bld_lancer_hall",
       "note": "1x3 tiles."
     },
-    "bld_refinery_ab": {
+    "bld_grand_barracks": {
       "sheet": "buildings",
       "x": 83,
+      "y": 82,
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        24,
+        24
+      ],
+      "category": "building",
+      "id": "bld_grand_barracks",
+      "note": "3x3 tiles."
+    },
+    "bld_refinery_ab": {
+      "sheet": "buildings",
+      "x": 132,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1115,7 +1131,7 @@
     },
     "bld_refinery_bc": {
       "sheet": "buildings",
-      "x": 116,
+      "x": 165,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1131,7 +1147,7 @@
     },
     "bld_core": {
       "sheet": "buildings",
-      "x": 149,
+      "x": 198,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1147,7 +1163,7 @@
     },
     "bld_turret_base": {
       "sheet": "buildings",
-      "x": 182,
+      "x": 231,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1162,7 +1178,7 @@
     },
     "bld_turret_head": {
       "sheet": "buildings",
-      "x": 199,
+      "x": 248,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1177,7 +1193,7 @@
     },
     "tier_pips": {
       "sheet": "buildings",
-      "x": 216,
+      "x": 265,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1192,8 +1208,8 @@
     },
     "tier_trim_1x1": {
       "sheet": "buildings",
-      "x": 265,
-      "y": 82,
+      "x": 0,
+      "y": 131,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1207,7 +1223,7 @@
     },
     "tier_trim_2x2": {
       "sheet": "buildings",
-      "x": 0,
+      "x": 33,
       "y": 131,
       "w": 32,
       "h": 32,
@@ -1222,7 +1238,7 @@
     },
     "bld_wall_auto": {
       "sheet": "buildings",
-      "x": 65,
+      "x": 98,
       "y": 131,
       "w": 16,
       "h": 16,

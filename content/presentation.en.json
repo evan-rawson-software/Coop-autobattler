@@ -33,6 +33,10 @@
       "name": "Foundry",
       "description": "Consumes {res_a} and {res_b} together to cast heavy units. Needs both at once; without one it waits."
     },
+    "bld_grand_barracks": {
+      "name": "Grand barracks",
+      "description": "Consumes {res_a} to train two soldiers at a time, for less {res_a} each than a Barracks. Needs the {res_a} of two collectors of its tier; with one it runs at half speed."
+    },
     "bld_lancer_hall": {
       "name": "Lancer hall",
       "description": "Consumes {res_a} to train lancers. Long and thin, so it fits along walls and plot edges."
@@ -335,6 +339,7 @@
       "merger": "Merges {ins} inputs into one flow",
       "crossover": "Lets two flows cross without mixing",
       "unit_producer": "Trains 1 {unit} per {cost} {resource}",
+      "unit_producer_multi": "Trains {unit} x{units} per {total} {resource}",
       "unit_producer_costs": "Trains 1 {unit} per {costs}",
       "refinery": "Makes {count} {output} every {seconds} s from its inputs",
       "wall": "Blocks movement",

@@ -68,10 +68,12 @@ export function templateKey(def: BuildingDef): EffectTemplateKey {
     case 'route':
       return def.routeType;
     case 'unit_producer':
-      // Two costs at once (the Foundry) read as each cost with its resource.
-      return costEntries(def, 1) === undefined
-        ? 'unit_producer'
-        : 'unit_producer_costs';
+      // Two costs at once (the Foundry) read as each cost with its resource;
+      // several units per production (the Grand barracks) say so.
+      if (costEntries(def, 1) !== undefined) return 'unit_producer_costs';
+      return def.tiers[0].unitsPerProduction > 1
+        ? 'unit_producer_multi'
+        : 'unit_producer';
     case 'defense':
       return def.defenseType;
     case 'economy':
@@ -111,7 +113,11 @@ export function effectText(
     }
     case 'unit_producer': {
       const x = def.tiers[tier - 1];
-      if (x !== undefined) values['cost'] = String(x.costPerUnit);
+      if (x !== undefined) {
+        values['cost'] = String(x.costPerUnit);
+        values['units'] = String(x.unitsPerProduction);
+        values['total'] = String(x.costPerUnit * x.unitsPerProduction);
+      }
       values['costs'] = (costEntries(def, tier) ?? [])
         .map((e) => `${String(e.cost)} {${e.resource}}`)
         .join(' + ');

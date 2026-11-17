@@ -488,6 +488,12 @@ export interface ProducerSim {
   counters?: number[];
   /** Ticks until the next unit may be made (PP-6). */
   cooldown: number;
+  /**
+   * Units of a finished production that found no room yet (CB-13a): present
+   * only while above 0 (omitted, not 0, so a producer that makes one unit at
+   * a time has the state it always had).
+   */
+  held?: number;
 }
 
 /**
@@ -830,7 +836,10 @@ export function unitStats(
 interface ProducerInfo {
   readonly ref: number;
   readonly unit: UnitId;
+  /** Items of one production: `costPerUnit` times `units` (CB-13a). */
   readonly cost: number;
+  /** Units one production spawns (CB-13a). */
+  readonly units: number;
   /** Two-input producer (CB-5e): the cost of each resource, sorted by ID. */
   readonly costs?: readonly CostEntry[];
   readonly interval: number;
@@ -1104,7 +1113,8 @@ export function createArenaContext(
         producers.set(bkey(side, p.id), {
           ref,
           unit: def.unit,
-          cost: tier.costPerUnit,
+          cost: tier.costPerUnit * tier.unitsPerProduction,
+          units: tier.unitsPerProduction,
           ...(costs === undefined ? {} : { costs }),
           interval: tier.productionIntervalTicks,
           owner: p.owner,
@@ -2051,21 +2061,26 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     const info = ctx.producers.get(bkey(p.side, p.building));
     const board = sim.boards[p.side === 0 ? 0 : 1];
     if (info === undefined) continue;
+    // A producer holding units of a finished production (CB-13a) spawns them
+    // as room appears, before it takes anything for the next one.
+    let held = p.held ?? 0;
     // Intake (PP-6): at most `cost - progress` items, so `progress` never
     // exceeds the cost. A producer holding a finished unit takes nothing: its
     // buffers fill and its conduits back up.
     // A two-input producer (CB-5e) keeps one counter per resource and takes
     // each input's items into its own resource's counter.
     const counters = info.costs === undefined ? undefined : p.counters;
-    if (info.costs !== undefined && counters !== undefined) {
-      intakeByResource(board, p.building, info.costs, counters);
-      p.progress = counters.reduce((a, n) => a + n, 0);
-    } else if (p.progress < info.cost) {
-      p.progress += intake(board, p.building, info.cost - p.progress);
+    if (held === 0) {
+      if (info.costs !== undefined && counters !== undefined) {
+        intakeByResource(board, p.building, info.costs, counters);
+        p.progress = counters.reduce((a, n) => a + n, 0);
+      } else if (p.progress < info.cost) {
+        p.progress += intake(board, p.building, info.cost - p.progress);
+      }
+      // A production starts only when the cost is there (every counter full)
+      // and the cooldown is over.
+      if (p.progress < info.cost || p.cooldown > 0) continue;
     }
-    // A unit is made only when the cost is there (every counter full) and the
-    // cooldown is over.
-    if (p.progress < info.cost || p.cooldown > 0) continue;
     const unitDef = ctx.content.units.get(info.unit);
     if (unitDef === undefined) throw new Error(`Unknown unit "${info.unit}".`);
     const producer = ctx.arena.buildings[info.ref];
@@ -2076,23 +2091,35 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     const owner = info.owner;
     const target = exitTarget(ctx, p.side, owner, info.ref, producer, fly);
     const cells = spawnCells(ctx, p.side, target, info.ref, producer, fly);
-    const pos = spawnPosition(sim, ctx, p.side, cells, unitDef);
-    if (pos === null) continue; // held: no free position at the exit
-    p.progress = 0;
-    counters?.fill(0);
-    p.cooldown = info.interval;
-    addUnit(
-      sim,
-      ctx,
-      p.side,
-      unitDef,
-      pos.x,
-      pos.y,
-      p.building,
-      tick,
-      { owner, target },
-      info.owner,
-    );
+    // The units one after another, each at the first free position (the unit
+    // before it is already in the grid). With no room for the first unit of a
+    // new production nothing is consumed and nothing starts (held as before).
+    for (;;) {
+      const pos = spawnPosition(sim, ctx, p.side, cells, unitDef);
+      if (pos === null) break; // held: no free position at the exit
+      if (held === 0) {
+        p.progress = 0;
+        counters?.fill(0);
+        p.cooldown = info.interval;
+        held = info.units;
+      }
+      addUnit(
+        sim,
+        ctx,
+        p.side,
+        unitDef,
+        pos.x,
+        pos.y,
+        p.building,
+        tick,
+        { owner, target },
+        info.owner,
+      );
+      held -= 1;
+      if (held === 0) break;
+    }
+    if (held > 0) p.held = held;
+    else delete p.held;
   }
   enterBursts(sim, ctx, tick);
   queueWaves(sim, tick);
