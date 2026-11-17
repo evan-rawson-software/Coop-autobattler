@@ -22,8 +22,8 @@ leaves +/- (2^53 - 1), so ported code never needs more than i64).
 
 **What this document describes.** Every section describes the code on
 `main` and is pinned by the golden vectors. Some sections start with a
-**Status (#124)** table naming what is still open; nothing marked "not yet
-implemented" is behaviour of the current code. The per-player design of
+**Status (#124)** table naming the per-player rules that changed them; every
+one of those rules is implemented. The per-player design of
 issue #124 (rules PP-1 to PP-18) is recorded in the appendix
 at the end, "Appendix: the per-player design (issue #124)".
 
@@ -644,8 +644,8 @@ need `@game/session`, which the `golden` package may depend on (it is test-only)
 
 In the reference implementation the registry is `goldenKinds` in
 `packages/golden/src/kinds.ts`; a new kind is one added entry. Each kind is an
-adapter in `packages/golden/src/kinds/` (one file per kind, `run-kinds.ts` for
-the two session kinds) that reads the vector input, calls the rules in `core`
+adapter in `packages/golden/src/kinds/` (one file per kind or family of
+kinds; the two session kinds are in `packages/golden/src/run-kinds.ts`) that reads the vector input, calls the rules in `core`
 or `session`, and builds the result. The registry hands the adapters the
 content from `@game/content`; a port needs its own way to hand content to
 them.
@@ -657,12 +657,12 @@ like any other change.
 ## Map generation
 
 **Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Appendix: the per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
+below are specified in "Appendix: the per-player design (issue #124)" and
+changed this section; all of them are implemented.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
+| PP-15 | Every walkable cell of a plot is reachable from that plot's own front row through cells of that plot only ("Attempt steps"). | **implemented** (issue #129) |
 
 Implemented by `generateMap` in `packages/core/src/generate-map.ts`. Parameters
 come from `content/mapgen.json` (loader: `packages/core/src/mapgen.ts`), the
@@ -1327,9 +1327,8 @@ a Flux collector then feeds the Aether refinery).
 ## Tick order
 
 **Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Appendix: the per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
+below are specified in "Appendix: the per-player design (issue #124)" and
+changed this section; all of them are implemented.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
@@ -1675,13 +1674,15 @@ Rules (step 3a of `stepFlow`, "One tick: `stepFlow`"):
   input names that refined resource (any other input, including the input of
   another refinery, gives `resource_mismatch`); splitters, mergers and
   crossovers carry it like any resource, and a merger never mixes Composite
-  with Aether or with a base resource. No shipped building takes a refined
-  resource yet, so a vector that needs a consumer defines one with
+  with Aether or with a base resource. The shipped consumers of refined
+  resources are the Golem forge (Composite) and the Spire (Aether); the
+  refinery vectors made before them define a test consumer with
   `extraBuildings`.
 - **Border links (PP-4)** carry refined resources like any resource; a link
   may feed a refinery input or leave a refinery's output.
-- A refinery is **not a unit producer**: it makes no units, `sealedProducers`
-  never lists it, and it is not in the shop's offers or the bot's builds yet.
+- A refinery is **not a unit producer**: it makes no units and
+  `sealedProducers` never lists it. It is in the shop's offers from round 3
+  (issue #383, "Offer roll") and in the bot's builds.
 
 The flow graph node of a refinery has `kind` `refinery`; its `outputs` has
 one entry.
@@ -1814,8 +1815,8 @@ Foundry follows Power), `foundry-tier1-need`, `foundry-mixed-network` (Ore
 shared through a splitter with a Barracks) and
 `foundry-border-link-feeds-power` (one input fed over a border link, PP-4).
 Without the cooldown rule of the production step the two `top-speed` vectors
-change. Nine vectors with the refineries (issue #381, CB-5d; no shipped
-building takes Composite or Aether, so each ends its chain at a one-input test
+change. Nine vectors with the refineries (issue #381, CB-5d; made before any
+shipped building took Composite or Aether, so each ends its chain at a one-input test
 consumer defined in the vector with `extraBuildings`: a unit producer of
 soldiers that takes the refined resource, one per 10 ticks) pin them:
 `refinery-ab-chain-need` and `refinery-bc-chain-need` (two tier 3 collectors,
@@ -3101,7 +3102,7 @@ corner cell between a healthy and a damaged wall of equal maximum health that
 attacks the healthy one because the breach step prices buildings by maximum
 health).
 
-Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result. Vectors added with two-input consumers (issue #380, CB-5e): `arena-sim.foundry-spawns-heavies`, `arena-sim.foundry-ore-only-spawns-nothing`, `arena-sim.foundry-mixed-network` (a Foundry and a Barracks sharing Ore through a splitter; saved and restored twice), `arena-sim.foundry-border-link-feeds-power` (Power over a border link, PP-4; saved and restored) and `arena-sim.foundry-destroyed-mid-battle` (the Foundry is the weak point of a sealed base and is destroyed while holding a full Power counter; "Mid-battle removal"; saved and restored twice). Vectors added with the refineries (issue #381, CB-5d), each with a test consumer defined by `extraBuildings` (a list of building definitions in the format of `content/buildings.json`, added to the content for the run, because no shipped building takes a refined resource): `arena-sim.refinery-ab-feeds-units` and `arena-sim.refinery-bc-feeds-units` (a chain of two collectors, a refinery and the consumer, which spawns soldiers; saved and restored) and `arena-sim.refinery-destroyed-mid-battle` (a refinery is the weak point of a sealed base, stalled and holding two items when it is destroyed; the items are lost with two `lost` events and its conduits go with it; saved and restored twice). Vectors added with the Golem (issue #382, CB-5h; `bld_golem_forge` is shipped content, so none needs `extraBuildings`): `arena-sim.golem-chain-push` (Ore and Power collectors, a Composite refinery and a Golem forge, Golems marching with the soldiers of a Barracks against a base making soldiers; saved and restored), `arena-sim.golem-turrets-armor` (the turret-kills-wave board with Golems: every shot takes 3 less), `arena-sim.golem-passes-one-cell-gap` (a Golem and a soldier cross a wall line with a one-cell gap) and `arena-sim.golem-armor-vs-unit-hits` (a Golem against a soldier, an archer and a raider: hits of 3, 2 and 5). Vectors added with the Spire and the caster (issue #387, CB-5h; `bld_spire` is shipped content): `arena-sim.spire-chain-casters` (a Power and a Flux collector, an Aether refinery and a Spire; casters against a base that makes soldiers; saved and restored), `arena-sim.caster-splash-cluster` (a caster hits a soldier in a tight group: neighbours within one cell, a drone and a Golem included, take their share; a soldier 241 away and the caster's own soldier do not) and `arena-sim.caster-hits-wall-only` (casters against a closed wall line: only the wall is hit, no splash event).
+Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result. Vectors added with two-input consumers (issue #380, CB-5e): `arena-sim.foundry-spawns-heavies`, `arena-sim.foundry-ore-only-spawns-nothing`, `arena-sim.foundry-mixed-network` (a Foundry and a Barracks sharing Ore through a splitter; saved and restored twice), `arena-sim.foundry-border-link-feeds-power` (Power over a border link, PP-4; saved and restored) and `arena-sim.foundry-destroyed-mid-battle` (the Foundry is the weak point of a sealed base and is destroyed while holding a full Power counter; "Mid-battle removal"; saved and restored twice). Vectors added with the refineries (issue #381, CB-5d), each with a test consumer defined by `extraBuildings` (a list of building definitions in the format of `content/buildings.json`, added to the content for the run, because no shipped building took a refined resource when they were made): `arena-sim.refinery-ab-feeds-units` and `arena-sim.refinery-bc-feeds-units` (a chain of two collectors, a refinery and the consumer, which spawns soldiers; saved and restored) and `arena-sim.refinery-destroyed-mid-battle` (a refinery is the weak point of a sealed base, stalled and holding two items when it is destroyed; the items are lost with two `lost` events and its conduits go with it; saved and restored twice). Vectors added with the Golem (issue #382, CB-5h; `bld_golem_forge` is shipped content, so none needs `extraBuildings`): `arena-sim.golem-chain-push` (Ore and Power collectors, a Composite refinery and a Golem forge, Golems marching with the soldiers of a Barracks against a base making soldiers; saved and restored), `arena-sim.golem-turrets-armor` (the turret-kills-wave board with Golems: every shot takes 3 less), `arena-sim.golem-passes-one-cell-gap` (a Golem and a soldier cross a wall line with a one-cell gap) and `arena-sim.golem-armor-vs-unit-hits` (a Golem against a soldier, an archer and a raider: hits of 3, 2 and 5). Vectors added with the Spire and the caster (issue #387, CB-5h; `bld_spire` is shipped content): `arena-sim.spire-chain-casters` (a Power and a Flux collector, an Aether refinery and a Spire; casters against a base that makes soldiers; saved and restored), `arena-sim.caster-splash-cluster` (a caster hits a soldier in a tight group: neighbours within one cell, a drone and a Golem included, take their share; a soldier 241 away and the caster's own soldier do not) and `arena-sim.caster-hits-wall-only` (casters against a closed wall line: only the wall is hit, no splash event).
 
 The team scripts of this kind and of `team-state-ops` may give an explicit
 `map` (in the map format) instead of `seed` and `partySize`; the vectors that
@@ -3206,10 +3207,10 @@ to CB-8c): the zone format reserves a `pointsOfInterest` list for them.
   whole reference battles (`stacking.test.ts`) no pair stays deeper than half
   for more than 3 ticks, and 0.19 percent of unit-ticks are that deep; in the
   dense four-plot battle (tier 1) the longest run is 10 ticks and 3.4 percent
-  of unit-ticks are deeper than half. A unit
-  walks in a straight line to the centre of the next cell (see "Goals and
-  movement fields"), so a crowd converges on cell centres; changing that is
-  outside the collision rules.
+  of unit-ticks are deeper than half. On the movement field a unit walks in
+  the direction of its next cell, not at that cell's centre (rule c and
+  "Steering"); only the walk to the Core (`d = 0`), a flyer's flight and a
+  breach step aim at a cell centre.
 - The movement fields are cell based and ignore radii and other units; a unit
   whose collision diameter exceeds one cell is not routed around gaps it cannot
   pass (see "Goals and movement fields"), and a cell with no free standing room
@@ -3367,9 +3368,8 @@ Four plots (seed 3, first attempt):
 ## Battles
 
 **Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Appendix: the per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
+below are specified in "Appendix: the per-player design (issue #124)" and
+changed this section; all of them are implemented.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
@@ -3611,8 +3611,10 @@ bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front ro
   for an empty or point-symmetric zone (the test-only option).
 - Units in the zone have no special rules: it is open ground (or lake and
   cliff) like any board cell.
-- The Core health fraction in the time-limit rule uses the Core's maximum
-  health as built from the content (the same for both sides today).
+- The Core health fraction in the time-limit rule uses each Core's health
+  at the start of the battle as its maximum (`battle.ts`, `coreMax`), after
+  side options (`coreHealths`) and `core_health_percent` modifiers, so the
+  two sides' maximums can differ.
 
 ## Side options
 
@@ -3849,19 +3851,19 @@ Shipped values:
 | Fortress | 20 | 600, 400, 3, 130 | soldier | 300, 30, 25, `ring` |
 | Escalator | 75 | 100, 75, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
 | Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
-| Brood stronghold (`arch_boss_brood`, boss only, from round 3, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
-| Linked Cores (`arch_boss_linked`, boss only, from round 5, party size 2 or more) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
+| Brood (`arch_boss_brood`, boss only, from round 3, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
+| Bonded (`arch_boss_linked`, boss only, from round 5, party size 2 or more) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Pylons (`arch_boss_pylons`, boss only, from round 7, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Warlord (`arch_boss_warlord`, boss only, from round 9, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 
 Rusher tests defence (early frequent waves, a small open Core); Fortress tests
 ramp and siege (late light waves, a big walled Core with turrets); Escalator
 tests speed (waves that grow fast, a wall line); Boss mixes all of it, its
-every-Nth-wave signature being all raiders (a fast swarm of small, weak units; since issue #66 raiders no longer prefer any building, they are ordinary units with different numbers: health 25, damage 8, radius 0.25 cell, move cooldown 4). The Brood stronghold has the Boss's waves and stronghold exactly, plus
+every-Nth-wave signature being all raiders (a fast swarm of small, weak units; since issue #66 raiders no longer prefer any building, they are ordinary units with different numbers: health 25, damage 8, radius 0.25 cell, move cooldown 4). Brood has the Boss's waves and stronghold exactly, plus
 `brood: {thresholdsPercent: [75, 50, 25], sharePercent: 30}`: each of its Cores
 releases a burst of units when it falls to 75, 50 and 25 percent of its
 starting health (MM-9d). Its burst budget comes out of the stronghold budget,
-so its Cores are smaller than the Boss's. The Linked Cores stronghold also has
+so its Cores are smaller than the Boss's. Bonded also has
 the Boss's waves and stronghold exactly (no budget is set aside; the Cores
 have the Boss's size), plus `linkedCores: true`: its Cores share one health
 pool (below). The Pylons stronghold has the Boss's waves and stronghold, plus
@@ -3896,7 +3898,7 @@ A pure function. Randomness: `T = Rng.fromSeed(seed).child("threat")
 the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
 `partySize` is 1 to `min(maxPartySize, mapgen.maxPartySize)`, and at least the
 archetype's `minPartySize` (a boss-only archetype that needs a bigger party,
-Linked Cores with 2, is an error for a smaller one, a `RangeError`, like any
+Bonded with 2, is an error for a smaller one, a `RangeError`, like any
 other invalid input; `pickBoss` never offers it then).
 
 1. `B = budget(...)`; `waveBudget = floor(B * waveSharePercent / 100)`;
@@ -4062,7 +4064,7 @@ other invalid input; `pickBoss` never offers it then).
    to `maxThreatRound` (see "Content bounds").
 9. **Shared health** (only with `linkedCores`). `stronghold.sharedHealth` is
    the sum of the final `cores[p].health` (after step 8's clamp). Nothing else
-   about the profile changes: Linked Cores spends the budget exactly as the
+   about the profile changes: Bonded spends the budget exactly as the
    Boss does (waves, walls, turrets, Core health, one Core per plot at the
    layout's position, health split as in step 7); only the battle reads the
    Cores as one pool.
@@ -4207,8 +4209,8 @@ width on the threat's front row, which is arena row 23; the threat is on top,
 ### Reference boards
 
 **Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Appendix: the per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet.
+below are specified in "Appendix: the per-player design (issue #124)" and
+changed this section; all of them are implemented.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
@@ -4288,7 +4290,7 @@ a Core destroyed by a hit that crosses all its lines) and
 against each archetype at round 1, and every reference board against each
 archetype at round 5 (medium) and round 10 (hard)).
 
-Linked Cores vectors (issue #399): three `threat-gen` cases for
+Bonded vectors (issue #399): three `threat-gen` cases for
 `arch_boss_linked` (party sizes 2, 3 and 4; a party of 1 is an error, not a
 vector) and six `pve-battle` cases with `team` scripts for two and four plots:
 `party2-vs-linked-r5` and `party4-vs-linked-r5` (several Cores hit in the same
@@ -4328,8 +4330,8 @@ eligible bosses at round 9 and no vector draws a boss from round 9.
 
 ### Decided simplifications
 
-- Tier 1 buildings only, and the first wall and the first turret building in
-  the content, for the stronghold.
+- Tier 1 buildings only, and the first one-cell wall (`bld_wall_block`) and
+  the first turret building in the content, for the stronghold.
 - Strength is one number for all waves of a threat (not per wave).
 - Stronghold turrets are always charged (`freePower`), so there is no way to
   starve them; the wall and turret caps per plot keep the building count low.
@@ -4338,11 +4340,10 @@ eligible bosses at round 9 and no vector draws a boss from round 9.
 ## Performance budget
 
 **Status (#124).** The budget document describes the code on `main`. Its
-dense four-plot board is not a legal player-built board under PP-1 and the
-plot's node count, unit counts fall under PP-6, and PP-11 adds one movement
-field and one breach field per living enemy Core. The budget is measured
-again in issue #145; see the status note at the top of
-`docs/performance-budget.md`. Not yet implemented.
+baseline (issues #164 and #123) is measured on the per-player design: a legal
+dense four-plot board (PP-1 and the plot's node count, unit counts under
+PP-6, one movement field and one breach field per living enemy Core under
+PP-11), beside a stress board that no player can build.
 
 See `docs/performance-budget.md` (CB-36, W1-10): baseline measurements of
 whole battles and the budget the benchmark test enforces (units per side,
@@ -4467,7 +4468,7 @@ step machine draws them in a round:
 | `event_resolve:r<r>:<leg>` | when the chosen event is applied                                        | event outcomes                            |
 | `vote:<topic>:r<r>:<leg>`  | each party vote resolution with two or more players (none for one player) | the pick used only when the votes differ |
 | `shop:r<r>:<leg>`          | on entering a shop                                                      | shop offers (see "Shops and gold")        |
-| `ghost:r<r>`               | when the PvP opponent is selected                                       | the ghost draw (see "Ghost snapshots")    |
+| `ghost:r<r>`               | when the PvP opponent is selected                                       | the ghost draw (see "Ghosts")             |
 | `battle:pvp:r<r>`          | when the PvP battle starts                                              | the PvP battle                            |
 
 The `kit` stream also draws the random wall shapes of the starting kit (see
@@ -4679,8 +4680,9 @@ strictly larger in budget and reward.
 Gold only, per player, paid when the battle's summary step ends (before the
 event step). PvE win: the chosen option's `reward.gold`. PvE loss: nothing,
 and no life is lost. PvP win: `rewards.pvpWin`. PvP loss: `rewards.pvpLoss`
-and `pvpLossLifeCost` lives. Placeholder values: PvE easy 3, medium 5, hard 8;
-PvP win 6; PvP loss 2. No battle or event adds a building (only shop
+and `pvpLossLifeCost` lives. The values are in `content/economy.json`
+(`rewards.pveWin.easy` / `medium` / `hard`, `rewards.pvpWin`,
+`rewards.pvpLoss`; see "Numbers set in the rebalance"). No battle or event adds a building (only shop
 purchases and the starting kit do).
 
 ### Run modifiers (EC-8)
@@ -5169,7 +5171,7 @@ no longer drawn here: it is `state.pvpOpponent.boss`, chosen in the shop (see
 "Ghosts", "Selection"). Only a state whose `pvpOpponent` has no `boss` (a save
 made before issue #397, or a run without `threats` in its ghost rules) keeps
 the old draw: `rng.child("archetype").pick(list)` on the battle stream, `list`
-being the boss-only archetypes in file order, else all archetypes, keeping only those whose `minPartySize` is at most the party size (a solo run never draws Linked Cores; no boss is drawn before its `fromRound`, so Brood from round 3, Linked Cores from round 5 and Pylons from round 7). The result's
+being the boss-only archetypes in file order, else all archetypes, keeping only those whose `minPartySize` is at most the party size (a solo run never draws Bonded; no boss is drawn before its `fromRound`, so Brood from round 3, Bonded from round 5 and Pylons from round 7). The result's
 `opponent` then carries `boss: <archetype id>` and the round record stores it. The battle seed is the first `nextU32` of
 the battle stream. `BattleResult.detail` is `{ version, kind, round, seed,
 source, teamHash, summary }`: no event log. `source` is `{type: "option"}`
@@ -5195,7 +5197,7 @@ Ghosts are switched on by giving the run's deps `ghosts` (`createGameDeps(...,
 
 ### Format (`schemas/ghost-snapshot.schema.json`)
 
-`formatVersion` (3), `gameVersion` (`major.minor`, the run's `runVersion`),
+`formatVersion` (7), `gameVersion` (`major.minor`, the run's `runVersion`),
 `partySize`, `round`, `mapSeed` and `team` (the whole team state: map, Core,
 buildings, stash, conduits, modifiers), `owner` (`{id, label}`; the id is a
 stable install identifier, the label is shown to opponents), `runId`, `lives`
@@ -5257,7 +5259,7 @@ shop until it has been applied (`ghost_selection_pending`). The handler:
 
 The boss thus has the same stream as the ghost draw, and `pickBoss` is the one
 place that decides it. MM-11: the shop before a boss battle can name the boss
-(web text comes later).
+(the web text is in `packages/web/src/run/boss-text.ts`).
 
 Skipping an invalid snapshot and drawing another is therefore done by
 filtering before the single draw, which is the deterministic form of that
@@ -5269,11 +5271,14 @@ detail like any ghost, and clears `pvpOpponent` afterwards (the ghost's key
 joins `ghostsFought`). A reload before the battle reads the same
 `pvpOpponent` from the save. If a run was saved after entering the shop but
 before the selection, `RunController.prepare` finishes it when the run is
-opened. Players are told before the battle only whether it is the boss (MM-11):
-the shop's Next battle panel is headed "Rival party" for a ghost and "Boss
-battle next" for the boss; there is no "Opponent:" line, and the ghost's label
-is not shown. When the opponent is the boss, the panel also says that it is a
-computer-made stronghold, not another party.
+opened. Players are told before the battle whether it is the boss and, for
+the boss, which one (MM-11): the shop's Next battle panel is headed "Rival
+party" for a ghost and "Boss battle next" for the boss; there is no
+"Opponent:" line, and the ghost's label is not shown. When the opponent is the
+boss, the panel also gives its name, one line on its mechanic and one line of
+counter advice (`packages/web/src/run/boss-text.ts`; a save made before the
+boss was stored gets the generic lines, a computer-made stronghold, not
+another party).
 Presentation only: whether the next opponent is the boss follows from
 `pvpOpponent` alone, so no "boss in N rounds" is shown (there is no fixed boss
 round).
@@ -5334,7 +5339,7 @@ Measured: a 10-round solo run beside 16 owners went from 264,717 bytes to about
 Every candidate, and a ghost inside a loaded run state, must pass all of:
 
 1. **Shape and size**: no unknown fields at any level (`runSeed` and
-   `actionLog` are reserved and rejected), `formatVersion` 6, `gameVersion` as
+   `actionLog` are reserved and rejected), `formatVersion` 7, `gameVersion` as
    `major.minor`, sizes and ids within their limits (labels printable, at most
    40 characters). Checked first, on the raw value, stopping at the first
    violation: plain JSON only, every number a safe integer (and not `-0`), no string or key with a lone
@@ -5620,10 +5625,12 @@ only in their own plot, and can link to a neighbour with conduits across the
 plot border; a side loses a battle when **all** of its Cores are destroyed;
 collectors have a flow rate by tier and every consumer has a top speed.
 
-Almost all of it is implemented; the Status table below names, for each rule,
-the issue that implemented it and what is still open. The rules themselves
-are written in the sections they change, and the golden vectors pin them.
-Where a rule below is still open, a port does not implement it yet.
+All of it is implemented; the Status table below names, for each rule,
+the issue that implemented it. The rules themselves are written in the
+sections they change, and the golden vectors pin them. The rule texts below
+were written against the rules before issue #124 (one shared board, one Core
+per side): where they say "today" or "today's", they mean those earlier rules,
+not the current code.
 
 Terms. A **plot** is one player's own area of the board (see "Coordinates":
 plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
@@ -5652,6 +5659,8 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-14 | PvE strongholds and bosses with one Core per player | **implemented** (issue #138; "PvE threats", "Side options") |
 | PP-15 | Sealed-producer check per owner; map rule per plot | map rule **implemented** (issue #129); sealed check per owner **implemented** (issue #131) |
 | PP-16 | Party votes and run streams without the Core vote | **implemented** (issue #131) |
+| PP-17 | Formats, major version and ghost validation per owner | **implemented** (issues #135, #131, #139 and #160; "Ghosts") |
+| PP-18 | No giving: no intent moves gold or a building between players | **implemented** (nothing to remove; guarded by `packages/session/src/rules/no-giving.test.ts`) |
 
 ### Numbers set in the rebalance
 
@@ -5668,10 +5677,10 @@ player grows by raising tiers, by economy buildings or through a border link.
 | ------ | ----- | ------------------------ | ---------- |
 | Collector `intervalTicks` | `buildings.json` | 20 / 14 / 10 (unchanged) | integer >= 1; a higher tier is never slower |
 | Barracks `costPerUnit` / `productionIntervalTicks` | `buildings.json` | 5 / 5 / 5 items per 100 / 70 / 50 ticks (need 0.50 / 0.71 / 1.00 per second) | integers >= 1 |
-| Foundry `costs` / `productionIntervalTicks` (issue #380, proposed, to be tuned) | `buildings.json` | `res_a` 5 and `res_b` 5 per unit, every tier, per 100 / 70 / 50 ticks (need 0.50 / 0.71 / 1.00 per resource per second, 50 / 71 / 100 per 1000 ticks); price 40 / 85 / 150, health 70 / 105 / 140; makes `unit_heavy` (health 70, damage 14, attack cooldown 10, move cooldown 6, radius 84, collision radius 55, reach 66) | each cost an integer from 1 to `MAX_TIER_COST`; not in the shop yet |
-| Golem forge `bld_golem_forge` and `unit_golem` (issue #382, proposed, to be tuned) | `buildings.json`, `units.json` | `res_ab_refined` 4 per Golem, every tier, per 120 / 84 / 60 ticks; price 45 / 90 / 160, health 70 / 105 / 140; 2x2, Composite on the south side; Golem health 260, damage 6, attack cooldown 14, move cooldown 10 (speed 24), radius 110, collision radius 80 (diameter 160, under one cell), reach 80, melee, armor 3 | `armor` an integer from 0 to `MAX_ARMOR`; a Golem with the largest strength bonus stays within `MAX_HEALTH`; not in the shop or the bot |
-| Spire `bld_spire` and `unit_caster` (issue #387, proposed, to be tuned) | `buildings.json`, `units.json` | `res_bc_refined` 4 per caster, every tier, per 120 / 84 / 60 ticks; price 50 / 95 / 170, health 70 / 105 / 140; 2x2, Aether on the south side; caster health 28, damage 9, attack cooldown 20, move cooldown 6, radius 66, collision radius 43, reach 720, ranged, splash radius 240 sub-cell units and 50 percent | `splash.radiusSub` 1 to `MAX_SPLASH_RADIUS`, `splash.percent` 1 to 100; not in the shop or the bot |
-| Refineries `bld_refinery_ab` (Composite from `res_a` + `res_b`) and `bld_refinery_bc` (Aether from `res_b` + `res_c`): `costs` / `productionIntervalTicks` / `outputPerBatch` (issue #381, proposed, to be tuned) | `buildings.json` | 3 of each input per batch of 2 items, every tier, per 60 / 42 / 30 ticks (need 50 / 71 / 100 per input per 1000 ticks, output 33 / 47 / 66 per 1000 ticks); price 35 / 75 / 130, health 60 / 90 / 120; 2x2, the first input south, the second west, the output north | `costs` as for the Foundry, `outputPerBatch` 1 to `MAX_OUTPUT_PER_BATCH`; not in the shop or the bot yet |
+| Foundry `costs` / `productionIntervalTicks` (issue #380, proposed, to be tuned) | `buildings.json` | `res_a` 5 and `res_b` 5 per unit, every tier, per 100 / 70 / 50 ticks (need 0.50 / 0.71 / 1.00 per resource per second, 50 / 71 / 100 per 1000 ticks); price 40 / 85 / 150, health 70 / 105 / 140; makes `unit_heavy` (health 70, damage 14, attack cooldown 10, move cooldown 6, radius 84, collision radius 55, reach 66) | each cost an integer from 1 to `MAX_TIER_COST`; in the shop from round 3 (issue #383) and in the bot's builds |
+| Golem forge `bld_golem_forge` and `unit_golem` (issue #382, proposed, to be tuned) | `buildings.json`, `units.json` | `res_ab_refined` 4 per Golem, every tier, per 120 / 84 / 60 ticks; price 45 / 90 / 160, health 70 / 105 / 140; 2x2, Composite on the south side; Golem health 260, damage 6, attack cooldown 14, move cooldown 10 (speed 24), radius 110, collision radius 80 (diameter 160, under one cell), reach 80, melee, armor 3 | `armor` an integer from 0 to `MAX_ARMOR`; a Golem with the largest strength bonus stays within `MAX_HEALTH`; in the shop from round 3 (issue #383) and in the bot's builds |
+| Spire `bld_spire` and `unit_caster` (issue #387, proposed, to be tuned) | `buildings.json`, `units.json` | `res_bc_refined` 4 per caster, every tier, per 120 / 84 / 60 ticks; price 50 / 95 / 170, health 70 / 105 / 140; 2x2, Aether on the south side; caster health 28, damage 9, attack cooldown 20, move cooldown 6, radius 66, collision radius 43, reach 720, ranged, splash radius 240 sub-cell units and 50 percent | `splash.radiusSub` 1 to `MAX_SPLASH_RADIUS`, `splash.percent` 1 to 100; in the shop from round 3 (issue #383) and in the bot's builds |
+| Refineries `bld_refinery_ab` (Composite from `res_a` + `res_b`) and `bld_refinery_bc` (Aether from `res_b` + `res_c`): `costs` / `productionIntervalTicks` / `outputPerBatch` (issue #381, proposed, to be tuned) | `buildings.json` | 3 of each input per batch of 2 items, every tier, per 60 / 42 / 30 ticks (need 50 / 71 / 100 per input per 1000 ticks, output 33 / 47 / 66 per 1000 ticks); price 35 / 75 / 130, health 60 / 90 / 120; 2x2, the first input south, the second west, the output north | `costs` as for the Foundry, `outputPerBatch` 1 to `MAX_OUTPUT_PER_BATCH`; in the shop from round 3 (issue #383) and in the bot's builds |
 | Turret `cooldownTicks` / `costPerShot` / `damage` | `buildings.json` | 10 / 7 / 5 ticks, 1 item per shot, damage 5 / 8 / 10 (need 1.00 / 1.42 / 2.00 while firing: two collectors of its tier) | integers >= 1 |
 | Overclocker `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 2 / 3 / 4 items per step, a step per 40 / 42 / 40 ticks, 2x5 / 3x5 / 5x5 = +10 / +15 / +25 percent | fits under `maxSourceSpeedPercent` |
 | Armory `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 4 / 5 / 6 items per step, a step per 80 / 70 / 60 ticks, 5x5 / 7x5 / 10x5 = +25 / +35 / +50 percent | fits under `maxUnitStrengthPercent` |
@@ -5681,9 +5690,9 @@ player grows by raising tiers, by economy buildings or through a border link.
 | `maxUnitStrengthPercent` (Armory cap per player) | `sim.json` | 100 | an Armory costs supply only while it charges, so it has its own limit |
 | Core health | `buildings.json` | 500 (decided) | per Core |
 | `nodesPerPlot` | `mapgen.json` | 3 common, 1 rare (unchanged) | the same for every plot |
-| Gold | `economy.json` | `baseIncomePerShop` 5; `rewards.pveWin` easy / medium / hard 6 / 9 / 13; `pvpWin` 8; `pvpLoss` 4 (9 to 26 gold per round) | strictly increasing `pveWin` |
+| Gold | `economy.json` | `baseIncomePerShop` 5; `rewards.pveWin` easy / medium / hard 6 / 9 / 13; `pvpWin` 8; `pvpLoss` 4 (14 to 31 gold per round: the base income is paid at both shops of a round, see "Income") | strictly increasing `pveWin` |
 | Walls (issue #291) | `buildings.json`, `economy.json` | seven tetromino shapes (I, O, T, S, Z, L, J), 4 cells each, tier 1 / 2 / 3 health 250 / 400 / 600 and price 8 / 18 / 36 (the old single wall: 100 / 160 / 240 and 4 / 9 / 18, now `bld_wall_block`, kept for strongholds and reference boards, not sold); `offerWeights`: every non-wall weight doubled (collector 24, Splitter 12, Merger 12, Crossover 4, Barracks 32, gate 6, turret 16, Overclocker 6, Armory 12, Range 16, Hangar 12), walls O, T, S, Z, L, J 2 each and I 1 (13 of 161 against 8 of 82 before); at most 2 wall shapes per shop; the kit's 3 walls are random shapes, never I | four cells for a price of 8 is 2 per cell (4 per cell before); the shop limit keeps a set of offers from being all walls |
-| Shop | `economy.json` | `offerWeights`: collector 12 (was 10), Splitter 6, Merger 6, Crossover 2 (was 4), Barracks 16 (was 10), wall 8, gate 3 (was 5), turret 8, Overclocker 3, Armory 6 (was 3; it was not offered before the rebalance), Range 8 (was 5), Hangar 6 (was 3); placeholder unit numbers of Range and Hangar kept by owner decision (issue #59) | unit producers and the Armory are offered more often, routing parts less; with 8 bot runs per strategy this changes no strategy's depth by more than a round (fortify at party 4: 12.5 to 14.8) |
+| Shop | `economy.json` | (issue #145; every non-wall weight was doubled by issue #291, see Walls, and five entries from round 3 were added by issue #383, see "Offer roll") `offerWeights`: collector 12 (was 10), Splitter 6, Merger 6, Crossover 2 (was 4), Barracks 16 (was 10), wall 8, gate 3 (was 5), turret 8, Overclocker 3, Armory 6 (was 3; it was not offered before the rebalance), Range 8 (was 5), Hangar 6 (was 3); placeholder unit numbers of Range and Hangar kept by owner decision (issue #59) | unit producers and the Armory are offered more often, routing parts less; with 8 bot runs per strategy this changes no strategy's depth by more than a round (fortify at party 4: 12.5 to 14.8) |
 | Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
 | Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |
 | Escalator wave timing | `threats.json` | `firstTick` 100 and `intervalTicks` 75 (was 150 and 150): the eighth wave comes at tick 625 instead of 1200 | its Core used to fall before its large late waves spawned; a full tier 1 board now beats hard Escalator through round 8 (was 12), against 7 for Rusher |
@@ -6032,9 +6041,8 @@ and border links are the only way to help a partner (CP-29):
   loses its last Core to the decay. With every Core at 500 both sides have the
   last-Core tick 3100 at every party size, so a battle still ends at
   `endTick` 3101 at the latest.
-- **Implemented** (issue #132). Until issue #133 lands every unit's goal is the
-  lowest-indexed living enemy Core, and a unit attacks that Core only when it
-  is in reach (`goalCoreRef`).
+- **Implemented** (issue #132). A unit's goal and target Core are those of
+  PP-11 (issue #133).
 - Golden kind `arena-sim`: `buildingHealth` entries may be `{side, core,
   hp}`; the per-side summary's `coreHealth` becomes the list of Core health
   by player.
@@ -6305,7 +6313,7 @@ PP-17 (formats, version and ghost validation) is described under "Ghosts".
 Players cannot give each other gold or buildings (CP-29). The session has no
 intent that moves gold or a building between players, so there is nothing to
 remove; the rule is that none is added. A building's `owner` never changes.
-The guard test `packages/session/src/no-giving.test.ts` sends every intent a
+The guard test `packages/session/src/rules/no-giving.test.ts` sends every intent a
 player can send and checks that no other player's gold, stash or placed
 buildings change and no `owner` changes. Board intents aimed at a partner's
 buildings are rejected with `not_owner` (CP-28, PP-1, issue #129).
