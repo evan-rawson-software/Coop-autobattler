@@ -450,15 +450,20 @@ function sweep(): Row[] {
 
 /** The last round at which a board wins any threat in the sweep (pinned). */
 const LAST_WIN: Record<ReferenceBoardName, number> = {
-  rush: 13,
+  // 15 with Juggernaut (issue #434): its four slow waves of a few heavies are
+  // beaten by the rush board up to easy round 15 (medium round 13); the
+  // other archetypes still end at round 13. Balance is #435.
+  rush: 15,
   // 11 before the neutral guards (CB-8e, #372): they hold a point with a
   // round-scaled strength and cost the fortify board its round 11 win.
   // 12 with Focus (issue #433): the fortify board beats easy Focus in round
   // 12 (a ring of defences, and a solo Focus is the ordinary waves of a
   // 60-percent wave share, which the fortify board's army and turrets hold
   // while the rush board's last win stays round 13).
-  fortify: 12,
-  poor: 8,
+  // 15 with Juggernaut (issue #434), as for the rush board.
+  fortify: 15,
+  // 10 with Juggernaut and Coven (issue #434): measured, balance is #435.
+  poor: 10,
 };
 
 describe('sweep of reference boards against every threat', () => {
@@ -519,7 +524,10 @@ describe('sweep of reference boards against every threat', () => {
     // (454, 236 and 20): two more archetypes in the sweep, nothing else moved.
     // Maze (issue #432) adds 54, 19 and 0 (508, 255 and 20), likewise.
     // Focus (issue #433) adds 53, 28 and 4 (561, 283 and 24), likewise.
-    expect(blocks).toEqual([561, 283, 24, 0, 0]);
+    // Juggernaut and Coven (issue #434) add 107, 71 and 21 (668, 354 and 45):
+    // their few, expensive units are beaten far into the later rounds. Balance
+    // is #435.
+    expect(blocks).toEqual([668, 354, 45, 0, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {

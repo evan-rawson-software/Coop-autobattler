@@ -194,12 +194,13 @@ describe('shop buys only what can be placed (#178)', () => {
       // re-rolls of Market day, free buildings): measured rush 8 / 39 / 99
       // (9 / 38 / 85 before, so only party 4, 90 -> 99, needed a new limit),
       // fortify 4 / 7 / 12, siege 0 / 3 / 7.
-      rush: { 1: 12, 2: 45, 4: 99 },
+      rush: { 1: 12, 2: 45, 4: 101 },
       fortify: { 1: 7, 2: 16, 4: 30 },
       // Issue #383: the five refining buildings dilute the shop from round 3;
       // siege party 2 now measures 7, party 4 9. With the Maze threat (#432)
       // in the PvE options: rush 10 / 39 / 98, fortify 5 / 7 / 16, siege 2 / 8
-      // / 10 (only siege party 1, 1 -> 2, needed a new limit).
+      // / 10 (only siege party 1, 1 -> 2, needed a new limit). With Juggernaut
+      // and Coven (#434): rush party 4 measures 101 (99 -> 101, a new limit).
       siege: { 1: 2, 2: 8, 4: 14 },
     } as const;
     const wanted = ['bld_extractor', 'bld_splitter', ...CONSUMER_DEFS];

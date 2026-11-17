@@ -106,7 +106,9 @@ describe('Warlord champion (MM-9d)', () => {
         configs,
       );
       expect(p.waves.some((w) => 'healthPercent' in w)).toBe(false);
-      expect(p.waves.some((w) => w.unit === 'unit_golem')).toBe(false);
+      // Juggernaut (issue #434) has Golems in its composition, not as a champion.
+      if (a.id !== 'arch_juggernaut')
+        expect(p.waves.some((w) => w.unit === 'unit_golem')).toBe(false);
     }
   });
 
