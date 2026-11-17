@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v5.5
+Status: Draft v5.6
 
 ## Direction
 
@@ -851,6 +851,11 @@ no building makes and only PvE waves field.
   - **Waves head for the Core of the plot they enter** [DECIDED]: a wave
     unit's first target is the Core of the party plot it enters, then the
     nearest remaining Core (CB-15a, CB-15b).
+  - **A wave may enter through one plot only** [DECIDED] (the Focus threat,
+    MM-18): the threat profile's spawn placement picks one party plot for each
+    wave, and the choice changes from wave to wave. Its units still head
+    first for the Core of the plot they enter (unchanged). With one player
+    there is one plot, so Focus plays as ordinary waves.
   - **PvE and PvP follow the same rules** [DECIDED]: the party wins when all
     of the stronghold's Cores are destroyed and loses when all of its own
     are; Overload, ties and the time limit work as in any battle.
