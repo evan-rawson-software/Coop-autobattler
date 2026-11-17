@@ -465,8 +465,9 @@ describe('Rich vein: ghosts', () => {
       ],
       ['over the cap', withNodes([0, 5, 11, 17].map((i) => node(i)))],
       [
-        'from a round before Rich vein exists',
-        withNodes([node(0, { round: 2 })]),
+        // The Caravan (#415) can add a node from round 2, Rich vein from 3.
+        'from a round before any node event exists',
+        withNodes([node(0, { round: 1 })]),
       ],
       ['from a round after the snapshot', withNodes([node(0, { round: 5 })])],
       [
@@ -497,14 +498,27 @@ describe('Rich vein: ghosts', () => {
     expect(validateGhostSnapshot(hidden, ctx).ok).toBe(false);
   });
 
-  test('without a Rich vein event in content, added nodes are refused', () => {
-    const noVein = {
+  test('without a Rich vein or Caravan event in content, added nodes are refused', () => {
+    const without = (types: string[]) => ({
       ...ctx,
       events: {
         ...ctx.events,
-        events: ctx.events.events.filter((e) => e.type !== 'rich_vein'),
+        events: ctx.events.events.filter((e) => !types.includes(e.type)),
       },
-    };
-    expect(validateGhostSnapshot(withNodes([node(0)]), noVein).ok).toBe(false);
+    });
+    expect(
+      validateGhostSnapshot(
+        withNodes([node(0)]),
+        without(['rich_vein', 'caravan']),
+      ).ok,
+    ).toBe(false);
+    // The Caravan alone lets a node in from its first round (2), not before.
+    const caravanOnly = without(['rich_vein']);
+    expect(
+      validateGhostSnapshot(withNodes([node(0, { round: 2 })]), caravanOnly).ok,
+    ).toBe(true);
+    expect(
+      validateGhostSnapshot(withNodes([node(0, { round: 1 })]), caravanOnly).ok,
+    ).toBe(false);
   });
 });

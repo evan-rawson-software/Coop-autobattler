@@ -1419,6 +1419,18 @@ export async function runRunSmoke({
         await page.click('#event-choose:not([disabled])');
         break;
       case 'event_resolve': {
+        await page.waitForSelector(
+          '[data-action="choose-option"], [data-action="caravan-item"], #caravan-take',
+        );
+        if ((await page.locator('[data-action="caravan-item"]').count()) > 0) {
+          // A Caravan draft: take a plain reward (gold, building, modifier).
+          const plain = page.locator(
+            '[data-action="caravan-item"]:not([disabled])[data-kind="gold"], [data-action="caravan-item"]:not([disabled])[data-kind="building"], [data-action="caravan-item"]:not([disabled])[data-kind="modifier"]',
+          );
+          if ((await plain.count()) > 0) await plain.first().click();
+          await page.click('#caravan-take:not([disabled])');
+          break;
+        }
         await page.waitForSelector('[data-action="choose-option"]');
         const skip = page.locator(
           '[data-action="choose-option"][data-option="skip"]',
@@ -2253,6 +2265,95 @@ export async function runRunSmoke({
         (await page.locator('#offers li.offer.sold').count()) === 1,
       'blueprint: buying the held offer empties its slot and the mark goes',
     );
+  }
+
+  // ---------------------------------------------------------------------
+  // Caravan (issue #415): a real save of a party of two at a Caravan draft
+  // (made in Node, see smoke-caravan-seed.mjs; Player 2 chooses first). Player
+  // 1 sees whose turn it is and cannot take; Player 2 takes the gold; Player 1
+  // then takes the Upgrade and names the building on their turn; the party-wide
+  // reward is left over and the step moves on to the shop.
+  {
+    const record = JSON.parse(
+      execFileSync(
+        'pnpm',
+        ['exec', 'tsx', path.join(webDir, 'scripts/smoke-caravan-seed.mjs')],
+        { cwd: path.resolve(webDir, '../..'), maxBuffer: 1 << 26 },
+      ).toString('utf8'),
+    );
+    const id = record.runId;
+    await goMenu();
+    await page.evaluate(
+      async ([rec, runId]) => {
+        const db = await new Promise((res, rej) => {
+          const r = indexedDB.open('coop-autobattler', 1);
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+        await new Promise((res) => {
+          const tx = db.transaction('saves', 'readwrite');
+          tx.objectStore('saves').put(rec, runId);
+          tx.oncomplete = res;
+        });
+        db.close();
+      },
+      [record, id],
+    );
+    await page.reload();
+    await page.waitForSelector(`[data-run="${id}"]`);
+    await page.click(`[data-run="${id}"] [data-action="resume"]`);
+    await waitStep('event_resolve');
+    await page.waitForSelector('[data-action="caravan-item"]');
+    check(
+      (await page.locator('[data-action="caravan-item"]').count()) === 3,
+      'caravan: three rewards on offer for two players',
+    );
+    check(
+      (await page.locator('[data-party-wide="true"]').count()) === 1 &&
+        (await page.locator('[data-field="party-wide"]').count()) === 1,
+      'caravan: exactly one reward is marked for the whole party',
+    );
+    check(
+      (await page
+        .locator('[data-action="caravan-item"]:not([disabled])')
+        .count()) === 0,
+      "caravan: Player 1 cannot take anything while it is Player 2's turn",
+    );
+    check(
+      /Player 2 is choosing/.test(
+        await page.locator('[data-field="prompt"]').innerText(),
+      ),
+      'caravan: the screen says whose turn it is',
+    );
+    await page.click('#acting-switch [data-action="act-as"][data-player="1"]');
+    await page.waitForFunction(() => window.__debug?.run?.state().acting === 1);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await settle();
+    await page.waitForSelector('[data-item="it0"]:not([disabled])');
+    await shot('run-8d-caravan-draft-1280x720');
+    await page.click('[data-item="it0"]');
+    await page.click('#caravan-take:not([disabled])');
+    await page.waitForFunction(
+      () => document.querySelector('[data-item="it0"]')?.dataset.holder === '1',
+    );
+    await page.click('#acting-switch [data-action="act-as"][data-player="0"]');
+    await page.waitForFunction(() => window.__debug?.run?.state().acting === 0);
+    await page.waitForSelector('[data-item="it1"]:not([disabled])');
+    check(
+      await page.locator('[data-item="it0"]').isDisabled(),
+      'caravan: the gold Player 2 took cannot be taken again',
+    );
+    await page.click('[data-item="it1"]');
+    await page.waitForSelector('[data-action="caravan-building"]');
+    await shot('run-8d-caravan-upgrade-1280x720');
+    await page
+      .locator('[data-action="caravan-building"]')
+      .first()
+      .dispatchEvent('click');
+    await page.click('#caravan-take:not([disabled])');
+    await waitStep('shop');
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await settle();
   }
 
   // ---------------------------------------------------------------------

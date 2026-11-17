@@ -31,7 +31,7 @@
             "maximum": 1000
           },
           "resourceWeights": {
-            "description": "Rich vein only: the weight of each base resource in the draw of the offer's resource, by resource ID (Ore and Power common, Flux rare, like map nodes). Every key must be a base resource of the resources file.",
+            "description": "Rich vein and Caravan only: the weight of each base resource in the draw of the offer's resource (the Caravan's Node reward), by resource ID (Ore and Power common, Flux rare, like map nodes). Every key must be a base resource of the resources file.",
             "type": "object",
             "minProperties": 1,
             "propertyNames": { "pattern": "^res_[a-z0-9_]+$" },
@@ -56,6 +56,42 @@
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 10
+              },
+              "gold": {
+                "description": "Caravan only: the gold of the Gold reward.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "weightGold": {
+                "description": "Caravan only: the weight of the Gold reward in the draw of each reward (0 leaves it out).",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "weightBuilding": {
+                "description": "Caravan only: the weight of the free tier-1 building reward (at least 1, so a draft can always be filled).",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "weightUpgrade": {
+                "description": "Caravan only: the weight of the free tier raise reward (0 leaves it out).",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "weightNode": {
+                "description": "Caravan only: the weight of the resource node reward (0 leaves it out; above 0 needs resourceWeights).",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "weightModifier": {
+                "description": "Caravan only: the weight of the party-wide run modifier reward (0 leaves it out).",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
               },
               "freeRerolls": {
                 "description": "Market day only: how many re-rolls in each player's next shop cost 0.",

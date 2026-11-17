@@ -190,6 +190,23 @@ export function eventCards(
       lines = [
         'Choose a rare building: it is held for you in your next shop, at tier 1 and the normal price.',
       ];
+    } else if (type === 'caravan') {
+      // The first chooser is the first of the stored order.
+      const order = (Array.isArray(raw['order']) ? raw['order'] : []) as Json[];
+      const first = order[0];
+      const items = Array.isArray(raw['items']) ? raw['items'].length : 0;
+      lines = [
+        `${String(items)} rewards: each player takes one in turn, one is left over.`,
+        ...(typeof first === 'number' && run.players.length > 1
+          ? [
+              `${playerName(
+                screenTexts,
+                run.players.map((p) => p.name),
+                first,
+              )} chooses first.`,
+            ]
+          : []),
+      ];
     } else if (type === 'pact') {
       // The pact the offer names: benefit lines, then the drawback lines.
       const id = typeof raw['pact'] === 'string' ? raw['pact'] : '';
@@ -356,6 +373,7 @@ const PROMPTS: Readonly<Record<string, string>> = {
   [DRILL_PROMPT]: 'Raise a collector',
   [RICH_VEIN_PROMPT]: 'Add a resource node',
   [BLUEPRINT_PROMPT]: 'Choose a building to hold in your next shop',
+  caravan: 'Take a reward',
   shrine_modifier: 'Choose a bonus',
 };
 
@@ -596,6 +614,46 @@ export function followUpView(
 // What the follow-up did
 
 /**
+ * The Caravan's notice for `player`: what their pick gave them, and for the
+ * party-wide modifier (taken by anyone) that it now applies to everyone.
+ */
+function caravanNotice(
+  applied: readonly Json[],
+  player: number,
+  content: WebContent,
+): string | null {
+  const mine = applied.find((a) => isRecord(a) && a['player'] === player);
+  if (mine === undefined || !isRecord(mine)) return null;
+  const wide = applied.find((a) => isRecord(a) && a['result'] === 'modifier');
+  const wideName =
+    wide !== undefined && isRecord(wide)
+      ? modifierName(str(wide['modifier']) ?? '')
+      : null;
+  let own: string;
+  switch (mine['result']) {
+    case 'gold':
+      own = `+${String(typeof mine['gold'] === 'number' ? mine['gold'] : 0)} gold.`;
+      break;
+    case 'building':
+      own = `Added ${buildingName(content, str(mine['def']) ?? '')} (tier 1) to your inventory.`;
+      break;
+    case 'upgrade':
+      own = `Raised ${buildingName(content, str(mine['def']) ?? '')} to tier ${String(typeof mine['newTier'] === 'number' ? mine['newTier'] : 0)}.`;
+      break;
+    case 'node':
+      own = `Added a ${resourceName(content, str(mine['resource']) ?? '')} node.`;
+      break;
+    case 'modifier':
+      return `Took ${wideName ?? 'a bonus'} for the whole party.`;
+    default:
+      own = mine['dropped'] === true ? 'Reward skipped.' : 'Took nothing.';
+  }
+  return wideName === null
+    ? own
+    : `${own} ${wideName} now applies to the whole party.`;
+}
+
+/**
  * The notice for `player` from an `event_resolved` effect's `applied` list:
  * the upgrade and its price, a skip, or a pick that was dropped and why.
  * Null when the effect says nothing about this player.
@@ -616,6 +674,7 @@ export function appliedNotice(
       }
       return 'Blueprint skipped.';
     }
+    if (type === 'caravan') return caravanNotice(applied, player, content);
     if (type === 'rich_vein') {
       if (a['result'] === 'node') {
         const res = resourceName(content, str(a['resource']) ?? '');

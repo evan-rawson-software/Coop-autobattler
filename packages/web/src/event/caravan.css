@@ -1,0 +1,44 @@
+/* The Caravan draft: the order list, the party-wide tag and taken cards. */
+.caravan-order {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.caravan-order li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--ink-muted);
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+
+.caravan-order li[data-state='up'] {
+  border: 2px solid var(--accent);
+  font-weight: 600;
+}
+
+.caravan-order li[data-state='waiting'] .caravan-text {
+  color: var(--ink-muted);
+}
+
+.caravan-wide {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.caravan-holder {
+  margin: 0;
+  font-weight: 600;
+}
+
+button.event-card.caravan-card.taken {
+  opacity: 0.55;
+}

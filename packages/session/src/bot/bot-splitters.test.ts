@@ -137,8 +137,11 @@ describe('shop buys only what can be placed (#178)', () => {
     // starting stash (2 per player run). Measured over SEEDS: 16 / 32 / 64 at
     // party sizes 1 / 2 / 4 (33 / 69 / 121 on main).
     for (const party of [1, 2, 4]) {
+      // One more is allowed for a free Extractor from a Caravan (#415): when
+      // only buildings are left in the draft the bot must take one. Measured
+      // with the Caravan: 16 / 33 / 64 (party 2 holds one free Extractor).
       expect(stashed('weak', party, 'bld_extractor')).toBeLessThanOrEqual(
-        2 * party * SEEDS.length,
+        2 * party * SEEDS.length + 1,
       );
     }
   });
@@ -148,9 +151,11 @@ describe('shop buys only what can be placed (#178)', () => {
     // after 6 rounds. Measured: rush 2 / 9 / 24, fortify 0 / 0 / 0 (2 / 11 / 27 for rush
     // with the shop weights and the tetromino walls of issue #291). With Rich
     // vein (#414) in the event pool from round 3: rush 3 / 7 / 30, fortify
-    // 1 / 0 / 0 (only rush party 4, 29 -> 31, needed a new limit).
+    // 1 / 0 / 0 (only rush party 4, 29 -> 31, needed a new limit). With the Caravan
+    // (#415, from round 2; a free building can land in the stash): rush 1 / 10 /
+    // 32, fortify 1 / 0 / 0 (rush party 4, 31 -> 32).
     const limit = {
-      rush: { 1: 3, 2: 12, 4: 31 },
+      rush: { 1: 3, 2: 12, 4: 32 },
       fortify: { 1: 1, 2: 1, 4: 1 },
     } as const;
     for (const strategy of ['rush', 'fortify'] as const) {

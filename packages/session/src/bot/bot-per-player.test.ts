@@ -240,7 +240,9 @@ describe('bots build per player', () => {
   // a Splitter is how the bot gets past the node count (#178). Over 20 fixed
   // seeds, at least MIN_SPLITTER_SEEDS solo rush runs hold a Splitter with
   // two outputs.
-  const MIN_SPLITTER_SEEDS = 17; // measured: 18 (3 before #178)
+  // Measured: 18 (3 before #178); 16 since the Caravan (#415) joined the event
+  // pool and moved the draws (the bot is the same), so the floor is 15.
+  const MIN_SPLITTER_SEEDS = 15;
   test('most solo rush runs share a collector through a two-output Splitter (#178)', () => {
     let seeds = 0;
     for (let seed = 1; seed <= 20; seed++) {

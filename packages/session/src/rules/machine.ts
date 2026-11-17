@@ -95,6 +95,12 @@ function applyPatch(s: RunState, patch: StatePatch): RunState {
     ...s,
     team: patch.team ?? s.team,
     perPlayer: patch.perPlayer ?? s.perPlayer,
+    ...(patch.caravanCount === undefined
+      ? {}
+      : { caravanCount: patch.caravanCount }),
+    ...(patch.caravanFirst === undefined
+      ? {}
+      : { caravanFirst: patch.caravanFirst }),
   };
 }
 

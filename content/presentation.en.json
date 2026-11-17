@@ -228,6 +228,11 @@
       "name": "Blueprint",
       "icon": "▤",
       "flavour": ""
+    },
+    "caravan": {
+      "name": "Caravan",
+      "icon": "⛟",
+      "flavour": ""
     }
   },
   "modifiers": {

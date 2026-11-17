@@ -561,6 +561,10 @@ middle:
   1000 (checked at wiring). A saved `held_offer` entry (see "Next-shop
   effects") names a building of `buildings.json` whose tier 1 has a price and
   that is not a boss-only pylon.
+- Caravan's `params.gold` is an integer from 1 to 1000, each of `weightGold`,
+  `weightUpgrade`, `weightNode`, `weightModifier` an integer from 0 to 1000 and
+  `weightBuilding` from 1 to 1000; `resourceWeights` is required when
+  `weightNode` is above 0 (checked at wiring and by `events.schema.json`).
 - **Added nodes** (`content/mapgen.json`): `maxAddedNodesPerPlot` is an integer
   from 0 to `MAX_ADDED_NODES_PER_PLOT` (16); shipped 3. Map generation does not
   read it. 0 means Rich vein is never available and no state may hold an added
@@ -628,7 +632,7 @@ before, round, leg, players, rerolls}` and optionally `offerWeights` (a list of
 `{def, weight, fromRound?}` that replaces the shipped list for this vector) and
 `extraOffers` (default 0: every roll and re-roll makes that many offers more than
 `shopOfferCount`, Market day; `shop-roll.17` and `shop-roll.18`; the vectors
-`run-replay.s2-p1-market-day` and `run-replay.s1-p2-market-day` play Market day
+`run-replay.s6-p1-market-day` and `run-replay.s1-p2-market-day` play Market day
 through its shop). Start at `rootRng(seed)`, draw each
 label in `before` in order, then draw `shop:r<round>:<leg>`. For each player
 `i`, roll the offers from that stream's child `p<i>`, then re-roll `rerolls`
@@ -4867,7 +4871,7 @@ package gives the same list for a screen.
 ### Events (RS-4)
 
 `content/events.json` lists event definitions `{ id, type, weight, fromRound?,
-resourceWeights?, params }` (`resourceWeights` only for Rich vein) and modifier definitions `{ id, stackable, fromRound?, effects }`,
+resourceWeights?, params }` (`resourceWeights` only for Rich vein and Caravan) and modifier definitions `{ id, stackable, fromRound?, effects }`,
 and `offerCount` (3). The `type` names a handler in the session package; the
 handler decides availability, extra offer data, what happens on pick, and how a
 follow-up choice is applied. Adding a type is data plus one handler.
@@ -4878,7 +4882,7 @@ example a small and a big Windfall); they compete for a single place. The
 definitions whose first round has come (`round >= fromRound`; `fromRound`
 defaults to 1, `round` is `RunState.round`, the round of the event step) and
 whose handler says `available` (Workshop: some owned building
-below tier 3 that a player can pay for; Drill: some owned collector below tier 3; Shrine: at least one modifier can be taken; Pact: some pact is not held; Rich vein: some player is under the cap and has a legal cell; Blueprint: some building is rare at this round; Windfall and Market
+below tier 3 that a player can pay for; Drill: some owned collector below tier 3; Shrine: at least one modifier can be taken; Pact: some pact is not held; Rich vein: some player is under the cap and has a legal cell; Blueprint: some building is rare at this round; Caravan: the shop can offer `players + 1` different buildings; Windfall and Market
 day: always) form the pool, in file order. Both conditions are checked before
 the draw, so the number of draws is still the number of offers, and where no
 `fromRound` is above the round the draws are those of the pool without it
@@ -5103,6 +5107,94 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     so no hash moves; the only saved data is the optional `held_offer` entry.
     The rare test and the shop roll share one gate function, so a content
     change to `fromRound` or a weight moves both together.
+- **Caravan** (`params.gold`, 6, `params.weightGold`, `weightBuilding`,
+  `weightUpgrade`, `weightNode`, `weightModifier`, `resourceWeights`; `fromRound`
+  2 in the shipped file; RS-4h, RS-4i3, issue #415): a draft of rewards, one per
+  player in turn. The only event whose follow-up is not a vote and not per
+  player.
+  - *Available* when the hooks know the shop rules and the shop can offer at
+    least `players + 1` different buildings at this round (always so with the
+    shipped table).
+  - *Offer.* `{ id, event, type: "caravan", items, order }`, drawn before the
+    vote from the offer's child stream `<event id>:<index>` and stored.
+    `order` lists the players in choosing order, a rotation of `0 .. n-1`:
+    the first Caravan of a run starts at `child("first").nextInt(n)`; every
+    later one at `(caravanFirst + 1) mod n` where `caravanFirst` is the first
+    chooser of the latest Caravan taken (run state, below). `items` has
+    `n + 1` rewards (solo: 2), each `{ id: "it<k>", kind, ... }`, drawn from
+    `child("items")` one reward at a time: one `pickWeightedIndex` over the
+    weights of the kinds that can still be made, then one draw inside the kind.
+    Kinds and their weights are the params `weightGold`, `weightBuilding`,
+    `weightUpgrade`, `weightNode`, `weightModifier` (integers 0 to 1000;
+    `weightBuilding` at least 1, so a draft can always be filled; `gold` is 1
+    to 1000; a `weightNode` above 0 needs `resourceWeights`; all checked at
+    wiring and by the schema). A kind can be made when its weight is above 0
+    and: `gold` (once): always, `{ gold: params.gold }`; `building`: a
+    building the shop can offer at this round (`offerWeightsAt`, weight above
+    0, tier 1 priced) not already an item, drawn by `pickWeightedIndex` over
+    its offer weight, `{ def }`; `upgrade` (once): some player owns a
+    building below tier 3 (`workshopOptions` at price 0); `node`: some player
+    has a legal cell (`addableNodeCells`) and a base resource of
+    `resourceWeights` is not already an item, drawn by `pickWeightedIndex` over
+    `resourceWeights`, `{ resource }`; `modifier` (once, so at most one reward is
+    party-wide): the Shrine's eligible list (not a pact, unlocked, not held or
+    stackable), one picked with `rng.pick`, `{ modifier, partyWide: true }`. If no kind
+    can be made, the list stops short (never with the shipped content).
+  - *Follow-up.* On pick: `caravanCount += 1` and `caravanFirst = order[0]`
+    in the run state (optional fields, absent until the first Caravan), and
+    `pending.followUp = { prompt: "caravan", mode: "draft", items, order,
+    taken }` with `taken` all null (no `options`, no `votes`). `taken[i]` is the
+    choice of `order[i]`: an item id (`it2`), an item id with a sub-choice
+    (`it2:b17` for an Upgrade, the building to raise; `it3:c4_9` for a Node,
+    the cell), or `skip`. No timers.
+  - *Turns.* Let `c` be the first index with `taken[c]` null. `event_choose`
+    is accepted from `order[c]` (a new pick) and from `order[c-1]` (to change
+    their pick, until `order[c]` has chosen); anyone else gets `not_your_turn`.
+    The choice must be a free item (not taken by another player; the sender's
+    own current item counts as free), else `invalid_choice`; a plain item takes
+    no sub-choice; an Upgrade needs `b<id>` of the sender's own building below
+    tier 3 (`workshopOptions`), a Node `c<x>_<y>` that `addNode` accepts for
+    the sender with the item's resource at `round` (the `addNode` reason is
+    returned); a modifier must still be eligible (`not_unlocked`, `already_held`).
+    `skip` is legal only for a player who can take none of the free items.
+    The pick is stored at once. The pick of the last player is final: it ends
+    the draft.
+  - *Applying,* when `taken` has no null: in choosing order, each pick is
+    re-checked against the team as it is then and applied: gold adds `gold` to
+    the taker; a building goes to the taker's stash as tier 1 (`addToStash`);
+    an Upgrade is `raiseTier` of the named building, free; a Node is `addNode`
+    (round = `RunState.round`); the modifier is added to `TeamState.modifiers`
+    for the whole team. A pick that no longer holds is applied as a skip with
+    `dropped: true` and the reason. The unchosen item is discarded.
+    `event_resolved` carries `order`, `choices` (= `taken`) and `applied`
+    (in choosing order): `{ player, result: 'gold', gold }`, `'building'`
+    (`def`, `building`), `'upgrade'` (`building`, `def`, `newTier`), `'node'`
+    (`x`, `y`, `resource`), `'modifier'` (`modifier`, `partyWide: true`),
+    `{ player, result: 'skip' }` or the dropped form. Then the shop.
+  - *Run state.* `caravanCount` (integer 1 to 1000) and `caravanFirst` (a player
+    index) are optional, present together, absent before the first Caravan.
+    Old saves stay readable and hash as before, so no format number is raised
+    (CONTRIBUTING). A draft is a new allowed shape of the opaque `pending`
+    (`pending` is not strictly typed by the schema); it is not a change of an
+    existing one.
+  - *validateRunState* checks a draft: the offer is a `caravan` offer; the
+    follow-up has exactly `prompt`, `mode`, `items`, `order`, `taken`;
+    `players + 1` items with ids `it0..`, a valid kind and fields (gold at
+    least 1, a building with a tier 1 price, a base resource, a modifier ID),
+    `partyWide` exactly on modifiers and at most once; `order` a rotation of
+    the players; `taken` filled as a prefix (null only after non-null is
+    refused), each `skip` or a distinct item with a sub-choice that is legal for
+    that player now; and not complete (a complete draft has ended).
+  - *Ghosts.* The value bound adds, from the Caravan's first round, one free
+    building or raise per event step (the dearest tier 1 price the shop sells by
+    then or the largest price step of any building); its `gold` counts in the
+    best event gold like a Windfall's; a Caravan counts as a raise for the tier
+    bound; an added node may come from a Caravan with `weightNode` above 0.
+  - Notes for a port: the draft is the only follow-up with turns; keep the
+    cursor as "first null", allow the previous player to change, and
+    apply at the end in order. Sub-choices are in the choice string, so a
+    pick is one string. Bots take the first free reward in the order gold,
+    modifier, raise, node, building.
 - **Shrine** (`params.choices`, default 3): available when a modifier is
   *eligible*. A modifier is eligible when `round >= fromRound` (`fromRound`
   defaults to 1; `round` is `RunState.round`, the round of the event step,

@@ -36,6 +36,12 @@ import {
 } from './events.js';
 import { isInteger, isRecord } from './json-guards.js';
 import { nextShopProblem } from './shop-effects.js';
+import {
+  CARAVAN_PROMPT,
+  isDraft,
+  parseCaravanChoice,
+  readDraft,
+} from './caravan.js';
 
 export type ValidateRunStateResult =
   | { readonly ok: true; readonly state: RunState }
@@ -120,6 +126,9 @@ const KEYS = [
   'actionLog',
   'outcome',
 ];
+
+/** Fields that may be absent (records from before they existed stay readable). */
+const OPTIONAL_KEYS = ['caravanCount', 'caravanFirst'];
 
 /** The steps in which next-shop effects exist: set by an event, gone after the shop. */
 const NEXT_SHOP_STEPS: readonly Step[] = ['event_resolve', 'shop'];
@@ -252,6 +261,132 @@ function checkRichVeinOptions(
   });
 }
 
+/**
+ * A Caravan draft (RS-4h): the offer and the follow-up agree, `items` are
+ * well formed (at most one party-wide), `order` is a rotation of the players,
+ * the picks fill a prefix of `taken`, and each names a distinct item of the
+ * list with a sub-choice that fits the taker's team.
+ */
+function checkDraft(
+  p: Rec,
+  team: Parameters<typeof workshopOptionProblem>[0] | null,
+  n: number,
+  deps: Pick<RunDeps, 'content' | 'mapgenConfig'>,
+  err: (msg: string) => void,
+): void {
+  const offer = p['offer'];
+  const fu = p['followUp'];
+  const draft = readDraft(fu);
+  if (
+    !isRecord(offer) ||
+    offer['type'] !== 'caravan' ||
+    !isRecord(fu) ||
+    fu['prompt'] !== CARAVAN_PROMPT ||
+    draft === null
+  ) {
+    err(
+      'pending: a draft needs a Caravan offer and {prompt: "caravan", mode: "draft", items, order, taken}.',
+    );
+    return;
+  }
+  const at = 'pending.followUp';
+  if (
+    sortedKeys(fu).some(
+      (k) => !['prompt', 'mode', 'items', 'order', 'taken'].includes(k),
+    )
+  ) {
+    err(`${at}: a draft has only prompt, mode, items, order and taken.`);
+  }
+  if (draft.items.length !== n + 1) {
+    err(`${at}.items: must hold ${String(n + 1)} rewards.`);
+  }
+  let wide = 0;
+  draft.items.forEach((it, i) => {
+    const wideOk =
+      it.kind === 'modifier'
+        ? it.partyWide === true
+        : it.partyWide === undefined;
+    if (it.partyWide === true) wide++;
+    const bad =
+      !wideOk ||
+      (it.kind === 'gold' && !(isInteger(it.gold) && it.gold >= 1)) ||
+      (it.kind === 'building' &&
+        !(typeof it.def === 'string' && heldDefOk(deps.content, it.def))) ||
+      (it.kind === 'node' &&
+        !(
+          typeof it.resource === 'string' &&
+          deps.content.resources.listBase().some((r) => r.id === it.resource)
+        )) ||
+      (it.kind === 'modifier' &&
+        !(typeof it.modifier === 'string' && it.modifier.startsWith('mod_')));
+    if (bad) err(`${at}.items[${String(i)}]: not a valid reward.`);
+  });
+  if (wide > 1) err(`${at}.items: at most one reward may be party-wide.`);
+  if (
+    draft.order.length !== n ||
+    !draft.order.every(
+      (q, i) => isInteger(q) && q === ((draft.order[0] ?? 0) + i) % n,
+    ) ||
+    (draft.order[0] ?? -1) < 0 ||
+    (draft.order[0] ?? n) >= n
+  ) {
+    err(`${at}.order: must list every player, in turn, starting anywhere.`);
+    return;
+  }
+  const seen = new Set<string>();
+  let gap = false;
+  const complete = !draft.taken.includes(null);
+  draft.taken.forEach((t, i) => {
+    const slot = `${at}.taken[${String(i)}]`;
+    if (t === null) {
+      gap = true;
+      return;
+    }
+    if (gap) err(`${slot}: a pick after a player who has not chosen.`);
+    if (t === 'skip') return;
+    const c = parseCaravanChoice(t);
+    const item =
+      c === null ? undefined : draft.items.find((x) => x.id === c.item);
+    if (c === null || item === undefined || seen.has(c.item)) {
+      err(`${slot}: must be "skip" or a distinct reward of the list.`);
+      return;
+    }
+    seen.add(c.item);
+    const player = draft.order[i] as number;
+    if (item.kind === 'upgrade') {
+      const m = c.sub === null ? null : /^b([0-9]+)$/.exec(c.sub);
+      const b =
+        m === null || team === null
+          ? undefined
+          : (team.buildings.find((x) => x.id === Number(m[1])) ??
+            team.stash.find((x) => x.id === Number(m[1])));
+      if (
+        m === null ||
+        (team !== null &&
+          (b === undefined || b.owner !== player || b.tier >= 3))
+      ) {
+        err(
+          `${slot}: an Upgrade needs "b<id>" of a building of that player below tier 3.`,
+        );
+      }
+    } else if (item.kind === 'node') {
+      const cell = c.sub === null ? null : richVeinCell(c.sub);
+      const legal =
+        cell !== null &&
+        team !== null &&
+        addableNodeCells(team, deps.content, deps.mapgenConfig, player).some(
+          (x) => x.x === cell.x && x.y === cell.y,
+        );
+      if (team !== null && !legal) {
+        err(`${slot}: a Node needs "c<x>_<y>" of a legal cell of that player.`);
+      }
+    } else if (c.sub !== null) {
+      err(`${slot}: this reward takes no sub-choice.`);
+    }
+  });
+  if (complete) err(`${at}.taken: a draft that is complete must have ended.`);
+}
+
 function check(
   data: unknown,
   deps: Pick<RunDeps, 'content' | 'mapgenConfig' | 'rules' | 'ghosts'>,
@@ -276,7 +411,9 @@ function check(
     return;
   }
   for (const k of sortedKeys(data)) {
-    if (!KEYS.includes(k)) err(`run state: unknown field "${k}".`);
+    if (!KEYS.includes(k) && !OPTIONAL_KEYS.includes(k)) {
+      err(`run state: unknown field "${k}".`);
+    }
   }
   for (const k of KEYS) {
     if (!(k in data)) err(`run state: missing field "${k}".`);
@@ -527,7 +664,9 @@ function check(
   } else if (st === 'event_choice' && (p['options'] as unknown[]).length < 1) {
     err('pending.options: an event step needs at least one offer.');
   }
-  if (st === 'event_resolve') {
+  if (st === 'event_resolve' && isDraft(p['followUp'])) {
+    checkDraft(p, team.ok ? team.state : null, n, deps, err);
+  } else if (st === 'event_resolve') {
     const fu = p['followUp'];
     if (
       !isRecord(p['offer']) ||
@@ -713,6 +852,20 @@ function check(
     }
   } else if (outcome !== null) {
     err('outcome: must be null while the run is going.');
+  }
+
+  // The Caravan rotation: both fields or neither.
+  const cc = data['caravanCount'];
+  const cf = data['caravanFirst'];
+  if ((cc === undefined) !== (cf === undefined)) {
+    err('caravanCount and caravanFirst: must be present together.');
+  } else if (cc !== undefined) {
+    if (!isInteger(cc) || cc < 1 || cc > 1000) {
+      err('caravanCount: must be an integer from 1 to 1000.');
+    }
+    if (!isInteger(cf) || cf < 0 || cf >= n) {
+      err('caravanFirst: must be a player index.');
+    }
   }
 }
 

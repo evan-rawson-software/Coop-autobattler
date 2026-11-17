@@ -237,6 +237,12 @@ The rule for a change that makes saved data unreadable:
   The Blueprint event (issue #412) adds one more entry shape to `nextShop`,
   `{kind: "held_offer", def}`: it is the same optional field, present only
   between the event and the end of that shop, so no format number is raised.
+  The Caravan event (issue #415) adds the optional run-state fields
+  `caravanCount` and `caravanFirst` (how many Caravans were taken and who
+  chose first in the latest; absent means none yet), and a new mode of the
+  `event_resolve` follow-up, `{prompt: "caravan", mode: "draft", items, order,
+taken}`. The fields are optional and the follow-up is a new allowed shape of
+  the opaque `pending`, not a changed one, so no format number is raised.
   (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is

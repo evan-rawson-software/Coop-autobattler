@@ -32,6 +32,7 @@ import {
   snapshotOf,
 } from './ghosts.js';
 import { applyIntent, replayRun } from './machine.js';
+import { defaultDraftPick } from './caravan.js';
 import { openRun } from '../app/run-controller.js';
 import { buildSaveRecord } from '../app/save.js';
 import { verifyLastBattle } from './replay.js';
@@ -137,9 +138,15 @@ describe('taking snapshots', () => {
         };
       else if (s.step === 'event_resolve') {
         const fu = loose(s.pending).followUp;
+        const pick = defaultDraftPick(s, deps);
         intent = {
           type: 'event_choose',
-          choice: fu.perPlayer === true ? 'skip' : fu.options[0]?.id,
+          choice:
+            pick !== null
+              ? pick.choice
+              : fu.perPlayer === true
+                ? 'skip'
+                : fu.options[0]?.id,
         };
       } else if (s.step === 'shop' && s.leg === 'pve')
         intent = { type: SELECT_GHOST, candidates: [] };
@@ -698,24 +705,29 @@ describe('validation', () => {
       const b = ghostValueBound(round, 1, content, e, gameConfigs.events);
       return [round, b.goldPerPlayer, b.kitPerPlayer, b.limit];
     });
-    // startingGold 10, income 5 per shop, PvE hard 13, PvP win 8, Windfall 4.
-    // round 1: 10 + 5*1 + 13*1 + 8*0 + 4*1 = 32 gold.
-    expect(table[0]?.[1]).toBe(32);
-    // round 2: 10 + 5*3 + 13*2 + 8*1 + 4*3 = 71, plus one Drill step (from
-    // round 2) worth the largest free collector raise, 25.
-    expect(table[1]?.[1]).toBe(71 + 25);
-    // No margin: the limit is players * (gold + kit) = 96 + 79.
-    expect(table[1]?.[3]).toBe(71 + 25 + 79);
+    // startingGold 10, income 5 per shop, PvE hard 13, PvP win 8, best event
+    // gold 6 (the Caravan's Gold reward; a Windfall pays 4).
+    // round 1: 10 + 5*1 + 13*1 + 8*0 + 6*1 = 34 gold.
+    expect(table[0]?.[1]).toBe(34);
+    // round 2: 10 + 5*3 + 13*2 + 8*1 + 6*3 = 77, plus one Drill step (from
+    // round 2) worth the largest free collector raise, 25, plus one Caravan
+    // step (from round 2) worth the dearest free building or raise, 75.
+    expect(table[1]?.[1]).toBe(77 + 25 + 75);
+    // No margin: the limit is players * (gold + kit) = 177 + 79.
+    expect(table[1]?.[3]).toBe(77 + 25 + 75 + 79);
     // A party of two has twice the bound.
-    // Without a Drill event there is no free raise to count.
-    const noDrill = {
+    // Without a Drill or Caravan event there is no free raise or building to
+    // count, and the best event gold is the Windfall's 4 again.
+    const noFree = {
       ...gameConfigs.events,
-      events: gameConfigs.events.events.filter((x) => x.type !== 'drill'),
+      events: gameConfigs.events.events.filter(
+        (x) => x.type !== 'drill' && x.type !== 'caravan',
+      ),
     };
-    expect(ghostValueBound(2, 1, content, e, noDrill).goldPerPlayer).toBe(71);
+    expect(ghostValueBound(2, 1, content, e, noFree).goldPerPlayer).toBe(71);
     expect(
       ghostValueBound(1, 1, content, e, gameConfigs.events).goldPerPlayer,
-    ).toBe(32);
+    ).toBe(34);
     const two = ghostValueBound(3, 2, content, e, gameConfigs.events);
     const one = ghostValueBound(3, 1, content, e, gameConfigs.events);
     expect(two.limit).toBe(2 * one.limit);
@@ -779,9 +791,15 @@ describe('replay and reload', () => {
             followUp: { options: { id: string }[]; perPlayer?: boolean };
           }
         ).followUp;
+        const pick = defaultDraftPick(s, deps);
         intent = {
           type: 'event_choose',
-          choice: fu.perPlayer === true ? 'skip' : fu.options[0]?.id,
+          choice:
+            pick !== null
+              ? pick.choice
+              : fu.perPlayer === true
+                ? 'skip'
+                : fu.options[0]?.id,
         };
       } else intent = { type: 'ready' };
       s = ok(s, 0, intent, deps).state;

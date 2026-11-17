@@ -44,6 +44,13 @@ import {
   type MapgenConfig,
 } from '@game/core';
 import { tally, voteResolvedEffect } from './machine.js';
+import {
+  SKIP_CHOICE,
+  eligibleModifiers,
+  richVeinCell,
+  richVeinChoice,
+} from './event-shared.js';
+import { caravanHandler, chooseDraft, isDraft } from './caravan.js';
 import { addShopEffect, setHeldOffer } from './shop-effects.js';
 import {
   DEFAULT_WORKSHOP_PERCENT,
@@ -110,6 +117,14 @@ export interface FollowUpSpec {
    * Used for a player who has nothing to choose but `skip`.
    */
   readonly initialVotes?: readonly (string | null)[];
+  /**
+   * A draft (the Caravan): the players choose one at a time in `order`, from
+   * `items`. `options` is empty. The handler needs `drafts`.
+   */
+  readonly draft?: {
+    readonly items: readonly Json[];
+    readonly order: readonly number[];
+  };
 }
 
 export type ChooseResult =
@@ -145,6 +160,11 @@ export interface EventHandler {
    * (`resolve` returning a follow-up without this flag is an error.)
    */
   readonly canAskFollowUp?: boolean;
+  /**
+   * True if `resolve` may return a draft follow-up (the Caravan), in which
+   * players choose in turn; `caravan.ts` applies the picks.
+   */
+  readonly drafts?: boolean;
   /** Extra data stored in the offer, drawn from `rng` (a child stream). */
   instantiate(
     ctx: EventContext,
@@ -228,8 +248,7 @@ function toOffer(v: Json): EventOffer | null {
 // ---------------------------------------------------------------------------
 // Workshop: every player may raise one building they own by one tier (#50)
 
-/** The id of the choice that takes no upgrade. */
-export const SKIP_CHOICE = 'skip';
+export { SKIP_CHOICE, richVeinCell, richVeinChoice };
 
 /** The follow-up prompt of the Drill (the Workshop's is `workshop_building`). */
 export const DRILL_PROMPT = 'drill_building';
@@ -448,21 +467,6 @@ export const drillHandler: EventHandler = upgradeHandler({
 // ---------------------------------------------------------------------------
 // Shrine: take one of several run modifiers
 
-/**
- * Modifier IDs the party could take now, in file order: unlocked at the
- * current round (`fromRound`, default 1) and either not held or stackable.
- * Pacts (`pact: true`, RS-4i6) are never offered by the Shrine.
- */
-function eligibleModifiers(ctx: EventContext): string[] {
-  const held = new Set(heldModifierIds(ctx.state.team));
-  const round = ctx.state.round;
-  return ctx.config.modifiers
-    .filter((m) => m.pact !== true)
-    .filter((m) => round >= (m.fromRound ?? 1))
-    .filter((m) => m.stackable || !held.has(m.id))
-    .map((m) => m.id);
-}
-
 export const shrineHandler: EventHandler = {
   type: 'shrine',
   canAskFollowUp: true,
@@ -629,21 +633,6 @@ export const pactHandler: EventHandler = {
 
 /** The follow-up prompt of Rich vein. */
 export const RICH_VEIN_PROMPT = 'rich_vein_cell';
-
-const CELL_CHOICE = /^c(0|[1-9][0-9]{0,5})_(0|[1-9][0-9]{0,5})$/;
-
-/** The choice id of a cell: `c<x>_<y>`. */
-export function richVeinChoice(x: number, y: number): string {
-  return `c${String(x)}_${String(y)}`;
-}
-
-/** The cell a Rich vein choice id names, or null. */
-export function richVeinCell(
-  choice: string,
-): { readonly x: number; readonly y: number } | null {
-  const m = CELL_CHOICE.exec(choice);
-  return m === null ? null : { x: Number(m[1]), y: Number(m[2]) };
-}
 
 function offerResource(offer: EventOffer): string {
   const r = offer['resource'];
@@ -940,6 +929,7 @@ export const defaultEventHandlers: EventHandlers = {
   pact: pactHandler,
   rich_vein: richVeinHandler,
   blueprint: blueprintHandler,
+  caravan: caravanHandler,
 };
 
 // ---------------------------------------------------------------------------
@@ -965,7 +955,8 @@ export function checkEventHandlers(
     if (
       h.canAskFollowUp === true &&
       h.choose === undefined &&
-      h.chooseEach === undefined
+      h.chooseEach === undefined &&
+      h.drafts !== true
     ) {
       problems.push(
         `event "${def.id}": handler "${def.type}" can ask for a follow-up but has no "choose".`,
@@ -1066,6 +1057,23 @@ export function eventHooks(
         offer,
       );
       if (r.followUp === null) return { patch: r.patch, followUp: null };
+      if (r.followUp.draft !== undefined) {
+        if (handler.canAskFollowUp !== true || handler.drafts !== true) {
+          throw new Error(
+            `resolveEvent: handler "${offer.type}" returned a draft but does not declare drafts.`,
+          );
+        }
+        return {
+          patch: r.patch,
+          followUp: {
+            prompt: r.followUp.prompt,
+            mode: 'draft',
+            items: [...r.followUp.draft.items],
+            order: [...r.followUp.draft.order],
+            taken: r.followUp.draft.order.map(() => null),
+          },
+        };
+      }
       if (
         handler.canAskFollowUp !== true ||
         (handler.choose === undefined && handler.chooseEach === undefined)
@@ -1211,7 +1219,11 @@ export function eventChooseHandlers(
       const pending = isRecord(state.pending) ? state.pending : {};
       const offer = toOffer(pending['offer'] ?? null);
       const fu = pending['followUp'];
-      if (offer === null || !isRecord(fu) || !Array.isArray(fu['options'])) {
+      if (
+        offer === null ||
+        !isRecord(fu) ||
+        (!Array.isArray(fu['options']) && !isDraft(fu))
+      ) {
         return { ok: false, reason: 'invalid_intent', detail: 'no follow-up' };
       }
       const choice = intent['choice'];
@@ -1221,6 +1233,9 @@ export function eventChooseHandlers(
           reason: 'invalid_intent',
           detail: 'choice must be an id',
         };
+      }
+      if (isDraft(fu)) {
+        return chooseDraft(withMap(state), offer, player, choice);
       }
       const options = fu['options'] as readonly Json[];
       if (fu['perPlayer'] === true) {

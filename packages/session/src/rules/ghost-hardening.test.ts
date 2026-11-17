@@ -527,7 +527,8 @@ describe('item 3: tier plausibility', () => {
     const noWorkshop = {
       ...events,
       events: events.events.filter(
-        (e) => e.type !== 'workshop' && e.type !== 'drill',
+        (e) =>
+          e.type !== 'workshop' && e.type !== 'drill' && e.type !== 'caravan',
       ),
     };
     expect(ghostTierBound(5, econ, noWorkshop).upgradesPerOwner).toBe(0);

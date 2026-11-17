@@ -255,6 +255,18 @@ export interface RunState {
   };
   readonly actionLog: readonly LoggedAction[];
   readonly outcome: RunOutcome | null;
+  /**
+   * How many Caravans the party has taken (RS-4h). Optional: absent means
+   * none yet, so saves made before the Caravan stay readable. Present
+   * together with `caravanFirst`.
+   */
+  readonly caravanCount?: number;
+  /**
+   * The player who chose first in the latest Caravan. The next Caravan starts
+   * with the player after this one; the first Caravan draws its first chooser
+   * from the offer's child stream.
+   */
+  readonly caravanFirst?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -445,6 +457,9 @@ export type IntentResult =
 export interface StatePatch {
   readonly team?: TeamState;
   readonly perPlayer?: readonly PlayerRunState[];
+  /** The Caravan rotation (both together, see `RunState`). */
+  readonly caravanCount?: number;
+  readonly caravanFirst?: number;
 }
 
 export interface BattleInput {

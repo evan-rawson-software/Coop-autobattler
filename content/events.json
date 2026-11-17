@@ -52,6 +52,21 @@
       "weight": 6,
       "fromRound": 3,
       "params": { "choices": 3, "maxOfferWeight": 4 }
+    },
+    {
+      "id": "evt_caravan",
+      "type": "caravan",
+      "weight": 6,
+      "fromRound": 2,
+      "resourceWeights": { "res_a": 3, "res_b": 3, "res_c": 1 },
+      "params": {
+        "gold": 6,
+        "weightGold": 4,
+        "weightBuilding": 4,
+        "weightUpgrade": 3,
+        "weightNode": 3,
+        "weightModifier": 2
+      }
     }
   ],
   "modifiers": [
