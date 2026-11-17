@@ -75,7 +75,7 @@ import {
   MAX_TICK_DAMAGE,
 } from './limits.js';
 import type { GuardPlan } from './guards.js';
-import type { CaptureConfig } from './points.js';
+import type { CaptureConfig, PointBuffEffect } from './points.js';
 import { maxHealthOf } from './max-health.js';
 import { modifierPercent, unitStrengthPercent } from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
@@ -353,6 +353,11 @@ export interface UnitSim {
   px: number;
   py: number;
   hp: number;
+  /**
+   * The unit's maximum health, fixed at spawn from `unitStats` (CB-8g): healing
+   * never takes `hp` above it. Never changes.
+   */
+  readonly maxHp: number;
   /** Attack damage fixed at spawn (base damage with the side's strength bonus). */
   damage: number;
   attackCooldown: number;
@@ -629,6 +634,11 @@ export interface PointSim {
   progress: number;
   /** Ticks each side has held the point (counted at the end of each tick). */
   held: [number, number];
+  /**
+   * What the point gives its holder (CB-8g): the numbers of its buff, copied
+   * from `content/points.json`. Absent: the point gives nothing (scenarios).
+   */
+  readonly buff?: PointBuffEffect;
 }
 
 /** A point of interest as the arena sees it: its arena cell (CB-8e). */
@@ -638,6 +648,8 @@ export interface GuardPost {
   /** Arena cell: the zone's `x`, and `boardHeight + y` for its `y`. */
   readonly x: number;
   readonly y: number;
+  /** The buff the point gives its holder (CB-8g); absent: none. */
+  readonly buff?: PointBuffEffect;
 }
 
 /** The neutral guards' part of the state (CB-8e). */
@@ -661,6 +673,13 @@ export interface GuardsSim {
    * kills rung of the tiebreak).
    */
   readonly lostToGuards: [number, number];
+  /**
+   * The most a side's held `unit_strength` points add together (CB-8g),
+   * outside the Armory cap.
+   */
+  readonly maxPointStrengthPercent: number;
+  /** Health each side's units regained from `heal` points (CB-8g). */
+  readonly healed: [number, number];
 }
 
 export interface ArenaOptions {
@@ -1126,6 +1145,85 @@ function flowContextFor(
     : { plan, consumers: 'hold', events };
 }
 
+/**
+ * Fail at the start, not mid-battle (see `createArenaSim`): the largest
+ * strength a side's units can reach is the side's base, its strength
+ * modifiers, the largest ramp bonus and `pointMax`, the most its held points
+ * can add (CB-8g, `placeGuards` calls this again with it).
+ */
+function assertStrengthBounds(
+  teams: readonly [TeamState, TeamState],
+  content: ArenaContent,
+  simConfig: SimConfig,
+  sideOptions: ArenaOptions['sideOptions'],
+  pointMax: number,
+): void {
+  // Fail at the start, not mid-battle: with the side's base strength, its
+  // strength modifiers and the largest ramp bonus it can reach (none without
+  // a unit_strength economy building), every unit type must stay within the
+  // stat bounds.
+  const maxLevel = overloadLevel(simConfig.maxBattleTicks, simConfig);
+  for (const side of [0, 1] as const) {
+    const base = sideOptions?.[side]?.unitStrengthPercent ?? 0;
+    assertWithin(base, 0, Number.MAX_SAFE_INTEGER, 'unitStrengthPercent');
+    const team = teams[side];
+    const hasRamp = team.buildings.some((p) => {
+      const def = content.buildings.get(p.def);
+      return def?.kind === 'economy' && def.effect.type === 'unit_strength';
+    });
+    const rampMax = hasRamp ? simConfig.maxUnitStrengthPercent : 0;
+    for (const def of content.units.list()) {
+      // Worst case per unit type: untargeted plus the targeted effects that
+      // list this type.
+      const strength = addInt(
+        addInt(
+          base,
+          unitStrengthPercent(team, def.id, simConfig.minModifierSumPercent),
+        ),
+        addInt(rampMax, pointMax),
+      );
+      const stats = unitStats(0, def, strength);
+      // Overload at the last possible tick scales every hit; one hit must
+      // stay within MAX_HIT so the per-tick damage sums are exact.
+      const hit = mulPct(
+        stats.damage,
+        addInt(100, mulInt(maxLevel, simConfig.overloadDamageStepPercent)),
+      );
+      assertWithin(hit, 0, MAX_HIT, `Unit ${def.id}: Overload hit`);
+    }
+    // Champions (MM-9d): the health percent of a wave is a whole percent of at
+    // least 100, and the health it gives must stay within the bound too.
+    for (const w of sideOptions?.[side]?.scheduledWaves ?? []) {
+      if (w.healthPercent === undefined) continue;
+      assertWithin(
+        w.healthPercent,
+        100,
+        Number.MAX_SAFE_INTEGER,
+        'Scheduled wave healthPercent',
+      );
+      const def = content.units.get(w.unit);
+      if (def !== undefined) {
+        unitStats(
+          0,
+          def,
+          addInt(
+            addInt(
+              base,
+              unitStrengthPercent(
+                team,
+                def.id,
+                simConfig.minModifierSumPercent,
+              ),
+            ),
+            addInt(rampMax, pointMax),
+          ),
+          w.healthPercent,
+        );
+      }
+    }
+  }
+}
+
 /** Create the state of a battle at tick 0 (both boards cold, no units). */
 export function createArenaSim(
   teamA: TeamState,
@@ -1158,70 +1256,8 @@ export function createArenaSim(
         : { side: b.side, building: b.id, hp },
     );
   }
-  // Fail at the start, not mid-battle: with the side's base strength, its
-  // strength modifiers and the largest ramp bonus it can reach (none without
-  // a unit_strength economy building), every unit type must stay within the
-  // stat bounds.
+  assertStrengthBounds(teams, content, simConfig, options.sideOptions, 0);
   const maxLevel = overloadLevel(simConfig.maxBattleTicks, simConfig);
-  for (const side of [0, 1] as const) {
-    const base = options.sideOptions?.[side]?.unitStrengthPercent ?? 0;
-    assertWithin(base, 0, Number.MAX_SAFE_INTEGER, 'unitStrengthPercent');
-    const team = teams[side];
-    const hasRamp = team.buildings.some((p) => {
-      const def = content.buildings.get(p.def);
-      return def?.kind === 'economy' && def.effect.type === 'unit_strength';
-    });
-    const rampMax = hasRamp ? simConfig.maxUnitStrengthPercent : 0;
-    for (const def of content.units.list()) {
-      // Worst case per unit type: untargeted plus the targeted effects that
-      // list this type.
-      const strength = addInt(
-        addInt(
-          base,
-          unitStrengthPercent(team, def.id, simConfig.minModifierSumPercent),
-        ),
-        rampMax,
-      );
-      const stats = unitStats(0, def, strength);
-      // Overload at the last possible tick scales every hit; one hit must
-      // stay within MAX_HIT so the per-tick damage sums are exact.
-      const hit = mulPct(
-        stats.damage,
-        addInt(100, mulInt(maxLevel, simConfig.overloadDamageStepPercent)),
-      );
-      assertWithin(hit, 0, MAX_HIT, `Unit ${def.id}: Overload hit`);
-    }
-    // Champions (MM-9d): the health percent of a wave is a whole percent of at
-    // least 100, and the health it gives must stay within the bound too.
-    for (const w of options.sideOptions?.[side]?.scheduledWaves ?? []) {
-      if (w.healthPercent === undefined) continue;
-      assertWithin(
-        w.healthPercent,
-        100,
-        Number.MAX_SAFE_INTEGER,
-        'Scheduled wave healthPercent',
-      );
-      const def = content.units.get(w.unit);
-      if (def !== undefined) {
-        unitStats(
-          0,
-          def,
-          addInt(
-            addInt(
-              base,
-              unitStrengthPercent(
-                team,
-                def.id,
-                simConfig.minModifierSumPercent,
-              ),
-            ),
-            rampMax,
-          ),
-          w.healthPercent,
-        );
-      }
-    }
-  }
   assertWithin(
     mulInt(maxLevel, simConfig.overloadCoreDamageStep),
     0,
@@ -2033,9 +2069,28 @@ function enterBursts(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
 }
 
 /**
+ * The side's point bonus (CB-8g): the `strengthPercent` of every `unit_strength`
+ * point the side holds now, summed and capped at `maxPointStrengthPercent`.
+ * 0 for a battle without points. Read at the moment of a spawn.
+ */
+export function pointStrengthBonus(sim: ArenaSim, side: number): number {
+  const points = sim.points;
+  if (points === undefined || sim.guards === undefined) return 0;
+  let sum = 0;
+  for (const p of points) {
+    if (p.controller === side && p.buff?.kind === 'unit_strength') {
+      sum += p.buff.strengthPercent;
+    }
+  }
+  return Math.min(sum, sim.guards.maxPointStrengthPercent);
+}
+
+/**
  * The strength percent a unit of `side` spawned now gets: the ramp bonus of
  * the player who owns its producer (`owner`; `null` for a scheduled-wave unit,
- * which has no owner and gets none) plus the side-wide base (PP-8).
+ * which has no owner and gets none) plus the side-wide base (PP-8) plus the
+ * side's point bonus (CB-8g; the side's, so a wave unit gets it too, and
+ * outside the Armory cap).
  */
 function spawnStrength(
   sim: ArenaSim,
@@ -2047,6 +2102,7 @@ function spawnStrength(
   return (
     (owner === null ? 0 : rampBonus(sim, ctx, side, 'unit_strength', owner)) +
     (sim.sideOptions?.[side === 0 ? 0 : 1]?.unitStrengthPercent ?? 0) +
+    pointStrengthBonus(sim, side) +
     unitStrengthPercent(
       sim.teams[side === 0 ? 0 : 1],
       unitId,
@@ -2082,6 +2138,7 @@ function addUnit(
     px,
     py,
     hp: stats.health,
+    maxHp: stats.health,
     damage: stats.damage,
     attackCooldown: 0,
     owner: who.owner,
@@ -2346,6 +2403,8 @@ export interface GuardSetup {
   readonly capture: CaptureConfig;
   /** The points of interest as arena cells, sorted by `id`. */
   readonly posts: readonly GuardPost[];
+  /** `content.points.maxPointStrengthPercent` (CB-8g); absent: 0. */
+  readonly maxPointStrengthPercent?: number;
   /** The guards of each point, in point `id` order (`planGuards`). */
   readonly plans: readonly GuardPlan[];
 }
@@ -2368,6 +2427,34 @@ const GUARD_CELLS: readonly (readonly [number, number])[] = [
 ];
 
 /**
+ * The most the points can add to a side's units (CB-8g): the sum of every
+ * `unit_strength` point of the zone (any side may hold all of them), capped.
+ * The largest strength a unit can then reach must stay within the stat bounds,
+ * so a battle that could overflow is refused at tick 0, not mid-battle.
+ */
+function assertPointStrengthWithinBounds(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+): void {
+  const points = sim.points;
+  const guards = sim.guards;
+  if (points === undefined || guards === undefined) return;
+  let sum = 0;
+  for (const p of points) {
+    if (p.buff?.kind === 'unit_strength') sum += p.buff.strengthPercent;
+  }
+  const pointMax = Math.min(sum, guards.maxPointStrengthPercent);
+  if (pointMax === 0) return;
+  assertStrengthBounds(
+    sim.teams,
+    ctx.content,
+    ctx.simConfig,
+    sim.sideOptions,
+    pointMax,
+  );
+}
+
+/**
  * Tick 0, before the first tick (CB-8e, "Spawning"): record the posts and the
  * leash in the state and place the neutral guards, point by point in the
  * order of `plans`, each guard in its plan's order, taking the next unit IDs.
@@ -2386,9 +2473,16 @@ export function placeGuards(
   sim.guards = {
     leashCells: setup.leashCells,
     capture: { ...setup.capture },
-    posts: setup.posts.map((p) => ({ id: p.id, x: p.x, y: p.y })),
+    posts: setup.posts.map((p) => ({
+      id: p.id,
+      x: p.x,
+      y: p.y,
+      ...(p.buff === undefined ? {} : { buff: { ...p.buff } }),
+    })),
     killed: [0, 0],
     lostToGuards: [0, 0],
+    maxPointStrengthPercent: setup.maxPointStrengthPercent ?? 0,
+    healed: [0, 0],
   };
   // Every point starts uncontrolled with no progress (CB-8f).
   sim.points = setup.posts.map((p) => ({
@@ -2397,7 +2491,9 @@ export function placeGuards(
     progressSide: -1,
     progress: 0,
     held: [0, 0],
+    ...(p.buff === undefined ? {} : { buff: { ...p.buff } }),
   }));
+  assertPointStrengthWithinBounds(sim, ctx);
   if (setup.plans.length === 0) return;
   const { width, boardHeight, gapRows } = ctx.arena.geom;
   buildUnitGrid(sim, ctx);
@@ -2460,6 +2556,7 @@ function addGuard(
     px,
     py,
     hp: stats.health,
+    maxHp: stats.health,
     damage: stats.damage,
     attackCooldown: 0,
     owner: -1,
@@ -2608,6 +2705,7 @@ export function spawnUnitForTest(
     px,
     py,
     hp: stats.health,
+    maxHp: stats.health,
     damage: stats.damage,
     attackCooldown: 0,
     owner,
@@ -3465,7 +3563,7 @@ function destroyBuilding(
  * then scheduled waves), turret and ramp charging; (3) decisions from a
  * snapshot, then
  * turret fire; (4) simultaneous attacks and the Overload Core decay, then
- * damage; (5) moves and separation; (6) deaths and destruction; (7) cooldowns
+ * damage, then healing near held `heal` points; (5) moves and separation; (6) deaths and destruction; (7) cooldowns
  * and the tick counter.
  */
 export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
@@ -3501,6 +3599,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   resolveAttacks(sim, ctx, units, tick, level);
   if (beat) addOverloadDecay(sim, ctx, tick, level);
   applyDamage(sim, ctx, units, tick);
+  healUnits(sim, tick);
 
   // 5. Move and separate.
   moveUnits(ctx, units);
@@ -4161,6 +4260,53 @@ function stepPoints(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
       }
     }
     if (p.controller === 0 || p.controller === 1) p.held[p.controller] += 1;
+  }
+}
+
+/**
+ * Step 4, after the damage (CB-8g): on a tick `T` where `T mod
+ * healIntervalTicks = 0` for a `heal` point held by side 0 or 1, every living
+ * unit of that side whose centre is within `healRadiusCells` of the point
+ * regains `healAmount` health, never above `maxHp`. A unit near several
+ * qualifying points of its side takes the largest `healAmount` once (healing
+ * does not stack). Units at 0 health are not healed; guards, buildings and
+ * Cores never are. The health gained is added to `guards.healed` of the side.
+ */
+function healUnits(sim: ArenaSim, tick: number): void {
+  const points = sim.points;
+  const guards = sim.guards;
+  if (points === undefined || guards === undefined) return;
+  const beats: { k: number; side: number; r2: number; amount: number }[] = [];
+  for (let k = 0; k < points.length; k++) {
+    const p = points[k];
+    const buff = p?.buff;
+    if (
+      p === undefined ||
+      buff?.kind !== 'heal' ||
+      (p.controller !== 0 && p.controller !== 1) ||
+      tick % buff.healIntervalTicks !== 0
+    ) {
+      continue;
+    }
+    const r = buff.healRadiusCells * S;
+    beats.push({ k, side: p.controller, r2: r * r, amount: buff.healAmount });
+  }
+  if (beats.length === 0) return;
+  for (const u of sim.units) {
+    if (u.side === 2 || u.hp <= 0 || u.hp >= u.maxHp) continue;
+    let best = 0;
+    for (const b of beats) {
+      if (b.side !== u.side || b.amount <= best) continue;
+      const post = guards.posts[b.k];
+      if (post === undefined) continue;
+      const dx = post.x * S + S / 2 - u.px;
+      const dy = post.y * S + S / 2 - u.py;
+      if (dx * dx + dy * dy <= b.r2) best = b.amount;
+    }
+    if (best === 0) continue;
+    const gain = Math.min(best, u.maxHp - u.hp);
+    u.hp += gain;
+    guards.healed[u.side === 0 ? 0 : 1] += gain;
   }
 }
 

@@ -276,7 +276,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 500,
               "unitsKilled": 59,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 68,
@@ -298,7 +300,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 500,
               "unitsKilled": 59,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -349,7 +353,7 @@
             }
           ]
         },
-        "stateHash": "1f45e2d3",
+        "stateHash": "f92546e6",
         "events": 2704
       }
     }
@@ -1492,7 +1496,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 12,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 28,
@@ -1514,7 +1520,9 @@
               "rampSteps": 15,
               "buildingDamageDealt": 500,
               "unitsKilled": 76,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ]
         },
@@ -1535,7 +1543,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "9a59b178",
+        "stateHash": "cdbd2fb8",
         "events": 2497
       }
     }
@@ -1866,7 +1874,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 500,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -1888,7 +1898,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -1939,7 +1951,7 @@
             }
           ]
         },
-        "stateHash": "f84adeee",
+        "stateHash": "2849efef",
         "events": 415
       }
     }
@@ -2353,7 +2365,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -2375,7 +2389,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -2426,7 +2442,7 @@
             }
           ]
         },
-        "stateHash": "f350a73d",
+        "stateHash": "8b3c0b12",
         "events": 51
       }
     }
@@ -2535,7 +2551,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -2564,7 +2582,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -2615,7 +2635,7 @@
             }
           ]
         },
-        "stateHash": "dacf3207",
+        "stateHash": "d0a15a5e",
         "events": 70
       },
       "eventLogHash": "a716548f"
@@ -4107,7 +4127,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -4150,7 +4172,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -4226,7 +4250,7 @@
             }
           ]
         },
-        "stateHash": "9dc46ec2",
+        "stateHash": "e2c5f3cd",
         "events": 141
       },
       "eventLogHash": "7630655b"
@@ -4336,7 +4360,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -4365,7 +4391,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -4416,7 +4444,7 @@
             }
           ]
         },
-        "stateHash": "62eb5dfd",
+        "stateHash": "141b1e82",
         "events": 417
       },
       "eventLogHash": "dd325120"
@@ -4526,7 +4554,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -4555,7 +4585,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -4606,7 +4638,7 @@
             }
           ]
         },
-        "stateHash": "bf61819f",
+        "stateHash": "b9caa874",
         "events": 417
       },
       "eventLogHash": "5c54aa61"
@@ -4716,7 +4748,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -4745,7 +4779,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -4796,7 +4832,7 @@
             }
           ]
         },
-        "stateHash": "0031f7cf",
+        "stateHash": "dd9068e2",
         "events": 517
       },
       "eventLogHash": "3ee19ec3"
@@ -4906,7 +4942,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -4935,7 +4973,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -4986,7 +5026,7 @@
             }
           ]
         },
-        "stateHash": "5c91a457",
+        "stateHash": "1ec299a4",
         "events": 81
       },
       "eventLogHash": "7d7bd756"
@@ -5177,7 +5217,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 1,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 1,
@@ -5199,7 +5241,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 18,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -5250,7 +5294,7 @@
             }
           ]
         },
-        "stateHash": "9d96cca5",
+        "stateHash": "a871aa4a",
         "events": 64
       },
       "eventLogHash": "22376b25"
@@ -5413,7 +5457,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -5435,7 +5481,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 2,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -5486,7 +5534,7 @@
             }
           ]
         },
-        "stateHash": "8e9e3fcd",
+        "stateHash": "d09dda10",
         "events": 72
       },
       "eventLogHash": "4a82d304"
@@ -5565,7 +5613,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -5587,7 +5637,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -5638,7 +5690,7 @@
             }
           ]
         },
-        "stateHash": "f0ad7704",
+        "stateHash": "993abdad",
         "events": 51
       },
       "eventLogHash": "959bebef"
@@ -5853,7 +5905,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 6,
               "unitsKilled": 1,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 1,
@@ -5875,7 +5929,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 18,
               "unitsKilled": 1,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -5926,7 +5982,7 @@
             }
           ]
         },
-        "stateHash": "b06d5c08",
+        "stateHash": "5ed0fdf3",
         "events": 334
       },
       "eventLogHash": "a43a8e83"
@@ -6141,7 +6197,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 18,
               "unitsKilled": 1,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 1,
@@ -6163,7 +6221,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 6,
               "unitsKilled": 1,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -6214,7 +6274,7 @@
             }
           ]
         },
-        "stateHash": "74838222",
+        "stateHash": "e5e04961",
         "events": 334
       },
       "eventLogHash": "8ef8bded"
@@ -6407,7 +6467,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 1,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 1,
@@ -6429,7 +6491,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 18,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -6480,7 +6544,7 @@
             }
           ]
         },
-        "stateHash": "0e0f45bd",
+        "stateHash": "d8ea9ea0",
         "events": 326
       },
       "eventLogHash": "b12909fd"
@@ -6645,7 +6709,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -6667,7 +6733,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 2,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -6718,7 +6786,7 @@
             }
           ]
         },
-        "stateHash": "dbc74e7f",
+        "stateHash": "6ac4d824",
         "events": 334
       },
       "eventLogHash": "f60469ca"
@@ -6805,7 +6873,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -6827,7 +6897,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -6878,7 +6950,7 @@
             }
           ]
         },
-        "stateHash": "4a7776d5",
+        "stateHash": "1d117fbe",
         "events": 313
       },
       "eventLogHash": "4f69ffd7"
@@ -7001,7 +7073,7 @@
         "result": {
           "winner": 1,
           "reason": "core_destroyed",
-          "endTick": 952
+          "endTick": 929
         },
         "summary": {
           "sides": [
@@ -7014,18 +7086,20 @@
                   "player": 0,
                   "health": 0,
                   "maxHealth": 200000,
-                  "overkill": 40,
-                  "destroyedTick": 951
+                  "overkill": 133,
+                  "destroyedTick": 928
                 }
               ],
               "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 200000,
-              "coreOverkill": 40,
+              "coreOverkill": 133,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 1200,
@@ -7047,14 +7121,16 @@
               "rampSteps": 0,
               "buildingDamageDealt": 200000,
               "unitsKilled": 0,
-              "guardsKilled": 4
+              "guardsKilled": 4,
+              "pointBonus": 20,
+              "healedHp": 0
             }
           ],
           "points": [
             {
               "id": 0,
               "controller": 1,
-              "pointHeldTicks": [0, 913]
+              "pointHeldTicks": [0, 890]
             }
           ]
         },
@@ -7098,10 +7174,10 @@
             }
           ]
         },
-        "stateHash": "b2db5976",
-        "events": 35793
+        "stateHash": "2bce7547",
+        "events": 34803
       },
-      "eventLogHash": "6a0f59e5"
+      "eventLogHash": "c46114dc"
     }
   },
   {
@@ -7720,7 +7796,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 1090,
               "unitsKilled": 5,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 36,
@@ -7763,7 +7841,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 828,
               "unitsKilled": 8,
-              "guardsKilled": 1
+              "guardsKilled": 1,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -7839,7 +7919,7 @@
             }
           ]
         },
-        "stateHash": "4f32ea93",
+        "stateHash": "28119a2e",
         "events": 1425
       },
       "eventLogHash": "e5dda0bb"
@@ -8186,7 +8266,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 500,
               "unitsKilled": 11,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 13,
@@ -8208,7 +8290,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 11,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -8259,7 +8343,7 @@
             }
           ]
         },
-        "stateHash": "09eec19b",
+        "stateHash": "0f27204c",
         "events": 954
       },
       "eventLogHash": "43ef5b54"
@@ -8547,7 +8631,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 180,
               "unitsKilled": 9,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 13,
@@ -8569,7 +8655,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 500,
               "unitsKilled": 5,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -8620,7 +8708,7 @@
             }
           ]
         },
-        "stateHash": "4f8408a8",
+        "stateHash": "871b8395",
         "events": 763
       },
       "eventLogHash": "a5128583"
@@ -9795,7 +9883,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 9,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 26,
@@ -9817,7 +9907,9 @@
               "rampSteps": 15,
               "buildingDamageDealt": 425,
               "unitsKilled": 69,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ]
         },
@@ -9838,7 +9930,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "dbdab492",
+        "stateHash": "bf3f1d51",
         "events": 2381
       },
       "eventLogHash": "0c9885c7"
@@ -11037,7 +11129,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 14,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 24,
@@ -11059,7 +11153,9 @@
               "rampSteps": 15,
               "buildingDamageDealt": 425,
               "unitsKilled": 63,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ]
         },
@@ -11080,7 +11176,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "bd965be6",
+        "stateHash": "6b09ac37",
         "events": 2343
       },
       "eventLogHash": "e039e8e8"
@@ -11434,7 +11530,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 500,
               "unitsKilled": 0,
-              "guardsKilled": 4
+              "guardsKilled": 4,
+              "pointBonus": 20,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -11456,7 +11554,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -11493,7 +11593,7 @@
             }
           ]
         },
-        "stateHash": "5a8d1d71",
+        "stateHash": "ed13c2cf",
         "events": 591
       },
       "eventLogHash": "420339ae"
@@ -11847,7 +11947,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 500,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 0,
@@ -11869,7 +11971,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -11906,7 +12010,7 @@
             }
           ]
         },
-        "stateHash": "61544649",
+        "stateHash": "f15b0151",
         "events": 531
       },
       "eventLogHash": "90ba2d2b"
@@ -12190,7 +12294,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 500,
               "unitsKilled": 59,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 68,
@@ -12212,7 +12318,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 500,
               "unitsKilled": 59,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             }
           ],
           "points": [
@@ -12263,7 +12371,7 @@
             }
           ]
         },
-        "stateHash": "8e452069",
+        "stateHash": "bf880118",
         "events": 2705
       },
       "eventLogHash": "71e612b5"
@@ -12369,7 +12477,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0,
-              "guardsKilled": 0
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
             },
             {
               "unitsSpawned": 16,
@@ -12391,7 +12501,9 @@
               "rampSteps": 0,
               "buildingDamageDealt": 500,
               "unitsKilled": 0,
-              "guardsKilled": 4
+              "guardsKilled": 4,
+              "pointBonus": 0,
+              "healedHp": 18
             }
           ],
           "points": [
@@ -12416,7 +12528,321 @@
             }
           ]
         },
-        "stateHash": "011a31a9",
+        "stateHash": "3f4a687c",
+        "events": 173
+      },
+      "eventLogHash": "b645475c"
+    }
+  },
+  {
+    "id": "battle.points-strength-wave-captures",
+    "kind": "battle",
+    "description": "The same battle with a unit_strength point (poi_strength): side 1 captures it; the summary shows pointBonus [0, 20] for the holder and healedHp 0 for both. The wave spawned at tick 0, before the capture, so the bonus affects no unit here.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "seed": 1,
+      "round": 1,
+      "zone": {
+        "width": 12,
+        "depth": 7,
+        "features": [],
+        "pointsOfInterest": [
+          {
+            "id": 0,
+            "band": 0,
+            "x": 3,
+            "y": 3,
+            "buff": "poi_strength"
+          }
+        ]
+      },
+      "sideOptions": [
+        null,
+        {
+          "scheduledWaves": [
+            {
+              "tick": 0,
+              "unit": "unit_soldier",
+              "count": 16
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "core_destroyed",
+          "endTick": 226
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 4,
+                  "destroyedTick": 225
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 4,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            },
+            {
+              "unitsSpawned": 16,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 500,
+              "coreMaxHealth": 500,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 500,
+              "unitsKilled": 0,
+              "guardsKilled": 4,
+              "pointBonus": 20,
+              "healedHp": 0
+            }
+          ],
+          "points": [
+            {
+              "id": 0,
+              "controller": 1,
+              "pointHeldTicks": [0, 161]
+            }
+          ]
+        },
+        "zone": {
+          "width": 12,
+          "depth": 7,
+          "features": [],
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 3,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
+        },
+        "stateHash": "6fb69d2e",
+        "events": 173
+      },
+      "eventLogHash": "7da62821"
+    }
+  },
+  {
+    "id": "battle.points-heal-wave-captures",
+    "kind": "battle",
+    "description": "The same battle with a heal point (poi_heal): the units of side 1 that stand near the captured point mend while hurt; the summary has healedHp for side 1 and pointBonus [0, 0].",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "seed": 1,
+      "round": 1,
+      "zone": {
+        "width": 12,
+        "depth": 7,
+        "features": [],
+        "pointsOfInterest": [
+          {
+            "id": 0,
+            "band": 0,
+            "x": 3,
+            "y": 3,
+            "buff": "poi_heal"
+          }
+        ]
+      },
+      "sideOptions": [
+        null,
+        {
+          "scheduledWaves": [
+            {
+              "tick": 0,
+              "unit": "unit_soldier",
+              "count": 16
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "core_destroyed",
+          "endTick": 226
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 4,
+                  "destroyedTick": 225
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 4,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            },
+            {
+              "unitsSpawned": 16,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 500,
+              "coreMaxHealth": 500,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 500,
+              "unitsKilled": 0,
+              "guardsKilled": 4,
+              "pointBonus": 0,
+              "healedHp": 18
+            }
+          ],
+          "points": [
+            {
+              "id": 0,
+              "controller": 1,
+              "pointHeldTicks": [0, 161]
+            }
+          ]
+        },
+        "zone": {
+          "width": 12,
+          "depth": 7,
+          "features": [],
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 3,
+              "y": 3,
+              "buff": "poi_heal"
+            }
+          ]
+        },
+        "stateHash": "3f4a687c",
         "events": 173
       },
       "eventLogHash": "b645475c"

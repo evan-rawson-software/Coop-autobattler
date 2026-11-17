@@ -329,3 +329,33 @@ same per unit-tick. Event log sizes: one plot 0.46 MB (largest), legal dense
 1.5, stress tier 1 four Cores 0.97 against 0.35, stress tier 3 four Cores one
 battle 2.8 s against 6 s, peak 582 units against 1,000, battle length 3,101
 ticks against 4,000), so the budget table is unchanged.
+
+## Point buffs (2026-11-17, issue #374)
+
+A held point gives its side a buff ("Points of interest", "Buffs"). The cost is
+one extra term in the strength of a spawn (a loop over the points, none for a
+battle without points), one `maxHp` number in every unit, and the heal beat at
+the end of step 4: it returns at once unless a held `heal` point has a beat
+this tick (every 10th tick), and then walks the units once against the beats.
+The bench was run once more in the same way as above (median of 3 runs,
+battles per second, the same machine as the run of #373 but not in the same
+sitting, so differences of about 10 percent are noise):
+
+| Board                         | Capture (#373) | Buffs (#374) | Peak per side | Ticks, seed 1 |
+| ----------------------------- | -------------- | ------------ | ------------- | ------------- |
+| One plot, 128 battles         | 96.2           | 88.2         | 21            | 3101 (longest) |
+| Legal dense, tier 1           | 5.63           | 6.11         | 25            | 2901          |
+| Legal dense, tier 3           | 4.03           | 3.95         | 40            | 3101          |
+| Stress, one Core, tier 1      | 1.62           | 1.55         | 398           | 1684          |
+| Stress, four Cores, tier 1    | 0.97           | 1.00         | 592           | 1799          |
+| Stress, one Core, tier 3      | 0.57           | 0.71         | 680           | 1477          |
+| Stress, four Cores, tier 3    | 0.35           | 0.32         | 566           | 3101          |
+
+Microseconds per unit-tick (median): 1.50 (legal tier 1), 1.42 (legal tier 3),
+1.60 (stress, one Core, tier 1), 1.63 (stress, four Cores, tier 3); before 1.59,
+1.38, 1.50 and 1.89. Event logs are up to 9.08 MB (stress, four Cores, tier
+3); the heal has no event. **No limit of the budget is crossed** (one plot 88.2
+against the floor 35, legal dense 6.11 and 3.95 against 2 and 1.5, stress tier 1
+four Cores 1.00 against 0.35, stress tier 3 four Cores one battle 3.1 s against
+6 s, peak 680 units against 1,000, battle length 3,101 ticks against 4,000), so
+the budget table is unchanged.

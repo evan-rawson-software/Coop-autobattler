@@ -12,6 +12,7 @@ import {
   createArenaContext,
   createArenaSim,
   placeGuards,
+  pointStrengthBonus,
   stepArena,
   type ArenaContext,
   type ArenaEvent,
@@ -19,6 +20,7 @@ import {
   type SideOptions,
 } from './arena-sim.js';
 import { planGuards } from './guards.js';
+import { buffEffectOf } from './points.js';
 import {
   generateNeutralZone,
   neutralZoneProblem,
@@ -157,6 +159,14 @@ export interface BattleSideSummary {
    * on a tie. Not a tiebreak counter (PP-10).
    */
   readonly guardsKilled: number;
+  /**
+   * The strength percent this side's held `unit_strength` points add to its
+   * new units at the end of the battle (CB-8g): the sum capped at
+   * `maxPointStrengthPercent`; 0 without points. Not a tiebreak counter.
+   */
+  readonly pointBonus: number;
+  /** Health this side's units regained from `heal` points (CB-8g); 0 without. */
+  readonly healedHp: number;
 }
 
 export interface TimelineSide {
@@ -326,11 +336,16 @@ export function startBattle(
     placeGuards(sim, ctx, {
       leashCells: content.points.guards.leashCells,
       capture: content.points.capture,
-      posts: points.map((p) => ({
-        id: p.id,
-        x: p.x,
-        y: ctx.arena.geom.boardHeight + p.y,
-      })),
+      maxPointStrengthPercent: content.points.maxPointStrengthPercent,
+      posts: points.map((p) => {
+        const buff = content.points.buff.get(p.buff);
+        return {
+          id: p.id,
+          x: p.x,
+          y: ctx.arena.geom.boardHeight + p.y,
+          ...(buff === undefined ? {} : { buff: buffEffectOf(buff) }),
+        };
+      }),
       plans: planGuards(
         content.points.guards,
         content.units,
@@ -508,6 +523,8 @@ export function startBattle(
         buildingDamageDealt: sim.buildingDamageDealt[s],
         unitsKilled: killsOf(s),
         guardsKilled: sim.guards?.killed[s] ?? 0,
+        pointBonus: pointStrengthBonus(sim, s),
+        healedHp: sim.guards?.healed[s] ?? 0,
       };
     };
     const base: BattleSummary = {

@@ -3,9 +3,22 @@
   "chancePercent": 60,
   "bandMarginCells": 2,
   "buffs": [
-    { "id": "poi_strength", "kind": "unit_strength", "weight": 1 },
-    { "id": "poi_heal", "kind": "heal", "weight": 1 }
+    {
+      "id": "poi_strength",
+      "kind": "unit_strength",
+      "weight": 1,
+      "strengthPercent": 20
+    },
+    {
+      "id": "poi_heal",
+      "kind": "heal",
+      "weight": 1,
+      "healIntervalTicks": 10,
+      "healRadiusCells": 3,
+      "healAmount": 2
+    }
   ],
+  "maxPointStrengthPercent": 40,
   "capture": {
     "captureTicks": 50,
     "maxCapturersCounted": 3,

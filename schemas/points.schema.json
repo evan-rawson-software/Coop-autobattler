@@ -2,12 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "points.schema.json",
   "title": "Points of interest",
-  "description": "How points of interest are placed in the neutral zone (CB-8c, CB-8d) guarded (CB-8e) and captured (CB-8f): the chance that a plot band gets one, the margin from the band edges, the buffs a point can have, the neutral guards each point starts with and the capture numbers. The tries per point are mapgen.json placementTries. The numbers of each buff kind are not here yet (CB-8g).",
+  "description": "How points of interest are placed in the neutral zone (CB-8c, CB-8d) guarded (CB-8e) and captured (CB-8f): the chance that a plot band gets one, the margin from the band edges, the buffs a point can have, the neutral guards each point starts with and the capture numbers. The tries per point are mapgen.json placementTries. The buffs a held point gives are in each buff entry (CB-8g).",
   "type": "object",
   "required": [
     "chancePercent",
     "bandMarginCells",
     "buffs",
+    "maxPointStrengthPercent",
     "capture",
     "guards"
   ],
@@ -28,29 +29,89 @@
       "minimum": 0
     },
     "buffs": {
-      "description": "The buffs a point can have; one weighted pick in file order.",
+      "description": "The buffs a point can have; one weighted pick in file order. Each kind has its own numbers (CB-8g); more entries of one kind with other numbers are allowed.",
       "type": "array",
       "minItems": 1,
       "maxItems": 16,
       "items": {
-        "type": "object",
-        "required": ["id", "kind", "weight"],
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^poi_[a-z0-9_]+$"
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["id", "kind", "weight", "strengthPercent"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^poi_[a-z0-9_]+$"
+              },
+              "weight": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "kind": {
+                "const": "unit_strength"
+              },
+              "strengthPercent": {
+                "description": "Percent of health and damage each held point of this kind adds to the units its side spawns (the sum is capped by maxPointStrengthPercent).",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              }
+            }
           },
-          "kind": {
-            "enum": ["unit_strength", "heal"]
-          },
-          "weight": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 1000
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "weight",
+              "healIntervalTicks",
+              "healRadiusCells",
+              "healAmount"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^poi_[a-z0-9_]+$"
+              },
+              "weight": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "kind": {
+                "const": "heal"
+              },
+              "healIntervalTicks": {
+                "description": "Every this many ticks (on ticks where T mod it is 0) the holder's units near the point regain health.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000000
+              },
+              "healRadiusCells": {
+                "description": "Units whose centre is this close to the point's centre are healed.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              "healAmount": {
+                "description": "Health regained per beat, never above the unit's maximum health.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000000
+              }
+            }
           }
-        }
+        ]
       }
+    },
+    "maxPointStrengthPercent": {
+      "description": "The most a side's held unit_strength points add together (CB-8g). It is outside the Armory cap (maxUnitStrengthPercent).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
     },
     "capture": {
       "description": "How units divert to a point and capture it (CB-8f). A unit of a side that does not hold a point diverts to it when within pointAggroRangeCells of it with a clear line of sight, and waits within captureRadiusCells. Each tick with no guard alive and units of one side only in captureRadiusCells, progress grows by the number of those units (at most maxCapturersCounted); at captureTicks the side takes the point.",
