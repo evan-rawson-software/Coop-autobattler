@@ -13,12 +13,12 @@
     "buildings": {
       "file": "buildings.png",
       "w": 320,
-      "h": 148
+      "h": 164
     },
     "units": {
       "file": "units.png",
       "w": 320,
-      "h": 104
+      "h": 120
     },
     "effects": {
       "file": "effects.png",
@@ -1081,9 +1081,25 @@
       "id": "bld_spire",
       "note": "2x2 tiles."
     },
-    "bld_refinery_ab": {
+    "bld_lancer_hall": {
       "sheet": "buildings",
       "x": 66,
+      "y": 82,
+      "w": 16,
+      "h": 48,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        24
+      ],
+      "category": "building",
+      "id": "bld_lancer_hall",
+      "note": "1x3 tiles."
+    },
+    "bld_refinery_ab": {
+      "sheet": "buildings",
+      "x": 83,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1099,7 +1115,7 @@
     },
     "bld_refinery_bc": {
       "sheet": "buildings",
-      "x": 99,
+      "x": 116,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1115,7 +1131,7 @@
     },
     "bld_core": {
       "sheet": "buildings",
-      "x": 132,
+      "x": 149,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1131,7 +1147,7 @@
     },
     "bld_turret_base": {
       "sheet": "buildings",
-      "x": 165,
+      "x": 182,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1146,7 +1162,7 @@
     },
     "bld_turret_head": {
       "sheet": "buildings",
-      "x": 182,
+      "x": 199,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1161,7 +1177,7 @@
     },
     "tier_pips": {
       "sheet": "buildings",
-      "x": 199,
+      "x": 216,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1176,7 +1192,7 @@
     },
     "tier_trim_1x1": {
       "sheet": "buildings",
-      "x": 248,
+      "x": 265,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1192,7 +1208,7 @@
     "tier_trim_2x2": {
       "sheet": "buildings",
       "x": 0,
-      "y": 115,
+      "y": 131,
       "w": 32,
       "h": 32,
       "frames": 2,
@@ -1207,7 +1223,7 @@
     "bld_wall_auto": {
       "sheet": "buildings",
       "x": 65,
-      "y": 115,
+      "y": 131,
       "w": 16,
       "h": 16,
       "frames": 16,
@@ -1808,10 +1824,157 @@
       "id": "unit_golem",
       "note": "Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius. Side B, faces south (flipped vertically), wide bone horns."
     },
-    "unit_archer": {
+    "unit_lancer": {
       "sheet": "units",
       "x": 83,
       "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_lancer",
+      "tintable": true,
+      "note": "Long-reach melee ground unit: a spear that runs the height of the frame, no shield. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_lancer.walk": {
+      "sheet": "units",
+      "x": 100,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_lancer",
+      "tintable": true,
+      "note": "Long-reach melee ground unit: a spear that runs the height of the frame, no shield. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_lancer.attack": {
+      "sheet": "units",
+      "x": 133,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_lancer",
+      "tintable": true,
+      "note": "Long-reach melee ground unit: a spear that runs the height of the frame, no shield. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_lancer@a": {
+      "sheet": "units",
+      "x": 166,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_lancer",
+      "note": "Long-reach melee ground unit: a spear that runs the height of the frame, no shield. Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_lancer@a.walk": {
+      "sheet": "units",
+      "x": 183,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_lancer",
+      "note": "Long-reach melee ground unit: a spear that runs the height of the frame, no shield. Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_lancer@a.attack": {
+      "sheet": "units",
+      "x": 216,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_lancer",
+      "note": "Long-reach melee ground unit: a spear that runs the height of the frame, no shield. Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_lancer@b": {
+      "sheet": "units",
+      "x": 249,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_lancer",
+      "note": "Long-reach melee ground unit: a spear that runs the height of the frame, no shield. Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_lancer@b.walk": {
+      "sheet": "units",
+      "x": 266,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_lancer",
+      "note": "Long-reach melee ground unit: a spear that runs the height of the frame, no shield. Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_lancer@b.attack": {
+      "sheet": "units",
+      "x": 0,
+      "y": 68,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_lancer",
+      "note": "Long-reach melee ground unit: a spear that runs the height of the frame, no shield. Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_archer": {
+      "sheet": "units",
+      "x": 33,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1827,8 +1990,8 @@
     },
     "unit_archer.walk": {
       "sheet": "units",
-      "x": 100,
-      "y": 51,
+      "x": 50,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1844,8 +2007,8 @@
     },
     "unit_archer.attack": {
       "sheet": "units",
-      "x": 133,
-      "y": 51,
+      "x": 83,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1861,8 +2024,8 @@
     },
     "unit_archer@a": {
       "sheet": "units",
-      "x": 166,
-      "y": 51,
+      "x": 116,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1877,8 +2040,8 @@
     },
     "unit_archer@a.walk": {
       "sheet": "units",
-      "x": 183,
-      "y": 51,
+      "x": 133,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1893,8 +2056,8 @@
     },
     "unit_archer@a.attack": {
       "sheet": "units",
-      "x": 216,
-      "y": 51,
+      "x": 166,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1909,8 +2072,8 @@
     },
     "unit_archer@b": {
       "sheet": "units",
-      "x": 249,
-      "y": 51,
+      "x": 199,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1925,8 +2088,8 @@
     },
     "unit_archer@b.walk": {
       "sheet": "units",
-      "x": 266,
-      "y": 51,
+      "x": 216,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1941,7 +2104,7 @@
     },
     "unit_archer@b.attack": {
       "sheet": "units",
-      "x": 0,
+      "x": 249,
       "y": 68,
       "w": 16,
       "h": 16,
@@ -1957,7 +2120,7 @@
     },
     "unit_drone": {
       "sheet": "units",
-      "x": 33,
+      "x": 282,
       "y": 68,
       "w": 16,
       "h": 16,
@@ -1974,8 +2137,8 @@
     },
     "unit_drone.walk": {
       "sheet": "units",
-      "x": 50,
-      "y": 68,
+      "x": 0,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1991,8 +2154,8 @@
     },
     "unit_drone.attack": {
       "sheet": "units",
-      "x": 83,
-      "y": 68,
+      "x": 33,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2008,8 +2171,8 @@
     },
     "unit_drone@a": {
       "sheet": "units",
-      "x": 116,
-      "y": 68,
+      "x": 66,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2024,8 +2187,8 @@
     },
     "unit_drone@a.walk": {
       "sheet": "units",
-      "x": 133,
-      "y": 68,
+      "x": 83,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2040,8 +2203,8 @@
     },
     "unit_drone@a.attack": {
       "sheet": "units",
-      "x": 166,
-      "y": 68,
+      "x": 116,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2056,8 +2219,8 @@
     },
     "unit_drone@b": {
       "sheet": "units",
-      "x": 199,
-      "y": 68,
+      "x": 149,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2072,8 +2235,8 @@
     },
     "unit_drone@b.walk": {
       "sheet": "units",
-      "x": 216,
-      "y": 68,
+      "x": 166,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2088,8 +2251,8 @@
     },
     "unit_drone@b.attack": {
       "sheet": "units",
-      "x": 249,
-      "y": 68,
+      "x": 199,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2104,8 +2267,8 @@
     },
     "unit_caster": {
       "sheet": "units",
-      "x": 282,
-      "y": 68,
+      "x": 232,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2121,7 +2284,7 @@
     },
     "unit_caster.walk": {
       "sheet": "units",
-      "x": 0,
+      "x": 249,
       "y": 85,
       "w": 16,
       "h": 16,
@@ -2138,7 +2301,7 @@
     },
     "unit_caster.attack": {
       "sheet": "units",
-      "x": 33,
+      "x": 282,
       "y": 85,
       "w": 16,
       "h": 16,
@@ -2155,8 +2318,8 @@
     },
     "unit_caster@a": {
       "sheet": "units",
-      "x": 66,
-      "y": 85,
+      "x": 0,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2171,8 +2334,8 @@
     },
     "unit_caster@a.walk": {
       "sheet": "units",
-      "x": 83,
-      "y": 85,
+      "x": 17,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2187,8 +2350,8 @@
     },
     "unit_caster@a.attack": {
       "sheet": "units",
-      "x": 116,
-      "y": 85,
+      "x": 50,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2203,8 +2366,8 @@
     },
     "unit_caster@b": {
       "sheet": "units",
-      "x": 149,
-      "y": 85,
+      "x": 83,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2219,8 +2382,8 @@
     },
     "unit_caster@b.walk": {
       "sheet": "units",
-      "x": 166,
-      "y": 85,
+      "x": 100,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2235,8 +2398,8 @@
     },
     "unit_caster@b.attack": {
       "sheet": "units",
-      "x": 199,
-      "y": 85,
+      "x": 133,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 2,

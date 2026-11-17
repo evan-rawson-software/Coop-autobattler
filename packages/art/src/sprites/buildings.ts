@@ -282,6 +282,35 @@ function golemForgeSprite(): Pix {
   return p;
 }
 
+/** A Lancer hall: a long, thin plate (1x3 tiles) with a rack of spears on the roof and a door at the south end. */
+function lancerHallSprite(): Pix {
+  const p = new Pix(16, 48);
+  plate(p, 1, 1, 14, 46, KIND_RAMP['unit_producer'] as Ramp);
+  for (const [x, y] of [
+    [3, 3],
+    [12, 3],
+    [3, 44],
+    [12, 44],
+  ] as const)
+    p.set(x, y, '4');
+  // Roof panel with a rack of three long spears.
+  p.rect(3, 4, 10, 28, 'K');
+  p.rect(4, 5, 8, 26, 'R');
+  for (const x of [5, 8, 11]) {
+    p.rect(x, 6, 1, 24, 'o');
+    p.rect(x - 1, 6, 3, 1, '5');
+    p.set(x, 5, '6');
+  }
+  p.rect(4, 14, 8, 1, 'm');
+  p.rect(4, 22, 8, 1, 'm');
+  // Door facing south, where the input arrives.
+  p.rect(4, 35, 8, 10, 'K');
+  p.rect(5, 36, 6, 9, '1');
+  p.rect(5, 36, 6, 1, '3');
+  arrow(p, 7, 39, 'n', 'T');
+  return p;
+}
+
 /** A Spire: a slim crystal tower on a dark plate. */
 function spireSprite(): Pix {
   const p = new Pix(32, 32);
@@ -696,6 +725,7 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_foundry: foundrySprite,
   bld_golem_forge: golemForgeSprite,
   bld_spire: spireSprite,
+  bld_lancer_hall: lancerHallSprite,
   // Fill and stud colours stand in for the compound and its two inputs.
   bld_refinery_ab: () => refinerySprite('M', 'm', 'o', 'y'),
   bld_refinery_bc: () => refinerySprite('T', 't', 'y', 'S'),

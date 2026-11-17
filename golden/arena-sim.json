@@ -20063,5 +20063,604 @@
       },
       "eventLogHash": "1a08fbd1"
     }
+  },
+  {
+    "id": "arena-sim.lancer-second-rank",
+    "kind": "arena-sim",
+    "description": "Two Lancers (reach 300) stand a little behind a soldier each; an enemy soldier stands against each ally. The Lancers hit the enemy over the ally with no targeting rule beyond distance, and hold their place while they do; a drone within reach is never hit (a melee unit cannot hit a flyer).",
+    "input": {
+      "gapRows": 4,
+      "ticks": 300,
+      "teamA": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 3
+          }
+        ]
+      },
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_lancer",
+          "px": 1560,
+          "py": 3840
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "px": 1560,
+          "py": 3980
+        },
+        {
+          "side": 0,
+          "def": "unit_lancer",
+          "px": 2280,
+          "py": 3840
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "px": 2280,
+          "py": 3980
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "px": 1560,
+          "py": 4180
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "px": 2280,
+          "py": 4180
+        },
+        {
+          "side": 1,
+          "def": "unit_drone",
+          "px": 2040,
+          "py": 4080
+        }
+      ],
+      "report": "positions"
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "847fa9ff",
+        "events": 103,
+        "sides": [
+          {
+            "spawned": 4,
+            "alive": 3,
+            "unitsDied": 1,
+            "buildingDamageDealt": 305,
+            "buildingsDestroyed": 0,
+            "coreHealth": [400]
+          },
+          {
+            "spawned": 3,
+            "alive": 1,
+            "unitsDied": 2,
+            "buildingDamageDealt": 100,
+            "buildingsDestroyed": 0,
+            "coreHealth": [195]
+          }
+        ],
+        "positions": [
+          [1, 3372, 7092],
+          [2, 3251, 7479],
+          [3, 3260, 7100],
+          [7, 2040, 1140]
+        ]
+      },
+      "eventLogHash": "7e7448bc"
+    }
+  },
+  {
+    "id": "arena-sim.lancer-hall-rotations",
+    "kind": "arena-sim",
+    "description": "Four Lancer halls (1x3), one in each rotation (0, 90, 180, 270), each fed by an Ore collector of tier 1, 3, 2 and 1 through its rotated input side (south, west, north, east), make Lancers against a base that makes soldiers. Saved and restored mid-battle.",
+    "input": {
+      "gapRows": 4,
+      "ticks": 1500,
+      "teamA": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": [
+            {
+              "x": 1,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 4,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 9,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 17,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 20,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 1,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_lancer_hall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 1,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 4,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_lancer_hall",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 6,
+            "y": 5,
+            "rotation": 180
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 9,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_lancer_hall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 10,
+            "y": 5,
+            "rotation": 90
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 17,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_lancer_hall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 13,
+            "y": 5,
+            "rotation": 270
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 4
+              }
+            ]
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "north"
+            },
+            "cells": [
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 6
+              },
+              {
+                "x": 4,
+                "y": 7
+              },
+              {
+                "x": 4,
+                "y": 8
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 6,
+                "y": 8
+              }
+            ]
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "west"
+            },
+            "cells": [
+              {
+                "x": 9,
+                "y": 3
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 7,
+              "side": "north"
+            },
+            "to": {
+              "building": 8,
+              "side": "east"
+            },
+            "cells": [
+              {
+                "x": 17,
+                "y": 3
+              },
+              {
+                "x": 17,
+                "y": 4
+              },
+              {
+                "x": 17,
+                "y": 5
+              },
+              {
+                "x": 16,
+                "y": 5
+              }
+            ]
+          }
+        ]
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": [
+            {
+              "x": 9,
+              "y": 8,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 3,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 9,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 9,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 9,
+                "y": 9
+              },
+              {
+                "x": 9,
+                "y": 10
+              },
+              {
+                "x": 9,
+                "y": 11
+              }
+            ]
+          }
+        ]
+      },
+      "report": "positions",
+      "restoreAt": [500]
+    },
+    "expected": {
+      "result": {
+        "tick": 1500,
+        "stateHash": "9a1684ad",
+        "events": 1508,
+        "sides": [
+          {
+            "spawned": 65,
+            "alive": 59,
+            "unitsDied": 6,
+            "buildingDamageDealt": 500,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0]
+          },
+          {
+            "spawned": 29,
+            "alive": 18,
+            "unitsDied": 11,
+            "buildingDamageDealt": 500,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0]
+          }
+        ],
+        "positions": [
+          [1, 4856, 582],
+          [2, 4305, 7369],
+          [3, 4278, 7508],
+          [4, 4740, 572],
+          [5, 4504, 7104],
+          [6, 4378, 7132],
+          [7, 4321, 7208],
+          [10, 4255, 7275],
+          [12, 4608, 7088],
+          [13, 4209, 7357],
+          [14, 4200, 7454],
+          [21, 1452, 4332],
+          [25, 3000, 1880],
+          [26, 1564, 2168],
+          [28, 368, 2030],
+          [29, 2528, 1550],
+          [30, 3248, 1550],
+          [32, 1572, 2056],
+          [33, 2531, 1647],
+          [35, 1473, 2028],
+          [36, 371, 2127],
+          [37, 2433, 1550],
+          [39, 3251, 1647],
+          [41, 2439, 1642],
+          [42, 1547, 1966],
+          [43, 3532, 4887],
+          [44, 273, 2030],
+          [45, 2595, 1486],
+          [46, 3153, 1550],
+          [47, 3475, 5169],
+          [48, 1483, 2120],
+          [49, 2768, 1550],
+          [50, 3495, 5068],
+          [51, 279, 2122],
+          [52, 2771, 1647],
+          [53, 3159, 1642],
+          [54, 1642, 2117],
+          [55, 3568, 5140],
+          [56, 2673, 1550],
+          [57, 3402, 5087],
+          [58, 1639, 1966],
+          [59, 3548, 5233],
+          [60, 435, 1966],
+          [61, 2679, 1642],
+          [62, 3315, 1486],
+          [63, 3404, 5233],
+          [64, 1328, 1790],
+          [65, 2835, 1486],
+          [66, 3232, 5168],
+          [67, 138, 1785],
+          [68, 3008, 1550],
+          [69, 3489, 1549],
+          [70, 1331, 1887],
+          [71, 3250, 5073],
+          [72, 3011, 1647],
+          [73, 3324, 5141],
+          [74, 1233, 1790],
+          [75, 138, 1888],
+          [76, 2913, 1550],
+          [77, 3157, 5090],
+          [78, 3491, 1647],
+          [79, 3302, 5233],
+          [80, 2919, 1642],
+          [81, 1239, 1882],
+          [82, 3163, 5233],
+          [83, 46, 1791],
+          [84, 3075, 1486],
+          [85, 3393, 1550],
+          [86, 1394, 1725],
+          [87, 3710, 5414],
+          [88, 2280, 1311],
+          [89, 3720, 5316],
+          [90, 1800, 1800],
+          [91, 46, 1884],
+          [92, 2280, 1403],
+          [93, 3399, 1642],
+          [94, 3803, 5397]
+        ]
+      },
+      "eventLogHash": "84b06281"
+    }
   }
 ]

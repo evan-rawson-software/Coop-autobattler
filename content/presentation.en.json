@@ -33,6 +33,10 @@
       "name": "Foundry",
       "description": "Consumes {res_a} and {res_b} together to cast heavy units. Needs both at once; without one it waits."
     },
+    "bld_lancer_hall": {
+      "name": "Lancer hall",
+      "description": "Consumes {res_a} to train lancers. Long and thin, so it fits along walls and plot edges."
+    },
     "bld_refinery_ab": {
       "name": "Composite Refinery",
       "description": "Combines {res_a} and {res_b} into Composite and sends it down its output conduit. Needs both at once; without one it waits."
@@ -126,6 +130,10 @@
     "unit_caster": {
       "name": "Caster",
       "description": "Fragile, shoots from a distance, flying enemies too. Its hit on a unit also deals half as much to every other enemy unit within one cell of the target."
+    },
+    "unit_lancer": {
+      "name": "Lancer",
+      "description": "Fragile, but its spear reaches over the ally in front, so it fights from the second rank. Hits ground enemies only."
     },
     "unit_archer": {
       "name": "Archer",
