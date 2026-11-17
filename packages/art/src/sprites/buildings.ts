@@ -562,6 +562,45 @@ function turretSprite(): Pix {
   return p;
 }
 
+/** A Mortar: a 2x2 turret plate with a short fat tube on a round pit, a stack of shells, and the input arrow at the south. */
+function mortarSprite(): Pix {
+  const p = new Pix(32, 32);
+  plate(p, 1, 1, 30, 30, KIND_RAMP['defense'] as Ramp);
+  for (const [x, y] of [
+    [3, 3],
+    [28, 3],
+    [3, 28],
+    [28, 28],
+  ] as const)
+    p.set(x, y, '5');
+  // The pit the tube sits in.
+  p.ellipse(16, 17, 11, 10, 'K');
+  p.ellipse(16, 17, 10, 9, '2');
+  p.ellipse(16, 17, 8, 7, '1');
+  // The tube, slanted north: wide mouth at the top, narrow root.
+  p.rect(10, 4, 12, 4, 'K');
+  p.rect(11, 5, 10, 2, 'M');
+  p.rect(11, 8, 10, 11, 'K');
+  p.rect(12, 8, 8, 10, '4');
+  p.rect(12, 8, 3, 10, '5');
+  p.rect(12, 8, 8, 1, '6');
+  p.rect(11, 12, 10, 1, 'K');
+  p.rect(11, 16, 10, 1, 'K');
+  p.ellipse(16, 19, 5, 3, 'K');
+  p.ellipse(16, 19, 4, 2, '3');
+  // A stack of shells in the south east corner.
+  for (const [x, y] of [
+    [23, 24],
+    [26, 24],
+    [24, 27],
+  ] as const) {
+    p.ellipse(x, y, 1.6, 1.6, 'K');
+    p.set(x, y, 'y');
+  }
+  arrow(p, 15, 27, 'n', 'T');
+  return p;
+}
+
 function gearIcon(p: Pix): void {
   const cx = 8;
   const cy = 8.5;
@@ -769,6 +808,7 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_gate: gateSprite,
   bld_pylon: pylonSprite,
   bld_turret: turretSprite,
+  bld_mortar: mortarSprite,
   bld_overclocker: () => economySprite(gearIcon),
   bld_armory: () => economySprite(shieldIcon),
   bld_core: coreSprite,

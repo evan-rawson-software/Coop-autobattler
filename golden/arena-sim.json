@@ -21276,5 +21276,571 @@
       },
       "eventLogHash": "850219a9"
     }
+  },
+  {
+    "id": "arena-sim.mortar-blind-spot",
+    "kind": "arena-sim",
+    "description": "A tier 2 Mortar (range 10 cells, minimum 3) fed by a tier 3 Ore collector: an enemy Golem held in melee by a friendly Golem about 2 cells from it, inside the blind spot, is ignored for as long as the fight lasts, while a soldier 9.5 cells away is shot (12 damage). Saved and restored mid-battle.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 3,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 3,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mortar",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 3,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 6
+              },
+              {
+                "x": 3,
+                "y": 7
+              },
+              {
+                "x": 3,
+                "y": 8
+              },
+              {
+                "x": 3,
+                "y": 9
+              },
+              {
+                "x": 3,
+                "y": 10
+              },
+              {
+                "x": 3,
+                "y": 11
+              }
+            ]
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "gapRows": 12,
+      "ticks": 300,
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_golem",
+          "x": 6,
+          "y": 14
+        },
+        {
+          "side": 1,
+          "def": "unit_golem",
+          "x": 6,
+          "y": 15
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 23
+        }
+      ],
+      "report": "stats",
+      "restoreAt": [100]
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "49d49719",
+        "events": 81,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 2,
+            "alive": 1,
+            "unitsDied": 1,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "stats": [
+          [1, 182, 260, 6],
+          [2, 203, 260, 6]
+        ]
+      },
+      "eventLogHash": "d0f796a9"
+    }
+  },
+  {
+    "id": "arena-sim.mortar-splash-group",
+    "kind": "arena-sim",
+    "description": "A tier 2 Mortar shells a cluster of five soldiers: the shot unit takes 12 and each other soldier within one cell of it takes floor(12 * 60 / 100) = 7, all in the same tick. Saved and restored mid-battle.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 3,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 3,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mortar",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 3,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 6
+              },
+              {
+                "x": 3,
+                "y": 7
+              },
+              {
+                "x": 3,
+                "y": 8
+              },
+              {
+                "x": 3,
+                "y": 9
+              },
+              {
+                "x": 3,
+                "y": 10
+              },
+              {
+                "x": 3,
+                "y": 11
+              }
+            ]
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "gapRows": 12,
+      "ticks": 250,
+      "units": [
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 21
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 2,
+          "y": 21
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 4,
+          "y": 21
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 22
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 20
+        }
+      ],
+      "report": "stats",
+      "restoreAt": [60]
+    },
+    "expected": {
+      "result": {
+        "tick": 250,
+        "stateHash": "720ff038",
+        "events": 95,
+        "sides": [
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [314]
+          },
+          {
+            "spawned": 5,
+            "alive": 0,
+            "unitsDied": 5,
+            "buildingDamageDealt": 186,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "stats": []
+      },
+      "eventLogHash": "02896137"
+    }
+  },
+  {
+    "id": "arena-sim.mortar-splash-armor",
+    "kind": "arena-sim",
+    "description": "The mortar-splash-group cluster with two Golems among the soldiers: the Golem armor (3) reduces a shot on a Golem to 9 and its splash to 4, soldiers take the splash of 7 (CB-5h: the percent first, then each unit's armor).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 3,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 3,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mortar",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 3,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 6
+              },
+              {
+                "x": 3,
+                "y": 7
+              },
+              {
+                "x": 3,
+                "y": 8
+              },
+              {
+                "x": 3,
+                "y": 9
+              },
+              {
+                "x": 3,
+                "y": 10
+              },
+              {
+                "x": 3,
+                "y": 11
+              }
+            ]
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "gapRows": 12,
+      "ticks": 250,
+      "units": [
+        {
+          "side": 1,
+          "def": "unit_golem",
+          "x": 3,
+          "y": 21
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 2,
+          "y": 21
+        },
+        {
+          "side": 1,
+          "def": "unit_golem",
+          "x": 4,
+          "y": 21
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 22
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 20
+        }
+      ],
+      "report": "stats"
+    },
+    "expected": {
+      "result": {
+        "tick": 250,
+        "stateHash": "43ad8638",
+        "events": 101,
+        "sides": [
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [248]
+          },
+          {
+            "spawned": 5,
+            "alive": 5,
+            "unitsDied": 0,
+            "buildingDamageDealt": 252,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "stats": [
+          [1, 207, 260, 6],
+          [2, 26, 40, 6],
+          [3, 222, 260, 6],
+          [4, 14, 40, 6],
+          [5, 2, 40, 6]
+        ]
+      },
+      "eventLogHash": "46433c45"
+    }
   }
 ]

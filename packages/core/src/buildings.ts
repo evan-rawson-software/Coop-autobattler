@@ -20,6 +20,7 @@ import {
   MAX_HEALTH,
   MAX_OUTPUT_PER_BATCH,
   MAX_TIER_COST,
+  MAX_SPLASH_RADIUS_CELLS,
   MAX_UNITS_PER_PRODUCTION,
 } from './limits.js';
 import type { ResourceConfig, ResourceId } from './resources.js';
@@ -148,6 +149,19 @@ export interface TurretTier extends TierBase {
   readonly cooldownTicks: number;
   /** Resource units consumed per shot. */
   readonly costPerShot: number;
+  /**
+   * Blind spot (CB-18b): the turret ignores a unit whose centre is closer than
+   * this many cells to its nearest cell. Absent: no blind spot. Below
+   * `rangeCells`.
+   */
+  readonly minRangeCells?: number;
+  /**
+   * Splash (CB-18b): every other enemy unit within `splashRadiusCells` of the
+   * target's centre takes `splashPercent` of the shot (at least 1). Both are
+   * given or both are absent.
+   */
+  readonly splashPercent?: number;
+  readonly splashRadiusCells?: number;
 }
 export interface EconomyTier extends TierBase {
   /** Resource units consumed per upgrade step. */
@@ -967,8 +981,52 @@ function parseBuilding(
           if (n === undefined) ok = false;
           else rec['unitsPerProduction'] = n;
         }
+        if (kind === 'defense' && defenseType === 'turret') {
+          // Optional (CB-18b): a blind spot and splash; absent means neither.
+          const rangeCells = rec['rangeCells'];
+          if ('minRangeCells' in raw) {
+            const n = readInt(raw, 'minRangeCells', 1, where, errors);
+            if (n === undefined) ok = false;
+            else if (rangeCells !== undefined && n >= rangeCells) {
+              ok = false;
+              errors.push(
+                `${where}: "minRangeCells" (${String(n)}) must be below "rangeCells" (${String(rangeCells)}).`,
+              );
+            } else rec['minRangeCells'] = n;
+          }
+          if ('splashPercent' in raw !== 'splashRadiusCells' in raw) {
+            ok = false;
+            errors.push(
+              `${where}: give both "splashPercent" and "splashRadiusCells", or neither.`,
+            );
+          } else if ('splashPercent' in raw) {
+            const pct = readInt(raw, 'splashPercent', 1, where, errors, 100);
+            const rad = readInt(
+              raw,
+              'splashRadiusCells',
+              1,
+              where,
+              errors,
+              MAX_SPLASH_RADIUS_CELLS,
+            );
+            if (pct === undefined || rad === undefined) ok = false;
+            else {
+              rec['splashPercent'] = pct;
+              rec['splashRadiusCells'] = rad;
+            }
+          }
+        }
         for (const key of sortedKeys(raw)) {
           if (kind === 'unit_producer' && key === 'unitsPerProduction') {
+            continue;
+          }
+          if (
+            kind === 'defense' &&
+            defenseType === 'turret' &&
+            (key === 'minRangeCells' ||
+              key === 'splashPercent' ||
+              key === 'splashRadiusCells')
+          ) {
             continue;
           }
           if (
@@ -1114,6 +1172,15 @@ function parseBuilding(
               rangeCells: num(t, 'rangeCells'),
               cooldownTicks: num(t, 'cooldownTicks'),
               costPerShot: num(t, 'costPerShot'),
+              ...(t['minRangeCells'] === undefined
+                ? {}
+                : { minRangeCells: num(t, 'minRangeCells') }),
+              ...(t['splashPercent'] === undefined
+                ? {}
+                : {
+                    splashPercent: num(t, 'splashPercent'),
+                    splashRadiusCells: num(t, 'splashRadiusCells'),
+                  }),
             })),
           ),
         };

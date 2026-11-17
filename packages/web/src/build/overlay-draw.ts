@@ -684,6 +684,55 @@ export function drawBuildOverlay(
     }
   }
 
+  // ---- Range of a selected turret with a blind spot (CB-18b) --------------
+  // Two rounded rectangles around the footprint: the longest range (dashed
+  // ring) and the blind spot (shaded, dotted ring), both measured from the
+  // building's nearest cell like the rules do.
+  if (sel?.kind === 'building' && board !== undefined) {
+    const sb = d.team.buildings.find((x) => x.id === sel.id);
+    const def = sb === undefined ? undefined : d.content.buildings.get(sb.def);
+    const placed = board.buildings.find((x) => x.instance.id === sel.id);
+    const tier =
+      def?.kind === 'defense' && def.defenseType === 'turret' && sb
+        ? def.tiers[sb.tier - 1]
+        : undefined;
+    if (
+      placed !== undefined &&
+      tier?.minRangeCells !== undefined &&
+      tier.minRangeCells > 0
+    ) {
+      const x = sx(placed.rect.x);
+      const y = sy(placed.rect.y);
+      const w = placed.rect.w * z;
+      const h = placed.rect.h * z;
+      const around = (cells: number): Path2D => {
+        const r = cells * z;
+        const path = new Path2D();
+        path.roundRect(x - r, y - r, w + 2 * r, h + 2 * r, r);
+        return path;
+      };
+      ctx.save();
+      const outer = around(tier.rangeCells);
+      ctx.globalAlpha = 0.1;
+      ctx.fillStyle = col.accent;
+      ctx.fill(outer);
+      // The blind spot: the same fill again removed, and a hatch over it.
+      const inner = around(tier.minRangeCells);
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = col.bad;
+      ctx.fill(inner);
+      ctx.globalAlpha = 0.9;
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([lw * 1.6, lw * 1.2]);
+      ctx.strokeStyle = col.accent;
+      ctx.stroke(outer);
+      ctx.setLineDash([lw * 0.4, lw * 1.2]);
+      ctx.strokeStyle = col.bad;
+      ctx.stroke(inner);
+      ctx.restore();
+    }
+  }
+
   // ---- Side markers for the conduit tool -----------------------------------
   // Arrows in the cell outside a side: an output points away from its
   // building (orange), an input points into it (green), so the two never read

@@ -665,7 +665,10 @@ export function buildingRows(
         break;
       }
       case 'turret_fired':
-        if (e.side === side) get(e.building).damage += e.damage;
+        if (e.side === side) {
+          get(e.building).damage += e.damage;
+          for (const t of e.splash ?? []) get(e.building).damage += t.damage;
+        }
         break;
       case 'splash': {
         const home = unitHome.get(e.attacker);

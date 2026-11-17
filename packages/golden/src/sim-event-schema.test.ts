@@ -376,6 +376,17 @@ describe('sim-event.schema.json', () => {
       }),
     ).toBe(true);
     expect(
+      validate({
+        tick: 1,
+        type: 'turret_fired',
+        side: 0,
+        building: 3,
+        unit: 4,
+        damage: 5,
+        splash: [{ unit: 6, damage: 3 }],
+      }),
+    ).toBe(true);
+    expect(
       validate({ tick: 1, type: 'turret_fired', side: 0, building: 3 }),
     ).toBe(false);
     expect(validate({ tick: 1, type: 'stalled', building: 2, extra: 1 })).toBe(

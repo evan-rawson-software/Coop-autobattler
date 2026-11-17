@@ -268,6 +268,11 @@ taken}`. The fields are optional and the follow-up is a new allowed shape of
   `unitsPerProduction` to a unit producer tier (content, absent means 1) and the
   optional `held` to a producer of the arena state (omitted while 0); the arena
   state is not a saved format, so no format number is raised.
+  The Mortar (issue #441) adds the optional turret tier fields `minRangeCells`,
+  `splashPercent` and `splashRadiusCells` (content, absent means the plain
+  turret) and the optional `splash` list to the `turret_fired` arena event
+  (omitted for a turret without splash); no saved record holds either, so no
+  format number is raised.
   (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is

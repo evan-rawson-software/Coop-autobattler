@@ -113,6 +113,13 @@ describe('effect text', () => {
     expect(grand.uses).toBe(`Uses ${ore} 1.00/s`);
     expect(grand.effect).toBe(`Trains Soldier x2 per 8 ${ore}`);
     expect(grand.health).toBe('Health 150');
+    // A turret with a blind spot and splash (the Mortar) says so; it uses 2 Ore
+    // per shot every 30 ticks (the 'uses' line is not asserted here).
+    const mortar = stats('bld_mortar');
+    expect(mortar.effect).toBe(
+      'Fires 8 damage 3 to 9 cells away every 3 s, splash 60% (radius 1)',
+    );
+    expect(mortar.health).toBe('Health 80');
     const extractor = stats('bld_extractor');
     expect(extractor.uses).toBeNull();
     expect(extractor.collects).toBe('Collects 0.50/s');

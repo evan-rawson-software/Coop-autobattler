@@ -77,6 +77,7 @@ export const TEMPLATE_SLOTS: Readonly<Record<string, readonly string[]>> = {
   gate: [],
   pylon: [],
   turret: ['damage', 'range', 'seconds'],
+  turret_splash: ['damage', 'min', 'range', 'seconds', 'percent', 'radius'],
   source_speed: ['step', 'max'],
   unit_strength: ['step', 'max'],
   core: [],

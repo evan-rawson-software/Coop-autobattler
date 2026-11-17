@@ -377,6 +377,49 @@
       ]
     },
     {
+      "id": "bld_mortar",
+      "kind": "defense",
+      "defenseType": "turret",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [{ "resource": "res_a", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 80,
+          "price": 40,
+          "damage": 8,
+          "rangeCells": 9,
+          "minRangeCells": 3,
+          "cooldownTicks": 30,
+          "costPerShot": 2,
+          "splashPercent": 60,
+          "splashRadiusCells": 1
+        },
+        {
+          "health": 120,
+          "price": 80,
+          "damage": 12,
+          "rangeCells": 10,
+          "minRangeCells": 3,
+          "cooldownTicks": 24,
+          "costPerShot": 2,
+          "splashPercent": 60,
+          "splashRadiusCells": 1
+        },
+        {
+          "health": 160,
+          "price": 140,
+          "damage": 16,
+          "rangeCells": 11,
+          "minRangeCells": 3,
+          "cooldownTicks": 18,
+          "costPerShot": 2,
+          "splashPercent": 60,
+          "splashRadiusCells": 1
+        }
+      ]
+    },
+    {
       "id": "bld_overclocker",
       "kind": "economy",
       "effect": { "type": "source_speed" },

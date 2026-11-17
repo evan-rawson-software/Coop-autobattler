@@ -75,7 +75,11 @@ export function templateKey(def: BuildingDef): EffectTemplateKey {
         ? 'unit_producer_multi'
         : 'unit_producer';
     case 'defense':
-      return def.defenseType;
+      // A turret with splash (the Mortar) says so.
+      return def.defenseType === 'turret' &&
+        def.tiers[0].splashPercent !== undefined
+        ? 'turret_splash'
+        : def.defenseType;
     case 'economy':
       return def.effect.type;
     case 'refinery':
@@ -141,6 +145,9 @@ export function effectText(
           values['range'] = String(x.rangeCells);
           values['seconds'] = seconds(x.cooldownTicks);
           values['cost'] = String(x.costPerShot);
+          values['min'] = String(x.minRangeCells ?? 0);
+          values['percent'] = String(x.splashPercent ?? 0);
+          values['radius'] = String(x.splashRadiusCells ?? 0);
         }
       }
       break;

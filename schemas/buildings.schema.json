@@ -113,7 +113,27 @@
         "damage": { "$ref": "#/$defs/damage" },
         "rangeCells": { "$ref": "#/$defs/positive" },
         "cooldownTicks": { "$ref": "#/$defs/positive" },
-        "costPerShot": { "$ref": "#/$defs/positive" }
+        "costPerShot": { "$ref": "#/$defs/positive" },
+        "minRangeCells": {
+          "description": "Blind spot (CB-18b): the turret ignores a unit whose centre is closer than this many cells to its nearest cell. Absent: none. The core loader checks it is below rangeCells.",
+          "$ref": "#/$defs/positive"
+        },
+        "splashPercent": {
+          "description": "Splash (CB-18b): percent of the shot that every other enemy unit near the target takes, at least 1. Given together with splashRadiusCells, or not at all.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "splashRadiusCells": {
+          "description": "Splash radius in cells from the target's centre (CB-18b); at most 2 (MAX_SPLASH_RADIUS_CELLS in the core).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        }
+      },
+      "dependentRequired": {
+        "splashPercent": ["splashRadiusCells"],
+        "splashRadiusCells": ["splashPercent"]
       }
     },
     "tierEconomy": {

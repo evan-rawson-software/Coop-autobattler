@@ -38,6 +38,13 @@ needs an input and every input resource needs a cost.
 A unit producer tier may also give `unitsPerProduction` (an integer from 1 to 4,
 1 when absent): one production spawns that many units and costs `costPerUnit`
 (or each of `costs`) times it.
+A turret tier may also give `minRangeCells` (an integer from 1 up to `rangeCells`
+minus 1: the turret ignores units closer than that, measured from the unit's
+centre to the turret's nearest cell) and `splashPercent` (1 to 100) with
+`splashRadiusCells` (1 or 2), both or neither: the shot also hurts the other
+enemy units within that radius of its target for that percent of the damage, at
+least 1 (area damage as for a unit's `splash`). With none of them a turret
+behaves as before.
 A `refinery` building names an `output` (a refined resource: one with
 `refinedFrom` in `resources.json`, whose `refinedFrom` is the set of the
 resources of its inputs) and each tier gives `costs` (a cost for every input

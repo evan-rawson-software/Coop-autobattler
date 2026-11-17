@@ -97,6 +97,10 @@
       "name": "Turret",
       "description": "Uses {res_b} to shoot enemies that reach your board."
     },
+    "bld_mortar": {
+      "name": "Mortar",
+      "description": "Uses {res_a} to lob shells at enemies far away. Each shell also hurts the enemies around its target, but the Mortar cannot hit anything close to it."
+    },
     "bld_overclocker": {
       "name": "Overclocker",
       "description": "Consumes {res_c} to make sources faster for the rest of the battle."
@@ -346,6 +350,7 @@
       "gate": "Blocks enemies, lets your units pass",
       "pylon": "Shields a boss Core while it stands",
       "turret": "Fires {damage} damage up to {range} cells every {seconds} s",
+      "turret_splash": "Fires {damage} damage {min} to {range} cells away every {seconds} s, splash {percent}% (radius {radius})",
       "source_speed": "+{step}% source speed up to +{max}%",
       "unit_strength": "+{step}% unit strength up to +{max}%",
       "core": "Your party’s health"

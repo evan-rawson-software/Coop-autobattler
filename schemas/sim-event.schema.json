@@ -433,7 +433,7 @@
     },
     {
       "title": "turret_fired",
-      "description": "A turret fired at an enemy unit standing on the turret owner's own side of the front edge, adding `damage` to that unit's pending damage (resolved simultaneously with unit attacks). `side` is the turret owner's side, `building` the turret's instance ID, `unit` the target.",
+      "description": "A turret fired at an enemy unit standing on the turret owner's own side of the front edge, adding `damage` to that unit's pending damage (resolved simultaneously with unit attacks). `side` is the turret owner's side, `building` the turret's instance ID, `unit` the target. A turret tier with splash (the Mortar, CB-18b) adds `splash`: the other opposing units hit within the splash radius of the target's centre, in unit ID order, each with the damage it took after its own armor (possibly empty).",
       "type": "object",
       "required": ["tick", "type", "side", "building", "unit", "damage"],
       "additionalProperties": false,
@@ -460,6 +460,18 @@
         "damage": {
           "type": "integer",
           "minimum": 1
+        },
+        "splash": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["unit", "damage"],
+            "additionalProperties": false,
+            "properties": {
+              "unit": { "type": "integer", "minimum": 1 },
+              "damage": { "type": "integer", "minimum": 1 }
+            }
+          }
         }
       }
     },
