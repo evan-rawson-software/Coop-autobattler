@@ -268,6 +268,11 @@ taken}`. The fields are optional and the follow-up is a new allowed shape of
   `unitsPerProduction` to a unit producer tier (content, absent means 1) and the
   optional `held` to a producer of the arena state (omitted while 0); the arena
   state is not a saved format, so no format number is raised.
+  The Tunnel (issue #442) adds two building definitions (`bld_tunnel_in`,
+  `bld_tunnel_out`) and no saved field: the pairing of their ends is derived
+  from the placement, and a team state or ghost that holds them is an ordinary
+  state, so no format number is raised (a state saved before it has none of
+  them). The pairs a battle keeps are in the arena context, which is not saved.
   The Mortar (issue #441) adds the optional turret tier fields `minRangeCells`,
   `splashPercent` and `splashRadiusCells` (content, absent means the plain
   turret) and the optional `splash` list to the `turret_fired` arena event

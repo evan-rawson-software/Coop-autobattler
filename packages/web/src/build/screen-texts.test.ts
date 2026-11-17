@@ -127,6 +127,22 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ],
   ['problemNothingFeeding', { name: 'Mill' }, 'Mill has nothing feeding it.'],
   [
+    'problemTunnelUnpaired',
+    { name: 'Mill' },
+    'Mill has no partner end in line within range, so it does nothing.',
+  ],
+  ['uiTunnelUnpaired', {}, 'No partner'],
+  [
+    'uiTunnelHintEntrance',
+    { span: '5' },
+    'Its exit goes in line ahead, up to 5 cells away.',
+  ],
+  [
+    'uiTunnelHintExit',
+    { span: '5' },
+    'An entrance facing it in line, up to 5 cells away, pairs with it.',
+  ],
+  [
     'problemStalled',
     { name: 'Mill', percent: '97' },
     'Mill is stalled 97% of the time: output backs up.',

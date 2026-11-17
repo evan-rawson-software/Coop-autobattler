@@ -129,6 +129,12 @@ function checkDef(
     );
     return undefined;
   }
+  if (b.kind === 'route' && b.routeType === 'tunnel_out') {
+    errors.push(
+      `${at}: "${def}" is a tunnel exit, bought only together with its entrance (name the entrance).`,
+    );
+    return undefined;
+  }
   return def;
 }
 

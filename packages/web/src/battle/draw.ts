@@ -13,6 +13,7 @@ import {
   type ArenaEvent,
   type ArenaSim,
   type TeamState,
+  type TunnelPair,
   type UnitSim,
 } from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
@@ -50,6 +51,12 @@ export interface DrawIndex {
     Map<number, readonly Pt[]>,
   ];
   readonly boardLabels: readonly { text: string; rect: ViewRect }[];
+  /**
+   * Each side's Tunnel pairs at the start of the battle (CB-9g): the ends'
+   * building IDs and their centres in view units. A pair is drawn while both
+   * ends stand.
+   */
+  readonly tunnels?: readonly [readonly TunnelLine[], readonly TunnelLine[]];
   /** Each side's refinery building IDs (their batches show as a pulse). */
   readonly refineries?: readonly [ReadonlySet<number>, ReadonlySet<number>];
   /** Each side's turrets with splash: building ID to the blast radius in cells. */
@@ -57,6 +64,14 @@ export interface DrawIndex {
     ReadonlyMap<number, number>,
     ReadonlyMap<number, number>,
   ];
+}
+
+/** One Tunnel pair of the battle, for the dashed line under the board. */
+export interface TunnelLine {
+  readonly entrance: number;
+  readonly exit: number;
+  readonly from: Pt;
+  readonly to: Pt;
 }
 
 export function makeDrawIndex(
@@ -67,6 +82,8 @@ export function makeDrawIndex(
     ReadonlyMap<number, number> | undefined,
     ReadonlyMap<number, number> | undefined,
   ],
+  /** Each side's Tunnel pairs at the start. */
+  pairs?: readonly [readonly TunnelPair[], readonly TunnelPair[]],
 ): DrawIndex {
   const rects: [Map<number, ViewRect>, Map<number, ViewRect>] = [
     new Map<number, ViewRect>(),
@@ -83,6 +100,7 @@ export function makeDrawIndex(
     new Map<number, number>(),
     new Map<number, number>(),
   ];
+  const tunnels: [TunnelLine[], TunnelLine[]] = [[], []];
   for (const b of initial.boards) {
     const side = b.frame.id === 'own' ? 0 : 1;
     for (const s of b.buildings) {
@@ -103,6 +121,27 @@ export function makeDrawIndex(
         ...(conduits[side].get(recv) ?? []),
       ]);
     }
+    // A Tunnel pair is a flow edge under minus its entrance's id; its slots
+    // run from the cell after the entrance to the exit's cell.
+    for (const p of pairs?.[side] ?? []) {
+      const a = rects[side].get(p.entrance);
+      const e = rects[side].get(p.exit);
+      if (a === undefined || e === undefined) continue;
+      const from = { x: a.x + a.w / 2, y: a.y + a.h / 2 };
+      const to = { x: e.x + e.w / 2, y: e.y + e.h / 2 };
+      tunnels[side].push({ entrance: p.entrance, exit: p.exit, from, to });
+      const step = {
+        x: (to.x - from.x) / p.distance,
+        y: (to.y - from.y) / p.distance,
+      };
+      conduits[side].set(
+        -p.entrance,
+        Array.from({ length: p.distance }, (_v, i) => ({
+          x: from.x + step.x * (i + 1),
+          y: from.y + step.y * (i + 1),
+        })),
+      );
+    }
     boardLabels.push({
       text: side === 0 ? labels.own : labels.enemy,
       rect: { x: b.frame.ox, y: b.frame.oy, w: b.frame.w, h: b.frame.h },
@@ -113,6 +152,7 @@ export function makeDrawIndex(
     coreRects: cores,
     conduitCells: conduits,
     boardLabels,
+    tunnels,
     refineries,
     splashRadius,
   };
@@ -559,6 +599,38 @@ export function drawBattleOverlay(
       ctx.rotate(-Math.PI / 2);
       ctx.fillText(l.text, 0, 0);
       ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // --- Tunnel pairs: a dashed line under the board between the two ends, for
+  // as long as both stand (CB-9g). A destroyed end takes its pair away.
+  if (index.tunnels !== undefined && z >= 4) {
+    const down = new Set<number>();
+    for (const h of sim.health) {
+      if (!isCoreHealth(h) && h.hp <= 0) {
+        down.add(h.side * 1_000_000_000 + h.building);
+      }
+    }
+    ctx.save();
+    ctx.setLineDash([Math.max(3, z * 0.3), Math.max(3, z * 0.22)]);
+    ctx.lineWidth = Math.max(1.5, z * 0.09);
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.7;
+    for (const side of [0, 1] as const) {
+      for (const l of index.tunnels[side]) {
+        if (
+          down.has(side * 1_000_000_000 + l.entrance) ||
+          down.has(side * 1_000_000_000 + l.exit)
+        ) {
+          continue;
+        }
+        ctx.strokeStyle = sideColor(side);
+        ctx.beginPath();
+        ctx.moveTo(ox + l.from.x * z, oy + l.from.y * z);
+        ctx.lineTo(ox + l.to.x * z, oy + l.to.y * z);
+        ctx.stroke();
+      }
     }
     ctx.restore();
   }

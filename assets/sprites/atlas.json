@@ -777,9 +777,41 @@
       "id": "bld_crossover",
       "note": "1x1 tiles."
     },
-    "bld_barracks": {
+    "bld_tunnel_in": {
       "sheet": "buildings",
       "x": 68,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_tunnel_in",
+      "note": "1x1 tiles."
+    },
+    "bld_tunnel_out": {
+      "sheet": "buildings",
+      "x": 85,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_tunnel_out",
+      "note": "1x1 tiles."
+    },
+    "bld_barracks": {
+      "sheet": "buildings",
+      "x": 102,
       "y": 0,
       "w": 32,
       "h": 32,
@@ -795,7 +827,7 @@
     },
     "bld_range": {
       "sheet": "buildings",
-      "x": 101,
+      "x": 135,
       "y": 0,
       "w": 32,
       "h": 32,
@@ -811,7 +843,7 @@
     },
     "bld_hangar": {
       "sheet": "buildings",
-      "x": 134,
+      "x": 168,
       "y": 0,
       "w": 32,
       "h": 32,
@@ -827,7 +859,7 @@
     },
     "bld_foundry": {
       "sheet": "buildings",
-      "x": 167,
+      "x": 201,
       "y": 0,
       "w": 32,
       "h": 32,
@@ -843,7 +875,7 @@
     },
     "bld_wall_i": {
       "sheet": "buildings",
-      "x": 200,
+      "x": 234,
       "y": 0,
       "w": 64,
       "h": 16,
@@ -859,8 +891,8 @@
     },
     "bld_wall_o": {
       "sheet": "buildings",
-      "x": 265,
-      "y": 0,
+      "x": 0,
+      "y": 33,
       "w": 32,
       "h": 32,
       "frames": 1,
@@ -875,7 +907,7 @@
     },
     "bld_wall_t": {
       "sheet": "buildings",
-      "x": 0,
+      "x": 33,
       "y": 33,
       "w": 48,
       "h": 32,
@@ -891,7 +923,7 @@
     },
     "bld_wall_s": {
       "sheet": "buildings",
-      "x": 49,
+      "x": 82,
       "y": 33,
       "w": 48,
       "h": 32,
@@ -907,7 +939,7 @@
     },
     "bld_wall_z": {
       "sheet": "buildings",
-      "x": 98,
+      "x": 131,
       "y": 33,
       "w": 48,
       "h": 32,
@@ -923,7 +955,7 @@
     },
     "bld_wall_l": {
       "sheet": "buildings",
-      "x": 147,
+      "x": 180,
       "y": 33,
       "w": 32,
       "h": 48,
@@ -939,7 +971,7 @@
     },
     "bld_wall_j": {
       "sheet": "buildings",
-      "x": 180,
+      "x": 213,
       "y": 33,
       "w": 32,
       "h": 48,
@@ -955,7 +987,7 @@
     },
     "bld_wall_block": {
       "sheet": "buildings",
-      "x": 213,
+      "x": 246,
       "y": 33,
       "w": 16,
       "h": 16,
@@ -971,7 +1003,7 @@
     },
     "bld_pylon": {
       "sheet": "buildings",
-      "x": 230,
+      "x": 263,
       "y": 33,
       "w": 16,
       "h": 16,
@@ -987,7 +1019,7 @@
     },
     "bld_gate": {
       "sheet": "buildings",
-      "x": 247,
+      "x": 280,
       "y": 33,
       "w": 16,
       "h": 16,
@@ -1003,7 +1035,7 @@
     },
     "bld_turret": {
       "sheet": "buildings",
-      "x": 264,
+      "x": 297,
       "y": 33,
       "w": 16,
       "h": 16,
@@ -1019,8 +1051,8 @@
     },
     "bld_mortar": {
       "sheet": "buildings",
-      "x": 281,
-      "y": 33,
+      "x": 0,
+      "y": 82,
       "w": 32,
       "h": 32,
       "frames": 1,
@@ -1035,7 +1067,7 @@
     },
     "bld_overclocker": {
       "sheet": "buildings",
-      "x": 0,
+      "x": 33,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1051,7 +1083,7 @@
     },
     "bld_armory": {
       "sheet": "buildings",
-      "x": 17,
+      "x": 50,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1067,7 +1099,7 @@
     },
     "bld_golem_forge": {
       "sheet": "buildings",
-      "x": 34,
+      "x": 67,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1083,7 +1115,7 @@
     },
     "bld_spire": {
       "sheet": "buildings",
-      "x": 67,
+      "x": 100,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1099,7 +1131,7 @@
     },
     "bld_lancer_hall": {
       "sheet": "buildings",
-      "x": 100,
+      "x": 133,
       "y": 82,
       "w": 16,
       "h": 48,
@@ -1115,7 +1147,7 @@
     },
     "bld_grand_barracks": {
       "sheet": "buildings",
-      "x": 117,
+      "x": 150,
       "y": 82,
       "w": 48,
       "h": 48,
@@ -1131,7 +1163,7 @@
     },
     "bld_refinery_ab": {
       "sheet": "buildings",
-      "x": 166,
+      "x": 199,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1147,7 +1179,7 @@
     },
     "bld_refinery_bc": {
       "sheet": "buildings",
-      "x": 199,
+      "x": 232,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1163,7 +1195,7 @@
     },
     "bld_core": {
       "sheet": "buildings",
-      "x": 232,
+      "x": 265,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1179,7 +1211,7 @@
     },
     "bld_turret_base": {
       "sheet": "buildings",
-      "x": 265,
+      "x": 298,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1194,8 +1226,8 @@
     },
     "bld_turret_head": {
       "sheet": "buildings",
-      "x": 282,
-      "y": 82,
+      "x": 0,
+      "y": 131,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1209,7 +1241,7 @@
     },
     "tier_pips": {
       "sheet": "buildings",
-      "x": 0,
+      "x": 17,
       "y": 131,
       "w": 16,
       "h": 16,
@@ -1224,7 +1256,7 @@
     },
     "tier_trim_1x1": {
       "sheet": "buildings",
-      "x": 49,
+      "x": 66,
       "y": 131,
       "w": 16,
       "h": 16,
@@ -1239,7 +1271,7 @@
     },
     "tier_trim_2x2": {
       "sheet": "buildings",
-      "x": 82,
+      "x": 99,
       "y": 131,
       "w": 32,
       "h": 32,
@@ -1254,7 +1286,7 @@
     },
     "bld_wall_auto": {
       "sheet": "buildings",
-      "x": 147,
+      "x": 164,
       "y": 131,
       "w": 16,
       "h": 16,

@@ -259,7 +259,20 @@
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/side" }
         },
-        "routeType": { "enum": ["splitter", "merger", "crossover"] },
+        "routeType": {
+          "enum": ["splitter", "merger", "crossover", "tunnel_in", "tunnel_out"]
+        },
+        "partner": {
+          "description": "Tunnel entrance only (CB-9g): the exit building bought with it. The core loader checks it is a tunnel exit named by one entrance only, and that the entrance's price is the exit's or one more.",
+          "type": "string",
+          "pattern": "^bld_[a-z0-9_]+$"
+        },
+        "maxSpanCells": {
+          "description": "Tunnel entrance only (CB-9g): the most cells between the two ends, the same at every tier (MAX_TUNNEL_SPAN_CELLS in the core).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12
+        },
         "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
         "output": {
           "description": "Refinery only: the refined resource it makes. Its refinedFrom must be, as a set, the resources of the building's inputs (the core loader checks this).",
@@ -299,6 +312,8 @@
                 "items": { "$ref": "#/$defs/tierSource" }
               },
               "routeType": false,
+              "partner": false,
+              "maxSpanCells": false,
               "unit": false,
               "output": false,
               "defenseType": false,
@@ -317,6 +332,8 @@
             "required": ["routeType"],
             "properties": {
               "routeType": true,
+              "partner": true,
+              "maxSpanCells": true,
               "tiers": {
                 "type": "array",
                 "minItems": 3,
@@ -328,6 +345,17 @@
               "defenseType": false,
               "effect": false
             }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "routeType": { "const": "tunnel_in" } },
+            "required": ["routeType"]
+          },
+          "then": { "required": ["partner", "maxSpanCells"] },
+          "else": {
+            "properties": { "partner": false, "maxSpanCells": false }
           }
         },
         {
@@ -349,6 +377,8 @@
               },
               "output": false,
               "routeType": false,
+              "partner": false,
+              "maxSpanCells": false,
               "defenseType": false,
               "effect": false
             }
@@ -366,6 +396,8 @@
             "properties": {
               "defenseType": true,
               "routeType": false,
+              "partner": false,
+              "maxSpanCells": false,
               "unit": false,
               "output": false,
               "effect": false
@@ -432,6 +464,8 @@
                 "items": { "$ref": "#/$defs/tierEconomy" }
               },
               "routeType": false,
+              "partner": false,
+              "maxSpanCells": false,
               "unit": false,
               "output": false,
               "defenseType": false
@@ -456,6 +490,8 @@
                 "items": { "$ref": "#/$defs/tierRefinery" }
               },
               "routeType": false,
+              "partner": false,
+              "maxSpanCells": false,
               "unit": false,
               "defenseType": false,
               "effect": false
@@ -478,6 +514,8 @@
                 "items": { "$ref": "#/$defs/tierCore" }
               },
               "routeType": false,
+              "partner": false,
+              "maxSpanCells": false,
               "unit": false,
               "output": false,
               "defenseType": false,

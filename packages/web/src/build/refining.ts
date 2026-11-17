@@ -8,6 +8,7 @@ import {
   buildingEnd,
   costEntries,
   productionOf,
+  tunnelPairs,
   type BuildingDef,
   type PlacedBuilding,
   type TeamState,
@@ -85,14 +86,21 @@ export function mismatchWanted(detail: string | undefined): string | null {
  */
 export function downstreamOf(
   team: TeamState,
-  content: Pick<WebContent, 'buildings'>,
+  content: Pick<WebContent, 'buildings' | 'terrain'>,
   from: number,
 ): number[] {
   const out: number[] = [];
   const seen = new Set<number>([from]);
   const todo = [from];
+  const pairs = tunnelPairs(team, content);
   while (todo.length > 0) {
     const at = todo.pop() as number;
+    // A Tunnel entrance carries on at its exit (CB-9g).
+    const exit = pairs.find((p) => p.entrance === at)?.exit;
+    if (exit !== undefined && !seen.has(exit)) {
+      seen.add(exit);
+      todo.push(exit);
+    }
     for (const c of team.conduits) {
       if (buildingEnd(c.from)?.building !== at) continue;
       const to = buildingEnd(c.to)?.building;
@@ -116,18 +124,25 @@ export function downstreamOf(
  */
 export function upstreamSources(
   team: TeamState,
-  content: Pick<WebContent, 'buildings'>,
+  content: Pick<WebContent, 'buildings' | 'terrain'>,
   building: number,
   side: string,
 ): number[] {
   const out: number[] = [];
   const seen = new Set<number>();
+  const pairs = tunnelPairs(team, content);
   // Conduits into (building, side) first; then every conduit into a router.
   const todo: { building: number; side: string | null }[] = [
     { building, side },
   ];
   while (todo.length > 0) {
     const at = todo.pop() as { building: number; side: string | null };
+    // What leaves a Tunnel exit came in at its entrance (CB-9g).
+    const entrance = pairs.find((p) => p.exit === at.building)?.entrance;
+    if (entrance !== undefined && !seen.has(entrance)) {
+      seen.add(entrance);
+      todo.push({ building: entrance, side: null });
+    }
     for (const c of team.conduits) {
       const to = buildingEnd(c.to);
       if (to === null || to.building !== at.building) continue;
@@ -170,7 +185,7 @@ export interface ChainRow {
  */
 export function chainRows(
   team: TeamState,
-  content: Pick<WebContent, 'buildings'>,
+  content: Pick<WebContent, 'buildings' | 'terrain'>,
   supply: readonly Supply[],
   starved: ReadonlySet<number>,
 ): ChainRow[] {

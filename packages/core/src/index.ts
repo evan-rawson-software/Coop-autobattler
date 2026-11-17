@@ -29,6 +29,7 @@ export {
   MAX_SPLASH_RADIUS,
   MAX_TIER_COST,
   MAX_UNITS_PER_PRODUCTION,
+  MAX_TUNNEL_SPAN_CELLS,
   MAX_SPLASH_RADIUS_CELLS,
   MAX_OUTPUT_PER_BATCH,
   MAX_DAMAGE,
@@ -297,6 +298,8 @@ export {
   addedNodeCount,
   addNode,
   type AddNodeReason,
+  addItemToStash,
+  type AddItemToStashResult,
   addToStash,
   type AddToStashResult,
   type AnyReason,
@@ -338,6 +341,7 @@ export {
   type BrokenLink,
   brokenLinks,
   buildFlowGraph,
+  networkProblem,
   type ConduitEndArg,
   type ConduitReason,
   conduitResource,
@@ -575,6 +579,7 @@ export {
   buyOffer,
   type PlayerShop,
   isPylonDef,
+  itemPrice,
   offerWeightsAt,
   rareOfferDefs,
   rerollOffers,
@@ -651,3 +656,15 @@ export {
   renderNeutralZoneAscii,
   renderTeamStateAscii,
 } from './ascii-render.js';
+
+// ---------------------------------------------------------------------------
+// Tunnels (CB-9g, see "Tunnels")
+export {
+  pairTunnelEnds,
+  tunnelEdgeId,
+  tunnelEnds,
+  tunnelPairs,
+  unpairedTunnelEnds,
+  type TunnelEnd,
+  type TunnelPair,
+} from './tunnels.js';

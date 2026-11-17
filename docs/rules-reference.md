@@ -365,6 +365,7 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 | `MAX_TIER_COST`        | 1 000 000           | each value of `costs` of a unit producer tier (CB-5e); at most four of them |
 | `MAX_OUTPUT_PER_BATCH` | 1 000               | `outputPerBatch` of a refinery tier (CB-5d)                               |
 | `MAX_UNITS_PER_PRODUCTION` | 4               | `unitsPerProduction` of a unit producer tier (CB-13a); 1 when absent      |
+| `MAX_TUNNEL_SPAN_CELLS` | 12                 | `maxSpanCells` of a Tunnel entrance (CB-9g): the cells between its two ends |
 | `MAX_ARMOR`            | 1 000               | `armor` of a unit (CB-5h); 0 when absent                                  |
 | `MAX_SPLASH_RADIUS_CELLS` | 2                | `splashRadiusCells` of a turret tier (CB-18b): `MAX_SPLASH_RADIUS / 240`; `splashPercent` is 1 to 100 |
 | `MAX_SPLASH_RADIUS`    | 480                 | `splash.radiusSub` of a unit (CB-5h): 1 to 480 sub-cell units (two cells); `splash.percent` is 1 to 100 |
@@ -518,6 +519,20 @@ tier the field (1 when absent). The cost of one production, `costPerUnit *
 unitsPerProduction` (and each `costs` value times it), is then at most `4 * 4 *
 1e6`, so `needPer1000` stays far below 2^53. The field is refused on any other
 kind of building ("field ... is not valid").
+
+A route building of `routeType` `tunnel_in` (the Tunnel entrance, CB-9g) gives,
+both required, `partner` (the building ID of its exit) and `maxSpanCells` (an
+integer from 0 to `MAX_TUNNEL_SPAN_CELLS`, the same at every tier); the fields
+are refused on every other building. `loadBuildings` checks the pair as a whole:
+the partner exists, is a route building of `routeType` `tunnel_out` and is named
+by no other entrance; every `tunnel_out` is some entrance's partner; both ends
+are 1x1 with no mask; the entrance has exactly one input side and no output
+side, the exit exactly one output side and no input side (neither names a
+resource); and, tier by tier, the entrance's `price` is the exit's `price` or
+one more (**the split of the item's price**: the entrance takes the odd gold, so
+the two ends' prices add up to the item's price, see "Shops and gold"). The
+economy loader refuses a `tunnel_out` in `offerWeights` or the starting kit
+(it is bought only with its entrance). Health is per end and free.
 
 A turret tier may also give, all optional (CB-18b; absent means the plain turret,
 which behaves exactly as before): `minRangeCells`, an integer of at least 1 and
@@ -1086,7 +1101,15 @@ Each returns `{ ok: true, state }` (`addToStash` also the new `id`) or
   as overlap.
 - `returnToStash({ actor, id })`: `id` must be in `buildings`; the entry goes back
   to `stash` (sorted by ID). Rejects with `unknown_building`, `invalid_owner`
-  or `not_owner`.
+  or `not_owner`; for a Tunnel end also `would_loop` and `resource_mismatch`
+  (below, "Tunnels").
+- `addItemToStash(def, tier, owner)` (CB-9g): one **shop item**. It is
+  `addToStash` of `def`, and, when `def` is a Tunnel entrance, of its `partner`
+  (the exit) as well, at the same tier and owner, as a second entry with the next
+  ID: the entrance's entry comes first. It fails as `addToStash` does and then
+  adds nothing. The shop's buy, the starting kit and the caravan use it; the
+  `team-state-ops` op `addToStash` stays one building, so a script names the two
+  ends one by one.
 - `removeFromStash({ actor, id })`: `id` must be in `stash`; the entry is deleted
   (selling and refunds come later). Rejects with `unknown_building`,
   `invalid_owner` or `not_owner`.
@@ -1123,6 +1146,11 @@ in this order is the reported reason:
    - `node_reserved`: a building that is not a source may not cover any node
      cell. A resource node cell is otherwise buildable, so this keeps nodes
      for sources.
+11. Tunnel ends only (CB-9g, "Tunnels"): once the placement is otherwise legal,
+    the network of the state after the operation (with the conduits of a moving
+    building detached) is checked as `addConduit` checks one: `resource_mismatch`,
+    else `would_loop`. Placing or moving an end can bring a pair into being, and a
+    pair is a conduit segment.
 
 A rejected operation changes nothing. Placement does not require the Core to
 be placed first. A building goes only in its owner's plot (PP-1).
@@ -1153,7 +1181,8 @@ placed buildings); then every conduit (shape, unique ID among conduits, each ID 
 the conduit's `owner`, canonical order, `nextConduitId` a list of `partySize`
 positive integers each above the largest number `n` of that owner's conduits, each conduit's geometry rules against all the other
 conduits, no two conduits on one side, no loop, no resource mismatch; see
-Conduits). It does not check that the map is one the generator could produce.
+Conduits), counting the Tunnel pairs derived from the placement as conduit
+segments and re-checking them (see "Tunnels"). It does not check that the map is one the generator could produce.
 
 ### ASCII rendering
 
@@ -1173,7 +1202,11 @@ Input `{ "seed": u32, "partySize": 1..4, "ops": [...] }`. The map is the
 `id`, `x`, `y`, `rotation`), `returnToStash` and `removeFromStash` (`actor`,
 `id`), `addNode` (`owner`, `x`, `y`, `resource`, `round`; Rich vein, issue
 #414), `addConduit` (`actor`, `from` and `to`, each `{ building, side }`, and
-`cells`, a list of `{ x, y }`) and `eraseConduit` (`actor`, `id`). A rejected op leaves
+`cells`, a list of `{ x, y }`) and `eraseConduit` (`actor`, `id`). Once the
+state holds a Tunnel end (issue #442, CB-9g) every entry of `results` also has
+`tunnels`: the pairs `[entrance, exit, distance]` of the state after that op, in
+entrance order (nothing is added before the first end, so older vectors are
+unchanged). A rejected op leaves
 the state as it was and the run continues. Result `{ "results": [...],
 "state": <final state>, "hash": <hash of the final state> }`, with one entry
 per op: `{ "op", "ok": true }` (plus `"id"` for `addToStash` and `addConduit`) or `{ "op",
@@ -1353,6 +1386,96 @@ rejected with `would_loop` if that directed graph would contain a cycle
 crossover are two nodes and not a loop; a flow that reaches the same crossover
 channel twice is. The check is a topological sort (Kahn).
 
+### Tunnels (CB-9g)
+
+Implemented in `packages/core/src/tunnels.ts` (the pairing) and used by
+`conduits.ts`, `flow-sim.ts`, `team-state.ts` and `arena-sim.ts`. A Tunnel is two
+1x1 route buildings bought as one item: an **entrance** (`tunnel_in`: one input
+side, no output side) and an **exit** (`tunnel_out`: one output side, no input
+side). Each side is on the back of its building (rotation 0: the entrance's input
+is on its south side, the exit's output on its north side). Neither stores a
+resource and neither consumes any.
+
+**The facing direction.** The entrance *faces* the side opposite its input side
+(rotation 0: north; the conduit travels that way). The exit's *front* is the side
+opposite its output side. With cells numbered north = +y, east = +x:
+`step(north) = (0, +1)`, `step(east) = (+1, 0)`, `step(south) = (0, -1)`,
+`step(west) = (-1, 0)`.
+
+**Pairing is derived, never stored.** `pairTunnelEnds` (`tunnels.ts`) takes the
+ends in building ID order and returns the pairs sorted by entrance ID:
+
+1. For every entrance `E` of owner `o` whose own column is in plot `o`, look at
+   the cells `E + d * step(facing)` for `d = 1, 2, ..., maxSpanCells + 1` (`d` is
+   the distance; `d - 1` the cells between the two ends, at most `maxSpanCells`,
+   the entrance's content number, 5). The first such cell that holds an exit of
+   owner `o` whose column is also in plot `o` is the exit `E` wants, at distance
+   `d`; an exit of another owner or in another plot is skipped and the search goes
+   on. Nothing between the cells matters: buildings, conduits and terrain may
+   stand there.
+2. An exit wanted by several entrances goes to the one with the smallest distance;
+   on a tie (two entrances facing each other's side of the exit) the smaller
+   building ID. The other entrances stay **unpaired**: they do not look further.
+   An end in no pair is unpaired and does nothing.
+3. The exit's own rotation takes no part: its output may be on any side.
+
+Both ends in the owner's plot makes every cell between them the owner's too (a
+plot is a run of columns), so a pair never crosses a plot border, and a pair is
+not a border link (PP-4). The pair is recomputed from the placement every time
+(`makeView` in `conduits.ts`), so moving, rotating, placing or removing either
+end can re-pair or unpair them.
+
+**The pair is a conduit segment.** In the joined network (`edgesWith`) each pair
+adds one edge, after every conduit and in entrance ID order, with id
+`-entrance` (negative: no conduit ID is), `length` = the distance `d`, from the
+entrance's node out of its facing side to the exit's node into its front. Items
+therefore need exactly `d` ticks from the entrance to the exit (the same one cell
+per tick as a conduit), one tick more than a conduit of the `d - 1` cells
+between the two ends would take, so a tunnel is never faster than a conduit. A
+Tunnel end adds no tick of its own (it is a route node with one output).
+
+- **Resource typing (CB-5b).** The edge carries what the entrance's input
+  conduit carries; a conduit leaving the exit carries what the pair carries
+  (the same rule as a crossover channel). An unfed entrance gives `null`, as any
+  route.
+- **Loops (CB-9c).** The pair is an edge from the entrance's node to the exit's:
+  a loop through a pair is a loop. `buildFlowGraph` throws on one, so no
+  operation may leave one: `addConduit` already refuses the conduit that closes
+  it, and `placeFromStash`, `moveBuilding` and `returnToStash` of a Tunnel end
+  refuse the operation (`would_loop`, or `resource_mismatch`) when the pairs of
+  the new placement, with the conduits that operation detaches, would leave a
+  loop or a mismatch (`networkProblem`: mismatch first, then loop). Picking up a
+  nearer exit can bring a farther one into the pair, which is why `returnToStash`
+  checks too.
+- **Conduit rules are unchanged.** `addConduit` treats the ends as ordinary route
+  sides (`not_an_output`, `not_an_input`, `side_in_use`, `invalid_path`, ...): a
+  conduit goes into the entrance's input side and out of the exit's output side.
+  The two virtual sides of a pair (the entrance's facing side, the exit's front)
+  are in no definition, so no conduit can use them.
+- **Validation.** `validateTeamState` (and so ghost validation, MM-17) accepts
+  pairs, applies the placement rules to each end (an end outside its owner's plot
+  is `outside_own_plot`), and re-checks the derived pairing: every pair joins one
+  owner's ends, both in that owner's plot, no entrance is in two pairs and no
+  exit is claimed twice. The last two cannot happen with the derivation above
+  (the nearest entrance simply wins), so they are a safety check.
+
+**In a battle.** The arena keeps the pairs it started with (`ctx.tunnels`, one
+list per side, from `tunnelPairs` of the starting teams) and passes the list to
+`rebuildFlow`. When a building is destroyed (step 6) every pair with that
+building as an end leaves the list for good: the flow plan is rebuilt without the
+pair, the entries of the pair edge (`sim.conduits` with a negative id) are gone,
+and its items are lost by the rule for a destroyed conduit ("Mid-battle
+removal": `retired.lost`). The end that is left stands, unpaired, and no other end
+ever pairs in its place in that battle, even if it would by the derivation (an
+unmasked farther exit). The conduits attached to the destroyed end go as for any
+building (CB-9a); the surviving end's own conduit stays and an unpaired entrance
+loses what reaches it. No event is logged for the pair itself.
+
+Notes for a port: `pairs = derive(placement)` once per team state; the pair edge
+is a conduit of `d` slots with id `-entrance` placed after all the conduits;
+tunnel nodes are route nodes with one output and (the exit) no conduit input; a
+battle freezes the pair list and only ever removes pairs from it.
+
 ### Flow graph (input to W1-4)
 
 `buildFlowGraph(state, content)` returns plain JSON-safe data (it throws on a
@@ -1370,8 +1493,14 @@ state with a loop or an unknown definition; validate untrusted states first):
   - `key`: the instance ID as a decimal string, or `"<id>.<input side>"` for a
     crossover channel (for example `"7.south"`).
   - `channel`: the channel's input side for a crossover node, else `null`.
-  - `kind`: `source`, `splitter`, `merger`, `crossover`, `refinery` or
-    `consumer`.
+  - `kind`: `source`, `splitter`, `merger`, `crossover`, `tunnel_in`,
+    `tunnel_out`, `refinery` or `consumer`. A Tunnel end is a node whenever it
+    has a conduit attached **or** is paired. An entrance has its input (the real
+    input side) and one output on the side it faces; an exit has one input on its
+    front side (opposite its output) and its real output. The pair is attached to
+    those sides (`conduit` = the pair's negative id), and is `null` while the end
+    is unpaired (so an unpaired entrance has an output with no conduit, which
+    loses its items).
   - `produces`: a source's node resource, else `null`.
   - `inputs`: `{ side, conduit, requires }` per input side, `conduit` the ID of
     the conduit attached there or `null`, `requires` the resource that input
@@ -1383,7 +1512,9 @@ state with a loop or an unknown definition; validate untrusted states first):
     splitter alternates between its outputs; an output with `conduit: null` is
     skipped by the simulation. A crossover channel has one input and the
     opposite output.
-- `edges`: one per conduit, sorted by conduit ID:
+- `edges`: one per conduit, sorted by conduit ID, then one per Tunnel pair in
+  entrance ID order (`conduitId` = minus the entrance's building ID, `fromSide`
+  the entrance's facing side, `toSide` the exit's front, `length` the distance):
   `{ conduitId, from, to, fromSide, toSide, length, resource }`; `from` and `to`
   are node keys, `length` is the number of path cells (0 for a direct
   connection) and `resource` is the determined resource or `null`.
@@ -1407,7 +1538,13 @@ resource from `extraBuildings`: the refinery node has kind `refinery` and the
 output edge carries the refined resource) and
 `team-state-ops.refined-conduit-mismatch` (Composite is refused with
 `resource_mismatch` at both inputs of an Aether refinery and at a Barracks, and
-a Flux collector then feeds the Aether refinery).
+a Flux collector then feeds the Aether refinery). Issue #442 adds
+`flow-graph.tunnel-under-walls` (a Tunnel pair of distance 4 between a collector
+and a Barracks with walls on the cells between: `tunnel_in` and `tunnel_out`
+nodes and the pair as the edge `-entrance` of length 4) and
+`flow-graph.tunnel-unpaired` (an entrance with no exit), and in
+`team-state-ops.json` `tunnel-pairing`, `tunnel-nearest-wins`,
+`tunnel-repair-on-move`, `tunnel-loop-refusals` and `tunnel-mismatch-refusal`.
 
 ## Tick order
 
@@ -1470,9 +1607,11 @@ of the team state and `sim.json` only. Fields, with every list in a fixed order:
   (0 or 1, starts 0), `pointer` (starts 0), and the counters `produced`, `lost`,
   `stalledTicks` (start 0).
 - `conduits`: one per conduit, by conduit ID: `id` and `slots`, a list of `L`
-  entries, each a resource ID or `null` (all `null` at the start).
-- `routes`: one per flow-graph route node (splitter, merger, or one crossover
-  channel), in flow-node order (building ID, then channel): `key` (the node
+  entries, each a resource ID or `null` (all `null` at the start). Each Tunnel
+  pair adds one more entry after the conduits, in entrance ID order: `id` minus
+  the entrance's building ID, `L` = the distance (CB-9g).
+- `routes`: one per flow-graph route node (splitter, merger, a Tunnel end, or one
+  crossover channel), in flow-node order (building ID, then channel): `key` (the node
   key), `building`, `held` (the one-item holding cell, `null` when empty),
   `pointer` (starts 0) and the counter `lost`.
 - `consumers`: one per placed building that has input sides and is not a source
@@ -1552,8 +1691,11 @@ node whose holding cell holds an item tries to push it:
   emptied and `pointer = (o + 1) mod n`. If no output has room, the item stays
   held and the pointer does not move. If **no** output has a conduit, the item
   is lost.
-- _Merger or crossover channel._ One output. If it has no conduit the item is
-  lost; otherwise try to push, and keep the item if it is refused.
+- _Merger, crossover channel or Tunnel end._ One output. If it has no conduit the
+  item is lost; otherwise try to push, and keep the item if it is refused. (An
+  entrance's output is its pair, a conduit of `d` slots; an exit's output is the
+  conduit leaving it. An unpaired entrance has no output, so it loses what it is
+  given.)
 
 _Pushing onto a conduit_ means: if it has slots, put the item in slot 0 if that
 slot is empty (otherwise refuse); if it is a direct connection, offer the item
@@ -1892,6 +2034,7 @@ collector, 171 per 1000 ticks, into two tier 1 barracks: both reach their top
 speed, the collectors stall, nothing is lost)
 and `need-three-way-unconnected` (one of the three outputs has no conduit).
 Two vectors with the Grand barracks (issue #440, CB-10f, CB-13a; 1000 ticks, a tier 2 Grand barracks that takes 8 items per production every 56 ticks, need 142 per 1000 ticks) pin the stated exception to the rebalance rule: `grand-barracks-two-collectors-need` (two tier 2 collectors, 71 per 1000 ticks each, joined by a Merger: 142 delivered, 17 productions, no source stalls) and `grand-barracks-one-collector-need` (one collector: 71 delivered, about half the productions, 8).
+Three vectors with the Tunnel (issue #442, CB-9g) pin the pair as a conduit segment: `tunnel-under-walls` (1000 ticks, consumers in `need` mode: a Barracks is fed through a pair of distance 4 with walls on the cells between, 49 delivered, nothing lost) and `tunnel-transit-pair` against `tunnel-transit-conduit` (25 ticks each: the same line through the pair delivers nothing yet, through Mergers and a conduit of the cells between them one item: a tunnel is one tick slower than that conduit, never faster).
 Six vectors with the Foundry (issue #380, CB-5e; one-cost buildings are
 unchanged) pin two-input consumers: `foundry-ore-only` (Power never arrives:
 the Ore counter fills, the Ore buffer fills, the collector stalls, nothing is
@@ -1917,7 +2060,9 @@ Flux from another over a border link).
 
 ### Mid-battle removal
 
-`rebuildFlow(sim, newState, content, simConfig)` (`flow-sim.ts`) supports the
+`rebuildFlow(sim, newState, content, simConfig, pairs?)` (`flow-sim.ts`; `pairs`
+are the Tunnel pairs that still stand, from the arena's `ctx.tunnels`; without
+it they are derived from `newState`) supports the
 destruction of buildings (CB-9a). `newState` is the team state with the
 destroyed building, every conduit attached to it, and the other half of every
 border link that lost a half (PP-4) removed. The flow plan is
@@ -1926,7 +2071,8 @@ by building ID; conduits by conduit ID; routes by node key; consumers by
 building ID and input side; `tick` is kept). What is removed is accounted so
 that conservation still holds:
 
-- Items in removed conduit slots, a removed route's holding cell, and a removed
+- Items in removed conduit slots (the slots of a Tunnel pair whose end was
+  destroyed included, CB-9g), a removed route's holding cell, and a removed
   consumer's input buffers are **lost**. A removed unit producer's `progress`
   (for a two-input producer every one of its counters) is dropped with it;
   those items were already counted as `consumed`. A destroyed **refinery**
@@ -4420,7 +4566,7 @@ equal overkill, `battle.tiebreak-building-damage` (a soldier wave hits a turret
 and dies: side 1 has the building damage although side 0 has the kill),
 `battle.tiebreak-kills` (free-power turrets kill a wave: side 1 wins on kills
 with no building damage on either side) and `battle.tiebreak-attacker` (two
-bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front row: the units that find no room wait in the `entering` queue and come in later); party sizes 1 and 2 refused; for several Cores (issue #132) `battle.two-plot-core-falls` (one Core falls at tick 2000 and the battle goes on; an earlier fall adds no overkill), `battle.walled-four-cores-overload` (eight walled Cores fall at tick 3100), `battle.time-limit-cores-standing-side0` and `-side1` (rung 1, the defender can win), `battle.time-limit-core-share` (rung 2) and `battle.overkill-two-cores` (rung 3); `battle.golem-chain-push` (issue #382: the Golem chain of `arena-sim.golem-chain-push` as a whole battle); `battle.spire-chain-push` (issue #387: the Spire chain of `arena-sim.spire-chain-casters` as a whole battle); `battle.lancer-hall-rotations` (issue #439: the four Lancer halls of `arena-sim.lancer-hall-rotations` as a whole battle); `battle.grand-barracks-two-collectors` (issue #440: the Grand barracks chain of `arena-sim.grand-barracks-two-collectors` as a whole battle); with the neutral guards (issue #372) `battle.guards-two-points-round-1` and `-round-8` (a hand-made zone with two points) and `battle.generated-zone-round-6`.
+bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front row: the units that find no room wait in the `entering` queue and come in later); party sizes 1 and 2 refused; for several Cores (issue #132) `battle.two-plot-core-falls` (one Core falls at tick 2000 and the battle goes on; an earlier fall adds no overkill), `battle.walled-four-cores-overload` (eight walled Cores fall at tick 3100), `battle.time-limit-cores-standing-side0` and `-side1` (rung 1, the defender can win), `battle.time-limit-core-share` (rung 2) and `battle.overkill-two-cores` (rung 3); `battle.golem-chain-push` (issue #382: the Golem chain of `arena-sim.golem-chain-push` as a whole battle); `battle.spire-chain-push` (issue #387: the Spire chain of `arena-sim.spire-chain-casters` as a whole battle); `battle.lancer-hall-rotations` (issue #439: the four Lancer halls of `arena-sim.lancer-hall-rotations` as a whole battle); `battle.grand-barracks-two-collectors` (issue #440: the Grand barracks chain of `arena-sim.grand-barracks-two-collectors` as a whole battle); `battle.tunnel-exit-destroyed` (issue #442: a Tunnel exit in a barrier of tier 3 walls is destroyed at tick 139, after the Barracks it feeds, so the pair is gone for the rest of the battle); with the neutral guards (issue #372) `battle.guards-two-points-round-1` and `-round-8` (a hand-made zone with two points) and `battle.generated-zone-round-6`.
 
 ### Decided simplifications
 
@@ -5575,7 +5721,9 @@ order:
    applicable `tierOdds` row; the result plus 1 is the tier.
 
 Duplicates across slots are allowed. The offer is `{slot, def, tier, price}`
-where `price` is that tier's `price` in `buildings.json`. Buildings not in
+where `price` is that tier's `price` in `buildings.json`, and for a Tunnel
+entrance (CB-9g) the **item price** (`itemPrice`): the entrance's tier price plus
+its partner's, which is 10 / 22 / 40. Buildings not in
 `offerWeights` are never offered; the Core cannot be listed.
 
 **Offer weights from a round (issue #383).** An `offerWeights` entry may have
@@ -5630,9 +5778,11 @@ shown, and reloading or replaying never changes them.
 
 - Buy `{slot}`: needs the slot to hold an offer (`no_such_offer` otherwise,
   including a slot already bought) and `gold >= price` (`not_enough_gold`).
-  Pays `price`, adds a new stash entry for the buyer, and empties the slot
-  until the next roll. Buildings never merge: three identical purchases are
-  three entries.
+  Pays `price`, adds a new stash entry for the buyer (`addItemToStash`), and
+  empties the slot until the next roll. Buildings never merge: three identical
+  purchases are three entries. **One item can be two buildings (CB-9g):** buying a
+  Tunnel (offer `def` `bld_tunnel_in`) adds an entrance and an exit, two entries
+  of the offer's tier, the entrance first (consecutive IDs).
 - Sell `{id}`: only a stash entry (`not_in_stash` if it does not exist or is
   placed on the board) of the seller (`not_owner` otherwise). Refund =
   floor(tier price x R / 100), with R the sell refund percent: `sellRefundPercent`
@@ -5640,7 +5790,13 @@ shown, and reloading or replaying never changes them.
   sum capped at 90 when any such effect is held (`R = max(sellRefundPercent,
   min(sellRefundPercent + sum, 90))`, so with none `R` is `sellRefundPercent`
   and selling never refunds the full price through a modifier). Selling is
-  also allowed in the first `build` step.
+  also allowed in the first `build` step. A Tunnel's two ends are sold one at a
+  time, each as its own stash entry, and each refunds the percent of **its own**
+  price, which is its share of the item's price: the entrance has `ceil(P / 2)`
+  and the exit `floor(P / 2)` of the item price `P` (content: 5 / 11 / 20 each,
+  so selling either end of a tier 2 Tunnel at 50 percent gives 5). The two
+  refunds add up to at most the item's refund, and selling one end leaves the
+  other as it was.
 - Re-roll `{}`: needs `gold >= rerollCost` (`not_enough_gold`). Pays it and
   replaces all of that player's offers with a roll from the next draws of that
   player's stored shop stream (so two re-rolls differ). A re-roll also brings
@@ -6961,6 +7117,7 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Grand barracks `bld_grand_barracks` and `unitsPerProduction` (issue #440, CB-9f, CB-10f, CB-13a, proposed, to be tuned) | `buildings.json` | `res_a` 4 per soldier and 2 soldiers per production (8 items), every tier, per 80 / 56 / 40 ticks; need 100 / 142 / 200 per 1000 ticks, exactly the output of two collectors of the tier (50 / 71 / 100 each; 2 x 1/20, 2 x 1/14, 2 x 1/10 items per tick = 8 / 80, 8 / 56, 8 / 40), twice a Barracks' soldiers per tick at 80% of its interval and 80% of its cost per unit; price 70 / 140 / 240, health 150 / 225 / 300; 3x3, Ore on the south side (the whole side, any of its three cells; the box and the side turn with the rotation) | `unitsPerProduction` an integer from 1 to `MAX_UNITS_PER_PRODUCTION` (4), absent means 1; the stated exception to SC-13a: two collectors of its tier joined by a Merger fully feed it, one feeds it half the time; not in the shop or the bot yet (the shop offer is issue #437, sub-issue 6) |
 | Refineries `bld_refinery_ab` (Composite from `res_a` + `res_b`) and `bld_refinery_bc` (Aether from `res_b` + `res_c`): `costs` / `productionIntervalTicks` / `outputPerBatch` (issue #381, proposed, to be tuned) | `buildings.json` | 3 of each input per batch of 2 items, every tier, per 60 / 42 / 30 ticks (need 50 / 71 / 100 per input per 1000 ticks, output 33 / 47 / 66 per 1000 ticks); price 35 / 75 / 130, health 60 / 90 / 120; 2x2, the first input south, the second west, the output north | `costs` as for the Foundry, `outputPerBatch` 1 to `MAX_OUTPUT_PER_BATCH`; in the shop from round 3 (issue #383) and in the bot's builds |
 | Mortar `bld_mortar` and the turret fields `minRangeCells`, `splashPercent`, `splashRadiusCells` (issue #441, CB-9f, CB-18b, proposed, to be tuned) | `buildings.json` | 2x2, Ore (`res_a`) on the south side; damage 8 / 12 / 16, range 9 / 10 / 11 cells, minimum range 3 cells at every tier, cooldown 30 / 24 / 18 ticks, `costPerShot` 2, splash 60% in 1 cell, price 40 / 80 / 140, health 80 / 120 / 160; need 66 / 83 / 111 per 1000 ticks against a tier collector's 50 / 71 / 100, so one collector of its tier keeps it firing at 75 to 90 percent of its top speed (the rebalance principle SC-13a, measured by the dry run) | `minRangeCells` 1 to `rangeCells` - 1; `splashPercent` 1 to 100 with `splashRadiusCells` 1 to 2 | not in the shop or the bot yet (the shop offer is issue #437, sub-issue 6) |
+| Tunnel `bld_tunnel_in` and `bld_tunnel_out` (issue #442, CB-9f, CB-9g, proposed, to be tuned) | `buildings.json` | two 1x1 route buildings, an entrance (input on the south side at rotation 0) and an exit (output on the north side); `maxSpanCells` 5 (cells between the ends, the same at every tier), distance at most 6; price per end 5 / 11 / 20 (the item costs 10 / 22 / 40), health per end 20 / 30 / 40 | `maxSpanCells` an integer from 0 to `MAX_TUNNEL_SPAN_CELLS` (12); the entrance's price is the exit's or one more; not in the shop or the bot yet (the shop offer is issue #437, sub-issue 6) |
 | Turret `cooldownTicks` / `costPerShot` / `damage` | `buildings.json` | 10 / 7 / 5 ticks, 1 item per shot, damage 5 / 8 / 10 (need 1.00 / 1.42 / 2.00 while firing: two collectors of its tier) | integers >= 1 |
 | Overclocker `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 2 / 3 / 4 items per step, a step per 40 / 42 / 40 ticks, 2x5 / 3x5 / 5x5 = +10 / +15 / +25 percent | fits under `maxSourceSpeedPercent` |
 | Armory `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 4 / 5 / 6 items per step, a step per 80 / 70 / 60 ticks, 5x5 / 7x5 / 10x5 = +25 / +35 / +50 percent | fits under `maxUnitStrengthPercent` |

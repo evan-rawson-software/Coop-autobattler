@@ -16,7 +16,7 @@
  */
 import {
   addNode,
-  addToStash,
+  addItemToStash,
   addableNodeCells,
   findModifier,
   heldModifierIds,
@@ -671,7 +671,7 @@ function applyDraft(
         return;
       }
       case 'building': {
-        const r = addToStash(team, ctx.content, {
+        const r = addItemToStash(team, ctx.content, {
           def: item.def ?? '',
           tier: 1,
           owner: player,

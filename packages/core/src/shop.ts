@@ -9,7 +9,11 @@ import type { EconomyConfig, TierOddsRow } from './economy.js';
 import { mulPct } from './int.js';
 import { sellRefundPercentFor } from './modifiers.js';
 import type { Rng } from './rng.js';
-import { addToStash, removeFromStash, type TeamState } from './team-state.js';
+import {
+  addItemToStash,
+  removeFromStash,
+  type TeamState,
+} from './team-state.js';
 import { pickWeightedIndex } from './weighted.js';
 
 /** One item for sale. `price` is the building tier's price in gold. */
@@ -75,6 +79,25 @@ export function tierPrice(
     throw new RangeError(`no purchasable tier ${String(tier)} of "${def}"`);
   }
   return (t as { readonly price: number }).price;
+}
+
+/**
+ * The price of one shop item at a tier: the building's own price, plus its
+ * partner's for a Tunnel entrance (CB-9g: one item, two buildings, each end
+ * paying its share, so the price of the two ends is the item's). Every offer,
+ * and every price a player is shown for buying, is this.
+ */
+export function itemPrice(
+  content: ShopContent,
+  def: BuildingId,
+  tier: number,
+): number {
+  const d = content.buildings.get(def);
+  const partner = d !== undefined && d.kind === 'route' ? d.partner : undefined;
+  return (
+    tierPrice(content, def, tier) +
+    (partner === undefined ? 0 : tierPrice(content, partner, tier))
+  );
 }
 
 /** The most different wall shapes one set of offers may hold (issue #291). */
@@ -185,7 +208,7 @@ export function rollOffers(
       slot,
       def: entry.def,
       tier,
-      price: tierPrice(content, entry.def, tier),
+      price: itemPrice(content, entry.def, tier),
     });
   }
   return offers;
@@ -193,8 +216,9 @@ export function rollOffers(
 
 /**
  * Buy the offer in `slot` for player `owner`. The building goes to that
- * player's stash as a new separate entry (buildings never merge). The slot
- * becomes empty.
+ * player's stash as a new separate entry (buildings never merge); a Tunnel
+ * puts its entrance and its exit there, two entries (CB-9g). The slot becomes
+ * empty.
  */
 export function buyOffer(
   shop: PlayerShop,
@@ -210,7 +234,7 @@ export function buyOffer(
     return { ok: false, reason: 'no_such_offer', detail: 'boss_only' };
   }
   if (shop.gold < offer.price) return { ok: false, reason: 'not_enough_gold' };
-  const added = addToStash(team, content, {
+  const added = addItemToStash(team, content, {
     def: offer.def,
     tier: offer.tier,
     owner: args.owner,
@@ -228,7 +252,11 @@ export function buyOffer(
   };
 }
 
-/** Gold returned for selling one tier of a building. */
+/**
+ * Gold returned for selling one tier of a building. A Tunnel's two ends are
+ * sold one at a time and each refunds the percent of its own price, which is
+ * its half of the item's price (the entrance has the odd gold, CB-9g).
+ */
 export function sellValue(
   content: ShopContent,
   economy: Pick<EconomyConfig, 'sellRefundPercent'>,

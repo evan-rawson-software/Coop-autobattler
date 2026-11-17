@@ -5,7 +5,7 @@
  * is the `#battle` route with a picker of sample battles.
  */
 
-import { hashJson, type TeamState } from '@game/core';
+import { hashJson, tunnelPairs, type TeamState } from '@game/core';
 import { Component, type ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { resultShown } from './result-shown.js';
@@ -351,6 +351,10 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
         [
           linkMap(record.initialTeams[0], content),
           linkMap(record.initialTeams[1], content),
+        ],
+        [
+          tunnelPairs(record.initialTeams[0], content),
+          tunnelPairs(record.initialTeams[1], content),
         ],
       ),
     [init, opponent.name, record],

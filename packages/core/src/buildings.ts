@@ -20,6 +20,7 @@ import {
   MAX_HEALTH,
   MAX_OUTPUT_PER_BATCH,
   MAX_TIER_COST,
+  MAX_TUNNEL_SPAN_CELLS,
   MAX_SPLASH_RADIUS_CELLS,
   MAX_UNITS_PER_PRODUCTION,
 } from './limits.js';
@@ -46,7 +47,8 @@ export type BuildingKind =
   | 'economy'
   | 'refinery'
   | 'core';
-export type RouteType = 'splitter' | 'merger' | 'crossover';
+export type RouteType =
+  'splitter' | 'merger' | 'crossover' | 'tunnel_in' | 'tunnel_out';
 /**
  * `pylon` is boss-only (MM-9d, "Pylons"): it is never offered, bought or
  * placed by a player, and does nothing but stand.
@@ -208,6 +210,17 @@ export interface RouteBuildingDef extends BuildingCommon {
   readonly kind: 'route';
   readonly routeType: RouteType;
   readonly tiers: Tiers3<TierBase>;
+  /**
+   * Tunnel entrance only (CB-9g): the exit building that is bought with it.
+   * One shop item puts both into the stash; each end has its own price, the
+   * item's price being the sum.
+   */
+  readonly partner?: BuildingId;
+  /**
+   * Tunnel entrance only (CB-9g): the most cells between the two ends, the
+   * same at every tier.
+   */
+  readonly maxSpanCells?: number;
 }
 export interface UnitProducerBuildingDef extends BuildingCommon {
   readonly kind: 'unit_producer';
@@ -414,7 +427,13 @@ const KINDS: readonly string[] = [
   'refinery',
   'core',
 ];
-const ROUTE_TYPES: readonly string[] = ['splitter', 'merger', 'crossover'];
+const ROUTE_TYPES: readonly string[] = [
+  'splitter',
+  'merger',
+  'crossover',
+  'tunnel_in',
+  'tunnel_out',
+];
 const DEFENSE_TYPES: readonly string[] = ['wall', 'gate', 'turret', 'pylon'];
 const EFFECT_TYPES: readonly string[] = ['source_speed', 'unit_strength'];
 
@@ -422,6 +441,8 @@ const COMMON_KEYS = ['id', 'kind', 'footprint', 'tiers', 'inputs', 'outputs'];
 /** Fields that belong to one kind only. */
 const KIND_FIELDS: Readonly<Record<string, string>> = {
   routeType: 'route',
+  partner: 'route',
+  maxSpanCells: 'route',
   unit: 'unit_producer',
   defenseType: 'defense',
   effect: 'economy',
@@ -527,6 +548,22 @@ function ioRule(kind: string, subtype: string | undefined): IoRule | undefined {
           inputs: [2, 2],
           outputs: [2, 2],
           what: 'a crossover',
+        };
+      }
+      if (subtype === 'tunnel_in') {
+        return {
+          resource: 'forbidden',
+          inputs: [1, 1],
+          outputs: none,
+          what: 'a tunnel entrance',
+        };
+      }
+      if (subtype === 'tunnel_out') {
+        return {
+          resource: 'forbidden',
+          inputs: none,
+          outputs: [1, 1],
+          what: 'a tunnel exit',
         };
       }
       return undefined;
@@ -726,6 +763,45 @@ function parseBuilding(
       errors.push(
         `${label}: a route building needs "routeType" (${ROUTE_TYPES.join(', ')}); got ${show(v)}.`,
       );
+    }
+  }
+  let partner: BuildingId | undefined;
+  let maxSpanCells: number | undefined;
+  if (kind === 'route') {
+    const isIn = routeType === 'tunnel_in';
+    for (const key of ['partner', 'maxSpanCells'] as const) {
+      if (!isIn && key in entry && routeType !== undefined) {
+        errors.push(
+          `${label}: field "${key}" is only valid on a tunnel entrance (routeType "tunnel_in").`,
+        );
+      }
+    }
+    if (isIn) {
+      const p = entry['partner'];
+      if (typeof p !== 'string' || !ID_PATTERN.test(p)) {
+        errors.push(
+          `${label}: a tunnel entrance needs a "partner" building ID (its exit).`,
+        );
+      } else {
+        partner = p;
+      }
+      maxSpanCells = readInt(
+        entry,
+        'maxSpanCells',
+        0,
+        label,
+        errors,
+        MAX_TUNNEL_SPAN_CELLS,
+      );
+    }
+    if (
+      (routeType === 'tunnel_in' || routeType === 'tunnel_out') &&
+      footprint !== undefined &&
+      (footprint.width !== 1 ||
+        footprint.height !== 1 ||
+        footprint.cells !== undefined)
+    ) {
+      errors.push(`${label}: a tunnel end must be 1x1.`);
     }
   }
   if (kind === 'unit_producer') {
@@ -1114,7 +1190,14 @@ function parseBuilding(
       };
     case 'route':
       if (routeType === undefined) return undefined;
-      return { ...common, kind, routeType, tiers: toTiers3(mapTiers(base)) };
+      return {
+        ...common,
+        kind,
+        routeType,
+        tiers: toTiers3(mapTiers(base)),
+        ...(partner === undefined ? {} : { partner }),
+        ...(maxSpanCells === undefined ? {} : { maxSpanCells }),
+      };
     case 'unit_producer':
       if (unit === undefined) return undefined;
       return {
@@ -1220,6 +1303,58 @@ function parseBuilding(
 }
 
 /**
+ * Tunnel entrances and exits come in pairs (CB-9g): each entrance names an
+ * exit that exists, is a tunnel exit and is named by no other entrance, and
+ * every exit is named by an entrance. The two ends' prices add up to the
+ * item's price, the entrance taking the odd gold (a tier of the entrance
+ * costs as much as the exit's or one more).
+ */
+function checkTunnelPartners(
+  defs: readonly BuildingDef[],
+  errors: string[],
+): void {
+  const byId = new Map(defs.map((d) => [d.id, d]));
+  const named = new Set<string>();
+  for (const d of defs) {
+    if (d.kind !== 'route' || d.routeType !== 'tunnel_in') continue;
+    const where = `building "${d.id}"`;
+    const p = d.partner === undefined ? undefined : byId.get(d.partner);
+    if (d.partner === undefined) continue; // reported by the entry itself
+    if (p === undefined || p.kind !== 'route' || p.routeType !== 'tunnel_out') {
+      errors.push(
+        `${where}: "partner" ("${d.partner}") must be a building of routeType "tunnel_out".`,
+      );
+      continue;
+    }
+    if (named.has(p.id)) {
+      errors.push(
+        `${where}: its partner "${p.id}" is named by another entrance.`,
+      );
+    }
+    named.add(p.id);
+    d.tiers.forEach((t, i) => {
+      const exit = p.tiers[i]?.price ?? 0;
+      if (t.price !== exit && t.price !== exit + 1) {
+        errors.push(
+          `${where}: tier ${String(i + 1)} price ${String(t.price)} must equal its exit's price ${String(exit)} or be one more (the entrance takes the odd gold).`,
+        );
+      }
+    });
+  }
+  for (const d of defs) {
+    if (
+      d.kind === 'route' &&
+      d.routeType === 'tunnel_out' &&
+      !named.has(d.id)
+    ) {
+      errors.push(
+        `building "${d.id}": a tunnel exit must be the "partner" of a tunnel entrance.`,
+      );
+    }
+  }
+}
+
+/**
  * Validate parsed building data (the contents of buildings.json) against
  * the already-loaded resources and units.
  */
@@ -1245,6 +1380,7 @@ export function loadBuildings(
     if (def !== undefined) defs.push(def);
   });
 
+  checkTunnelPartners(defs, errors);
   if (errors.length > 0) return { ok: false, errors };
   const byId = new Map(defs.map((d) => [d.id, d]));
   return { ok: true, config: { get: (id) => byId.get(id), list: () => defs } };

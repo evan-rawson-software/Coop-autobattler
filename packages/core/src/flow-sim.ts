@@ -24,6 +24,7 @@ import { queryTeamMap } from './map.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
 import type { TeamContent, TeamState } from './team-state.js';
+import type { TunnelPair } from './tunnels.js';
 
 // ---------------------------------------------------------------------------
 // Events
@@ -337,8 +338,9 @@ function compile(
   state: TeamState,
   content: TeamContent,
   simConfig: SimConfig,
+  pairs?: readonly TunnelPair[],
 ): Compiled {
-  const graph = buildFlowGraph(state, content);
+  const graph = buildFlowGraph(state, content, pairs);
   const q = queryTeamMap(state, content.terrain);
   const defOf = (id: string) => {
     const def = content.buildings.get(id);
@@ -354,7 +356,14 @@ function compile(
   for (const e of graph.edges) {
     if (e.linkedConduit !== null) edgeOfAny.set(e.linkedConduit, e);
   }
-  const simConduits = state.conduits.filter((c) => edgeOf.has(c.id));
+  // A Tunnel pair (CB-9g) is one more entry, after the conduits, under its
+  // negative id: it carries items like a conduit as long as the distance.
+  const simConduits: { readonly id: number }[] = [
+    ...state.conduits.filter((c) => edgeOf.has(c.id)),
+    ...graph.edges
+      .filter((e) => e.conduitId < 0)
+      .map((e) => ({ id: e.conduitId })),
+  ];
   const conduitIndex = new Map<number, number>();
   simConduits.forEach((c, i) => {
     conduitIndex.set(c.id, i);
@@ -364,10 +373,16 @@ function compile(
   const orderPos = new Map<string, number>();
   graph.order.forEach((k, i) => orderPos.set(k, i));
 
-  // Routes: splitter, merger and crossover-channel nodes.
+  // Routes: splitter, merger, crossover-channel and Tunnel end nodes. A
+  // Tunnel end passes on whatever it is given like a splitter with one
+  // output, so it adds no ticks of its own.
   const routeNodes = graph.nodes.filter(
     (n) =>
-      n.kind === 'splitter' || n.kind === 'merger' || n.kind === 'crossover',
+      n.kind === 'splitter' ||
+      n.kind === 'merger' ||
+      n.kind === 'crossover' ||
+      n.kind === 'tunnel_in' ||
+      n.kind === 'tunnel_out',
   );
   // The building of each node key (keys are never parsed back).
   const buildingOfNode = new Map<string, number>();
@@ -664,7 +679,8 @@ export function createFlowContext(
  * Everything that survives keeps its state (matched by building ID, conduit
  * ID, route key and input side). Items in removed conduits, held by removed
  * routes or in removed consumers' buffers are lost; the counters of removed
- * parts move to `retired`, so conservation still holds. Returns the new
+ * parts move to `retired`, so conservation still holds. `pairs` are the
+ * Tunnel pairs that still stand (a battle keeps its own list, CB-9g). Returns the new
  * state and the new wiring; the old state is not changed.
  */
 export function rebuildFlow(
@@ -672,8 +688,9 @@ export function rebuildFlow(
   newState: TeamState,
   content: TeamContent,
   simConfig: SimConfig,
+  pairs?: readonly TunnelPair[],
 ): { sim: BoardSim; plan: FlowPlan } {
-  const fresh = compile(newState, content, simConfig);
+  const fresh = compile(newState, content, simConfig, pairs);
   const sim = fresh.sim;
   const retired: RetiredTotals = {
     produced: old.retired?.produced ?? 0,

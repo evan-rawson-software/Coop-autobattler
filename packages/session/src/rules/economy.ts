@@ -16,12 +16,12 @@
  */
 import {
   Rng,
-  addToStash,
+  addItemToStash,
   buyOffer,
   rerollOffers,
   rollOffers,
   sellFromStash,
-  tierPrice,
+  itemPrice,
   type Content,
   type EconomyConfig,
   type MapgenConfig,
@@ -104,7 +104,7 @@ function withHeldOffer(
   if (def === null || content.buildings.get(def) === undefined) return offers;
   return [
     ...offers,
-    { slot: offers.length, def, tier: 1, price: tierPrice(content, def, 1) },
+    { slot: offers.length, def, tier: 1, price: itemPrice(content, def, 1) },
   ];
 }
 
@@ -128,7 +128,7 @@ export function economyHooks(
             if (def === undefined) {
               throw new Error('starting kit: an entry has no building.');
             }
-            const r = addToStash(team, content, {
+            const r = addItemToStash(team, content, {
               def,
               tier: entry.tier,
               owner,

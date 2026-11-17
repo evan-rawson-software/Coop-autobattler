@@ -31,6 +31,13 @@ describe rotation 0, and each bought building has exactly three tiers. The
 `core` building is not bought: it has one `tiers` entry holding only `health`.
 Route buildings (splitter, merger, crossover) name no resource on their inputs
 because they carry whatever they are fed.
+A Tunnel is two route buildings, an entrance (`routeType` `tunnel_in`, one input
+side, no output side) and an exit (`tunnel_out`, one output side, no input side),
+both 1x1. The entrance names its exit in `partner` and the most cells between the
+two ends in `maxSpanCells` (the same at every tier); one shop item puts both into
+the stash. Each end has its own `price`: the item costs their sum, and the
+entrance's price is the exit's or one more (it takes the odd gold), so selling
+either end refunds its own share.
 A unit producer tier gives either `costPerUnit` (one cost for every resource it
 takes, counted alike) or `costs` (a cost per resource, for a building with one
 input per resource, such as the Foundry); never both. Every resource in `costs`

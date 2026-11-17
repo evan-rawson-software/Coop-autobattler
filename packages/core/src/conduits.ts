@@ -18,6 +18,12 @@ import { isRecord, rejectUnknownKeys } from './load-util.js';
 import { queryTeamMap, type Cell, type GameMap, type MapQuery } from './map.js';
 import type { ResourceId } from './resources.js';
 import {
+  pairTunnelEnds,
+  tunnelEdgeId,
+  tunnelEnds,
+  type TunnelPair,
+} from './tunnels.js';
+import {
   buildingEnd,
   conduitTouches,
   isBorderEnd,
@@ -83,10 +89,21 @@ interface View {
   /** Cell key -> building ID, for in-bounds cells. */
   readonly cellOwner: ReadonlyMap<number, number>;
   readonly coreKeys: ReadonlySet<number>;
+  /** The Tunnel pairs derived from the placement (CB-9g), by entrance ID. */
+  readonly pairs: readonly TunnelPair[];
 }
 
-/** Never throws: buildings with unknown definitions are left out. */
-function makeView(state: TeamState, content: TeamContent): View {
+/**
+ * Never throws: buildings with unknown definitions are left out. `pairs`
+ * fixes the Tunnel pairs instead of deriving them from the placement (a
+ * battle keeps the pairs it started with: a destroyed end is not replaced by
+ * another that was out of reach, CB-9g).
+ */
+function makeView(
+  state: TeamState,
+  content: TeamContent,
+  pairs?: readonly TunnelPair[],
+): View {
   const map = state.map;
   const byId = new Map<number, Entry>();
   const cellOwner = new Map<number, number>();
@@ -111,12 +128,15 @@ function makeView(state: TeamState, content: TeamContent): View {
   for (const c of allCoreCells(state.cores, content)) {
     coreKeys.add(cellKey(map, c.x, c.y));
   }
+  const q = queryTeamMap(state, content.terrain);
   return {
     state,
-    q: queryTeamMap(state, content.terrain),
+    q,
     byId,
     cellOwner,
     coreKeys,
+    pairs:
+      pairs ?? pairTunnelEnds(tunnelEnds(state, content), (x) => q.plotOf(x)),
   };
 }
 
@@ -522,6 +542,7 @@ function edgesWith(
   conduits: readonly Conduit[],
   cands: readonly Candidate[],
   joined: ReadonlySet<number>,
+  pairs: readonly Edge[],
 ): Edge[] {
   const byId = new Map(cands.map((c) => [c.send.id, c]));
   const out: Edge[] = [];
@@ -550,7 +571,25 @@ function edgesWith(
       length: c.cells.length + (k === undefined ? 0 : k.recv.cells.length),
     });
   }
+  // The Tunnel pairs come last, by entrance ID (CB-9g).
+  out.push(...pairs);
   return out;
+}
+
+/**
+ * The flow edge of each Tunnel pair (CB-9g): from the entrance, out of the
+ * side it faces, to the exit, into the side that faces back along the pair.
+ * Its id is `tunnelEdgeId` (negative), its length the distance, so an item
+ * takes as many ticks as along a conduit of that many cells.
+ */
+function pairEdges(view: View): Edge[] {
+  return view.pairs.map((p) => ({
+    id: tunnelEdgeId(p.entrance),
+    linked: null,
+    from: { building: p.entrance, side: p.facing },
+    to: { building: p.exit, side: p.exitFront },
+    length: p.distance,
+  }));
 }
 
 /** The first violation of a network: a mismatch, else a loop, else null. */
@@ -578,7 +617,8 @@ function deriveJoins(
 ): { edges: Edge[]; broken: BrokenLink[] } {
   const cands = candidatesOf(conduits);
   const joined = new Set(cands.map((c) => c.send.id));
-  const all = edgesWith(conduits, cands, joined);
+  const pairs = pairEdges(view);
+  const all = edgesWith(conduits, cands, joined, pairs);
   if (cands.length === 0 || violation(view, all) === null) {
     return { edges: all, broken: [] };
   }
@@ -586,7 +626,7 @@ function deriveJoins(
   const broken: BrokenLink[] = [];
   for (const c of cands) {
     joined.add(c.send.id);
-    const v = violation(view, edgesWith(conduits, cands, joined));
+    const v = violation(view, edgesWith(conduits, cands, joined, pairs));
     if (v === null) continue;
     joined.delete(c.send.id);
     broken.push({
@@ -598,7 +638,7 @@ function deriveJoins(
       ...(v.detail === undefined ? {} : { detail: v.detail }),
     });
   }
-  return { edges: edgesWith(conduits, cands, joined), broken };
+  return { edges: edgesWith(conduits, cands, joined, pairs), broken };
 }
 
 /** The broken links of a state (never throws). */
@@ -607,6 +647,20 @@ export function brokenLinks(
   content: TeamContent,
 ): BrokenLink[] {
   return deriveJoins(makeView(state, content), state.conduits).broken;
+}
+
+/**
+ * Why the conduits and Tunnel pairs of a state cannot all stand together, or
+ * null (never throws): a resource mismatch, else a loop. Placing or moving a
+ * Tunnel end can bring a pair into being, so the placement rules ask this
+ * (CB-9g, CB-9c, CB-5b).
+ */
+export function networkProblem(
+  state: TeamState,
+  content: TeamContent,
+): { reason: 'resource_mismatch' | 'would_loop'; detail?: string } | null {
+  const view = makeView(state, content);
+  return violation(view, deriveJoins(view, state.conduits).edges);
 }
 
 /**
@@ -815,7 +869,12 @@ function computeResources(
         // A conduit leaving a refinery carries its output resource (CB-5b).
         r = e.def.output;
       } else if (e.def.kind === 'route') {
-        if (e.def.routeType === 'crossover') {
+        if (
+          e.def.routeType === 'crossover' ||
+          e.def.routeType === 'tunnel_out'
+        ) {
+          // A crossover channel, or a Tunnel exit (its pair arrives on the
+          // side opposite its output): what comes in goes out.
           const up = upstream(e.b.id, oppositeSide(c.from.side));
           r = up === undefined ? null : carry(up);
         } else {
@@ -1042,7 +1101,14 @@ export function conduitResource(
 // Flow graph
 
 export type FlowNodeKind =
-  'source' | 'splitter' | 'merger' | 'crossover' | 'consumer' | 'refinery';
+  | 'source'
+  | 'splitter'
+  | 'merger'
+  | 'crossover'
+  | 'tunnel_in'
+  | 'tunnel_out'
+  | 'consumer'
+  | 'refinery';
 
 export interface FlowInput {
   readonly side: Side;
@@ -1082,7 +1148,11 @@ export interface FlowNode {
 }
 
 export interface FlowEdge {
-  /** The conduit's id; for a link the sending half's id. */
+  /**
+   * The conduit's id; for a link the sending half's id. A Tunnel pair
+   * (CB-9g) is an edge without a conduit: its id is minus the entrance's
+   * building ID, and it comes after every conduit.
+   */
   readonly conduitId: number;
   /** The receiving half's id for a link, else null. */
   readonly linkedConduit: number | null;
@@ -1091,7 +1161,10 @@ export interface FlowEdge {
   readonly to: string;
   readonly fromSide: Side;
   readonly toSide: Side;
-  /** Number of path cells (both halves for a link); 0 for a direct connection. */
+  /**
+   * Number of path cells (both halves for a link); 0 for a direct connection;
+   * for a Tunnel pair the distance between its ends.
+   */
   readonly length: number;
   readonly resource: ResourceId | null;
 }
@@ -1117,8 +1190,9 @@ export interface FlowGraph {
 export function buildFlowGraph(
   state: TeamState,
   content: TeamContent,
+  pairs?: readonly TunnelPair[],
 ): FlowGraph {
-  const view = makeView(state, content);
+  const view = makeView(state, content, pairs);
   const derived = deriveJoins(view, state.conduits);
   const joined = derived.edges;
   const res = computeResources(view, joined);
@@ -1134,6 +1208,10 @@ export function buildFlowGraph(
     const t = buildingEnd(c.to);
     if (f !== null) attached.add(f.building);
     if (t !== null) attached.add(t.building);
+  }
+  for (const p of view.pairs) {
+    attached.add(p.entrance);
+    attached.add(p.exit);
   }
   const nodes: FlowNode[] = [];
   for (const b of state.buildings) {
@@ -1174,16 +1252,27 @@ export function buildFlowGraph(
       }
       continue;
     }
-    const kind: FlowNodeKind =
-      e.def.kind === 'source'
-        ? 'source'
-        : e.def.kind === 'route'
-          ? e.def.routeType === 'merger'
-            ? 'merger'
-            : 'splitter'
-          : e.def.kind === 'refinery'
-            ? 'refinery'
-            : 'consumer';
+    let kind: FlowNodeKind;
+    if (e.def.kind === 'source') kind = 'source';
+    else if (e.def.kind === 'route') {
+      kind =
+        e.def.routeType === 'merger' ||
+        e.def.routeType === 'tunnel_in' ||
+        e.def.routeType === 'tunnel_out'
+          ? e.def.routeType
+          : 'splitter';
+    } else kind = e.def.kind === 'refinery' ? 'refinery' : 'consumer';
+    // A Tunnel end has its pair on a side of its own that no conduit uses: an
+    // entrance sends out of the side it faces, an exit takes in on the side
+    // opposite its output (CB-9g).
+    const inSides =
+      kind === 'tunnel_out'
+        ? e.outputs.map(oppositeSide)
+        : SIDE_ORDER.filter((s) => e.inputs.some((i) => i.side === s));
+    const outSides =
+      kind === 'tunnel_in'
+        ? e.inputs.map((i) => oppositeSide(i.side))
+        : SIDE_ORDER.filter((s) => e.outputs.includes(s));
     nodes.push({
       key: String(b.id),
       building: b.id,
@@ -1192,10 +1281,8 @@ export function buildFlowGraph(
       kind,
       produces:
         e.def.kind === 'source' ? (view.q.nodeAt(b.x, b.y) ?? null) : null,
-      inputs: SIDE_ORDER.filter((s) => e.inputs.some((i) => i.side === s)).map(
-        inputOf,
-      ),
-      outputs: SIDE_ORDER.filter((s) => e.outputs.includes(s)).map(outputOf),
+      inputs: inSides.map(inputOf),
+      outputs: outSides.map(outputOf),
     });
   }
   const edges: FlowEdge[] = [];

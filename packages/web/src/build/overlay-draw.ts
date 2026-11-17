@@ -5,7 +5,7 @@
  */
 
 import { coreFootprint, occupancy } from '@game/core';
-import type { Cell, EnemyPath, TeamState } from '@game/core';
+import type { Cell, EnemyPath, Rotation, TeamState } from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
 import type { WebContent } from '../content.js';
@@ -34,6 +34,7 @@ import { isEditStep } from './session.js';
 import { simConfig } from './setup.js';
 import { sideMarkers, type SideMarker } from './sides.js';
 import { coreLabel, screenText, screenTexts } from './texts.js';
+import { partnerHint, tunnelMarks } from './tunnel-marks.js';
 import { buildingName, type FlowView } from './view-model.js';
 
 export interface OverlayData {
@@ -240,6 +241,53 @@ export function drawBuildOverlay(
   if (!isEditStep(d.step)) return;
 
   const halves = halfStatuses(d.team, d.content);
+
+  // ---- Tunnels (CB-9g): a dashed line between the ends of each pair, and a
+  // mark on an end with no partner (it does nothing) ----------------------------
+  const tunnels = tunnelMarks(d.team, d.content);
+  if (tunnels.pairs.length > 0) {
+    ctx.save();
+    ctx.setLineDash([Math.max(4, z * 0.3), Math.max(3, z * 0.2)]);
+    ctx.lineWidth = Math.max(2, z * 0.1);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = col.ink;
+    ctx.globalAlpha = 0.6;
+    for (const p of tunnels.pairs) {
+      const a = centre(p.from);
+      const b = centre(p.to);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  for (const c of tunnels.unpaired) {
+    // Only the acting player's own ends are marked.
+    if (
+      d.team.buildings.find((b) => b.x === c.x && b.y === c.y)?.owner !==
+      d.acting
+    ) {
+      continue;
+    }
+    ring([c], col.warn, 3);
+    const p = centre(c);
+    const r = Math.max(6, z * 0.22);
+    ctx.save();
+    ctx.fillStyle = col.warn;
+    ctx.beginPath();
+    ctx.arc(p.x + z * 0.32, p.y - z * 0.32, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `800 ${String(Math.max(10, r * 1.4))}px ui-monospace, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('?', p.x + z * 0.32, p.y - z * 0.32 + 0.5);
+    ctx.restore();
+    if (d.ui.hover !== null && d.ui.hover.x === c.x && d.ui.hover.y === c.y) {
+      label(c, screenText(screenTexts, 'uiTunnelUnpaired'), col.warn);
+    }
+  }
 
   // ---- Enemy paths ---------------------------------------------------------
   if (d.ui.overlays.paths && d.paths !== null) {
@@ -861,6 +909,49 @@ export function drawBuildOverlay(
     if (d.ui.attempt.offending !== null) {
       fillCell(d.ui.attempt.offending, col.bad, 0.6);
       cross(d.ui.attempt.offending, col.bad);
+    }
+  }
+
+  // ---- Partners of a Tunnel end being placed, moved or selected (CB-9g) ----
+  {
+    let at: Cell | null = null;
+    let defId: string | null = null;
+    let rotation: Rotation = 0;
+    let ignore: number | null = null;
+    const g = d.ui.ghost;
+    if (g !== null && g.defId !== null && g.cells[0] !== undefined) {
+      at = g.cells[0];
+      defId = g.defId;
+      rotation = d.ui.held?.rotation ?? d.ui.moving?.rotation ?? 0;
+      ignore = d.ui.moving?.id ?? null;
+    } else if (sel?.kind === 'building') {
+      const sb = d.team.buildings.find((x) => x.id === sel.id);
+      if (sb !== undefined && sb.owner === d.acting) {
+        at = { x: sb.x, y: sb.y };
+        defId = sb.def;
+        rotation = sb.rotation;
+        ignore = sb.id;
+      }
+    }
+    const hint =
+      at === null || defId === null
+        ? null
+        : partnerHint(d.team, d.content, defId, at, rotation, d.acting, ignore);
+    if (hint !== null && at !== null) {
+      for (const c of hint.range) fillCell(c, col.accent, 0.16);
+      ring([...hint.range], col.accent, 1.5);
+      ring([...hint.partners], col.ok, 3.5);
+      if (g !== null && g.ok) {
+        label(
+          at,
+          screenText(
+            screenTexts,
+            hint.entrance ? 'uiTunnelHintEntrance' : 'uiTunnelHintExit',
+            { span: String(hint.span) },
+          ),
+          col.accent,
+        );
+      }
     }
   }
 
