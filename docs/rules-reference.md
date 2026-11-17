@@ -424,7 +424,14 @@ affect it.
 `offerWeights[].fromRound` in `economy.json` is an integer of at least 1 (no
 upper bound; a value above the last round just never offers the entry); the
 loader and `economy.schema.json` reject 0, negative and non-integer values, and
-the loader also rejects a list in which no entry has `fromRound` 1.
+the loader also rejects a list in which no entry has `fromRound` 1 and no
+`specialist` (some entry must be on offer in round 1 to every player, so that
+the sum of the weights is positive in every roll). `offerWeights[].specialist`
+(issue #472) is a string matching `^spec_[a-z0-9_]+$`; with the roster known (the
+validator and every game build) it must be a specialist of `specialists.json`
+and the entry's `def` must be that specialist's `signature` building, and a
+`def` that is some specialist's signature building may be listed only with that
+specialist (an entry without one is refused).
 
 In `threats.json`, a boss-only archetype (`bossOnly` true) must have `fromRound`
 (integer, at least 1; no upper bound) and `minPartySize` (integer from 1 to
@@ -742,7 +749,10 @@ same list, and the final state), `prng-child` (the parent state and the first
 
 `shop-roll` (see "Run random streams" and "Shops and gold"): input `{seed,
 before, round, leg, players, rerolls}` and optionally `offerWeights` (a list of
-`{def, weight, fromRound?}` that replaces the shipped list for this vector) and
+`{def, weight, fromRound?, specialist?}` that replaces the shipped list for this
+vector), `specialists` (one specialist ID or null per player, index = player;
+absent or shorter: null; the specialist of that player's rolls and re-rolls,
+issue #472; `shop-roll.23` to `shop-roll.26`) and
 `extraOffers` (default 0: every roll and re-roll makes that many offers more than
 `shopOfferCount`, Market day; `shop-roll.17` and `shop-roll.18`; the vectors
 `run-replay.s6-p1-market-day` and `run-replay.s1-p2-market-day` play Market day
@@ -5763,7 +5773,9 @@ order:
 
 1. the building: `pickWeightedIndex` over `offerWeights` (file order), where
    an entry whose `fromRound` is greater than the current round has weight 0
-   (see "Offer weights from a round" below);
+   (see "Offer weights from a round" below) and an entry that names a
+   `specialist` other than the one of the player being rolled has weight 0
+   (see "Signature buildings" below);
 2. the tier: `pickWeightedIndex` over the weights `[w1, w2, w3]` of the
    applicable `tierOdds` row; the result plus 1 is the tier.
 
@@ -5802,6 +5814,38 @@ append new entries at the end; the gate is only `fromRound <= round`, so a port
 that rolls over the whole list with weight 0 for gated entries and one that
 rolls over the filtered list draw the same numbers. `shop-roll.19` to
 `shop-roll.22` pin the shipped list at rounds 2, 3, 5 and 8 (issue #443).
+
+**Signature buildings (issue #472; EC-3b).** An `offerWeights` entry may name
+a `specialist` (the ID of one of the roster; the entry's `def` is that
+specialist's signature building). In a player's roll such an entry has its own
+weight if and only if **both** gates hold: `fromRound <= round` and the player's
+specialist (`team.specialists[player]`, "Specialists") equals the entry's
+`specialist`; otherwise it has weight 0 in every draw of that roll, the
+wall-shape redraw included. This is the zero-weight rule of "Offer weights from
+a round" with a second condition: the entry keeps its place in the list, so
+file order and the number of draws do not change, and a roll for a player who
+has no entry of their own (no specialist yet, a team from before specialists, a
+specialist whose signature building is not listed) is **exactly** the roll over
+the list without the specialist entries: same offers, same draws, same stream
+state. A re-roll uses the same player's specialist. The roll takes the
+specialist as an argument (`rollOffers(..., extraOffers, specialist)`: the ID or
+null); `offerWeightsAt(economy, round, specialist?)` is the one place that
+computes the weights, and a call **without** a specialist (the Blueprint and
+Caravan pools, which belong to no one's own shop) gives every specialist entry
+weight 0, so no event ever offers or holds a signature building (EC-3b).
+Entries of other specialists in the same list do not move any draw. The
+shipped `economy.json` lists no signature building yet: each is added by its
+own step of #468 (a Mana Well, Rune Ward, Familiar Roost and Transmuter entry,
+`fromRound` 2 as EC-3b decides, with its `specialist`; "Specialists", "Signature
+buildings"), so the shipped rolls are unchanged by this step. `shop-roll.23`
+(three players, the Flowmancer, another specialist and none, with a test list
+holding a Mana Well entry for the Flowmancer from round 2), `shop-roll.24`
+(round 1: gated by round), `shop-roll.25` (players without the entry roll as if
+it were not in the list) and `shop-roll.26` (the shipped list with a
+specialist: equal to `shop-roll.20`) pin it. _Notes for a port:_ the player's
+specialist is read from the team state when its shop is entered and when it
+re-rolls; nothing is drawn for it, and it does not change `pickWeightedIndex`
+(weights still sum with zeros left in place).
 
 **Wall shape limit (issue #291).** A *wall def* is a building of kind `defense`
 with `defenseType` `wall`; the Gate (`gate`) is not one. One set of offers (a
@@ -6448,8 +6492,10 @@ any number of offers from 1 to `offerCount`. More event types will come later.
   - *Rare* at round `r`: a building whose `offerWeights` entry has weight at most
     `maxOfferWeight` and is in the shop's roll at `r`. "In the roll" is the
     shop's own gate: `offerWeightsAt(economy, round)` is the `offerWeights` list
-    with the weight of every entry whose `fromRound` is above `round` set to 0,
-    and `rollOffers` draws from exactly that list; the rare list is its entries
+    with the weight of every entry whose `fromRound` is above `round` set to 0
+    (and, from issue #472, of every signature-building entry: this call names no
+    specialist, "Offer roll"), and `rollOffers` draws from that list for a
+    player with no specialist entry; the rare list is its entries
     with weight from 1 to `maxOfferWeight`, in `offerWeights` order, each
     building once (`rareOfferDefs`). With the shipped content (`maxOfferWeight`
     4) the rare buildings from round 3 are, in order: `bld_crossover`,
@@ -6517,7 +6563,8 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     to 1000; a `weightNode` above 0 needs `resourceWeights`; all checked at
     wiring and by the schema). A kind can be made when its weight is above 0
     and: `gold` (once): always, `{ gold: params.gold }`; `building`: a
-    building the shop can offer at this round (`offerWeightsAt`, weight above
+    building the shop can offer at this round (`offerWeightsAt` with no
+    specialist, so never a signature building; weight above
     0, tier 1 priced) not already an item, drawn by `pickWeightedIndex` over
     its offer weight, `{ def }`; `upgrade` (once): some player owns a
     building below tier 3 (`workshopOptions` at price 0); `node`: some player
@@ -6669,8 +6716,9 @@ if it differs.
 Issues #470 and #471 (umbrella #468; RS-13, CP-31, CB-51, MM-1e). Each player
 picks one starting specialist before placing their Core. The pick is stored
 (#470) and its **family bonus** acts in every battle (#471, "Family bonuses"
-below). The signature building comes in a later step of #468; a specialist has
-no effect on a shop yet.
+below). The signature building's shop gate comes with #472 ("Signature buildings in
+the shop" below); what each signature building does comes in the later steps of
+#468.
 
 ### Content (`content/specialists.json`, `schemas/specialists.schema.json`)
 
@@ -6721,6 +6769,55 @@ is a load error).
   `spec_beastbinder`, `fortify` `spec_wardsmith`, `siege` `spec_alchemist`,
   `weak` `spec_flowmancer`); every player of a bot party picks it and readies.
   Nothing is drawn, so no bot stream moves.
+
+### Signature buildings in the shop (issue #472; EC-3b)
+
+- **Content.** The four signature buildings of the roster are building
+  definitions in `buildings.json` from this step, so that the specialists, the
+  shop gate, the ghost check and the bot can name them: `bld_mana_well`,
+  `bld_rune_ward`, `bld_familiar_roost` and `bld_transmuter`. Every one is
+  **content only**: its own step of #468 (5/9 to 8/9) gives it its behaviour and
+  its real numbers. Until then each is a stand-in of an existing kind with the
+  footprint of the spec and placeholder numbers: the Mana Well a slow `source`
+  (1x1, interval 40 / 28 / 20, price 8 / 20 / 40, still on a node); the Rune Ward
+  a 1x1 `wall` (health 120 / 200 / 300, price 8 / 18 / 36); the Familiar Roost a
+  1x2 `unit_producer` of `unit_raider` (Power on the south side, 4 per unit,
+  every 80 / 56 / 40 ticks, price 20 / 40 / 70); the Transmuter a 1x2
+  `refinery` of Composite from 2 Ore and 2 Power (every 60 / 42 / 30 ticks,
+  price 25 / 50 / 90). They are **not in `offerWeights`**: nobody can buy one
+  yet, so no run holds one and no rule, battle or shop changes. (An entry gated
+  by a round that has no effect yet would have been equal; leaving them out
+  keeps each step's content valid without a number that means nothing.)
+  `loadAllContent` refuses a specialist whose `signature` is not a building.
+  Presentation text and sprites are placeholders (the Rune Ward draws as a wall
+  cell).
+- **Shop gate.** "Offer roll", "Signature buildings": an `offerWeights` entry
+  with a `specialist` is on offer only to a player with that specialist, from
+  its `fromRound`.
+- **Ghost validation** (`validateGhostSnapshot`, item 6a of "Validation"): a
+  snapshot may hold a signature building, placed or in the stash, only if the
+  specialist of its **owner** (`team.specialists[owner]`) is the specialist
+  whose `signature` it is. A snapshot without the `specialists` field (from
+  before specialists), or whose owner has another specialist, is rejected with
+  an error that names the building, the owner and the specialist it needs. A
+  run cannot produce the mismatch: the shop offers a signature building only to
+  its owner, a stash entry or building never changes owner (CP-29) and the
+  pick never changes after the step ends.
+- **Bot.** Each strategy's `want` table gains the signature building of the
+  specialist it picks, with a weight like the building of its family it
+  resembles (`rush` `bld_familiar_roost` 7, with the Lancer hall; `fortify`
+  `bld_rune_ward` 8, with the Mortar; `siege` `bld_transmuter` 4, with the
+  Foundry; `weak` `bld_mana_well` 1, ignored: it buys at random), and the
+  layout priority puts the Familiar Roost after the Lancer hall (`rush`) and
+  the Rune Ward after the Mortar (`fortify`). Because the shop only offers the
+  bot its own specialist's building, it buys and places it as it does that
+  family. The Mana Well is bought but not placed by the `weak` bot (it places
+  no collector); the Transmuter, a refinery with no consumer of its output yet,
+  is not wired by the `siege` bot until its own step. Nothing is drawn: the
+  shipped content offers none of them, so every bot run, battle and bundled
+  ghost is unchanged.
+- **Formats.** `offerWeights[].specialist` is optional content, not saved data:
+  no format number is raised.
 
 ### Saves and snapshots (no format number raised)
 
@@ -7113,6 +7210,13 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    ghost may hold one tier-2 building but not a tier-3 one, even if its value
    fits the bound; from round 2 a tier 3 is reachable by two raises
    (`ghostTierBound`).
+6a. **Signature buildings** (issue #472): every building, placed or stashed,
+   whose `def` is the `signature` of a roster specialist belongs to an owner
+   whose `team.specialists[owner]` is that specialist ("Specialists", "Signature
+   buildings in the shop"); an owner with another specialist, with none or in
+   a snapshot without the field is rejected (`team: player N has "<def>", the
+   signature building of "<specialist>", ...`). Content is read from
+   `content.specialists`; nothing else changes the rule for other buildings.
 7. **Modifiers**: each is known to `events.json`, has exactly its defined
    effects (including `units`, compared as canonical JSON), a non-stackable
    one is held once, its `fromRound` (default 1) is at most the snapshot's
@@ -7392,6 +7496,7 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Gold | `economy.json` | `baseIncomePerShop` 5; `rewards.pveWin` easy / medium / hard 6 / 9 / 13; `pvpWin` 8; `pvpLoss` 4 (14 to 31 gold per round: the base income is paid at both shops of a round, see "Income") | strictly increasing `pveWin` |
 | Walls (issue #291) | `buildings.json`, `economy.json` | seven tetromino shapes (I, O, T, S, Z, L, J), 4 cells each, tier 1 / 2 / 3 health 250 / 400 / 600 and price 8 / 18 / 36 (the old single wall: 100 / 160 / 240 and 4 / 9 / 18, now `bld_wall_block`, kept for strongholds and reference boards, not sold); `offerWeights`: every non-wall weight doubled (collector 24, Splitter 12, Merger 12, Crossover 4, Barracks 32, gate 6, turret 16, Overclocker 6, Armory 12, Range 16, Hangar 12), walls O, T, S, Z, L, J 2 each and I 1 (13 of 161 against 8 of 82 before); at most 2 wall shapes per shop; the kit's 3 walls are random shapes, never I | four cells for a price of 8 is 2 per cell (4 per cell before); the shop limit keeps a set of offers from being all walls |
 | Shop | `economy.json` | (issue #145; every non-wall weight was doubled by issue #291, see Walls, and five entries from round 3 were added by issue #383, see "Offer roll") `offerWeights`: collector 12 (was 10), Splitter 6, Merger 6, Crossover 2 (was 4), Barracks 16 (was 10), wall 8, gate 3 (was 5), turret 8, Overclocker 3, Armory 6 (was 3; it was not offered before the rebalance), Range 8 (was 5), Hangar 6 (was 3); placeholder unit numbers of Range and Hangar kept by owner decision (issue #59) | unit producers and the Armory are offered more often, routing parts less; with 8 bot runs per strategy this changes no strategy's depth by more than a round (fortify at party 4: 12.5 to 14.8) |
+| Signature buildings (issue #472, placeholders until steps 5/9 to 8/9 of #468) | `buildings.json` | `bld_mana_well` 1x1 source, price 8 / 20 / 40, interval 40 / 28 / 20; `bld_rune_ward` 1x1 wall, price 8 / 18 / 36, health 120 / 200 / 300; `bld_familiar_roost` 1x2 producer of raiders, Power 4 per unit, price 20 / 40 / 70; `bld_transmuter` 1x2 refinery of Composite from 2 Ore and 2 Power, price 25 / 50 / 90; none is in `offerWeights` yet | stand-ins of existing kinds so that the roster, the shop gate and the ghost check can name them; tuned in issue #477 |
 | Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
 | Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |
 | Escalator wave timing | `threats.json` | `firstTick` 100 and `intervalTicks` 75 (was 150 and 150): the eighth wave comes at tick 625 instead of 1200 | its Core used to fall before its large late waves spawned; a full tier 1 board now beats hard Escalator through round 8 (was 12), against 7 for Rusher |

@@ -20,6 +20,7 @@ import {
   buyOffer,
   rerollOffers,
   rollOffers,
+  specialistOf,
   sellFromStash,
   itemPrice,
   type Content,
@@ -163,6 +164,7 @@ export function economyHooks(
               content,
               economy,
               shopEffectCount(p, 'extra_offers'),
+              specialistOf(state.team, i),
             ),
             p,
             content,
@@ -315,7 +317,11 @@ export function economyHandlers(
         state.round,
         content,
         economy,
-        { extraOffers: shopEffectCount(me, 'extra_offers'), free },
+        {
+          extraOffers: shopEffectCount(me, 'extra_offers'),
+          free,
+          specialist: specialistOf(state.team, player),
+        },
       );
       if (!r.ok) return bad(r.reason, r.detail);
       const paid = free ? useShopEffect(me, 'free_rerolls') : me;

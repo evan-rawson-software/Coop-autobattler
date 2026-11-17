@@ -624,6 +624,43 @@ describe('item 3: tier plausibility', () => {
     ).toBe(true);
   });
 
+  test('a signature building is accepted only with its owner specialist (issue #472, EC-3b)', () => {
+    const ctx = ctxOf();
+    const withSpecialist = (
+      def: string,
+      specialist: string | null,
+    ): GhostSnapshot => {
+      const t = loose(forged(2, [{ def, tier: 1, owner: 0 }]));
+      if (specialist === null) delete t.team['specialists'];
+      else t.team['specialists'] = [specialist];
+      return t as unknown as GhostSnapshot;
+    };
+    const signatures = content.specialists.specialists.map((s) => [
+      s.id,
+      s.signature,
+    ]);
+    expect(signatures).toHaveLength(4);
+    for (const [owner, def] of signatures as [string, string][]) {
+      // The owner passes ...
+      const ok = validateGhostSnapshot(withSpecialist(def, owner), ctx);
+      expect(ok.ok ? [] : ok.errors, `${owner} with ${def}`).toEqual([]);
+      // ... any other specialist, and no specialist at all, fails.
+      for (const [other] of signatures as [string, string][]) {
+        if (other === owner) continue;
+        const bad = validateGhostSnapshot(withSpecialist(def, other), ctx);
+        expect(bad.ok, `${other} with ${def}`).toBe(false);
+        if (!bad.ok) expect(bad.errors.join(' ')).toContain(owner);
+      }
+      expect(validateGhostSnapshot(withSpecialist(def, null), ctx).ok).toBe(
+        false,
+      );
+    }
+    // Other buildings are not affected.
+    expect(
+      validateGhostSnapshot(withSpecialist('bld_extractor', null), ctx).ok,
+    ).toBe(true);
+  });
+
   test('the refining buildings are accepted at their prices, also in rounds 1 and 2 (issue #383)', () => {
     const ctx = ctxOf();
     const defs = [

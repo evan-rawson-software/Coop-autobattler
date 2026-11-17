@@ -1,6 +1,7 @@
 /** Economy configuration (W2-2): loaded from content/economy.json. */
 
 import type { BuildingConfig, BuildingId } from './buildings.js';
+import { SPECIALIST_ID_PATTERN, type SpecialistConfig } from './specialists.js';
 import {
   isRecord,
   readInt,
@@ -35,6 +36,12 @@ export interface OfferWeight {
    * default 1). In an earlier round its weight is 0 for the roll.
    */
   readonly fromRound: number;
+  /**
+   * The specialist whose shop offers it (RS-13, EC-3b): in another player's
+   * roll its weight is 0. Absent: every player's shop. Always the
+   * specialist's signature building.
+   */
+  readonly specialist?: string;
 }
 
 export interface TierOddsRow {
@@ -72,6 +79,12 @@ export type EconomyLoadResult = LoadResult<EconomyConfig>;
 
 export interface EconomyLoadContext {
   readonly buildings: BuildingConfig;
+  /**
+   * The roster, when known. With it, an `offerWeights` entry that names a
+   * specialist must name one of the roster and that specialist's signature
+   * building, and a signature building may be listed only with its specialist.
+   */
+  readonly specialists?: Pick<SpecialistConfig, 'get' | 'specialists'>;
 }
 
 const KEYS = new Set([
@@ -278,7 +291,12 @@ export function loadEconomy(
       errors.push(`${at}: must be an object.`);
       return;
     }
-    rejectUnknownKeys(e, new Set(['def', 'weight', 'fromRound']), at, errors);
+    rejectUnknownKeys(
+      e,
+      new Set(['def', 'weight', 'fromRound', 'specialist']),
+      at,
+      errors,
+    );
     const def = checkDef(e['def'], at, context, errors);
     if (def !== undefined) {
       if (seenDefs.has(def)) errors.push(`${at}: duplicate entry "${def}".`);
@@ -289,16 +307,65 @@ export function loadEconomy(
     if (e['fromRound'] !== undefined) {
       fromRound = readInt(e, 'fromRound', 1, at, errors);
     }
-    if (def !== undefined && weight !== undefined && fromRound !== undefined) {
-      offerWeights.push({ def, weight, fromRound });
+    let specialist: string | undefined;
+    let specialistOk = true;
+    if (e['specialist'] !== undefined) {
+      const sp = e['specialist'];
+      if (typeof sp !== 'string' || !SPECIALIST_ID_PATTERN.test(sp)) {
+        errors.push(
+          `${at}: "specialist" must be a specialist ID matching ${String(SPECIALIST_ID_PATTERN)}.`,
+        );
+        specialistOk = false;
+      } else {
+        specialist = sp;
+      }
+    }
+    if (context.specialists !== undefined && def !== undefined) {
+      const owner = context.specialists.specialists.find(
+        (s) => s.signature === def,
+      );
+      if (specialist !== undefined) {
+        const named = context.specialists.get(specialist);
+        if (named === undefined) {
+          errors.push(`${at}: unknown specialist "${specialist}".`);
+          specialistOk = false;
+        } else if (named.signature !== def) {
+          errors.push(
+            `${at}: "${def}" is not the signature building of "${specialist}" ("${named.signature}").`,
+          );
+          specialistOk = false;
+        }
+      } else if (owner !== undefined && specialistOk) {
+        errors.push(
+          `${at}: "${def}" is the signature building of "${owner.id}" and must name that specialist.`,
+        );
+        specialistOk = false;
+      }
+    }
+    if (
+      def !== undefined &&
+      weight !== undefined &&
+      fromRound !== undefined &&
+      specialistOk
+    ) {
+      offerWeights.push(
+        specialist === undefined
+          ? { def, weight, fromRound }
+          : { def, weight, fromRound, specialist },
+      );
     }
   });
   if (
     weightEntries.length > 0 &&
-    !weightEntries.some((e) => isRecord(e) && (e['fromRound'] ?? 1) === 1)
+    !weightEntries.some(
+      (e) =>
+        isRecord(e) &&
+        (e['fromRound'] ?? 1) === 1 &&
+        e['specialist'] === undefined,
+    )
   ) {
     errors.push(
-      'economy: "offerWeights" needs at least one entry offered from round 1.',
+      'economy: "offerWeights" needs at least one entry offered from round 1 to every player (no "specialist").',
     );
   }
 

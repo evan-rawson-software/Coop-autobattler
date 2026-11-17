@@ -107,6 +107,11 @@
             "description": "First round in which the building can be offered (default 1).",
             "type": "integer",
             "minimum": 1
+          },
+          "specialist": {
+            "description": "The specialist whose shop offers the building (its signature building): in every other player's roll the entry has weight 0. A signature building may be listed only with its specialist. Absent: every shop.",
+            "type": "string",
+            "pattern": "^spec_[a-z0-9_]+$"
           }
         }
       }

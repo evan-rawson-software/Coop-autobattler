@@ -115,18 +115,26 @@ export function isPylonDef(content: ShopContent, def: BuildingId): boolean {
 }
 
 /**
- * The offer weights of one round: `offerWeights` in file order, an entry
- * whose `fromRound` is above `round` with weight 0. The one place that says
- * what the shop can offer at a round: `rollOffers` draws from it and the
- * Blueprint event's "rare" test reads it (RS-4i5).
+ * The offer weights of one round for one player: `offerWeights` in file
+ * order, an entry whose `fromRound` is above `round` with weight 0, and an
+ * entry that names a specialist (a signature building, EC-3b) with weight 0
+ * unless `specialist` is that one. The one place that says what the shop can
+ * offer at a round: `rollOffers` draws from it and the Blueprint event's
+ * "rare" test reads it (RS-4i5). Without `specialist` (an event pool, which
+ * is nobody's own shop) every signature building has weight 0.
  */
 export function offerWeightsAt(
   economy: Pick<EconomyConfig, 'offerWeights'>,
   round: number,
+  specialist?: string | null,
 ): { readonly def: BuildingId; readonly weight: number }[] {
   return economy.offerWeights.map((w) => ({
     def: w.def,
-    weight: w.fromRound > round ? 0 : w.weight,
+    weight:
+      w.fromRound > round ||
+      (w.specialist !== undefined && w.specialist !== specialist)
+        ? 0
+        : w.weight,
   }));
 }
 
@@ -153,7 +161,8 @@ export function rareOfferDefs(
  * Roll a full set of offers. For slot 0 up to `shopOfferCount + extraOffers - 1`
  * (`extraOffers` is 0 unless a next-shop effect adds offers, RS-4i1), in this
  * order: one draw picks the building by `offerWeights` (one `nextInt(sum of
- * weights)`; an entry whose `fromRound` is above `round` counts as weight 0);
+ * weights)`; an entry whose `fromRound` is above `round`, or that names a
+ * specialist other than `specialist`, counts as weight 0);
  * if that building is a wall (a `defense` of `defenseType`
  * `wall`) that is not yet among the earlier offers' defs and two different
  * wall defs are already offered, one more draw picks again by `offerWeights`
@@ -171,10 +180,12 @@ export function rollOffers(
   content: ShopContent,
   economy: EconomyConfig,
   extraOffers = 0,
+  specialist: string | null = null,
 ): ShopOffer[] {
-  // An entry whose `fromRound` is above this round has weight 0 in every
-  // draw of this roll (it stays in the list, so the order is unchanged).
-  const gated = offerWeightsAt(economy, round);
+  // An entry whose `fromRound` is above this round, or that names another
+  // specialist, has weight 0 in every draw of this roll (it stays in the
+  // list, so the order is unchanged).
+  const gated = offerWeightsAt(economy, round, specialist);
   const buildingWeights = gated.map((w) => w.weight);
   const tierWeights = tierOddsFor(round, economy.tierOdds).weights;
   const offers: ShopOffer[] = [];
@@ -312,7 +323,12 @@ export function rerollOffers(
   round: number,
   content: ShopContent,
   economy: EconomyConfig,
-  opts: { readonly extraOffers?: number; readonly free?: boolean } = {},
+  opts: {
+    readonly extraOffers?: number;
+    readonly free?: boolean;
+    /** The player's specialist ID, for the signature building (EC-3b). */
+    readonly specialist?: string | null;
+  } = {},
 ): { readonly ok: true; readonly shop: PlayerShop } | ShopFailure {
   const cost = opts.free === true ? 0 : economy.rerollCost;
   if (shop.gold < cost) {
@@ -322,7 +338,14 @@ export function rerollOffers(
     ok: true,
     shop: {
       gold: shop.gold - cost,
-      offers: rollOffers(rng, round, content, economy, opts.extraOffers ?? 0),
+      offers: rollOffers(
+        rng,
+        round,
+        content,
+        economy,
+        opts.extraOffers ?? 0,
+        opts.specialist ?? null,
+      ),
     },
   };
 }

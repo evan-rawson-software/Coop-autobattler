@@ -62,6 +62,7 @@ export function loadSimContext(): SimContext {
   });
   const economy = loadEconomyOrThrow(rawEconomy, {
     buildings: content.buildings,
+    specialists: content.specialists,
   });
   const events = loadEventsOrThrow(rawEvents, {
     units: content.units,

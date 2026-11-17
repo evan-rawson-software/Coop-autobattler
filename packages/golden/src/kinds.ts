@@ -64,7 +64,10 @@ const threats = loadThreatsOrThrow(rawThreats, {
 
 const gameConfigs = {
   mapgen,
-  economy: loadEconomyOrThrow(rawEconomy, { buildings: content.buildings }),
+  economy: loadEconomyOrThrow(rawEconomy, {
+    buildings: content.buildings,
+    specialists: content.specialists,
+  }),
   events: loadEventsOrThrow(rawEvents, {
     units: content.units,
     resources: content.resources,

@@ -301,6 +301,10 @@ taken}`. The fields are optional and the follow-up is a new allowed shape of
   step of a new run: records without the field stay readable and hash as
   before, so no format number is raised (a run saved before the step existed
   has none and plays as it did; a snapshot without it has no specialists).
+  The signature-building shop gate (issue #472) adds the optional `specialist`
+  to an `offerWeights` entry (content, absent means every shop) and one ghost
+  validation rule; no saved record gains a field, so no format number is
+  raised.
   (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is

@@ -829,6 +829,45 @@ function tierTrim(size: number, tier: 2 | 3): Pix {
   return p;
 }
 
+/** Placeholder art for the Mana Well (#472): an Extractor with a blue ring. */
+function manaWellSprite(): Pix {
+  const p = new Pix(16, 16);
+  plate(p, 1, 1, 14, 14, KIND_RAMP['source'] as Ramp);
+  p.ellipse(8, 9.5, 4.5, 4.5, 'K');
+  p.ellipse(8, 9.5, 3.5, 3.5, 'T');
+  p.ellipse(8, 9.5, 2.5, 2.5, '4');
+  p.set(7, 8, '6');
+  arrow(p, 7, 2, 'n', 'y');
+  return p;
+}
+
+/** Placeholder art for the Familiar Roost (#472): a 1x2 producer with a perch. */
+function familiarRoostSprite(): Pix {
+  const p = new Pix(16, 32);
+  plate(p, 1, 1, 14, 30, KIND_RAMP['unit_producer'] as Ramp);
+  p.rect(3, 4, 10, 14, 'K');
+  p.rect(4, 5, 8, 12, 'R');
+  p.rect(7, 8, 2, 8, 'o');
+  p.rect(5, 8, 6, 1, 'o');
+  p.set(7, 6, '6');
+  p.rect(5, 22, 6, 6, 'K');
+  p.rect(6, 23, 4, 4, '2');
+  return p;
+}
+
+/** Placeholder art for the Transmuter (#472): a 1x2 refinery with two vats. */
+function transmuterSprite(): Pix {
+  const p = new Pix(16, 32);
+  plate(p, 1, 1, 14, 30, KIND_RAMP['refinery'] as Ramp);
+  for (const cy of [10, 21]) {
+    p.ellipse(8, cy, 5.5, 4.5, 'K');
+    p.ellipse(8, cy, 4.5, 3.5, '2');
+    p.ellipse(8, cy, 3, 2.2, cy === 10 ? 'o' : 'y');
+  }
+  arrow(p, 7, 2, 'n', 'y');
+  return p;
+}
+
 const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_extractor: extractorSprite,
   bld_splitter: splitterSprite,
@@ -842,6 +881,9 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_golem_forge: golemForgeSprite,
   bld_spire: spireSprite,
   bld_lancer_hall: lancerHallSprite,
+  bld_mana_well: manaWellSprite,
+  bld_familiar_roost: familiarRoostSprite,
+  bld_transmuter: transmuterSprite,
   // Fill and stud colours stand in for the compound and its two inputs.
   bld_refinery_ab: () => refinerySprite('M', 'm', 'o', 'y'),
   bld_refinery_bc: () => refinerySprite('T', 't', 'y', 'S'),

@@ -72,9 +72,31 @@ function errorsOf(...defs: Record<string, unknown>[]): string {
 }
 
 describe('real content', () => {
+  test('every specialist has its signature building in the content (#472)', () => {
+    const content = loadAllContentOrThrow(raw);
+    for (const sp of content.specialists.specialists) {
+      expect(content.buildings.get(sp.signature), sp.id).toBeDefined();
+    }
+  });
+
+  test('a signature building that is not a building is refused (#472)', () => {
+    const bad = clone(raw);
+    const first = (bad.specialists as { specialists: { signature: string }[] })
+      .specialists[0];
+    if (first === undefined) throw new Error('no specialist');
+    first.signature = 'bld_nothing';
+    const r = loadAllContent(bad);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors.join('\n')).toMatch(
+        /spec_flowmancer.*bld_nothing.*not in buildings/,
+      );
+    }
+  });
+
   test('loads everything through loadAllContent', () => {
     const content = loadAllContentOrThrow(raw);
-    expect(content.buildings.list().length).toBe(31);
+    expect(content.buildings.list().length).toBe(35);
     expect(content.units.list().length).toBe(8);
     expect(content.terrain.list().length).toBe(2);
     const turret = content.buildings.get('bld_turret');

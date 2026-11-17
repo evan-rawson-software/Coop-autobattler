@@ -13,7 +13,7 @@
     "buildings": {
       "file": "buildings.png",
       "w": 320,
-      "h": 164
+      "h": 196
     },
     "units": {
       "file": "units.png",
@@ -1209,10 +1209,74 @@
       "id": "bld_core",
       "note": "2x2 tiles."
     },
-    "bld_turret_base": {
+    "bld_mana_well": {
       "sheet": "buildings",
       "x": 298,
       "y": 82,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_mana_well",
+      "note": "1x1 tiles."
+    },
+    "bld_rune_ward": {
+      "sheet": "buildings",
+      "x": 0,
+      "y": 131,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_rune_ward",
+      "note": "1x1 tiles."
+    },
+    "bld_familiar_roost": {
+      "sheet": "buildings",
+      "x": 17,
+      "y": 131,
+      "w": 16,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        16
+      ],
+      "category": "building",
+      "id": "bld_familiar_roost",
+      "note": "1x2 tiles."
+    },
+    "bld_transmuter": {
+      "sheet": "buildings",
+      "x": 34,
+      "y": 131,
+      "w": 16,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        16
+      ],
+      "category": "building",
+      "id": "bld_transmuter",
+      "note": "1x2 tiles."
+    },
+    "bld_turret_base": {
+      "sheet": "buildings",
+      "x": 51,
+      "y": 131,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1226,7 +1290,7 @@
     },
     "bld_turret_head": {
       "sheet": "buildings",
-      "x": 0,
+      "x": 68,
       "y": 131,
       "w": 16,
       "h": 16,
@@ -1241,7 +1305,7 @@
     },
     "tier_pips": {
       "sheet": "buildings",
-      "x": 17,
+      "x": 85,
       "y": 131,
       "w": 16,
       "h": 16,
@@ -1256,7 +1320,7 @@
     },
     "tier_trim_1x1": {
       "sheet": "buildings",
-      "x": 66,
+      "x": 134,
       "y": 131,
       "w": 16,
       "h": 16,
@@ -1271,7 +1335,7 @@
     },
     "tier_trim_2x2": {
       "sheet": "buildings",
-      "x": 99,
+      "x": 167,
       "y": 131,
       "w": 32,
       "h": 32,
@@ -1286,8 +1350,8 @@
     },
     "bld_wall_auto": {
       "sheet": "buildings",
-      "x": 164,
-      "y": 131,
+      "x": 0,
+      "y": 164,
       "w": 16,
       "h": 16,
       "frames": 16,
