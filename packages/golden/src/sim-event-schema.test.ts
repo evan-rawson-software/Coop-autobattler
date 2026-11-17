@@ -106,6 +106,8 @@ describe('sim-event.schema.json', () => {
       'overload_core_damage',
       'overload_level',
       'overload_started',
+      'point_capture_started',
+      'point_captured',
       'produced',
       'ramp_step',
       'splash',
@@ -167,6 +169,21 @@ describe('sim-event.schema.json', () => {
         px: 1500,
         py: 4680,
       }),
+    ).toBe(false);
+    // Point capture (CB-8f).
+    expect(seen.has('point_capture_started')).toBe(true);
+    expect(seen.has('point_captured')).toBe(true);
+    expect(
+      validate({ tick: 4, type: 'point_capture_started', point: 0, side: 1 }),
+    ).toBe(true);
+    expect(
+      validate({ tick: 4, type: 'point_capture_started', point: 0, side: 2 }),
+    ).toBe(false);
+    expect(
+      validate({ tick: 9, type: 'point_captured', point: 1, side: 0, previous: -1 }),
+    ).toBe(true);
+    expect(
+      validate({ tick: 9, type: 'point_captured', point: 1, side: 0 }),
     ).toBe(false);
     expect(validate({ tick: 9, type: 'unit_died', unit: 1, side: 2 })).toBe(
       true,

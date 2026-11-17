@@ -226,7 +226,22 @@ export function makeArenaSimKind(
       if (!Array.isArray(posts)) {
         throw new TypeError('arena-sim: guards.posts must be an array');
       }
+      const cap = g['capture'] ?? {};
+      if (typeof cap !== 'object' || Array.isArray(cap)) {
+        throw new TypeError('arena-sim: guards.capture must be an object');
+      }
+      const capture = cap as Record<string, Json>;
+      const capNum = (key: string, fallback: number): number =>
+        capture[key] === undefined
+          ? fallback
+          : nonNegative(capture[key], `guards.capture.${key}`);
       placeGuards(sim, ctx, {
+        capture: {
+          captureTicks: capNum('captureTicks', 50),
+          maxCapturersCounted: capNum('maxCapturersCounted', 3),
+          captureRadiusCells: capNum('captureRadiusCells', 2),
+          pointAggroRangeCells: capNum('pointAggroRangeCells', 3),
+        },
         leashCells:
           g['leashCells'] === undefined
             ? 3
@@ -324,6 +339,15 @@ export function makeArenaSimKind(
         alive: sim.units.filter((u) => u.side === 2).length,
         killed: [...sim.guards.killed],
       };
+    }
+    if (sim.points !== undefined) {
+      result['points'] = sim.points.map((p) => ({
+        id: p.id,
+        controller: p.controller,
+        progressSide: p.progressSide,
+        progress: p.progress,
+        held: [...p.held],
+      }));
     }
     if (field(input, 'report') === 'positions') {
       result['positions'] = sim.units.map((u) => [u.id, u.px, u.py]);

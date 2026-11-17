@@ -409,8 +409,9 @@ describe('sweep of reference boards against every threat', () => {
     // include the Brood boss (issue #398), the Pylons boss (issue #400) and
     // the Warlord boss (issue #401); without the Warlord they were 327, 190,
     // 19. With the neutral guards of the points (CB-8e, #372) they are 368,
-    // 194 and 19 (were 377, 216, 22): guards fight units of both sides.
-    expect(blocks).toEqual([368, 194, 19, 0, 0]);
+    // 194 and 19 (were 377, 216, 22): guards fight units of both sides. With
+    // the points diverting units (CB-8f, #373) the middle block is 195.
+    expect(blocks).toEqual([368, 195, 19, 0, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {
@@ -444,7 +445,10 @@ describe('sweep of reference boards against every threat', () => {
     // loses time at a point where the fortify board does not: in easy round 2
     // the fortify board is 36 ticks shorter (407 against 443) and in medium
     // round 2 4 ticks (466 against 470); "never shorter" is now "at most 36
-    // ticks shorter".
+    // ticks shorter". With the points diverting units (CB-8f, #373) the rush
+    // board loses more time at the point (easy round 2: 461 against 407,
+    // medium round 2: 480 against 466), so the fortify board is at most 54
+    // ticks shorter.
     let ratioSum = 0;
     let cases = 0;
     for (const type of ['easy', 'medium', 'hard'] as const) {
@@ -452,7 +456,7 @@ describe('sweep of reference boards against every threat', () => {
         const rush = get('rush', 'arch_fortress', type, round);
         const fort = get('fortify', 'arch_fortress', type, round);
         expect(rush.won && fort.won).toBe(true);
-        expect(fort.endTick).toBeGreaterThanOrEqual(rush.endTick - 36);
+        expect(fort.endTick).toBeGreaterThanOrEqual(rush.endTick - 54);
         ratioSum += fort.endTick / rush.endTick;
         cases += 1;
       }

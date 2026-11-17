@@ -6,6 +6,12 @@
     { "id": "poi_strength", "kind": "unit_strength", "weight": 1 },
     { "id": "poi_heal", "kind": "heal", "weight": 1 }
   ],
+  "capture": {
+    "captureTicks": 50,
+    "maxCapturersCounted": 3,
+    "captureRadiusCells": 2,
+    "pointAggroRangeCells": 3
+  },
   "guards": {
     "baseBudget": 44,
     "growthPercent": 125,

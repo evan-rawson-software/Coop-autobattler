@@ -168,14 +168,41 @@ export interface TimelineSide {
   readonly buildings: number;
 }
 
+/** One point of interest in a timeline sample (CB-8f): its capture state at that tick. */
+export interface TimelinePoint {
+  readonly id: number;
+  /** The side that holds the point, -1 for nobody. */
+  readonly controller: number;
+  /** The side whose capture progress `progress` is, -1 for nobody. */
+  readonly progressSide: number;
+  readonly progress: number;
+}
+
 export interface TimelineSample {
   readonly tick: number;
   readonly sides: readonly [TimelineSide, TimelineSide];
+  /**
+   * The capture state of every point at the sample's tick, by point `id`;
+   * present only for a battle whose zone has points (CB-8f). Playback draws
+   * the capture progress from these samples.
+   */
+  readonly points?: readonly TimelinePoint[];
+}
+
+/** One point of interest in the summary (CB-8f). */
+export interface PointSummary {
+  readonly id: number;
+  /** The side that holds the point at the end, -1 for nobody. */
+  readonly controller: number;
+  /** Ticks each side held the point (not a tiebreak input, PP-10). */
+  readonly pointHeldTicks: readonly [number, number];
 }
 
 export interface BattleSummary {
   readonly sides: readonly [BattleSideSummary, BattleSideSummary];
   readonly timeline: readonly TimelineSample[];
+  /** Per point by `id`; present only for a battle whose zone has points (CB-8f). */
+  readonly points?: readonly PointSummary[];
 }
 
 export interface Battle {
@@ -298,6 +325,7 @@ export function startBattle(
     const points = zone.pointsOfInterest;
     placeGuards(sim, ctx, {
       leashCells: content.points.guards.leashCells,
+      capture: content.points.capture,
       posts: points.map((p) => ({
         id: p.id,
         x: p.x,
@@ -340,7 +368,23 @@ export function startBattle(
         buildings: sim.teams[s === 0 ? 0 : 1].buildings.length,
       };
     };
-    timeline.push({ tick: sim.tick, sides: [side(0), side(1)] });
+    const entry: TimelineSample = {
+      tick: sim.tick,
+      sides: [side(0), side(1)],
+    };
+    timeline.push(
+      sim.points === undefined
+        ? entry
+        : {
+            ...entry,
+            points: sim.points.map((p) => ({
+              id: p.id,
+              controller: p.controller,
+              progressSide: p.progressSide,
+              progress: p.progress,
+            })),
+          },
+    );
   };
   sample();
 
@@ -466,7 +510,20 @@ export function startBattle(
         guardsKilled: sim.guards?.killed[s] ?? 0,
       };
     };
-    return { sides: [side(0), side(1)], timeline: timeline.slice() };
+    const base: BattleSummary = {
+      sides: [side(0), side(1)],
+      timeline: timeline.slice(),
+    };
+    return sim.points === undefined
+      ? base
+      : {
+          ...base,
+          points: sim.points.map((p): PointSummary => ({
+            id: p.id,
+            controller: p.controller,
+            pointHeldTicks: [p.held[0], p.held[1]],
+          })),
+        };
   };
 
   const battle: Battle = {

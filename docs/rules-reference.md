@@ -386,6 +386,9 @@ odd (the loader and `mapgen.schema.json` refuse an even one). `guards` (CB-8e):
 to 9 (the point's cell and its 8 neighbours), `leashCells` 1 to 8, `units`
 1 to 16 entries with a unit ID of the unit file that does not fly, an integer
 `cost` from 1 to 1 000 000, a `weight` from 1 to 1000, no unit twice. The
+`capture` (CB-8f): `captureTicks` 1 to 1 000 000, `maxCapturersCounted` 1 to
+1000, `captureRadiusCells` 1 to 8, `pointAggroRangeCells` 1 to 8 (all integers;
+nothing else bounds them: a radius above the aggro range is allowed). The
 guard budget is clamped like the threat budget so that every product of the
 budget math stays below `2^53` (`growBudget` with the limit `floor((2^53 - 1) /
 100000)`). A guard's strength percent that would take its health above
@@ -2156,8 +2159,12 @@ state at tick 0:
   `s` have applied to the enemy's buildings, see step 4 and "Tiebreak
   counters");
 - `guards`: present **only** after `placeGuards` was called, that is, for a
-  battle whose zone has points of interest: `{leashCells, posts, killed,
-  lostToGuards}`, see "Neutral guards";
+  battle whose zone has points of interest: `{leashCells, capture, posts,
+  killed, lostToGuards}`, see "Neutral guards" and "Points of interest"
+  (`capture` holds the four numbers of `content/points.json` `capture`);
+- `points`: present **only** when `placeGuards` was called, like `guards`
+  (CB-8f, "Points of interest"): one `{id, controller, progressSide,
+  progress, held}` per point of the zone, sorted by `id`;
 - `sideOptions`: present **only** when a side was given options (PvE battles, see
   "Side options"); a ghost battle's state has no such field, so its hash is
   unchanged;
@@ -2191,7 +2198,9 @@ neutral included; step 5 treats guards as a third side in the push pass
 frame); step 6 removes dead units in id order, guards included
 (`unit_died {side: 2}` for a guard, counters in "Neutral guards"), and the
 destruction of buildings and the retargeting of units skip guards (their
-`target` is -1); step 7 counts the cooldown of guards down like any unit's.
+`target` is -1); step 7 counts the cooldown of guards down like any unit's. The points of
+interest (CB-8f, "Points of interest") add the diversion of rule c in step 3
+(units of side 0 and 1 only) and the capture step at the end of step 6.
 
 0. **Overload level.** `level = overloadLevel(T)` (see "Overload"). On a tick
    where `T >= overloadStartTick` and `(T - overloadStartTick) mod
@@ -2365,6 +2374,12 @@ destruction of buildings and the retargeting of units skip guards (their
      flyers"). Rules a and a2 do not test line of sight for a flyer (the
      attacker): it chases an enemy within the aggro range behind a wall or a
      lake, where a ground unit does not.
+   - **c1. Divert to a point (CB-8f).** A unit of side 0 or 1 that reaches c
+     (it attacks nothing and has no aggro target), in a battle whose state has
+     `points`, first looks for a point to divert to: see "Points of interest".
+     If it diverts, the rest of c (including c0) is replaced by the move
+     described there: a unit that diverts never uses the Core fields in that
+     tick.
    - **c. Move.** Otherwise the unit chooses a **heading** or a **target
      point** as follows (field details in "Goals and movement fields"); the
      move itself is resolved in step 5. Let `d` be the unit's cell's distance
@@ -2665,6 +2680,11 @@ destruction of buildings and the retargeting of units skip guards (their
      cell that holds its centre, and `unit_retargeted {unit, target}` is
      recorded after the destruction events. A unit changes its target at no
      other time after it spawned.
+   - **Capture step (CB-8f).** Last in step 6, after the retargeting, from the
+     units alive now: for each point in `id` order the capture progress of
+     "Points of interest" ("Capture step") is updated and `point_capture_started`
+     / `point_captured` are recorded, then the held ticks are counted. Only a
+     battle whose state has `points` has this step.
 7. **Cooldowns.** Each living turret's, unit producer's and economy
    building's non-zero `cooldown` and each surviving
    unit's non-zero `attackCooldown` decreases by 1. Then
@@ -3094,6 +3114,8 @@ shot is recorded in step 3, before the step 4 attack events):
 | `splash`             | `attacker` (the unit with `splash`), `x`, `y` (the primary target's centre, sub-cell units), `targets` (a list of `{unit, damage}` of the secondary targets in unit id order, damage after their armor; may be empty); recorded right after the attacker's `unit_attacked` event, only when the attack was on a unit |
 | `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`   |
 | `guard_spawned`      | `unit`, `point` (the point's id), `def`, `px`, `py` (the centre, sub-cell units); recorded by a battle at tick 0 right after `zone_revealed`, one per placed neutral guard (CB-8e, "Neutral guards") |
+| `point_capture_started` | `point` (the point's id), `side` (0 or 1): the point's `progressSide` became `side` with progress 0; recorded by the capture step (CB-8f, "Points of interest") |
+| `point_captured`     | `point`, `side` (the new controller), `previous` (the controller before: -1, 0 or 1); recorded by the capture step right after the `point_capture_started` of the same tick, if any (CB-8f) |
 | `unit_died`          | `unit`; and `side` = 2 for a neutral guard (a unit of a side has no `side` field) |
 | `building_destroyed` | `side`, `building`                                              |
 | `pylon_destroyed`    | `side`, `building`, `core` (the player index of the Core it shielded), `standing` (the pylons of that Core still alive); recorded in step 6 right after the pylon's `building_destroyed` (MM-9d) |
@@ -3317,8 +3339,9 @@ JSON `{ width, depth, features, pointsOfInterest }`:
   middle row `(depth - 1) / 2`; `x` is the column; `buff` is a buff ID of
   `content/points.json`. A point is one cell. It does **not** block movement
   and units walk over it; it never lies on a feature. There is at most one per
-  band. Each point starts the battle with neutral guards ("Neutral guards");
-  nothing else reads points yet.
+  band. Each point starts the battle with neutral guards ("Neutral guards") and
+  units divert to it and capture it ("Points of interest"); its `buff` is not
+  read yet (CB-8g).
 
 ### Parameters (`content/mapgen.json`, `neutralZone`)
 
@@ -3482,8 +3505,8 @@ unit, from the content) and `arena-sim.ts` (`placeGuards`, the behaviour);
 numbers in `content/points.json` under `guards` (schema
 `schemas/points.schema.json`, loader `points.ts`). CB-8c and CB-8e (issue
 #372). Guards hold the points of interest of the neutral zone ("The neutral
-zone"). In this issue killing the guards does nothing more: capture and buffs
-are later parts (CB-8f, CB-8g).
+zone"). A point with a living guard cannot be captured ("Points of
+interest"); the buffs are a later part (CB-8g).
 
 ### Model
 
@@ -3690,6 +3713,173 @@ Its result gains `guards: {alive, killed}` when the input has `guards`. The
 `battle.guards-two-points-round-1`, `battle.guards-two-points-round-8` (a
 hand-made zone with two points, the same boards in two rounds) and
 `battle.generated-zone-round-6`.
+
+## Points of interest
+
+Implemented in `arena-sim.ts` (`divertPoint`, `moveToPoint`, `stepPoints`) and
+`battle.ts` (the summary); numbers in `content/points.json` under `capture`
+(schema `schemas/points.schema.json`, loader `points.ts`). CB-8c and CB-8f
+(issue #373). The points are placed by "The neutral zone" and guarded by
+"Neutral guards"; this section covers how units divert to a point, wait there,
+capture it and what is recorded. A held point has no effect yet (the buffs are
+CB-8g, a later part).
+
+### State
+
+A battle whose zone has points (`placeGuards` was called) has `points` in the
+`ArenaSim`, a list sorted by `id` with one entry per point:
+
+| Field          | Meaning                                                                      |
+| -------------- | ---------------------------------------------------------------------------- |
+| `id`           | The point's id (the same order as `guards.posts`, entry `k` is post `k`).    |
+| `controller`   | The side that holds the point: -1 (nobody, the start), 0 or 1.               |
+| `progressSide` | The side whose progress `progress` is: -1, 0 or 1.                           |
+| `progress`     | Capture progress, 0 up to `captureTicks - 1`.                                |
+| `held`         | `[ticks side 0 held it, ticks side 1 held it]`, from 0.                      |
+
+At tick 0 every point is `{controller: -1, progressSide: -1, progress: 0,
+held: [0, 0]}`. `guards.capture` stores the four numbers of the content
+(`captureTicks`, `maxCapturersCounted`, `captureRadiusCells`,
+`pointAggroRangeCells`), so a saved state needs nothing else: the state is
+plain JSON and a restored battle continues exactly like the original. A
+state without points (no `points` key) is unchanged, so its hash is as
+before.
+
+### Aggro: diverting to a point
+
+In decision pass 3, rule c1 (a unit of side 0 or 1 that attacks nothing and
+has no aggro target, so neither a, a2 nor b chose an action: units and guards
+in aggro range come first, as does a Core in reach). A unit **diverts** to
+the point with index `k` when both hold:
+
+1. `controller != side` of the unit (a point its own side holds never draws
+   it);
+2. the squared distance from the unit's centre to the centre of the point's
+   cell `(240 x + 120, 240 y + 120)` is at most `(pointAggroRangeCells *
+   240)^2`, and a **ground** unit has the cell-level line of sight of rule a2
+   (`lineClear` of the unit's side, from the unit's centre to the point's
+   centre) over that line. A flyer sees past solid cells, like in rule a2.
+
+If several points qualify the unit takes the smallest squared distance, ties
+by the lowest `id` (the loop is in `id` order and keeps the first on a tie).
+The test is made again every tick from the state alone, so a unit keeps no
+memory of its goal: it **drops the point the moment** its own side becomes
+the controller (or it is pushed out of the range) and takes the move of rule
+c from where it stands. Nobody stays behind.
+
+A diverted unit moves like this (and rule c, including c0, is not used that
+tick):
+
+- Let `(hx, hy)` be the vector from the unit's centre to the point's centre.
+  If `hx^2 + hy^2 <= (captureRadiusCells * 240)^2` the unit **waits**: no
+  move this tick. It still attacks anything in reach (rule a decided that
+  before) and is pushed by other units as any waiting unit is (step 5).
+- Otherwise a **flyer** moves along the heading `(hx, hy)`, steered as in
+  "Steering" (only flying allies count as blockers), never through the
+  fields.
+- Otherwise a ground unit takes `cell`, the cell of its centre in its own
+  frame (as for rule c). If the **movement field to the point** (the field
+  of the guards, `computeCellField(arena, 2, point cell)`, cached per point
+  and shared with the guards, "Neutral guards") has a distance `d > 0` at
+  `cell`, it takes one step `k = fieldStep(arena, side, field, cell)` (`side`
+  is the unit's own, for the tie key) and the heading is `H = 240 * (k -
+  cell)` componentwise, steered as in "Steering". If `d <= 0` or there is no
+  step, the heading is `(hx, hy)` as for a flyer. (A point is in the middle
+  row of the zone and the aggro range is at most 8 cells, so the unit is in
+  the zone when it is within 3 cells; the field is over the cells open for
+  side 2.)
+
+The point's guards fight a diverted unit by their own rules. Capture needs no
+unit to be diverted: any unit of side 0 or 1 within `captureRadiusCells` of
+the point counts in the capture step, whatever brought it there.
+
+### Capture step
+
+At the end of step 6 (after the deaths, the destruction of buildings and the
+retargeting; a battle whose state has no `points` skips it). Let `r =
+captureRadiusCells * 240`. First one pass over the living units: a **guard**
+(side 2) marks the point of its `post` as guarded; any other unit, flyers
+included, with `(dx^2 + dy^2) <= r^2` to a point's centre adds one to that
+point's count for its side (a unit can count at several points). Then for
+each point in `id` order, with `c0` and `c1` the counts of side 0 and side 1:
+
+1. If a guard of the point is alive: nothing changes (not even the decay of
+   step 5).
+2. If `c0 > 0` and `c1 > 0` the point is **contested**: nothing changes.
+3. If exactly one side `s` has units in range and `s` is **not** the
+   controller:
+   - if `progressSide != s`: `progressSide = s`, `progress = 0` and
+     `point_capture_started {point, side: s}` is recorded;
+   - `progress += min(count, maxCapturersCounted)`;
+   - if `progress >= captureTicks`: `previous = controller`, `controller =
+     s`, `progress = 0`, `progressSide = -1` and `point_captured {point,
+     side: s, previous}` is recorded.
+4. If exactly one side is in range and it **is** the controller: nothing
+   changes (the controller's units standing there freeze the other side's
+   leftover progress; the rules do not say otherwise).
+5. If no unit of a side is in range: `progress` falls by 1 if above 0, and
+   when it is 0 `progressSide = -1`.
+
+Last, still in the pass of that point: if `controller` is 0 or 1,
+`held[controller] += 1`. So the tick of a capture counts for the new
+controller, and `held[0] + held[1]` is at most the number of ticks.
+
+With the shipped numbers (`captureTicks` 50, `maxCapturersCounted` 3) one
+unit takes a free point in 50 ticks (`point_captured` 49 ticks after
+`point_capture_started`, which is recorded in the tick of the first
+progress), two units in 25, three or more in 17.
+
+### Events and summary
+
+- `point_capture_started {point, side}` and `point_captured {point, side,
+  previous}` (the events table). Progress is **not** logged every tick.
+- **Playback reads the progress from the timeline samples** (not from the
+  events): every `TimelineSample` of a battle whose zone has points carries
+  `points`, a list `{id, controller, progressSide, progress}` by point `id`
+  at the sample's tick (`timelineSampleTicks`, the first sample at tick 0 and
+  the last at the end). The events say when a point changed hands and who
+  started; the samples give the progress bar between them.
+- The battle summary (`BattleSummary`) has `points` (present only when the
+  zone has points): per point by `id`, `{id, controller, pointHeldTicks}`,
+  the final controller (-1, 0 or 1) and the ticks `[side 0, side 1]` held it.
+  It is **not** part of the tiebreak ladder (PP-10) and does not decide when
+  a battle ends.
+
+### Notes for a port
+
+- The state of a point has four numbers and `held`; keep the list sorted by
+  `id` and parallel to `guards.posts`. Do not keep a set of "diverted" units:
+  the diversion is recomputed from the unit's position every tick.
+- All distances are squared integers (`dx*dx + dy*dy <= (cells * 240)^2`).
+  The unit's centre against the point's cell centre; no square roots.
+- The capture step runs after the units that died this tick are removed and
+  after buildings fell; a guard killed this tick no longer blocks the
+  capture, a unit killed this tick no longer counts.
+- Units on opposite sides of a point stop `captureRadiusCells` from its
+  centre, `2 * captureRadiusCells` from each other: with the shipped numbers
+  that is beyond the aggro range (3 cells), so a standoff in which both sides
+  wait and the point is contested lasts until later arrivals push the front
+  units closer. This is a consequence of the numbers, not a rule.
+
+### Golden vectors
+
+`arena-sim` takes `guards.capture`, optional `{captureTicks,
+maxCapturersCounted, captureRadiusCells, pointAggroRangeCells}` (each
+defaulting to the shipped number 50, 3, 2, 3), and its result gains
+`points: [{id, controller, progressSide, progress, held}]` when the input has
+`guards` (a post with no `guards.units` is a point with no guards). The
+`battle` and `pve-battle` kinds' `summary` gains `points` when the zone has
+points. Vectors: `arena-sim.points-outside-range-not-drawn`,
+`arena-sim.points-one-soldier-captures` (saved and restored),
+`arena-sim.points-three-soldiers-capture-fast`,
+`arena-sim.points-five-soldiers-count-three`,
+`arena-sim.points-contested-makes-no-progress`,
+`arena-sim.points-contested-keeps-progress`,
+`arena-sim.points-drone-captures-guarded-point`,
+`arena-sim.points-soldiers-kill-guards-then-capture`,
+`arena-sim.points-retaken-by-other-side`,
+`arena-sim.points-capture-restarts-for-other-side` and, for a whole battle
+with a wave of side 1 (as a PvE threat sends), `battle.points-wave-captures-point`.
 
 ## Battles
 
@@ -3909,9 +4099,15 @@ vector's `eventLogHash`.
 | `unitsKilled`   | Enemy units that died from the side's damage (`unitsDied` of the other side less `lostToGuards`). |
 | `guardsKilled`  | Neutral guards the side's units killed (CB-8e): a guard's death counts for the side that dealt it the most damage in that tick, for both on a tie; 0 without points. Not a tiebreak counter. |
 
-`timeline` is a list of samples `{tick, sides: [s0, s1]}` with `s = {units,
+Beside `sides` and `timeline`, the summary has `points` when the zone has
+points (CB-8f): per point `{id, controller, pointHeldTicks: [side 0, side 1]}`,
+see "Points of interest".
+
+`timeline` is a list of samples `{tick, sides: [s0, s1], points?}` with `s = {units,
 unitHealth, buildings}`: units alive, the sum of their current health, and
-placed buildings alive (the Core is not counted). The first sample is at tick
+placed buildings alive (the Core is not counted); `points` (only for a zone
+with points) is the capture state `{id, controller, progressSide, progress}` of
+each point at the sample's tick. The first sample is at tick
 0, then one after every `timelineSampleTicks` (50) simulated ticks, and one at
 `endTick` unless it coincides with a regular sample. The golden vectors leave
 the timeline out.
@@ -3925,7 +4121,7 @@ each `null` or an object of the side options of "Side options": `scheduledWaves`
 `freePower`, `unitStrengthPercent`, `coreHealths`; absent in the older vectors);
 each team is a `team-state-ops` script (`map` or
 `seed` and `partySize`, and `ops`). Result for a battle that ran: `{ok: true,
-result, summary (without timeline), zone, stateHash, events}` where
+result, summary (without timeline, with points when the zone has points), zone, stateHash, events}` where
 `stateHash` is the hash of the final `ArenaSim` and `events` the length of the
 event log; the event log is the vector's `eventLogHash`. For a refused battle:
 `{ok: false, error: {code, message}}` (no event log). Vectors:

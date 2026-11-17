@@ -292,3 +292,40 @@ faster, so later ticks have fewer units). 3,791 secondary hits in all and at
 most 444 in one tick. The bound in the rules is the product (casters x opposing
 units), at most about 10^6 hits per tick, which no battle within the unit
 budget reaches because units that are packed that closely are mostly dead.
+
+## Point aggro and capture (2026-11-17, issue #373)
+
+Units that pass within 3 cells of a point their side does not hold divert to
+it, wait within 2 cells and capture it ("Points of interest" in the rules
+reference). The cost is a loop over the points for every unit that reaches the
+move decision (a squared distance per point, a line-of-sight test only for a
+point in range) and one pass over the units and the points in the capture
+step at the end of each tick (no allocation beyond two small arrays, and
+nothing at all for a battle without points). The bench was run three times in
+one sitting on one machine: with the code of #372 (guards only), with this
+issue, and with this issue and `chancePercent` set to 0 (no points: the
+baseline). Median of 3 runs, battles per second:
+
+| Board                         | No points | Guards only (#372) | Capture (#373) | Peak per side (guards / capture) | Ticks, seed 1 (guards / capture) |
+| ----------------------------- | --------- | ------------------ | -------------- | -------------------------------- | -------------------------------- |
+| One plot, 128 battles         | 104.4     | 95.4               | 96.2           | 20 / 21                          | 3101 / 3101 (longest)            |
+| Legal dense, tier 1           | 8.85      | 6.99               | 5.63           | 24 / 24                          | 3101 / 3101                      |
+| Legal dense, tier 3           | 5.20      | 4.28               | 4.03           | 40 / 40                          | 3101 / 3101                      |
+| Stress, one Core, tier 1      | 1.64      | 1.59               | 1.62           | 368 / 378                        | 1767 / 1715                      |
+| Stress, four Cores, tier 1    | 1.08      | 1.00               | 0.97           | 441 / 426                        | 2476 / 2223                      |
+| Stress, one Core, tier 3      | 0.53      | 0.79               | 0.57           | 519 / 652                        | 1375 / 1546                      |
+| Stress, four Cores, tier 3    | 0.51      | 0.37               | 0.35           | 579 / 582                        | 2233 / 2214                      |
+
+Microseconds per unit-tick (median): guards only 1.33 (legal tier 1), 1.30
+(legal tier 3), 1.49 (stress, one Core, tier 1), 1.81 (stress, four Cores,
+tier 3); capture 1.59, 1.38, 1.50 and 1.89. The legal dense battles are 18 and
+6 percent dearer per unit-tick: the units that stop at a point crowd there (the
+stacking tests measure more pile-ups, "Pinned from measurements" in
+`stacking.test.ts`), which makes the push pass dearer; the stress rows are
+different battles again (the tick counts and peaks differ) and cost about the
+same per unit-tick. Event log sizes: one plot 0.46 MB (largest), legal dense
+1.53 and 2.67 MB, stress up to 6.83 MB. **No limit of the budget is crossed**
+(one plot 96.2 against the floor 35, legal dense 5.63 and 4.03 against 2 and
+1.5, stress tier 1 four Cores 0.97 against 0.35, stress tier 3 four Cores one
+battle 2.8 s against 6 s, peak 582 units against 1,000, battle length 3,101
+ticks against 4,000), so the budget table is unchanged.

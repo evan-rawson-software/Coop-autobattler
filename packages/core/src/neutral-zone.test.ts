@@ -285,6 +285,13 @@ const GUARDS = {
   units: [{ unit: 'unit_soldier', cost: 10, weight: 1 }],
 };
 
+const CAPTURE = {
+  captureTicks: 50,
+  maxCapturersCounted: 3,
+  captureRadiusCells: 2,
+  pointAggroRangeCells: 3,
+};
+
 function withPoints(chancePercent: number, bandMarginCells = 2) {
   return {
     ...content,
@@ -296,6 +303,7 @@ function withPoints(chancePercent: number, bandMarginCells = 2) {
         { id: 'poi_heal', kind: 'heal', weight: 1 },
       ],
       guards: GUARDS,
+      capture: CAPTURE,
     }),
   };
 }
@@ -427,6 +435,7 @@ describe('points content', () => {
       bandMarginCells: 2,
       buffs: [{ id: 'poi_a', kind: 'heal', weight: 1 }],
       guards: GUARDS,
+      capture: CAPTURE,
     };
     expect(loadPoints(ok).ok).toBe(true);
     for (const bad of [
@@ -444,6 +453,12 @@ describe('points content', () => {
         ],
       },
       { ...ok, extra: 1 },
+      { ...ok, capture: { ...CAPTURE, captureTicks: 0 } },
+      { ...ok, capture: { ...CAPTURE, maxCapturersCounted: 0 } },
+      { ...ok, capture: { ...CAPTURE, captureRadiusCells: 9 } },
+      { ...ok, capture: { ...CAPTURE, pointAggroRangeCells: 0 } },
+      { ...ok, capture: { ...CAPTURE, extra: 1 } },
+      { ...ok, capture: undefined },
     ]) {
       expect(loadPoints(bad).ok).toBe(false);
     }

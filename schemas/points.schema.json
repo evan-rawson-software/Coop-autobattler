@@ -2,9 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "points.schema.json",
   "title": "Points of interest",
-  "description": "How points of interest are placed in the neutral zone (CB-8c, CB-8d) and guarded (CB-8e): the chance that a plot band gets one, the margin from the band edges, the buffs a point can have and the neutral guards each point starts with. The tries per point are mapgen.json placementTries. The numbers of each buff kind are not here yet (CB-8g).",
+  "description": "How points of interest are placed in the neutral zone (CB-8c, CB-8d) guarded (CB-8e) and captured (CB-8f): the chance that a plot band gets one, the margin from the band edges, the buffs a point can have, the neutral guards each point starts with and the capture numbers. The tries per point are mapgen.json placementTries. The numbers of each buff kind are not here yet (CB-8g).",
   "type": "object",
-  "required": ["chancePercent", "bandMarginCells", "buffs", "guards"],
+  "required": [
+    "chancePercent",
+    "bandMarginCells",
+    "buffs",
+    "capture",
+    "guards"
+  ],
   "additionalProperties": false,
   "properties": {
     "$schema": {
@@ -43,6 +49,43 @@
             "minimum": 1,
             "maximum": 1000
           }
+        }
+      }
+    },
+    "capture": {
+      "description": "How units divert to a point and capture it (CB-8f). A unit of a side that does not hold a point diverts to it when within pointAggroRangeCells of it with a clear line of sight, and waits within captureRadiusCells. Each tick with no guard alive and units of one side only in captureRadiusCells, progress grows by the number of those units (at most maxCapturersCounted); at captureTicks the side takes the point.",
+      "type": "object",
+      "required": [
+        "captureTicks",
+        "maxCapturersCounted",
+        "captureRadiusCells",
+        "pointAggroRangeCells"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "captureTicks": {
+          "description": "Progress that takes a point (50 ticks: 5 seconds for one unit).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "maxCapturersCounted": {
+          "description": "Most units counted per tick in the capture range.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "captureRadiusCells": {
+          "description": "A diverted unit this close to the point's centre waits; units this close count as capturing.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "pointAggroRangeCells": {
+          "description": "A unit this close to the point's centre, with a clear line of sight, diverts to it.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
         }
       }
     },

@@ -50,6 +50,20 @@ export interface GuardsConfig {
   readonly units: readonly GuardUnit[];
 }
 
+/**
+ * How units divert to a point and capture it (CB-8f). All in cells or ticks.
+ */
+export interface CaptureConfig {
+  /** Progress that takes a point. */
+  readonly captureTicks: number;
+  /** Most units counted per tick in the capture range. */
+  readonly maxCapturersCounted: number;
+  /** Units this close to the point's centre capture; a diverted unit waits. */
+  readonly captureRadiusCells: number;
+  /** A unit this close to the point's centre (and seeing it) diverts to it. */
+  readonly pointAggroRangeCells: number;
+}
+
 export interface PointsConfig {
   /** Chance in percent that a plot band gets a point. */
   readonly chancePercent: number;
@@ -59,6 +73,7 @@ export interface PointsConfig {
   readonly buffs: readonly PointBuff[];
   readonly buff: ReadonlyMap<string, PointBuff>;
   readonly guards: GuardsConfig;
+  readonly capture: CaptureConfig;
 }
 
 export interface PointsLoadContext {
@@ -78,7 +93,14 @@ const TOP_KEYS = new Set([
   'chancePercent',
   'bandMarginCells',
   'buffs',
+  'capture',
   'guards',
+]);
+const CAPTURE_KEYS = new Set([
+  'captureTicks',
+  'maxCapturersCounted',
+  'captureRadiusCells',
+  'pointAggroRangeCells',
 ]);
 const GUARD_KEYS = new Set([
   'baseBudget',
@@ -95,6 +117,10 @@ export const MAX_GUARD_COST = 1_000_000;
 export const MAX_GUARDS_PER_POINT = 9;
 export const MAX_GUARD_LEASH_CELLS = 8;
 export const MAX_GUARD_UNITS = 16;
+/** Largest `capture.captureTicks`, `maxCapturersCounted` and range in cells. */
+export const MAX_CAPTURE_TICKS = 1_000_000;
+export const MAX_CAPTURERS_COUNTED = 1000;
+export const MAX_CAPTURE_CELLS = 8;
 /** The smallest and largest `guards.growthPercent`. */
 export const MIN_GUARD_GROWTH_PERCENT = 100;
 export const MAX_GUARD_GROWTH_PERCENT = 1000;
@@ -194,6 +220,66 @@ function loadGuards(
   }
   return { baseBudget, growthPercent, maxGuardsPerPoint, leashCells, units };
 }
+
+function loadCapture(
+  data: unknown,
+  errors: string[],
+): CaptureConfig | undefined {
+  if (!isRecord(data)) {
+    errors.push('points: "capture" must be an object.');
+    return undefined;
+  }
+  const before = errors.length;
+  rejectUnknownKeys(data, CAPTURE_KEYS, 'capture', errors);
+  const captureTicks = readInt(
+    data,
+    'captureTicks',
+    1,
+    'capture',
+    errors,
+    MAX_CAPTURE_TICKS,
+  );
+  const maxCapturersCounted = readInt(
+    data,
+    'maxCapturersCounted',
+    1,
+    'capture',
+    errors,
+    MAX_CAPTURERS_COUNTED,
+  );
+  const captureRadiusCells = readInt(
+    data,
+    'captureRadiusCells',
+    1,
+    'capture',
+    errors,
+    MAX_CAPTURE_CELLS,
+  );
+  const pointAggroRangeCells = readInt(
+    data,
+    'pointAggroRangeCells',
+    1,
+    'capture',
+    errors,
+    MAX_CAPTURE_CELLS,
+  );
+  if (
+    errors.length > before ||
+    captureTicks === undefined ||
+    maxCapturersCounted === undefined ||
+    captureRadiusCells === undefined ||
+    pointAggroRangeCells === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    captureTicks,
+    maxCapturersCounted,
+    captureRadiusCells,
+    pointAggroRangeCells,
+  };
+}
+
 const BUFF_KEYS = new Set(['id', 'kind', 'weight']);
 const BUFF_ID = /^poi_[a-z0-9_]+$/;
 
@@ -259,11 +345,13 @@ export function loadPoints(
     });
   }
   const guards = loadGuards(data['guards'], context, errors);
+  const capture = loadCapture(data['capture'], errors);
   if (
     errors.length > 0 ||
     chancePercent === undefined ||
     bandMarginCells === undefined ||
-    guards === undefined
+    guards === undefined ||
+    capture === undefined
   ) {
     return { ok: false, errors };
   }
@@ -275,6 +363,7 @@ export function loadPoints(
       buffs,
       buff: new Map(buffs.map((b) => [b.id, b])),
       guards,
+      capture,
     },
   };
 }

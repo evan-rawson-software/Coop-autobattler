@@ -16434,7 +16434,7 @@
     "expected": {
       "result": {
         "tick": 160,
-        "stateHash": "0e4eb044",
+        "stateHash": "2d349bb1",
         "events": 4,
         "sides": [
           {
@@ -16458,6 +16458,15 @@
           "alive": 1,
           "killed": [0, 0]
         },
+        "points": [
+          {
+            "id": 0,
+            "controller": -1,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [0, 0]
+          }
+        ],
         "positions": [
           [1, 360, 8760],
           [2, 1560, 4680]
@@ -16539,14 +16548,14 @@
     "expected": {
       "result": {
         "tick": 220,
-        "stateHash": "f1bc5436",
-        "events": 17,
+        "stateHash": "e65362c7",
+        "events": 14,
         "sides": [
           {
             "spawned": 1,
             "alive": 1,
             "unitsDied": 0,
-            "buildingDamageDealt": 30,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": [500]
           },
@@ -16556,18 +16565,27 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": [470]
+            "coreHealth": [500]
           }
         ],
         "guards": {
           "alive": 0,
           "killed": [1, 0]
         },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [117, 0]
+          }
+        ],
         "positions": [
-          [1, 434, 8766]
+          [1, 457, 8690]
         ]
       },
-      "eventLogHash": "06d51276"
+      "eventLogHash": "2079535f"
     }
   },
   {
@@ -16643,8 +16661,8 @@
     "expected": {
       "result": {
         "tick": 120,
-        "stateHash": "522933b2",
-        "events": 13,
+        "stateHash": "93ba33e9",
+        "events": 14,
         "sides": [
           {
             "spawned": 0,
@@ -16667,11 +16685,20 @@
           "alive": 0,
           "killed": [0, 1]
         },
+        "points": [
+          {
+            "id": 0,
+            "controller": -1,
+            "progressSide": 1,
+            "progress": 42,
+            "held": [0, 0]
+          }
+        ],
         "positions": [
-          [1, 2195, 3077]
+          [1, 1999, 4801]
         ]
       },
-      "eventLogHash": "5d22869d"
+      "eventLogHash": "5540b2ae"
     }
   },
   {
@@ -16764,8 +16791,8 @@
     "expected": {
       "result": {
         "tick": 80,
-        "stateHash": "6a62a8df",
-        "events": 20,
+        "stateHash": "7d684491",
+        "events": 21,
         "sides": [
           {
             "spawned": 2,
@@ -16788,12 +16815,28 @@
           "alive": 1,
           "killed": [1, 0]
         },
+        "points": [
+          {
+            "id": 0,
+            "controller": -1,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [0, 0]
+          },
+          {
+            "id": 1,
+            "controller": -1,
+            "progressSide": 0,
+            "progress": 8,
+            "held": [0, 0]
+          }
+        ],
         "positions": [
-          [2, 2126, 4585],
+          [2, 2280, 4200],
           [3, 600, 4680]
         ]
       },
-      "eventLogHash": "9f0f9f72"
+      "eventLogHash": "d574e165"
     }
   },
   {
@@ -17134,7 +17177,7 @@
     "expected": {
       "result": {
         "tick": 200,
-        "stateHash": "bb16c6c9",
+        "stateHash": "bfc0f384",
         "events": 66,
         "sides": [
           {
@@ -17157,7 +17200,16 @@
         "guards": {
           "alive": 1,
           "killed": [0, 0]
-        }
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": -1,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [0, 0]
+          }
+        ]
       },
       "eventLogHash": "be382617"
     }
@@ -17247,8 +17299,8 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "8b540e08",
-        "events": 41,
+        "stateHash": "91e5a954",
+        "events": 38,
         "sides": [
           {
             "spawned": 1,
@@ -17256,13 +17308,13 @@
             "unitsDied": 1,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": [422]
+            "coreHealth": [452]
           },
           {
             "spawned": 1,
             "alive": 1,
             "unitsDied": 0,
-            "buildingDamageDealt": 78,
+            "buildingDamageDealt": 48,
             "buildingsDestroyed": 0,
             "coreHealth": [500]
           }
@@ -17271,11 +17323,1183 @@
           "alive": 0,
           "killed": [0, 2]
         },
+        "points": [
+          {
+            "id": 0,
+            "controller": 1,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [0, 185]
+          }
+        ],
         "positions": [
           [2, 2446, 592]
         ]
       },
-      "eventLogHash": "0b88b0fe"
+      "eventLogHash": "d25343cd"
+    }
+  },
+  {
+    "id": "arena-sim.points-outside-range-not-drawn",
+    "kind": "arena-sim",
+    "description": "A point on the zone's middle row (row 19, column 8) with no guards. A soldier of side 0 walks up column 1, seven cells from it: outside the 3 cells of point aggro it never diverts, nothing is captured and the point stays uncontrolled.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 160,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 1,
+          "y": 15
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 8,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 160,
+        "stateHash": "adca5473",
+        "events": 4,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 24,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [476]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": -1,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [0, 0]
+          }
+        ],
+        "positions": [
+          [1, 360, 8760]
+        ]
+      },
+      "eventLogHash": "0cf1b191"
+    }
+  },
+  {
+    "id": "arena-sim.points-one-soldier-captures",
+    "kind": "arena-sim",
+    "description": "A point (row 19, column 6) with no guards. A soldier of side 0 passes two cells away on its way to the enemy Core at column 1, diverts, stops within the capture radius of 2 cells and captures in captureTicks (50): point_capture_started, then point_captured 49 ticks later (previous -1). It then resumes its march. Saved and restored once.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 260,
+      "report": "positions",
+      "restoreAt": [60],
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 17
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 260,
+        "stateHash": "82f7af23",
+        "events": 11,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 54,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [446]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [211, 0]
+          }
+        ],
+        "positions": [
+          [1, 434, 8766]
+        ]
+      },
+      "eventLogHash": "5adaccad"
+    }
+  },
+  {
+    "id": "arena-sim.points-three-soldiers-capture-fast",
+    "kind": "arena-sim",
+    "description": "The same point with three soldiers of side 0 in range from tick 0: progress grows by 3 per tick (maxCapturersCounted), so the point is taken after 17 ticks instead of 50.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 40,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 17
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 17
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 7,
+          "y": 17
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 40,
+        "stateHash": "24ac0f31",
+        "events": 2,
+        "sides": [
+          {
+            "spawned": 3,
+            "alive": 3,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [23, 0]
+          }
+        ],
+        "positions": [
+          [1, 704, 4896],
+          [2, 944, 4816],
+          [3, 1128, 4872]
+        ]
+      },
+      "eventLogHash": "60e0e780"
+    }
+  },
+  {
+    "id": "arena-sim.points-five-soldiers-count-three",
+    "kind": "arena-sim",
+    "description": "Five soldiers of side 0 in range count as three: the point is taken after the same 17 ticks as with three.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 40,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 17
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 17
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 7,
+          "y": 17
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 16
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 7,
+          "y": 16
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 40,
+        "stateHash": "d2d330fe",
+        "events": 2,
+        "sides": [
+          {
+            "spawned": 5,
+            "alive": 5,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [23, 0]
+          }
+        ],
+        "positions": [
+          [1, 713, 4897],
+          [2, 944, 4816],
+          [3, 1131, 4874],
+          [4, 648, 4968],
+          [5, 1044, 4836]
+        ]
+      },
+      "eventLogHash": "60e0e780"
+    }
+  },
+  {
+    "id": "arena-sim.points-contested-makes-no-progress",
+    "kind": "arena-sim",
+    "description": "A soldier of each side stands within the capture radius, one cell below and above the point: they fight and, while both live, the point is contested and no progress is made (no point_capture_started).",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 50,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 18
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 20
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 50,
+        "stateHash": "59e2ca3c",
+        "events": 10,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": -1,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [0, 0]
+          }
+        ],
+        "positions": [
+          [1, 1560, 4600],
+          [2, 1560, 4760]
+        ]
+      },
+      "eventLogHash": "33622f61"
+    }
+  },
+  {
+    "id": "arena-sim.points-drone-captures-guarded-point",
+    "kind": "arena-sim",
+    "description": "A guard soldier holds the point; a drone of side 0 diverts to it (flyers divert too), shoots the guard dead without ever being hit (a melee guard cannot hit a flyer) and, with the guard dead, captures the point.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 400,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_drone",
+          "x": 6,
+          "y": 15
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ],
+        "units": [
+          {
+            "post": 0,
+            "def": "unit_soldier",
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "095b53bc",
+        "events": 38,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 100,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [400]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [1, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [270, 0]
+          }
+        ],
+        "positions": [
+          [1, 550, 8248]
+        ]
+      },
+      "eventLogHash": "1075bb89"
+    }
+  },
+  {
+    "id": "arena-sim.points-soldiers-kill-guards-then-capture",
+    "kind": "arena-sim",
+    "description": "Two soldiers of side 0 pass a point guarded by one soldier, divert, kill the guard and then capture the point; no progress is made while the guard lives.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 400,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 16
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 7,
+          "y": 16
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ],
+        "units": [
+          {
+            "post": 0,
+            "def": "unit_soldier",
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "fbdebd23",
+        "events": 57,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 258,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [242]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [1, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [337, 0]
+          }
+        ],
+        "positions": [
+          [1, 432, 8788],
+          [2, 327, 8762]
+        ]
+      },
+      "eventLogHash": "36729f15"
+    }
+  },
+  {
+    "id": "arena-sim.points-retaken-by-other-side",
+    "kind": "arena-sim",
+    "description": "A soldier of side 0 takes the point and walks on; a soldier of side 1 comes down the zone later and retakes it (point_captured side 1, previous 0). The ticks each side held the point are in the state.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 420,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 17
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 31
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 33
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 420,
+        "stateHash": "bab099ec",
+        "events": 50,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 0,
+            "unitsDied": 1,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [296]
+          },
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 204,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 1,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [72, 299]
+          }
+        ],
+        "positions": [
+          [2, 815, 393],
+          [3, 819, 490]
+        ]
+      },
+      "eventLogHash": "665705c4"
+    }
+  },
+  {
+    "id": "arena-sim.points-capture-restarts-for-other-side",
+    "kind": "arena-sim",
+    "description": "A soldier of side 0 is capturing when two soldiers of side 1 arrive and kill it: while contested nothing changes, then the progress of side 0 is replaced by that of side 1, which restarts at 0 (a second point_capture_started).",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 200,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 18
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 24
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 7,
+          "y": 24
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 200,
+        "stateHash": "8da7e36a",
+        "events": 16,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 0,
+            "unitsDied": 1,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [494]
+          },
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 6,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 1,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [0, 119]
+          }
+        ],
+        "positions": [
+          [2, 729, 586],
+          [3, 921, 470]
+        ]
+      },
+      "eventLogHash": "90b2e0d1"
+    }
+  },
+  {
+    "id": "arena-sim.points-contested-keeps-progress",
+    "kind": "arena-sim",
+    "description": "A soldier of side 0 waits two cells below the point and has started capturing it (progress 5) when two soldiers of side 1 divert to the point from the other side and stop two cells above it: four cells apart, beyond the aggro range of 3, nobody fights. The point is contested, so its progress neither grows nor decays for the rest of the run. (A unit pushed closer by later arrivals would start the fight; here nothing arrives.)",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 260,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 17
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 4,
+          "y": 21
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 21
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 260,
+        "stateHash": "bf8ef031",
+        "events": 1,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": -1,
+            "progressSide": 0,
+            "progress": 5,
+            "held": [0, 0]
+          }
+        ],
+        "positions": [
+          [1, 1560, 4200],
+          [2, 1248, 4992],
+          [3, 1872, 4992]
+        ]
+      },
+      "eventLogHash": "46c96bbc"
     }
   }
 ]
