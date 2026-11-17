@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v5.3
+Status: Draft v5.4
 
 ## Direction
 
@@ -226,22 +226,38 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   - It can also contain **points of interest** that **give buffs to the
     side that controls them**, and that are **guarded by neutral units**.
     Not built yet: the zone holds only lakes and cliffs today, and its
-    format keeps an empty `pointsOfInterest` list for them (TA-41a).
-- **CB-8c [PROPOSED]** Points of interest (not built yet, CB-8):
+    format keeps an empty `pointsOfInterest` list for them (TA-41a). The
+    rules are in CB-8c to CB-8g.
+- **CB-8c [DECIDED]** Points of interest (owner decisions, issue #369; not
+  built yet, CB-8):
   - **Aggro** [DECIDED]: units are not sent to points of interest. A unit
     goes to one only if its path takes it **near enough to "aggro"** — within
     the point's aggro range — in which case it diverts to fight there.
     Otherwise it marches past.
   - **Guards** are neutral units that hold their position at the point and
-    fight any unit of either side that aggros.
-  - **Control** [DECIDED: capture and move on]: when a side's units kill the guards (or the other side's
-    units holding the point), that side takes control and its units resume
-    their march. Control lasts until enemy units aggro on the point and
-    retake it, so a point can change hands during the battle. The buff
-    applies while the point is held and ends with the battle.
-  - **Buffs** are battle-wide for the controlling side, e.g. sources
-    produce faster, units spawn stronger, units heal near the point, a
-    trickle of a rare resource.
+    fight any unit of either side that aggros (CB-8e).
+  - **Capture** [DECIDED]: once the guards are dead, a side takes a point
+    by keeping units in capture range for a while. More units capture
+    faster. If both sides have units in range, there is no progress
+    (CB-8f). The side then holds the point. Another side can retake it
+    later, so a point can change hands during the battle. The buff applies
+    while the point is held and ends with the battle.
+  - **The whole side benefits** [DECIDED]: a captured point buffs every
+    player of the capturing side, not only the players whose units
+    captured it. This is an exception to PP-8 (CB-24a).
+  - **Two buff kinds** [DECIDED] (CB-8g):
+    - **Stronger new units**: units the side spawns while it holds the
+      point have more health and damage (a side-wide percent).
+    - **Healing near the point**: the holder's units within a few cells of
+      the point slowly regain health.
+    - Faster collectors and a resource trickle are not in this version.
+  - **Placement** [DECIDED] (CB-8d): 0 or 1 point per plot band (one band
+    of `plotWidth` columns for each facing pair of plots, CB-8b). Each band
+    rolls whether it gets a point and at which column. A point is always on
+    the zone's middle row.
+  - **Resume** [PROPOSED]: units stop at a point while it is being
+    captured, then resume their march. A unit passing a point its own side
+    already holds does not divert.
   - **Consequence for building**: which points a party's units reach
     depends on where they leave the front edge and how the hidden terrain
     routes them. A party can spread its unit producers along the front to
@@ -250,10 +266,86 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     units off the direct route for a while, which can cost a rush its
     timing.
   - Like the rest of the zone, points and guards are generated from the
-    battle seed, hidden until the battle begins, and placed fairly: mirrored
-    or equidistant so neither side is favoured.
+    battle seed, hidden until the battle begins, and placed fairly: each
+    band lies between one facing pair of plots, so neither side is
+    favoured.
   - Guard strength scales with the round so points stay worth fighting for
-    at any depth.
+    at any depth (CB-8e).
+- **CB-8d [PROPOSED]** **Placing points** (issue #371). Each point is
+  `{id, band, x, y, buff}`, sorted by `id`; `id` counts from 0 in band
+  order.
+  - A band is the columns `band * plotWidth` to `(band + 1) * plotWidth - 1`,
+    between side 0's plot `band` and side 1's plot `N - 1 - band` (CB-8b).
+  - A point is one cell on the **middle row**, `y = (depth - 1) / 2`. This
+    needs an odd `depth`; an even one is refused. With a `depth` of 7 that
+    is row 3.
+  - A point does not block movement. Units walk over it.
+  - In band order, each band rolls a 60% chance (`chancePercent`) to get a
+    point. If it does, it tries up to `placementTries` columns, at least 2
+    cells (`bandMarginCells`) in from the band's edges. A try works if the
+    point's cell and its 8 neighbours are all open, so there is room for
+    guards. If every try fails, the band has no point; the zone is still
+    valid.
+  - The buff is one weighted pick from `content/points.json`, drawn only for
+    a band that got a point. At first the two kinds weigh the same.
+  - Draws come from their own stream after lakes and cliffs, so lakes and
+    cliffs do not change. Points derive only from the battle seed, the
+    width, the content and the configuration (CB-8a).
+- **CB-8e [PROPOSED]** **Guards** (issue #372). Each point starts the
+  battle with guards: units of neither side (side 2, neutral).
+  - **Spawning**: placed at tick 0, on the point cell and then its 8
+    neighbours. Soldiers and archers only, no flyers, at most 5 per point.
+    A budget per point grows 25% per round like threats (SC-1) and buys
+    guards; any budget left over makes that point's guards stronger. The
+    base budget gives about three soldiers and one archer in round 1.
+  - **Hold**: with no enemy to fight, a guard walks back to its post and
+    stops there.
+  - **Fight**: a guard fights any unit of either side that comes within
+    aggro range. Guards never target buildings or Cores and do not breach.
+  - **Leash**: a guard more than 3 cells from its post drops its target and
+    walks back. It never leaves the neutral zone.
+  - **Turrets do not shoot guards.** Points are a matter for units.
+  - Guards do not count in a side's unit counts or the tiebreak (PP-10) and
+    never decide when a battle ends. Overload does not affect them.
+- **CB-8f [PROPOSED]** **Capture** (issues #373):
+  - **Diverting**: a unit of side 0 or 1 diverts to a point when it is
+    within 3 cells (`pointAggroRangeCells`) of it, with a clear line of
+    sight, and its side does not hold the point. Flyers divert too. Units
+    are never sent; only those passing near divert. Aggro on enemy units
+    still comes first.
+  - **Waiting**: a diverted unit within 2 cells (`captureRadiusCells`) of
+    the point stops and waits. It still attacks anything in reach.
+  - **Resuming**: when its own side takes the point, a unit drops the point
+    and walks on from where it stands. Nobody stays behind. A unit passing
+    a point its own side holds does not divert.
+  - **Progress** each tick, per point: while any guard is alive, nothing
+    changes. If both sides have units in capture range, nothing changes. If
+    only one side has units in range and does not hold the point, its
+    progress (restarted at 0 if the other side had it) grows by the number
+    of its units in range, counting at most 3 (`maxCapturersCounted`). At
+    50 (`captureTicks`) it takes the point. If nobody is in range, progress
+    falls by 1 per tick.
+  - One unit takes 5 seconds; three units take about 1.7.
+  - Events: `point_capture_started`, `point_captured`. The battle summary
+    shows the final holder of each point and how long each side held it.
+    This is not part of the tiebreak (PP-10).
+- **CB-8g [PROPOSED]** **Buffs** (issue #374). A held point gives its side
+  its buff until the point is lost or the battle ends.
+  - **Stronger new units** (`unit_strength`): each held point of this kind
+    adds 20% health and damage (`strengthPercent`) to units the side
+    spawns, capped at 40% in total (`maxPointStrengthPercent`). It applies
+    to producer units and scheduled PvE wave units alike. It adds to the
+    owner's other strength bonuses and is outside the Armory cap
+    (CB-24a). It is read at the moment of spawning: units already on the
+    field never change.
+  - **Healing** (`heal`): once a second (`healIntervalTicks`, 10), each
+    unit of the holding side within 3 cells (`healRadiusCells`) of the
+    point regains 2 health (`healAmount`), never above its maximum health.
+    A unit near several of its side's healing points heals once per beat.
+    Guards, the other side, buildings and Cores are not healed.
+  - The battle summary shows each side's point bonus at the end and the
+    total health healed.
+  - All numbers above are proposed and tuned later (issue #369, part 7).
 - **CB-8a [PROPOSED]** Details of the neutral zone:
   - It is generated from the battle seed, so a battle remains reproducible
     (CB-30).
@@ -710,6 +802,8 @@ no building makes and only PvE waves field.
   CP-30). (Owner decision 19 on issue #124. Implemented, issue #137; the
   caps are `maxSourceSpeedPercent` and `maxUnitStrengthPercent` in
   `content/sim.json`.)
+  - **Exception**: a point of interest's buff applies to the **whole side**,
+    every player of it (CB-8c, CB-8g).
 - **CB-25 [DECIDED]** **The board never expands.** It starts fairly large and
   stays that size for the whole run. Running out of room is intended: by the
   mid-run space runs out and placement becomes a tough choice (design
@@ -931,4 +1025,5 @@ no building makes and only PvE waves field.
   no more. (Status: the content has grown past this budget. Refining is in,
   with the two compounds (CB-5d), and so are more unit types and buildings
   (`content/units.json`, `content/buildings.json`) and five bosses
-  (`content/threats.json`). Points of interest are not built yet.)
+  (`content/threats.json`). Points of interest are being added (issue #369,
+  CB-8c to CB-8g); refining them is still to come.)

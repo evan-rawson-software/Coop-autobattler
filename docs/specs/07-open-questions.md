@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v5.2
+Status: Draft v5.3
 
 This file lists what is still waiting for a decision, and on what. Answered
 questions are kept below "Still open", under a "Decided" line, so the
@@ -22,9 +22,9 @@ answer. The decisions of November 2026 come from issue #392.
   number are tuned from playtests and the balance harness (SC-6). The plot
   size changes only on playtest data about when space runs out. The
   refining numbers are tuned in #386.
-- **Points of interest: aggro range and buffs (CB-8c, Q2).** Still open in
-  the specs. The owner's decisions are in #369, and #370 records them in
-  `03-combat.md`. Points of interest are not built yet.
+- **Points of interest: exact numbers (CB-8d to CB-8g, Q2).** Chances,
+  guard budgets, capture times, buff sizes and ranges are [PROPOSED] and
+  stay open until #369 part 7 tunes them.
 - **Later refined resources (CB-5d, Q2).** Alloy, Surge, Essence and the
   Ore + Flux compound come after the first version; when, and which
   buildings use them, is not decided.
@@ -79,7 +79,10 @@ Decided:
 - The neutral zone can hold points of interest that buff whoever controls
   them, guarded by neutral units (CB-8). Units go to a point only if they
   path near enough to aggro (CB-8c). Units capture a point and move on;
-  nobody stays behind to hold it. Aggro range and the buffs: see "Still
+  nobody stays behind to hold it. Decided (issue #369): the whole side
+  benefits, with two buff kinds (stronger new units, healing near the
+  point), 0-1 point per plot band on the middle row, and capture progress
+  that grows with the units in range (CB-8c). Exact numbers: see "Still
   open".
 - **Map and plot size, board shape** (issue #392): one plot per player,
   side by side, the same size at any party size. The size stays 24 × 16
