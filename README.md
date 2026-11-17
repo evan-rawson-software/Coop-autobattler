@@ -1,23 +1,36 @@
 # Coop Autobattler (working title)
 
-A co-op roguelite autobattler for 1–4 players. The party builds one large
-shared factory on a randomly generated map between fights, then watches it
-produce units and defend itself in automated combat
-against a mix of PvE encounters and asynchronous PvP "ghost" parties. PvE difficulty grows
-exponentially, so every run eventually ends in defeat — the question is how far
-you get.
+A co-op roguelite autobattler for 1–4 players, in a theme of arcane industry:
+magic-powered factories, light and charming. Each player has their own plot of
+one continuous, randomly generated battlefield, with their own Core and their
+own factory on it. Between fights each player buys buildings, places them and
+wires them with conduits; neighbours join their factories with **border
+links**, conduits joined at the plot border that carry resources between
+plots. In battle the factories produce units and defend themselves
+automatically, against a mix of PvE encounters and asynchronous PvP "ghost"
+parties. PvE difficulty grows exponentially, so every run eventually ends in
+defeat — the question is how far you get.
 
-The project is in the **specification phase**. Only the repository scaffolding
-for the web proof of concept exists; no game logic is implemented yet.
+The offline **web proof of concept is playable**, and the per-player design
+(own plot and Core, border links) is in. A playtest build of `main` is
+published on GitHub Pages; see the
+[playtest guide](docs/playtest-guide.md) for how to play it and what feedback
+helps.
 
-Plan: (1) an offline, single-player **web proof of concept** for early
-playtesting, (2) a port to **Godot**, (3) co-op and online ghost PvP on
-**Steam**.
+Plan: (1) an offline **web proof of concept** for early playtesting (solo; a
+party of 2 to 4 can be played from one device), (2) a port to **Godot**, (3)
+co-op and online ghost PvP on **Steam**.
 
 ## Development
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the repository layout, the
-commands, and the layer rule.
+commands, and the layer rule. To play the web build locally:
+
+```
+pnpm install
+pnpm --filter @game/web dev   # development server
+pnpm build && pnpm preview    # or the production build
+```
 
 ## Watch a battle
 
@@ -38,10 +51,10 @@ refined and then broken down into backlog items for coding agents.
 
 | # | Spec | Covers |
 |---|------|--------|
-| 00 | [Vision & pillars](docs/specs/00-vision.md) | What the game is, who it is for, design pillars, scope |
+| 00 | [Vision & pillars](docs/specs/00-vision.md) | What the game is, who it is for, design pillars, scope, theme |
 | 01 | [Run structure](docs/specs/01-run-structure.md) | Core loop, rounds, steps, lives, run end |
-| 02 | [Co-op & party](docs/specs/02-coop-party.md) | 1–4 player model, the shared board, ownership, building together, disconnects |
-| 03 | [Combat](docs/specs/03-combat.md) | The shared factory and battlefield: terrain, resources and conduits, units, in-battle ramp, defenses, opponents |
+| 02 | [Co-op & party](docs/specs/02-coop-party.md) | 1–4 player model, one plot and Core per player, ownership, border links, building together, disconnects |
+| 03 | [Combat](docs/specs/03-combat.md) | The factory and the battlefield: plots, terrain, resources and conduits, units, in-battle ramp, defenses, opponents |
 | 04 | [Encounters & matchmaking](docs/specs/04-encounters-matchmaking.md) | PvE encounters, ghost PvP, snapshot matching, boss fallback |
 | 05 | [Scaling & economy](docs/specs/05-scaling-economy.md) | Exponential PvE scaling, player power curve, economy |
 | 06 | [Technical architecture](docs/specs/06-technical-architecture.md) | Phases (web proof of concept → Godot → Steam multiplayer), Steam as the backend, trust model |

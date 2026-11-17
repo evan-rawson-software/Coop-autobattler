@@ -6,13 +6,15 @@ Open <https://evan-rawson-software.github.io/Coop-autobattler/> in a current des
 
 ## What a run looks like
 
-Place your Core, then repeat each round: build, pick a PvE battle, watch it, pick an event, shop and build again, then fight a PvP battle. Losing a PvP battle costs one life. You start with 5 lives, and the run ends at zero.
+For your first run, choose "Play the tutorial" in the main menu: it is a real run with tips. Place your Core and build, then repeat each round: pick a PvE battle (the game calls it a Stronghold), watch it, pick an event, shop and build, fight a PvP battle (against a Rival party), pick an event, and shop and build again. Losing a PvP battle costs one life; losing a PvE battle costs only the reward. You start with 5 lives, and the run ends at zero.
+
+Each player has their own plot and Core on one battlefield. To try a party of 2 to 4 on one device, open the main menu with `#/?players=2` (or 3, 4) at the end of the address; the run bar then lets you switch which player you act as.
 
 The shop tells you who the PvP opponent is before you ready up. It is either a ghost (a snapshot of another factory, with its owner label) or the boss. Ghosts labelled "Bundled" come with the game; the others are snapshots your own earlier runs left in this browser. Rounds 1 to 6 have bundled ghosts, later rounds meet the boss. The Run over screen lists every opponent and result.
 
 ## What the numbers are meant to do
 
-The shop also offers the Range (trains archers, which shoot from three cells away and can hit flyers) and the Hangar (builds drones, which fly over walls and lakes); their numbers are placeholders, and the bots use them too. From round 4 on, PvE waves also contain archers (about a quarter of a wave's strength) and drones (about a seventh), so build turrets or Ranges: melee units cannot hit drones. A Hangar can be walled in completely: its drones appear next to it and fly out over the walls, so it never blocks Ready (a walled-in Barracks or Range still does). Supply is scarce: one collector fully feeds one building of the same tier (a tier 1 collector gives 0.50 items per second, and a tier 1 Barracks, Overclocker or Armory takes at most that much). Your area has three Ore, three Power and one Flux node, so it can run three Barracks at full speed and no more; to grow after that, raise tiers, use the Overclocker (at most +25% collector speed) or the Armory (+25% to +50% unit health and damage, at most +100% per player), or share through a border link. You earn 9 to 26 gold per round. Threats grow 25% per round, and strongholds have at most 6 turrets per area. A competent build should beat hard PvE through about round 5, find it a gamble in rounds 6 to 8, and meet the round-5 boss at every party size with a fair chance.
+The shop also offers the Range (trains archers, which shoot from three cells away and can hit flyers) and the Hangar (builds drones, which fly over walls and lakes); their numbers are placeholders, and the bots use them too. From round 4 on, PvE waves also contain archers (about a quarter of a wave's strength) and drones (about a seventh), so build turrets or Ranges: melee units cannot hit drones. A Hangar can be walled in completely: its drones appear next to it and fly out over the walls, so it never blocks Ready (a walled-in Barracks or Range still does). Supply is scarce: one collector fully feeds one building of the same tier (a tier 1 collector gives 0.50 items per second, and a tier 1 Barracks, Overclocker or Armory takes at most that much). Your area has three Ore, three Power and one Flux node, so it can run three Barracks at full speed and no more; to grow after that, raise tiers, use the Overclocker (at most +25% collector speed) or the Armory (+25% to +50% unit health and damage, at most +100% per player), or share through a border link. You earn 14 to 31 gold per round (5 at each of the two shops, plus the battle rewards). Threats grow 25% per round, and strongholds have at most 6 turrets per area. A competent build should beat hard PvE through about round 5, find it a gamble in rounds 6 to 8, and meet the round-5 boss at every party size with a fair chance.
 
 ## Refining, the Foundry, Golems and casters (from round 3)
 
@@ -27,7 +29,7 @@ The first time the shop offers a refinery, a one-line hint explains the chain. T
 
 ## Bosses (every PvP battle with no rival party)
 
-When the opponent is a computer-made boss, the Next fight panel of the shop and build screens names it, says in one line what is special about it, and gives one line of counter advice. The boss is fixed before you build, so you can build against it.
+When the opponent is a computer-made boss, the Next fight panel of the shop and build screens names it, says in one line what is special about it, and gives one line of counter advice. The boss is fixed before you build, so you can build against it. Later bosses join from later rounds (Brood from round 3, Bonded from 5, Pylons from 7, Warlord from 9), and Bonded needs a party of two or more.
 
 - Boss: every third wave is a swarm of raiders. Defense against swarms.
 - Brood: each of its Cores bursts out units at 75%, 50% and 25% health (ticks on the Core bar, and a line in the log). Keep defense at home.
@@ -38,7 +40,7 @@ When the opponent is a computer-made boss, the Next fight panel of the shop and 
 ## What to try
 
 - Play at least two runs back to back, and look for your first run's factory in the second.
-- Try each of the three strategies on different runs, and note how they differ.
+- Try each of the three strategies (rush, fortify and ramp, siege) on different runs, and note how they differ.
 - Route resources with long and short conduits, and see what changes.
 - Look at which boss is next, then change your factory to counter it, and see whether the battle goes differently.
 - Look at the opponent's factory during a PvP battle and see why it won or lost.
@@ -54,6 +56,7 @@ Open the `#debug` page (add `#debug` to the address) and use "Next PvP opponent"
 
 - Is routing fun, or a chore? When did it feel good or tedious?
 - Did the three strategies feel different, and did one dominate?
+- In which round did you first have to leave something out, or move something, for lack of space?
 - How long did building take per round, and was that too long or too short?
 - Where did your runs end (round and cause), and did it feel fair?
 - Is a refining chain worth the effort compared with simply building more Barracks?

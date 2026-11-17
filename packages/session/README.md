@@ -2,7 +2,8 @@
 
 Owns a run in progress. It is a pure, deterministic step machine over a plain
 JSON `RunState`. It imports `core` only, has no clock, no `Math.random` and no
-I/O, and is written for N players (1 to 4) although the prototype plays solo.
+I/O, and is written for N players (1 to 4). The web prototype plays solo, or a
+local party that one person plays from one device.
 
 ```ts
 const created = createRun({ runId, runVersion, seed, players: ['Ann'], host: 0 }, deps);
@@ -163,7 +164,9 @@ definition's `type` selects an `EventHandler` (`available`, `instantiate`,
 `resolve`, optional `choose`); A handler that can return a follow-up sets
 `canAskFollowUp` and must have `choose` (or `chooseEach`, for a per-player follow-up); a handler that is always available
 (the Windfall) sets `alwaysAvailable`. `defaultEventHandlers` has `workshop`,
-`shrine` and `windfall`. A new type is data plus one handler passed as
+`drill`, `shrine`, `windfall`, `market_day`, `pact`, `rich_vein` and
+`blueprint`; the Workshop, Drill, Rich vein and Blueprint follow-ups are
+per-player. A new type is data plus one handler passed as
 `eventHandlers: { ...defaultEventHandlers, mine }`; the machine is unchanged.
 `createGameDeps` throws when a definition names a type without a handler,
 when a follow-up handler has no `choose`, or when no definition has an
