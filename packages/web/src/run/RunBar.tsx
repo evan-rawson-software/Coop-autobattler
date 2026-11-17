@@ -17,6 +17,13 @@ import { barSpecialist } from '../specialist/view-model.js';
 
 const noStore = createStore<{ acting: number }>({ acting: 0 });
 
+const BATTLE_STEPS: ReadonlySet<RunState['step']> = new Set([
+  'pve_battle',
+  'pve_summary',
+  'pvp_battle',
+  'pvp_summary',
+]);
+
 export function RunBar(props: {
   state: RunState;
   maxLives: number;
@@ -36,8 +43,11 @@ export function RunBar(props: {
   // had the kit: the figure would read 0 for gold it never got.
   const showGold = state.team.cores.some((c) => c !== null);
   // The acting player's specialist (RS-13b); none before the pick, and in a
-  // run saved before specialists.
-  const specialist = barSpecialist(state.team, acting);
+  // run saved before specialists. Battle screens leave it out: their opponent
+  // panel names the specialists, and the step title needs the bar's room.
+  const specialist = BATTLE_STEPS.has(state.step)
+    ? null
+    : barSpecialist(state.team, acting);
   return (
     <span class="run-bar" id="run-bar">
       <span data-field="bar-lives">
