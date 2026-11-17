@@ -277,6 +277,70 @@ describe('Maze (issue #432)', () => {
   }, 60_000);
 });
 
+describe('Focus (issue #433)', () => {
+  /** Run the waves of a Focus threat into a dense four-plot party. */
+  function spawnsOf(t: ThreatProfile, party: TeamState) {
+    const s = startPveBattle(
+      { round: t.round, team: party, threat: t, seed: 3 },
+      content,
+      config,
+    );
+    if (!s.ok) throw new Error('refused');
+    const { battle } = s;
+    const lastWave = Math.max(...t.waves.map((w) => w.tick));
+    got(battle.sim.health.find((h) => h.side === 0 && 'core' in h)).hp =
+      10 ** 12;
+    while (
+      battle.sim.tick <= lastWave ||
+      (battle.sim.entering.length > 0 && battle.sim.tick < lastWave + 600)
+    ) {
+      stepArena(battle.sim, battle.ctx);
+    }
+    expect(battle.sim.entering).toHaveLength(0);
+    return {
+      geom: battle.ctx.arena.geom,
+      spawns: battle.eventLog.filter(
+        (e): e is Extract<ArenaEvent, { type: 'unit_spawned' }> =>
+          e.type === 'unit_spawned' && e.side === 1 && e.building === 0,
+      ),
+    };
+  }
+
+  test('a focused wave spawns only on its plot, and its units target that plot', () => {
+    const t = threat('arch_focus', 'hard', 10, 4);
+    const { geom, spawns } = spawnsOf(t, denseParty());
+    // The units each plot must receive: the counts of its waves.
+    const want = [0, 0, 0, 0];
+    for (const w of t.waves)
+      want[got(w.plot)] = (want[got(w.plot)] ?? 0) + w.count;
+    expect(want.filter((n) => n > 0).length).toBeGreaterThan(1);
+    const seen = [0, 0, 0, 0];
+    for (const e of spawns) {
+      const cx = Math.floor(e.px / CELL_UNITS);
+      const col = geom.width - 1 - cx;
+      const plot = Math.floor(col / mapgen.plotWidth);
+      expect(e.owner).toBe(plot);
+      seen[plot] = (seen[plot] ?? 0) + 1;
+    }
+    expect(seen).toEqual(want);
+  }, 120_000);
+
+  test('solo Focus spawns exactly as the same waves without a plot', () => {
+    const t = threat('arch_focus', 'medium', 5, 1);
+    const plain: ThreatProfile = {
+      ...t,
+      waves: t.waves.map((w) => ({
+        tick: w.tick,
+        unit: w.unit,
+        count: w.count,
+      })),
+    };
+    const a = fight('rush', t);
+    const b = fight('rush', plain);
+    expect(hashJson(a.eventLog as never)).toBe(hashJson(b.eventLog as never));
+  }, 60_000);
+});
+
 describe('the threat fights back', () => {
   test('stronghold turrets fire with no flow', () => {
     const t = threat('arch_fortress', 'hard', 5);
@@ -389,7 +453,11 @@ const LAST_WIN: Record<ReferenceBoardName, number> = {
   rush: 13,
   // 11 before the neutral guards (CB-8e, #372): they hold a point with a
   // round-scaled strength and cost the fortify board its round 11 win.
-  fortify: 10,
+  // 12 with Focus (issue #433): the fortify board beats easy Focus in round
+  // 12 (a ring of defences, and a solo Focus is the ordinary waves of a
+  // 60-percent wave share, which the fortify board's army and turrets hold
+  // while the rush board's last win stays round 13).
+  fortify: 12,
   poor: 8,
 };
 
@@ -450,7 +518,8 @@ describe('sweep of reference boards against every threat', () => {
     // Skirmishers and Swarm archetypes (issue #431) add 86, 41 and 1 wins
     // (454, 236 and 20): two more archetypes in the sweep, nothing else moved.
     // Maze (issue #432) adds 54, 19 and 0 (508, 255 and 20), likewise.
-    expect(blocks).toEqual([508, 255, 20, 0, 0]);
+    // Focus (issue #433) adds 53, 28 and 4 (561, 283 and 24), likewise.
+    expect(blocks).toEqual([561, 283, 24, 0, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {

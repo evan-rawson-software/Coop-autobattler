@@ -261,7 +261,10 @@ taken}`. The fields are optional and the follow-up is a new allowed shape of
   Leaving out last round's threat types (issue #430) adds the optional
   `offered` (a list of at most three archetype IDs) to a round's PvE record;
   a record without it reads as "nothing offered", so no format number is
-  raised. (The optional
+  raised. Focus (issue #433) adds the optional `plot` to a wave entry of a
+  threat profile (and to the arena's `scheduledWaves` entry); a profile
+  without it means the whole width, as before, so no format number is raised.
+  (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is
   done). Further format changes inside #124 (multi-Core battles, border

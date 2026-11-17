@@ -121,6 +121,9 @@ function wiring(r: BotRunResult, id: number): { into: number; out: number } {
 // The Skirmishers and Swarm threat types (#431) changed the PvE options again,
 // so the fortify Aether seed was searched again over 1 to 60: 10, 34 (19 no
 // longer builds it). Rush Composite 17 and Foundry 4 still build theirs.
+// The Focus threat type (#433, from round 3) changed the PvE options again, so
+// the fortify Aether seed was searched again over 1 to 80: 5, 19, 34, 47 (10 no
+// longer builds it). Rush Composite 17 and Foundry 4 still build theirs.
 describe('the bot builds the Foundry and the refining chains (issue #384)', () => {
   test('rush builds the Composite chain and its Golems fight', () => {
     for (const seed of [17]) {
@@ -133,7 +136,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('fortify builds the Aether chain and its casters fight', () => {
-    for (const seed of [10]) {
+    for (const seed of [5]) {
       const r = play('fortify', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_bc')).toBeGreaterThan(0);

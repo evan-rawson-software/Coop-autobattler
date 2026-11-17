@@ -10,6 +10,7 @@
     "typeMultiplierPercent",
     "maxPartySize",
     "maxUnitsPerWavePerPlot",
+    "focusCapPlots",
     "maxWallsPerPlot",
     "maxTurretsPerPlot",
     "minCoreHealth",
@@ -52,6 +53,12 @@
       "description": "Cap on the units of one wave per plot; leftover wave budget becomes unitStrengthPercent.",
       "type": "integer",
       "minimum": 1
+    },
+    "focusCapPlots": {
+      "description": "A focused wave (an archetype with focus) puts all its units in one plot, so its cap is maxUnitsPerWavePerPlot * min(party size, focusCapPlots).",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 64
     },
     "maxWallsPerPlot": {
       "description": "Cap on the walls of a stronghold per plot; budget above it becomes Core health.",
@@ -218,6 +225,10 @@
           },
           "linkedCores": {
             "description": "Optional, only when bossOnly is true and minPartySize is at least 2, and not together with brood. The boss Cores share one health pool (MM-9d, Linked Cores).",
+            "type": "boolean"
+          },
+          "focus": {
+            "description": "Optional, only when bossOnly is false. Each wave enters through one plot (issue #433); the generated waves get a plot.",
             "type": "boolean"
           },
           "champion": {

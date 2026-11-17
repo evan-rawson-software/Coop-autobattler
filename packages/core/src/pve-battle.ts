@@ -60,6 +60,7 @@ export function threatSideOptions(threat: ThreatProfile): SideOptions {
       ...(w.healthPercent === undefined
         ? {}
         : { healthPercent: w.healthPercent }),
+      ...(w.plot === undefined ? {} : { plot: w.plot }),
     })),
     freePower: true,
     unitStrengthPercent: threat.unitStrengthPercent,

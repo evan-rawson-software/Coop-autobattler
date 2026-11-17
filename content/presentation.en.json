@@ -177,6 +177,11 @@
       "description": "Light waves, against a winding walled path to the Core lined with turrets.",
       "tests": "a strong army that pushes through, or breaching the walls"
     },
+    "arch_focus": {
+      "name": "Focus",
+      "description": "Normal waves, but each one enters through a single plot, against a ring stronghold. Each wave hits one of you.",
+      "tests": "covering each other across the borders"
+    },
     "arch_boss": {
       "name": "Boss",
       "description": "A strong stronghold with steady waves and a signature unit every few waves.",
