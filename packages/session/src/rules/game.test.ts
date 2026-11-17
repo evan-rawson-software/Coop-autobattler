@@ -21,7 +21,11 @@ import {
 } from './events.js';
 import { createGameDeps } from './game-deps.js';
 import { applyIntent, createRun, replayRun } from './machine.js';
-import { readPveOption, type PveOption } from './pve-options.js';
+import {
+  previousOfferedArchetypes,
+  readPveOption,
+  type PveOption,
+} from './pve-options.js';
 import { ghostContext, snapshotOf } from './ghosts.js';
 import { replayLastBattle, verifyLastBattle } from './replay.js';
 import { allowedIntents, nextBattleInfo } from './selectors.js';
@@ -258,6 +262,32 @@ describe('PvE options (RS-3, RS-3b, RS-6a)', () => {
     expect(s.round).toBe(2);
     expect(s.upcomingPve).toBeNull();
     expect(pending(s)['options']).toEqual(stored);
+  });
+
+  test("the round record keeps the offered types, and reload and replay reproduce the next round's options", () => {
+    let s = start(deps);
+    const first = optionsOf(s.upcomingPve?.options ?? []).map(
+      (o) => o.archetype,
+    );
+    s = until(s, deps, (x) => x.step === 'shop' && x.leg === 'pve');
+    expect(s.thisRound.pve?.offered).toEqual(first);
+    s = until(s, deps, (x) => x.step === 'shop' && x.leg === 'pvp');
+    expect(previousOfferedArchetypes(s, 2)).toEqual(first);
+    expect(previousOfferedArchetypes(s, 1)).toEqual([]);
+    expect(s.upcomingPve?.round).toBe(2);
+    const next = clone(s.upcomingPve?.options);
+    const reloaded = validateRunState(clone(s), deps);
+    expect(reloaded.ok).toBe(true);
+    if (reloaded.ok) expect(reloaded.state.upcomingPve?.options).toEqual(next);
+    const replayed = replayRun(runArgs(), s.actionLog, deps);
+    expect(replayed.ok).toBe(true);
+    if (replayed.ok) expect(replayed.state).toEqual(s);
+    // Once the round is in the history it is still found.
+    s = readyAll(s, deps);
+    s = until(s, deps, (x) => x.round === 3);
+    expect(previousOfferedArchetypes(s, 3)).toEqual(
+      s.history.find((r) => r.round === 2)?.pve?.offered,
+    );
   });
 
   test('the shop after the PvE leg shows "opponent unknown" and the stakes', () => {

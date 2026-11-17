@@ -38,6 +38,7 @@ import {
   makeTeamStateOpsKind,
 } from './kinds/team-state-ops.js';
 import {
+  makeArchetypePickKind,
   makeBossPickKind,
   makePveBattleKind,
   makeThreatGenKind,
@@ -82,6 +83,7 @@ export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
   'neutral-zone': makeNeutralZoneKind(content, mapgen),
   battle: makeBattleKind(content, mapgen, simConfig),
   'threat-gen': makeThreatGenKind(content, mapgen, threats),
+  'archetype-pick': makeArchetypePickKind(threats),
   'boss-pick': makeBossPickKind(threats),
   'pve-battle': makePveBattleKind(content, mapgen, simConfig, threats),
   'shop-roll': makeShopRollKind(content, gameConfigs),

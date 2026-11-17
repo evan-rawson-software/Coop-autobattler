@@ -24,7 +24,7 @@ import {
   type ThreatProfile,
   type ThreatSummary,
 } from '@game/core';
-import type { Json, RunHooks } from './types.js';
+import type { Json, RunHooks, RunState } from './types.js';
 
 export const PVE_DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
 export type PveDifficulty = (typeof PVE_DIFFICULTIES)[number];
@@ -78,6 +78,23 @@ export function pveOptionView(option: PveOption): PveOptionView {
   };
 }
 
+/**
+ * The archetype IDs offered in the PvE options of the round before `round`,
+ * from the round records (`offered`); empty in round 1, when that round had
+ * no PvE battle, or in a save that predates the field.
+ */
+export function previousOfferedArchetypes(
+  state: RunState,
+  round: number,
+): readonly string[] {
+  if (round <= 1) return [];
+  const rec =
+    state.round === round - 1
+      ? state.thisRound
+      : state.history.find((r) => r.round === round - 1);
+  return rec?.pve?.offered ?? [];
+}
+
 /** The `pveOptions` hook for the given content, threat configuration and rewards. */
 export function pveOptionsHook(
   content: Pick<Content, 'units' | 'buildings'>,
@@ -90,6 +107,7 @@ export function pveOptionsHook(
       rng.child('archetypes').nextU32(),
       round,
       configs.threats,
+      previousOfferedArchetypes(state, round),
     );
     return PVE_DIFFICULTIES.map((difficulty): Json => {
       const archetype = pick[difficulty];

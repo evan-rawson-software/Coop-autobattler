@@ -108,7 +108,10 @@ export const MAX_CHAMPION_SHARE_PERCENT = 60;
 export interface ArchetypeDef {
   readonly id: ArchetypeId;
   readonly bossOnly: boolean;
-  /** Boss-only archetypes: the first round this boss can be met. */
+  /**
+   * The first round this archetype can be offered (PvE) or met (boss).
+   * Optional for archetypes that are not boss-only: absent means 1.
+   */
   readonly fromRound?: number;
   /** Boss-only archetypes: the smallest party size that can meet this boss. */
   readonly minPartySize?: number;
@@ -649,10 +652,11 @@ export function loadThreats(
         );
       }
     } else if (e['bossOnly'] === false) {
-      for (const k of ['fromRound', 'minPartySize']) {
-        if (k in e) {
-          errors.push(`${at}: "${k}" is only allowed when "bossOnly" is true.`);
-        }
+      if ('fromRound' in e) fromRound = readInt(e, 'fromRound', 1, at, errors);
+      if ('minPartySize' in e) {
+        errors.push(
+          `${at}: "minPartySize" is only allowed when "bossOnly" is true.`,
+        );
       }
     }
     let linkedCores = false;
@@ -1002,6 +1006,7 @@ export function loadThreats(
         minPartySize !== undefined
           ? { fromRound, minPartySize }
           : {}),
+        ...(!e['bossOnly'] && fromRound !== undefined ? { fromRound } : {}),
         waveSharePercent: waveShare,
         waves,
         stronghold,
@@ -1020,6 +1025,13 @@ export function loadThreats(
   ) {
     errors.push(
       'threats: a boss-only archetype needs "fromRound" 1 and "minPartySize" 1, so a boss can always be drawn.',
+    );
+  }
+
+  const plain = archetypes.filter((a) => !a.bossOnly);
+  if (plain.length > 0 && !plain.some((a) => (a.fromRound ?? 1) === 1)) {
+    errors.push(
+      'threats: an archetype that is not boss-only needs "fromRound" 1 (or none), so round 1 can offer a threat.',
     );
   }
 

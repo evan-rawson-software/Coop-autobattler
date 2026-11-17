@@ -1,0 +1,238 @@
+[
+  {
+    "id": "archetype-pick.01-shipped-r1",
+    "kind": "archetype-pick",
+    "description": "The shipped threat types in round 1: nothing was offered before.",
+    "input": {
+      "seed": 1,
+      "round": 1
+    },
+    "expected": {
+      "result": {
+        "easy": "arch_fortress",
+        "medium": "arch_rusher",
+        "hard": "arch_escalator"
+      }
+    }
+  },
+  {
+    "id": "archetype-pick.02-shipped-r2-after-r1",
+    "kind": "archetype-pick",
+    "description": "Shipped types in round 2 after the three were offered: all stale, shuffled with the stale child stream.",
+    "input": {
+      "seed": 1,
+      "round": 2,
+      "previous": ["arch_rusher", "arch_fortress", "arch_escalator"]
+    },
+    "expected": {
+      "result": {
+        "easy": "arch_escalator",
+        "medium": "arch_rusher",
+        "hard": "arch_fortress"
+      }
+    }
+  },
+  {
+    "id": "archetype-pick.03-unlock-r1",
+    "kind": "archetype-pick",
+    "description": "Six types, unlocking at rounds 1, 1, 1, 2, 3, 4: round 1 offers only the first three.",
+    "input": {
+      "seed": 5,
+      "round": 1,
+      "archetypes": [
+        {
+          "id": "a1"
+        },
+        {
+          "id": "a2"
+        },
+        {
+          "id": "a3"
+        },
+        {
+          "id": "a4",
+          "fromRound": 2
+        },
+        {
+          "id": "a5",
+          "fromRound": 3
+        },
+        {
+          "id": "a6",
+          "fromRound": 4
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "easy": "a1",
+        "medium": "a3",
+        "hard": "a2"
+      }
+    }
+  },
+  {
+    "id": "archetype-pick.04-unlock-r3",
+    "kind": "archetype-pick",
+    "description": "The same six types in round 3 with a1, a2, a3 offered before: a4 and a5 are fresh, one stale type fills the third place.",
+    "input": {
+      "seed": 5,
+      "round": 3,
+      "previous": ["a1", "a2", "a3"],
+      "archetypes": [
+        {
+          "id": "a1"
+        },
+        {
+          "id": "a2"
+        },
+        {
+          "id": "a3"
+        },
+        {
+          "id": "a4",
+          "fromRound": 2
+        },
+        {
+          "id": "a5",
+          "fromRound": 3
+        },
+        {
+          "id": "a6",
+          "fromRound": 4
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "easy": "a4",
+        "medium": "a5",
+        "hard": "a2"
+      }
+    }
+  },
+  {
+    "id": "archetype-pick.05-six-eligible-no-overlap",
+    "kind": "archetype-pick",
+    "description": "Six eligible types, the previous round offered a1, a2, a3: the new offer is a4, a5, a6 in some order.",
+    "input": {
+      "seed": 9,
+      "round": 4,
+      "previous": ["a1", "a2", "a3"],
+      "archetypes": [
+        {
+          "id": "a1"
+        },
+        {
+          "id": "a2"
+        },
+        {
+          "id": "a3"
+        },
+        {
+          "id": "a4"
+        },
+        {
+          "id": "a5"
+        },
+        {
+          "id": "a6"
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "easy": "a4",
+        "medium": "a5",
+        "hard": "a6"
+      }
+    }
+  },
+  {
+    "id": "archetype-pick.06-four-eligible-overlap-two",
+    "kind": "archetype-pick",
+    "description": "Four eligible types, three offered before: the one fresh type comes first and two stale types follow (the least overlap).",
+    "input": {
+      "seed": 3,
+      "round": 2,
+      "previous": ["a1", "a2", "a3"],
+      "archetypes": [
+        {
+          "id": "a1"
+        },
+        {
+          "id": "a2"
+        },
+        {
+          "id": "a3"
+        },
+        {
+          "id": "a4"
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "easy": "a4",
+        "medium": "a3",
+        "hard": "a2"
+      }
+    }
+  },
+  {
+    "id": "archetype-pick.07-two-eligible-wrap",
+    "kind": "archetype-pick",
+    "description": "Two eligible types wrap around as before (the fresh one is first).",
+    "input": {
+      "seed": 3,
+      "round": 2,
+      "previous": ["a1"],
+      "archetypes": [
+        {
+          "id": "a1"
+        },
+        {
+          "id": "a2"
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "easy": "a2",
+        "medium": "a1",
+        "hard": "a2"
+      }
+    }
+  },
+  {
+    "id": "archetype-pick.08-boss-only-left-out",
+    "kind": "archetype-pick",
+    "description": "A boss-only type is never offered.",
+    "input": {
+      "seed": 3,
+      "round": 5,
+      "archetypes": [
+        {
+          "id": "a1"
+        },
+        {
+          "id": "a2"
+        },
+        {
+          "id": "a3"
+        },
+        {
+          "id": "b1",
+          "bossOnly": true
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "easy": "a2",
+        "medium": "a1",
+        "hard": "a3"
+      }
+    }
+  }
+]

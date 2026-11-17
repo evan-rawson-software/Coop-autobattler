@@ -410,7 +410,11 @@ the loader also rejects a list in which no entry has `fromRound` 1.
 
 In `threats.json`, a boss-only archetype (`bossOnly` true) must have `fromRound`
 (integer, at least 1; no upper bound) and `minPartySize` (integer from 1 to
-`maxPartySize`); an archetype with `bossOnly` false must have neither. The
+`maxPartySize`). An archetype with `bossOnly` false must not have
+`minPartySize`; it may have `fromRound` (the same field and meaning: the first
+round `pickArchetypes` can offer it; absent means 1), and the loader rejects a
+file in which no archetype with `bossOnly` false starts at round 1 (absent or
+1), so round 1 can always offer a threat. The
 loader and `threats.schema.json` enforce this, and the loader also rejects a
 file that has boss-only archetypes but none with `fromRound` 1 and
 `minPartySize` 1, so a boss can always be drawn. A file with no boss-only
@@ -4814,11 +4818,32 @@ throws: a threat whose stronghold cannot be built is a generator bug.
 
 ### Choosing and summarising
 
-`pickArchetypes(seed, round, threats)`: the candidates are the archetypes that
-are not `bossOnly`, in file order; `rng = Rng.fromSeed(seed).child("archetypes")
-.child(round)`; the list is shuffled once and `easy`, `medium`, `hard` take
-positions 0, 1, 2 (wrapping around if there are fewer than three; with three or
-more they are distinct). 
+`pickArchetypes(seed, round, threats, previous)`; `previous` is the list of
+archetype IDs offered in the previous round's PvE options (empty in round 1).
+1. `eligible` = the archetypes with `bossOnly` false and `fromRound <= round`
+   (absent means 1), in file order. If that is empty, the archetypes with
+   `bossOnly` false, and if that is empty too, all archetypes.
+2. `fresh` = `eligible` without the IDs in `previous`; `stale` = the rest of
+   `eligible`; both in file order.
+3. `rng = Rng.fromSeed(seed).child("archetypes").child(round)`. `order` =
+   `rng.shuffle(fresh)` (one `nextInt` per swap from the end; nothing is
+   drawn when `fresh` has fewer than 2 entries). If `order` has fewer than 3
+   entries, `rng.child("stale").shuffle(stale)` is appended (child streams do
+   not advance `rng`). With 3 or more fresh archetypes only the first three are
+   used.
+4. `easy`, `medium`, `hard` take `order[0]`, `order[1]`, `order[2]`, each index
+   taken modulo `order.length` (wrapping around if there are fewer than
+   three). With three or more eligible they are distinct.
+Result: when enough types are unlocked, no type repeats from the round before
+(six eligible: none shared; four: two shared, the fewest possible). With only
+three eligible types, `fresh` is empty from round 2 on and the offer is a
+shuffle of the same three, but now drawn from the `"stale"` child stream, not
+from `rng`: the order differs from versions before #430. Golden kind
+`archetype-pick`: input `{seed, round, previous?, archetypes?}`, result
+`{easy, medium, hard}`; `archetypes` (`{id, bossOnly?, fromRound?}`, `bossOnly`
+default false) replaces the shipped archetypes in that vector. Notes for a
+port: keep `fresh` and `stale` in file order before shuffling, shuffle from the
+end with `nextInt(i + 1)`, and use the child stream label `stale` exactly.
 `pickBoss({round, partySize, previousBoss?}, threats, rng)` (MM-9b, MM-9c)
 chooses the boss of a PvP round with no ghost. Eligible: the archetypes with
 `bossOnly` true, `fromRound <= round` and `minPartySize <= partySize`, in file
@@ -5365,8 +5390,8 @@ are drawn on entering the first `build` step (round 1) and on entering the
 shop that ends round `r - 1` (round `r`), so they exist in state while the
 party builds. When `pve_choice` opens they move to `pending.options` and
 `upcomingPve` becomes null. Stream `pve_options:r<r>` (`r` is the round of the
-battle): `pickArchetypes(rng.child("archetypes").nextU32(), r, threats)` gives
-the three archetypes, and each difficulty's threat is
+battle): `pickArchetypes(rng.child("archetypes").nextU32(), r, threats,
+previous)` gives the three archetypes (`previous` below), and each difficulty's threat is
 `generateThreat({seed: rng.child(<difficulty>).nextU32(), round: r, type:
 <difficulty>, partySize, archetype})`. An option is
 `{ id, difficulty, archetype, reward: {gold}, budget, summary, threat }` with
@@ -5374,6 +5399,19 @@ the three archetypes, and each difficulty's threat is
 profile. The budget multipliers (70 / 100 / 140 percent) and the strictly
 increasing `rewards.pveWin` (checked by the loader) make harder options
 strictly larger in budget and reward.
+
+`previous` is the `offered` list of the round record of round `r - 1`:
+`thisRound.pve` when `RunState.round` is `r - 1` (the options of round `r` are
+drawn in the last shop of round `r - 1`), else the `history` entry with
+`round = r - 1`; empty in round 1, when that record or its `offered` is absent
+(older saves, a round without a PvE record), or when `r` is 1. `offered` is the
+list of the `archetype` IDs of the three options (easy, medium, hard order),
+set on the PvE record when the PvE battle starts (the vote on `pve_choice` puts
+it in `pending` next to `option`, and entering `pve_battle` copies it to the
+record); it is omitted when no option has an archetype. It is saved data and
+optional (absent means none), so replays and reloads give the same options. A
+record's `offered` has at most three strings. Notes for a port: take the
+previous round's IDs from the stored record, never from a table in the code.
 
 ### Rewards (EC-6, EC-7)
 

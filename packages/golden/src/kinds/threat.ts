@@ -17,6 +17,7 @@
 import {
   generateThreat,
   hashJson,
+  pickArchetypes,
   pickBoss,
   Rng,
   runTeamStateOps,
@@ -192,6 +193,61 @@ export function makePveBattleKind(
         events: battle.eventLog.length,
       },
       eventLog: battle.eventLog as unknown as Json[],
+    };
+  };
+}
+
+/**
+ * `archetype-pick`: input `{ seed, round, previous?, archetypes? }`; the
+ * result is `{ easy, medium, hard }` from `pickArchetypes(seed, round,
+ * threats, previous)`. `archetypes` (a test list of `{id, bossOnly?,
+ * fromRound?}`, `bossOnly` default false) replaces the shipped archetypes
+ * (each takes the waves and stronghold of the first shipped archetype).
+ */
+export function makeArchetypePickKind(threats: ThreatsConfig): SimulationFn {
+  return (input: Json) => {
+    const o = obj(input, 'input');
+    const { seed, round, previous, archetypes } = o;
+    if (typeof seed !== 'number' || typeof round !== 'number') {
+      throw new TypeError('archetype-pick: seed and round are required');
+    }
+    if (
+      previous !== undefined &&
+      (!Array.isArray(previous) || previous.some((x) => typeof x !== 'string'))
+    ) {
+      throw new TypeError('archetype-pick: previous must be a list of IDs');
+    }
+    let config = threats;
+    if (archetypes !== undefined) {
+      if (!Array.isArray(archetypes)) {
+        throw new TypeError('archetype-pick: archetypes must be an array');
+      }
+      const template = threats.archetypes[0] as ArchetypeDef;
+      config = {
+        ...threats,
+        archetypes: (archetypes as Json[]).map((e): ArchetypeDef => {
+          const a = obj(e, 'archetype');
+          const id = a['id'];
+          if (typeof id !== 'string') throw new TypeError('archetype: id');
+          const from = a['fromRound'];
+          return {
+            ...template,
+            id,
+            bossOnly: a['bossOnly'] === true,
+            ...(typeof from === 'number' ? { fromRound: from } : {}),
+          };
+        }),
+      };
+    }
+    return {
+      result: {
+        ...pickArchetypes(
+          seed,
+          round,
+          config,
+          (previous ?? []) as readonly string[],
+        ),
+      },
     };
   };
 }

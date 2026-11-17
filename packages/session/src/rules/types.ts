@@ -185,6 +185,12 @@ export interface PveRecord {
    * no format version change.
    */
   readonly goldPaid?: number;
+  /**
+   * The archetype IDs of the three PvE options offered for this battle, in
+   * easy, medium, hard order. Used to leave them out of the next round's
+   * offer. Optional: absent in older saves and when the options had none.
+   */
+  readonly offered?: readonly string[];
 }
 
 export interface PvpRecord {

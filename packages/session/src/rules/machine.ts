@@ -235,6 +235,10 @@ function enter(
     }
     case 'pve_battle': {
       const option = pendingRecord(s)['option'] ?? null;
+      const offeredJson = pendingRecord(s)['offered'];
+      const offered = Array.isArray(offeredJson)
+        ? offeredJson.filter((a): a is string => typeof a === 'string')
+        : [];
       const d = drawStream(s, streamLabels.battle('pve', s.round));
       const result = deps.battle.resolve({
         kind: 'pve',
@@ -253,6 +257,7 @@ function enter(
               kind: result.opponent.kind,
               label: result.opponent.label,
             },
+            ...(offered.length > 0 ? { offered } : {}),
           },
         },
         pending: { option, battle: battleJson(result) },
@@ -613,9 +618,20 @@ function resolveVotes(s: RunState, deps: RunDeps, fx: Effect[]): Next {
     pendingList(s, 'options').find((o) => idOf(o) === winner) ?? null;
   fx.push(voteResolvedEffect(votes.topic, all, t));
   if (votes.topic === 'pve') {
+    const offered = pendingList(s, 'options')
+      .map((o) => (isRecord(o) ? o['archetype'] : undefined))
+      .filter((a): a is string => typeof a === 'string');
     return {
       ok: true,
-      state: enter({ ...s, pending: { option } }, 'pve_battle', deps, fx),
+      state: enter(
+        {
+          ...s,
+          pending: offered.length > 0 ? { option, offered } : { option },
+        },
+        'pve_battle',
+        deps,
+        fx,
+      ),
     };
   }
   // Event: apply it, then either a follow-up choice or the shop. A follow-up

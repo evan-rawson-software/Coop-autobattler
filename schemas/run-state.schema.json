@@ -401,7 +401,13 @@
         "difficulty": { "type": "string" },
         "won": { "type": "boolean" },
         "opponent": { "$ref": "#/$defs/opponent" },
-        "goldPaid": { "type": "integer", "minimum": 0 }
+        "goldPaid": { "type": "integer", "minimum": 0 },
+        "offered": {
+          "description": "The archetype IDs of the PvE options offered for this battle (easy, medium, hard), left out of the next round's offer (issue #430); optional, absent in older saves.",
+          "type": "array",
+          "maxItems": 3,
+          "items": { "type": "string" }
+        }
       }
     },
     "pvpRecord": {
