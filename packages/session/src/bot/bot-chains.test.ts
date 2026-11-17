@@ -113,6 +113,11 @@ function wiring(r: BotRunResult, id: number): { into: number; out: number } {
 // draws: the fortify Aether seed was searched again over 1 to 80 (chains on the
 // board, casters spawned, no rejected intent): 5, 10, 47 (34 no longer builds
 // it). Rush Composite 17 and Foundry 4 still build theirs.
+// Leaving out last round's threat types (#430) changed the PvE options from
+// round 2 (the same three types, shuffled by another stream), so the fortify
+// Aether seed was searched again over 1 to 80 (chains on the board, casters
+// spawned, no rejected intent): 19, 34, 47 (5 no longer builds it). Rush
+// Composite 17 and Foundry 4 still build theirs.
 describe('the bot builds the Foundry and the refining chains (issue #384)', () => {
   test('rush builds the Composite chain and its Golems fight', () => {
     for (const seed of [17]) {
@@ -125,7 +130,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('fortify builds the Aether chain and its casters fight', () => {
-    for (const seed of [5]) {
+    for (const seed of [19]) {
       const r = play('fortify', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_bc')).toBeGreaterThan(0);

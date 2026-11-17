@@ -195,8 +195,20 @@ describe('the loader', () => {
       /minPartySize/,
     );
     expect(
-      errs((a) => ((a[0] as Record<string, unknown>)['fromRound'] = 1)),
+      errs((a) => ((a[0] as Record<string, unknown>)['minPartySize'] = 1)),
     ).toMatch(/only allowed when "bossOnly" is true/);
+    // A threat type may have a fromRound (at least 1); one must start at 1.
+    expect(
+      errs((a) => {
+        for (const x of a) if (x['bossOnly'] === false) x['fromRound'] = 3;
+      }),
+    ).toMatch(/needs "fromRound" 1/);
+    expect(
+      errs((a) => ((a[0] as Record<string, unknown>)['fromRound'] = 0)),
+    ).toMatch(/fromRound/);
+    expect(
+      errs((a) => ((a[1] as Record<string, unknown>)['fromRound'] = 3)),
+    ).toBe('');
     // A boss roster needs one boss from round 1 for one player.
     expect(errs((a) => (boss(a)['fromRound'] = 2))).toMatch(/always be drawn/);
   });
@@ -604,6 +616,68 @@ describe('pickArchetypes and threatSummary', () => {
     const p = pickArchetypes(1, 1, two);
     expect(p.hard).toBe(p.easy);
     expect(p.easy).not.toBe(p.medium);
+  });
+
+  describe("unlock rounds and leaving out last round's types", () => {
+    const base = got(threats.archetypes.find((a) => !a.bossOnly));
+    const make = (...specs: [string, number?][]): ThreatsConfig => ({
+      ...threats,
+      archetypes: specs.map(([id, fromRound]) => ({
+        ...base,
+        id,
+        ...(fromRound === undefined ? {} : { fromRound }),
+      })),
+    });
+    const ids = (p: ReturnType<typeof pickArchetypes>) => [
+      p.easy,
+      p.medium,
+      p.hard,
+    ];
+
+    test('types are unlocked by round', () => {
+      const cfg = make(['a1'], ['a2'], ['a3'], ['a4', 2], ['a5', 4]);
+      for (let seed = 0; seed < 20; seed++) {
+        expect(ids(pickArchetypes(seed, 1, cfg)).sort()).toEqual([
+          'a1',
+          'a2',
+          'a3',
+        ]);
+        expect(ids(pickArchetypes(seed, 3, cfg))).not.toContain('a5');
+      }
+      const seen = new Set<string>();
+      for (let seed = 0; seed < 40; seed++) {
+        for (const id of ids(pickArchetypes(seed, 4, cfg))) seen.add(id);
+      }
+      expect(seen.has('a5')).toBe(true);
+    });
+
+    test('with six eligible types, two consecutive rounds share none', () => {
+      const cfg = make(['a1'], ['a2'], ['a3'], ['a4'], ['a5'], ['a6']);
+      for (let seed = 0; seed < 30; seed++) {
+        const r1 = ids(pickArchetypes(seed, 1, cfg));
+        const r2 = ids(pickArchetypes(seed, 2, cfg, r1));
+        expect(new Set(r2).size).toBe(3);
+        expect(r2.filter((x) => r1.includes(x))).toEqual([]);
+      }
+    });
+
+    test('with four eligible types, the overlap is two', () => {
+      const cfg = make(['a1'], ['a2'], ['a3'], ['a4']);
+      for (let seed = 0; seed < 30; seed++) {
+        const r1 = ids(pickArchetypes(seed, 1, cfg));
+        const r2 = ids(pickArchetypes(seed, 2, cfg, r1));
+        expect(new Set(r2).size).toBe(3);
+        expect(r2.filter((x) => r1.includes(x))).toHaveLength(2);
+      }
+    });
+
+    test('without previous it is the plain shuffle, and it is deterministic', () => {
+      for (let seed = 0; seed < 10; seed++) {
+        expect(pickArchetypes(seed, 2, threats, [])).toEqual(
+          pickArchetypes(seed, 2, threats),
+        );
+      }
+    });
   });
 
   test('the summary describes the profile', () => {

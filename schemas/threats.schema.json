@@ -181,7 +181,7 @@
             "type": "boolean"
           },
           "fromRound": {
-            "description": "Required when bossOnly is true, rejected otherwise: the first round this boss can be drawn.",
+            "description": "Required when bossOnly is true (the first round this boss can be drawn). Optional otherwise: the first round pickArchetypes can offer this threat type; absent means 1. At least one archetype that is not boss-only must start at round 1.",
             "type": "integer",
             "minimum": 1
           },

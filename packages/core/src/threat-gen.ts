@@ -729,24 +729,39 @@ export interface ArchetypePick {
 }
 
 /**
- * The archetypes offered for easy, medium and hard this round. Candidates are
- * the archetypes with `bossOnly` false, in file order; `rng =
- * Rng.fromSeed(seed).child("archetypes").child(round)`; the list is shuffled
- * once (`rng.shuffle`) and easy, medium, hard take positions 0, 1, 2 (wrapping
- * around when there are fewer than three, so with three or more they are
- * distinct). If every archetype is boss-only they are all candidates.
+ * The archetypes offered for easy, medium and hard this round. `previous` is
+ * the list of archetype IDs offered in the previous round's PvE options
+ * (empty in round 1). `eligible` = the archetypes with `bossOnly` false and
+ * `fromRound <= round` (absent means 1), in file order; `fresh` = `eligible`
+ * minus `previous`, `stale` = `eligible` in `previous`, both in file order.
+ * `rng = Rng.fromSeed(seed).child("archetypes").child(round)`; `fresh` is
+ * shuffled once with it. With three or more fresh archetypes the first three
+ * are taken. Otherwise all of `fresh` are taken, then `stale` is shuffled with
+ * `rng.child("stale")` and taken from until there are three. With fewer than
+ * three eligible the list wraps around. Easy, medium, hard take positions 0,
+ * 1, 2. If nothing is eligible, every archetype not boss-only is tried at
+ * round 1, then every archetype.
  */
 export function pickArchetypes(
   seed: number,
   round: number,
   threats: ThreatsConfig,
+  previous: readonly ArchetypeId[] = [],
 ): ArchetypePick {
-  let pool = threats.archetypes.filter((a) => !a.bossOnly).map((a) => a.id);
-  if (pool.length === 0) pool = threats.archetypes.map((a) => a.id);
-  const order = Rng.fromSeed(seed)
-    .child('archetypes')
-    .child(round)
-    .shuffle(pool);
+  let eligible = threats.archetypes
+    .filter((a) => !a.bossOnly && (a.fromRound ?? 1) <= round)
+    .map((a) => a.id);
+  if (eligible.length === 0) {
+    eligible = threats.archetypes.filter((a) => !a.bossOnly).map((a) => a.id);
+  }
+  if (eligible.length === 0) eligible = threats.archetypes.map((a) => a.id);
+  const fresh = eligible.filter((id) => !previous.includes(id));
+  const stale = eligible.filter((id) => previous.includes(id));
+  const rng = Rng.fromSeed(seed).child('archetypes').child(round);
+  const order = rng.shuffle(fresh);
+  if (order.length < 3 && stale.length > 0) {
+    order.push(...rng.child('stale').shuffle(stale));
+  }
   const at = (i: number): ArchetypeId => order[i % order.length] ?? '';
   return { easy: at(0), medium: at(1), hard: at(2) };
 }

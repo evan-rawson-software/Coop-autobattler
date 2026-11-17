@@ -879,6 +879,15 @@ function validBattleRecord(v: unknown, pve: boolean): boolean {
     (!pve || !Number.isSafeInteger(gp) || (gp as number) < 0)
   )
     return false;
+  const off = v['offered'];
+  if (
+    off !== undefined &&
+    (!pve ||
+      !Array.isArray(off) ||
+      off.length > 3 ||
+      !off.every((x) => typeof x === 'string'))
+  )
+    return false;
   const o = v['opponent'];
   return (
     isRecord(o) &&
