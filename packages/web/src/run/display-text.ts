@@ -89,6 +89,12 @@ export function effectLine(effect: ModifierEffect): string {
   if (effect.kind === 'shop_income_flat') {
     return `Every player: +${String(effect.amount)} gold per shop`;
   }
+  if (effect.kind === 'unit_armor_flat') {
+    const plus = `+${String(effect.amount)}`;
+    return effect.units === undefined
+      ? `Your units: ${plus} armor`
+      : `${plus} ${unitNames(effect.units)} armor`;
+  }
   const pct = signedPercent(effect.percent);
   switch (effect.kind) {
     case 'building_health_percent':
@@ -107,6 +113,12 @@ export function effectLine(effect: ModifierEffect): string {
       return effect.units === undefined
         ? `Your units: ${pct} attack speed`
         : `${pct} ${unitNames(effect.units)} attack speed`;
+    case 'unit_splash_percent':
+      return effect.units === undefined
+        ? `Your units: ${pct} splash`
+        : `${pct} ${unitNames(effect.units)} splash`;
+    case 'poi_capture_speed_percent':
+      return `Your units: ${pct} point capture speed`;
     case 'turret_damage_percent':
       return `Turrets: ${pct} damage`;
     case 'sell_refund_percent':

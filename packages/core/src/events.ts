@@ -303,7 +303,9 @@ export function loadEvents(
             if (
               effect.kind === 'unit_strength_percent' ||
               effect.kind === 'unit_move_speed_percent' ||
-              effect.kind === 'unit_attack_speed_percent'
+              effect.kind === 'unit_attack_speed_percent' ||
+              effect.kind === 'unit_splash_percent' ||
+              effect.kind === 'unit_armor_flat'
             ) {
               const known = context.units;
               const listed = effect.units ?? [];

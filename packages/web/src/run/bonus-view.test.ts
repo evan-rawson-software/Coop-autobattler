@@ -17,6 +17,25 @@ const vanguard: TeamModifier = {
   ],
 };
 
+describe('feature-linked totals (issue #426)', () => {
+  const stone: TeamModifier = {
+    id: 'mod_stone_skin',
+    effects: [{ kind: 'unit_armor_flat', amount: 1, units: ['unit_golem'] }],
+  };
+  const claim: TeamModifier = {
+    id: 'mod_claimstakers',
+    effects: [{ kind: 'poi_capture_speed_percent', percent: 50 }],
+  };
+
+  test('armor amounts and capture percents sum per kind', () => {
+    const v = bonusView([stone, claim, stone, claim]);
+    expect(v.totals.map((l) => l.text)).toEqual([
+      '+2 golem armor',
+      'Your units: +100% point capture speed',
+    ]);
+  });
+});
+
 describe('bonusView', () => {
   test('nothing held gives nothing', () => {
     expect(bonusView(undefined)).toEqual({ count: 0, totals: [], held: [] });

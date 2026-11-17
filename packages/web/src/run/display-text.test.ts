@@ -66,6 +66,28 @@ describe('effectLine', () => {
     );
   });
 
+  test('armor, splash and capture speed effects (issue #426)', () => {
+    expect(
+      effectLine({ kind: 'unit_armor_flat', amount: 1, units: ['unit_golem'] }),
+    ).toBe('+1 golem armor');
+    expect(effectLine({ kind: 'unit_armor_flat', amount: 2 })).toBe(
+      'Your units: +2 armor',
+    );
+    expect(
+      effectLine({
+        kind: 'unit_splash_percent',
+        percent: 50,
+        units: ['unit_caster'],
+      }),
+    ).toBe('+50% caster splash');
+    expect(effectLine({ kind: 'unit_splash_percent', percent: 50 })).toBe(
+      'Your units: +50% splash',
+    );
+    expect(effectLine({ kind: 'poi_capture_speed_percent', percent: 50 })).toBe(
+      'Your units: +50% point capture speed',
+    );
+  });
+
   test('a negative percent reads with a real minus sign', () => {
     expect(effectLine({ kind: 'core_health_percent', percent: -15 })).toBe(
       'Your Core: −15% health',

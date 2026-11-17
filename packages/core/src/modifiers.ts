@@ -36,6 +36,9 @@ export const MODIFIER_EFFECT_KINDS = [
   'unit_move_speed_percent',
   'unit_attack_speed_percent',
   'turret_damage_percent',
+  'unit_armor_flat',
+  'unit_splash_percent',
+  'poi_capture_speed_percent',
   'shop_income_flat',
   'sell_refund_percent',
 ] as const;
@@ -66,6 +69,28 @@ export type ModifierEffect =
     }
   | { readonly kind: 'turret_damage_percent'; readonly percent: number }
   /**
+   * Feature-linked combat effects (issue #426).
+   */
+  | {
+      readonly kind: 'unit_armor_flat';
+      /** Armor added after the unit's own, 1 to `MAX_ARMOR_FLAT`; the total stays within `MAX_ARMOR`. */
+      readonly amount: number;
+      /** As for `unit_strength_percent`: absent means every unit type. */
+      readonly units?: readonly string[];
+    }
+  | {
+      readonly kind: 'unit_splash_percent';
+      /** Added to the splash percent of a unit with `splash`, 1 to `MAX_SPEED_MODIFIER_PERCENT`; no effect on a unit without splash. */
+      readonly percent: number;
+      /** As for `unit_strength_percent`: absent means every unit type. */
+      readonly units?: readonly string[];
+    }
+  | {
+      /** Side-wide: the side's points of interest capture faster. 1 to `MAX_SPEED_MODIFIER_PERCENT`. */
+      readonly kind: 'poi_capture_speed_percent';
+      readonly percent: number;
+    }
+  /**
    * Gold effects (issue #425), non-combat: the arena ignores them. Party-wide:
    * every player gets them.
    */
@@ -92,7 +117,9 @@ export function isGoldEffect(
 
 /** The signed number of an effect: its `percent`, or the `amount` of a flat one. */
 export function effectValue(e: ModifierEffect): number {
-  return e.kind === 'shop_income_flat' ? e.amount : e.percent;
+  return e.kind === 'shop_income_flat' || e.kind === 'unit_armor_flat'
+    ? e.amount
+    : e.percent;
 }
 
 /** A modifier as held by a team: ID and the effects it had when taken. */
@@ -104,17 +131,19 @@ export interface TeamModifier {
 export const MODIFIER_ID = /^mod_[a-z0-9_]+$/;
 const UNIT_ID = /^unit_[a-z0-9_]+$/;
 
-/** The effect kinds that may carry `units`. */
+/** The percent effect kinds that may carry `units` (`unit_armor_flat` does too, with `amount`). */
 function hasUnitsField(
   kind: unknown,
 ): kind is
   | 'unit_strength_percent'
   | 'unit_move_speed_percent'
-  | 'unit_attack_speed_percent' {
+  | 'unit_attack_speed_percent'
+  | 'unit_splash_percent' {
   return (
     kind === 'unit_strength_percent' ||
     kind === 'unit_move_speed_percent' ||
-    kind === 'unit_attack_speed_percent'
+    kind === 'unit_attack_speed_percent' ||
+    kind === 'unit_splash_percent'
   );
 }
 
@@ -133,6 +162,9 @@ export const MIN_MODIFIER_PERCENT = -90;
  */
 export const MAX_SPEED_MODIFIER_PERCENT = 100;
 
+/** Highest `amount` of a `unit_armor_flat` effect (issue #426); lowest 1. */
+export const MAX_ARMOR_FLAT = 10;
+
 /** Highest `amount` of a `shop_income_flat` effect (issue #425); lowest 1. */
 export const MAX_SHOP_INCOME_FLAT = 10;
 
@@ -144,6 +176,36 @@ export const MAX_SELL_REFUND_PERCENT_ADD = 90;
  * selling never refunds the full price (issue #425).
  */
 export const SELL_REFUND_PERCENT_CAP = 90;
+
+/**
+ * The `units` field of an effect: undefined when absent, false (with an
+ * error pushed) when invalid, else the list.
+ */
+function parseUnitsList(
+  rawUnits: unknown,
+  at: string,
+  errors: string[],
+): readonly string[] | undefined | false {
+  if (rawUnits === undefined) return undefined;
+  const list = Array.isArray(rawUnits) ? (rawUnits as unknown[]) : [];
+  const ids = list.filter((u): u is string => typeof u === 'string');
+  if (
+    !Array.isArray(rawUnits) ||
+    list.length === 0 ||
+    ids.length !== list.length ||
+    !ids.every((u) => UNIT_ID.test(u))
+  ) {
+    errors.push(
+      `${at}: "units" must be a non-empty array of unit IDs (${String(UNIT_ID)}).`,
+    );
+    return false;
+  }
+  if (new Set(ids).size !== ids.length) {
+    errors.push(`${at}: "units" must not list a unit twice.`);
+    return false;
+  }
+  return ids;
+}
 
 /**
  * Parse one effect from untrusted data. Pushes readable errors and returns
@@ -164,26 +226,38 @@ export function parseModifierEffect(
       ? new Set(['kind', 'target', 'percent'])
       : kind === 'shop_income_flat'
         ? new Set(['kind', 'amount'])
-        : hasUnitsField(kind)
-          ? new Set(['kind', 'percent', 'units'])
-          : new Set(['kind', 'percent']);
+        : kind === 'unit_armor_flat'
+          ? new Set(['kind', 'amount', 'units'])
+          : hasUnitsField(kind)
+            ? new Set(['kind', 'percent', 'units'])
+            : new Set(['kind', 'percent']);
   for (const key of sortedKeys(raw)) {
     if (!allowed.has(key)) errors.push(`${at}: unknown field "${key}".`);
   }
-  if (kind === 'shop_income_flat') {
+  if (kind === 'shop_income_flat' || kind === 'unit_armor_flat') {
     const amount = raw['amount'];
+    const max =
+      kind === 'shop_income_flat' ? MAX_SHOP_INCOME_FLAT : MAX_ARMOR_FLAT;
+    let amountOk = true;
     if (
       typeof amount !== 'number' ||
       !Number.isInteger(amount) ||
       amount < 1 ||
-      amount > MAX_SHOP_INCOME_FLAT
+      amount > max
     ) {
       errors.push(
-        `${at}: "amount" of ${kind} must be an integer from 1 to ${String(MAX_SHOP_INCOME_FLAT)}.`,
+        `${at}: "amount" of ${kind} must be an integer from 1 to ${String(max)}.`,
       );
-      return undefined;
+      amountOk = false;
     }
-    return { kind, amount };
+    if (kind === 'shop_income_flat') {
+      return amountOk ? { kind, amount: amount as number } : undefined;
+    }
+    const units = parseUnitsList(raw['units'], at, errors);
+    if (!amountOk || units === false) return undefined;
+    return units === undefined
+      ? { kind, amount: amount as number }
+      : { kind, amount: amount as number, units };
   }
   const percent = raw['percent'];
   const percentOk =
@@ -222,29 +296,8 @@ export function parseModifierEffect(
         `${at}: "percent" of ${kind} must be an integer from 1 to ${String(MAX_SPEED_MODIFIER_PERCENT)}.`,
       );
     }
-    const rawUnits = raw['units'];
-    let units: readonly string[] | undefined;
-    let unitsOk = true;
-    if (rawUnits !== undefined) {
-      const list = Array.isArray(rawUnits) ? (rawUnits as unknown[]) : [];
-      const ids = list.filter((u): u is string => typeof u === 'string');
-      if (
-        !Array.isArray(rawUnits) ||
-        list.length === 0 ||
-        ids.length !== list.length ||
-        !ids.every((u) => UNIT_ID.test(u))
-      ) {
-        errors.push(
-          `${at}: "units" must be a non-empty array of unit IDs (${String(UNIT_ID)}).`,
-        );
-        unitsOk = false;
-      } else if (new Set(ids).size !== ids.length) {
-        errors.push(`${at}: "units" must not list a unit twice.`);
-        unitsOk = false;
-      } else {
-        units = ids;
-      }
-    }
+    const units = parseUnitsList(raw['units'], at, errors);
+    const unitsOk = units !== false;
     if (!percentOk || !rangeOk || !unitsOk) return undefined;
     return units === undefined ? { kind, percent } : { kind, percent, units };
   }
@@ -261,6 +314,17 @@ export function parseModifierEffect(
       return undefined;
     }
     return { kind, percent };
+  }
+  if (kind === 'poi_capture_speed_percent') {
+    if (percentOk && percent >= 1 && percent <= MAX_SPEED_MODIFIER_PERCENT) {
+      return { kind, percent };
+    }
+    if (percentOk) {
+      errors.push(
+        `${at}: "percent" of ${kind} must be an integer from 1 to ${String(MAX_SPEED_MODIFIER_PERCENT)}.`,
+      );
+    }
+    return undefined;
   }
   if (kind === 'core_health_percent' || kind === 'turret_damage_percent') {
     return percentOk ? { kind, percent } : undefined;
@@ -348,7 +412,13 @@ export function modifierPercent(
   let total = 0;
   for (const m of team.modifiers ?? []) {
     for (const e of m.effects) {
-      if (e.kind !== kind || e.kind === 'shop_income_flat') continue;
+      if (
+        e.kind !== kind ||
+        e.kind === 'shop_income_flat' ||
+        e.kind === 'unit_armor_flat'
+      ) {
+        continue;
+      }
       if (
         e.kind === 'building_health_percent' &&
         target !== undefined &&
@@ -469,6 +539,65 @@ export function sellRefundPercentFor(team: HasModifiers, base: number): number {
   }
   if (add === 0) return base;
   return Math.max(base, Math.min(base + add, SELL_REFUND_PERCENT_CAP));
+}
+
+/**
+ * Sum of the `unit_splash_percent` effects that apply to unit type `unitId`
+ * (issue #426), added to the unit's splash percent. Never negative. Checked
+ * like `modifierPercent`.
+ */
+export function unitSplashPercent(team: HasModifiers, unitId: string): number {
+  let total = 0;
+  for (const m of team.modifiers ?? []) {
+    for (const e of m.effects) {
+      if (e.kind !== 'unit_splash_percent') continue;
+      if (e.units !== undefined && !e.units.includes(unitId)) continue;
+      total = checkedAdd(total, e.percent, e.kind);
+    }
+  }
+  return total;
+}
+
+/**
+ * Sum of the `unit_armor_flat` amounts that apply to unit type `unitId`
+ * (issue #426), added to the unit's armor (the total is capped at
+ * `MAX_ARMOR` where it is applied).
+ */
+export function unitArmorBonus(team: HasModifiers, unitId: string): number {
+  let total = 0;
+  for (const m of team.modifiers ?? []) {
+    for (const e of m.effects) {
+      if (e.kind !== 'unit_armor_flat') continue;
+      if (e.units !== undefined && !e.units.includes(unitId)) continue;
+      total = checkedAdd(total, e.amount, e.kind);
+    }
+  }
+  return total;
+}
+
+/**
+ * Sum of the team's `poi_capture_speed_percent` effects (issue #426): the
+ * side-wide capture speed bonus. 0 without any.
+ */
+export function captureSpeedPercent(team: HasModifiers): number {
+  let total = 0;
+  for (const m of team.modifiers ?? []) {
+    for (const e of m.effects) {
+      if (e.kind !== 'poi_capture_speed_percent') continue;
+      total = checkedAdd(total, e.percent, e.kind);
+    }
+  }
+  return total;
+}
+
+function checkedAdd(total: number, add: number, kind: string): number {
+  try {
+    return addInt(total, add);
+  } catch {
+    throw new RangeError(
+      `Modifier ${kind}: the sum must be an integer within the safe bound ${String(Number.MAX_SAFE_INTEGER)} (adding ${String(add)} to ${String(total)}).`,
+    );
+  }
 }
 
 /** The ids of the modifiers a team holds, in the order taken. */

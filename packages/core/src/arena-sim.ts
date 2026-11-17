@@ -69,17 +69,25 @@ import {
 } from './int.js';
 import {
   assertWithin,
+  MAX_ARMOR,
   MAX_DAMAGE,
   MAX_HEALTH,
   MAX_HIT,
   MAX_TICK_DAMAGE,
 } from './limits.js';
 import type { GuardPlan } from './guards.js';
-import type { CaptureConfig, PointBuffEffect } from './points.js';
+import {
+  captureTicksFor,
+  type CaptureConfig,
+  type PointBuffEffect,
+} from './points.js';
 import { maxHealthOf } from './max-health.js';
 import {
+  captureSpeedPercent,
   modifierPercent,
+  unitArmorBonus,
   unitSpeedPercent,
+  unitSplashPercent,
   unitStrengthPercent,
 } from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
@@ -374,6 +382,16 @@ export interface UnitSim {
    */
   moveCooldownTicks?: number;
   attackCooldownTicks?: number;
+  /**
+   * Only for a unit spawned with an armor or splash modifier (issue #426),
+   * and only when it differs from the unit definition: the armor (the
+   * definition's plus the side's `unit_armor_flat` amounts, at most
+   * `MAX_ARMOR`) and the splash percent (the definition's raised by the
+   * side's `unit_splash_percent`) this unit has for its whole life. Absent
+   * means the definition's value.
+   */
+  armor?: number;
+  splashPercent?: number;
   /** A player index of the unit's own side: whose plot it belongs to (PP-11). */
   readonly owner: number;
   /**
@@ -735,12 +753,16 @@ export function unitStats(
   healthPercent = 100,
   moveSpeedPercent = 0,
   attackSpeedPercent = 0,
+  armorBonus = 0,
+  splashBonusPercent = 0,
 ): UnitDef {
   if (
     strengthPercent === 0 &&
     healthPercent === 100 &&
     moveSpeedPercent === 0 &&
-    attackSpeedPercent === 0
+    attackSpeedPercent === 0 &&
+    armorBonus === 0 &&
+    splashBonusPercent === 0
   ) {
     return def;
   }
@@ -774,6 +796,18 @@ export function unitStats(
     ...def,
     health: scaledHealth,
     damage: scaled(def.damage, 'scaled damage', MAX_DAMAGE),
+    armor: Math.min(MAX_ARMOR, addInt(def.armor, armorBonus)),
+    ...(def.splash === undefined
+      ? {}
+      : {
+          splash: {
+            radiusSub: def.splash.radiusSub,
+            percent: mulPct(
+              def.splash.percent,
+              addInt(100, splashBonusPercent),
+            ),
+          },
+        }),
     moveCooldownTicks: fasterCooldown(def.moveCooldownTicks, moveSpeedPercent),
     attackCooldownTicks: fasterCooldown(
       def.attackCooldownTicks,
@@ -1636,6 +1670,21 @@ function defOf(ctx: ArenaContext, unit: UnitSim): UnitDef {
   return def;
 }
 
+/** A unit's armor: its own (issue #426) or its definition's. */
+function armorOf(ctx: ArenaContext, unit: UnitSim): number {
+  return unit.armor ?? defOf(ctx, unit).armor;
+}
+
+/** A unit's splash: its definition's radius with its own percent if it has one (issue #426). */
+function splashOf(
+  ctx: ArenaContext,
+  unit: UnitSim,
+): { readonly radiusSub: number; readonly percent: number } | undefined {
+  const sp = defOf(ctx, unit).splash;
+  if (sp === undefined || unit.splashPercent === undefined) return sp;
+  return { radiusSub: sp.radiusSub, percent: unit.splashPercent };
+}
+
 // ---------------------------------------------------------------------------
 // Spawning
 
@@ -2150,14 +2199,20 @@ function spawnStrength(
 }
 
 /**
- * The cooldown fields a unit spawns with: only those the side's speed
- * modifiers change (issue #424), none when nothing changes.
+ * The fields a unit spawns with that the side's combat modifiers change
+ * (issues #424 and #426): the cooldowns, the armor and the splash percent,
+ * each only when it differs from the definition; none when nothing changes.
  */
-function speedFields(
+function modifierFields(
   sim: ArenaSim,
   side: number,
   def: UnitDef,
-): { moveCooldownTicks?: number; attackCooldownTicks?: number } {
+): {
+  moveCooldownTicks?: number;
+  attackCooldownTicks?: number;
+  armor?: number;
+  splashPercent?: number;
+} {
   const team = sim.teams[side === 0 ? 0 : 1];
   const stats = unitStats(
     side,
@@ -2166,8 +2221,16 @@ function speedFields(
     100,
     unitSpeedPercent(team, 'unit_move_speed_percent', def.id),
     unitSpeedPercent(team, 'unit_attack_speed_percent', def.id),
+    unitArmorBonus(team, def.id),
+    unitSplashPercent(team, def.id),
   );
   return {
+    ...(stats.armor === def.armor ? {} : { armor: stats.armor }),
+    ...(stats.splash === undefined ||
+    def.splash === undefined ||
+    stats.splash.percent === def.splash.percent
+      ? {}
+      : { splashPercent: stats.splash.percent }),
     ...(stats.moveCooldownTicks === def.moveCooldownTicks
       ? {}
       : { moveCooldownTicks: stats.moveCooldownTicks }),
@@ -2207,7 +2270,7 @@ function addUnit(
     maxHp: stats.health,
     damage: stats.damage,
     attackCooldown: 0,
-    ...speedFields(sim, side, unitDef),
+    ...modifierFields(sim, side, unitDef),
     owner: who.owner,
     target: who.target,
   };
@@ -2450,7 +2513,7 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (target === undefined) continue;
     t.charge = 0;
     t.cooldown = info.cooldownTicks;
-    const dealt = armorHit(info.damage, defOf(ctx, target).armor);
+    const dealt = armorHit(info.damage, armorOf(ctx, target));
     ctx.unitDamage[best] = addDamage(ctx.unitDamage[best] ?? 0, dealt);
     ctx.events?.push({
       tick,
@@ -2775,7 +2838,7 @@ export function spawnUnitForTest(
     maxHp: stats.health,
     damage: stats.damage,
     attackCooldown: 0,
-    ...speedFields(sim, args.side, def),
+    ...modifierFields(sim, args.side, def),
     owner,
     target:
       args.target ??
@@ -3775,10 +3838,10 @@ function resolveAttacks(
     if (act === ACT_UNIT) {
       const t = units[arg];
       if (t === undefined) continue;
-      damage = armorHit(hit, defOf(ctx, t).armor);
+      damage = armorHit(hit, armorOf(ctx, t));
       hurtUnit(ctx, units, arg, damage, u.side);
       target = { kind: 'unit', unit: t.id };
-      const sp = defOf(ctx, u).splash;
+      const sp = splashOf(ctx, u);
       if (sp !== undefined) {
         splash = splashHits(ctx, units, u, t, arg, hit, sp);
         centre = t;
@@ -3915,7 +3978,7 @@ function splashHits(
   for (const j of found) {
     const e = units[j];
     if (e === undefined) continue;
-    const dealt = armorHit(part, defOf(ctx, e).armor);
+    const dealt = armorHit(part, armorOf(ctx, e));
     hurtUnit(ctx, units, j, dealt, attacker.side);
     out.push({ unit: e.id, damage: dealt });
   }
@@ -4272,6 +4335,12 @@ function stepPoints(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
   const radius = rules.captureRadiusCells * S;
   const radius2 = radius * radius;
   const n = points.length;
+  // The take threshold of each side (issue #426): its capture speed modifiers
+  // shorten it; the progress added per tick is unchanged.
+  const need: [number, number] = [
+    captureTicksFor(rules.captureTicks, captureSpeedPercent(sim.teams[0])),
+    captureTicksFor(rules.captureTicks, captureSpeedPercent(sim.teams[1])),
+  ];
   const near = new Array<number>(2 * n).fill(0);
   const guarded = new Array<number>(n).fill(0);
   for (const u of sim.units) {
@@ -4314,7 +4383,7 @@ function stepPoints(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
             });
           }
           p.progress += Math.min(c0 + c1, rules.maxCapturersCounted);
-          if (p.progress >= rules.captureTicks) {
+          if (p.progress >= need[s === 0 ? 0 : 1]) {
             const previous = p.controller;
             p.controller = s;
             p.progress = 0;

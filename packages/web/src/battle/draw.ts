@@ -741,7 +741,7 @@ export function drawBattleOverlay(
     return (
       t !== undefined &&
       t.id === id &&
-      (content.units.get(t.def)?.armor ?? 0) > 0
+      (t.armor ?? content.units.get(t.def)?.armor ?? 0) > 0
     );
   };
   const base = ctx.getTransform();

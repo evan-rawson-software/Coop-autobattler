@@ -6,6 +6,8 @@
  */
 
 import {
+  captureSpeedPercent,
+  captureTicksFor,
   CELL_UNITS,
   pointStrengthBonus,
   type ArenaEvent,
@@ -50,7 +52,7 @@ export interface PointNow {
 
 /** The part of the arena state the point views read. */
 export type PointsSource = Pick<ArenaSim, 'units'> &
-  Partial<Pick<ArenaSim, 'points' | 'guards'>>;
+  Partial<Pick<ArenaSim, 'points' | 'guards' | 'teams'>>;
 
 /**
  * Every point of the battle at the state's tick, in `id` order; empty when the
@@ -88,7 +90,18 @@ export function pointsNow(sim: PointsSource): readonly PointNow[] {
     const contested = alive === 0 && near0 > 0 && near1 > 0;
     const progress =
       p.progressSide >= 0
-        ? Math.min(1, p.progress / Math.max(1, rules.captureTicks))
+        ? Math.min(
+            1,
+            p.progress /
+              captureTicksFor(
+                rules.captureTicks,
+                sim.teams === undefined
+                  ? 0
+                  : captureSpeedPercent(
+                      sim.teams[p.progressSide === 0 ? 0 : 1],
+                    ),
+              ),
+          )
         : 0;
     const status: PointStatus =
       alive > 0
