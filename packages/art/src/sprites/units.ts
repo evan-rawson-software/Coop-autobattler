@@ -118,6 +118,25 @@ function soldier(L: Layers, c: Ctx): void {
   L.front.stamp(SOLDIER_HELM, 5, 3 + dy);
 }
 
+// ---- Lancer ------------------------------------------------------------
+
+/** A soldier without the shield, with a spear held in both hands that runs the
+ * whole height of the frame: it reaches over the ally in front. */
+function lancer(L: Layers, c: Ctx): void {
+  const lunge = c.atk === 2 ? -1 : c.atk === 1 ? 1 : 0;
+  const bob = c.step === -1 ? -1 : 0;
+  const dy = lunge + bob;
+  const s = c.step;
+  L.back.rect(5, 12 + s, 2, 2, '1');
+  L.back.rect(9, 12 - s, 2, 2, '1');
+  const tip = c.atk === 2 ? 0 : 1;
+  for (let y = tip + 3; y <= 15; y++) L.back.set(13, y + bob, 'o');
+  L.back.stamp(['.6.', '565', '.5.'], 12, tip + bob);
+  L.body.stamp(SOLDIER_TORSO, 2, 5 + dy);
+  sideCue(L.front, c.side, 5, 3 + dy, 6);
+  L.front.stamp(SOLDIER_HELM, 5, 3 + dy);
+}
+
 // ---- Raider ------------------------------------------------------------
 
 const RAIDER_VEST: Grid = [
@@ -435,6 +454,7 @@ const DRAWERS: Readonly<Record<string, (L: Layers, c: Ctx) => void>> = {
   unit_soldier: soldier,
   unit_heavy: heavy,
   unit_golem: golem,
+  unit_lancer: lancer,
   unit_caster: caster,
   unit_raider: raider,
   unit_archer: archer,
@@ -450,6 +470,8 @@ const NOTES: Readonly<Record<string, string>> = {
     'Fragile ranged ground unit with area damage: hooded robe, staff with an orb.',
   unit_golem:
     'Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius.',
+  unit_lancer:
+    'Long-reach melee ground unit: a spear that runs the height of the frame, no shield.',
   unit_raider: 'Fast melee ground unit.',
   unit_archer: 'Ranged ground unit.',
   unit_drone: 'Flying unit; place fx_shadow under it.',
