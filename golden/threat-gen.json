@@ -15466,5 +15466,1359 @@
         "hash": "93d93d7c"
       }
     }
+  },
+  {
+    "id": "threat-gen.skirmishers-medium-r2",
+    "kind": "threat-gen",
+    "description": "arch_skirmishers medium threat, round 2 (its first), party size 1.",
+    "input": {
+      "seed": 41,
+      "round": 2,
+      "type": "medium",
+      "partySize": 1,
+      "archetype": "arch_skirmishers"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_skirmishers",
+          "type": "medium",
+          "round": 2,
+          "partySize": 1,
+          "budget": 125,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 150,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 300,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 450,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 600,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 750,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 900,
+              "unit": "unit_archer",
+              "count": 1
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 144
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 12,
+                "y": 1,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "b3a4f270"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.skirmishers-medium-r5",
+    "kind": "threat-gen",
+    "description": "arch_skirmishers medium threat, round 5 (ranged mix on), party size 1.",
+    "input": {
+      "seed": 41,
+      "round": 5,
+      "type": "medium",
+      "partySize": 1,
+      "archetype": "arch_skirmishers"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_skirmishers",
+          "type": "medium",
+          "round": 5,
+          "partySize": 1,
+          "budget": 243,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 150,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 300,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 450,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 600,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 750,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 900,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 900,
+              "unit": "unit_drone",
+              "count": 1
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 231
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 9,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 14,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 12,
+                "y": 6,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "6d7351f1"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.skirmishers-hard-r15-party4",
+    "kind": "threat-gen",
+    "description": "arch_skirmishers hard threat, round 15, party size 4 (strength conversion).",
+    "input": {
+      "seed": 41,
+      "round": 15,
+      "type": "hard",
+      "partySize": 4,
+      "archetype": "arch_skirmishers"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_skirmishers",
+          "type": "hard",
+          "round": 15,
+          "partySize": 4,
+          "budget": 12576,
+          "unitStrengthPercent": 144,
+          "waves": [
+            {
+              "tick": 150,
+              "unit": "unit_archer",
+              "count": 7
+            },
+            {
+              "tick": 150,
+              "unit": "unit_soldier",
+              "count": 4
+            },
+            {
+              "tick": 150,
+              "unit": "unit_archer",
+              "count": 4
+            },
+            {
+              "tick": 150,
+              "unit": "unit_drone",
+              "count": 2
+            },
+            {
+              "tick": 300,
+              "unit": "unit_archer",
+              "count": 10
+            },
+            {
+              "tick": 300,
+              "unit": "unit_soldier",
+              "count": 3
+            },
+            {
+              "tick": 300,
+              "unit": "unit_archer",
+              "count": 5
+            },
+            {
+              "tick": 300,
+              "unit": "unit_drone",
+              "count": 3
+            },
+            {
+              "tick": 450,
+              "unit": "unit_archer",
+              "count": 10
+            },
+            {
+              "tick": 450,
+              "unit": "unit_soldier",
+              "count": 6
+            },
+            {
+              "tick": 450,
+              "unit": "unit_archer",
+              "count": 6
+            },
+            {
+              "tick": 450,
+              "unit": "unit_drone",
+              "count": 3
+            },
+            {
+              "tick": 600,
+              "unit": "unit_archer",
+              "count": 13
+            },
+            {
+              "tick": 600,
+              "unit": "unit_soldier",
+              "count": 6
+            },
+            {
+              "tick": 600,
+              "unit": "unit_archer",
+              "count": 7
+            },
+            {
+              "tick": 600,
+              "unit": "unit_drone",
+              "count": 4
+            },
+            {
+              "tick": 750,
+              "unit": "unit_archer",
+              "count": 17
+            },
+            {
+              "tick": 750,
+              "unit": "unit_soldier",
+              "count": 7
+            },
+            {
+              "tick": 750,
+              "unit": "unit_archer",
+              "count": 9
+            },
+            {
+              "tick": 750,
+              "unit": "unit_drone",
+              "count": 5
+            },
+            {
+              "tick": 900,
+              "unit": "unit_archer",
+              "count": 19
+            },
+            {
+              "tick": 900,
+              "unit": "unit_soldier",
+              "count": 10
+            },
+            {
+              "tick": 900,
+              "unit": "unit_archer",
+              "count": 11
+            },
+            {
+              "tick": 900,
+              "unit": "unit_drone",
+              "count": 6
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 4446
+              },
+              {
+                "x": 35,
+                "y": 3,
+                "health": 4446
+              },
+              {
+                "x": 59,
+                "y": 3,
+                "health": 4446
+              },
+              {
+                "x": 83,
+                "y": 3,
+                "health": 4446
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 11,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 12,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 33,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 57,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 58,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 86,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 14,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 62,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 81,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 86,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 14,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 38,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 81,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 33,
+                "y": 4,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 33,
+                "y": 5,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 81,
+                "y": 5,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 11,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 13,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 36,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 38,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 58,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 59,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 60,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 86,
+                "y": 6,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "c226d0ec"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.swarm-medium-r1",
+    "kind": "threat-gen",
+    "description": "arch_swarm medium threat, round 1, party size 1 (fourteen one-raider waves).",
+    "input": {
+      "seed": 41,
+      "round": 1,
+      "type": "medium",
+      "partySize": 1,
+      "archetype": "arch_swarm"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_swarm",
+          "type": "medium",
+          "round": 1,
+          "partySize": 1,
+          "budget": 100,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 80,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 125,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 170,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 215,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 260,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 305,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 350,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 395,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 440,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 485,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 530,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 575,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 620,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 665,
+              "unit": "unit_raider",
+              "count": 1
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 100
+              }
+            ],
+            "buildings": []
+          }
+        },
+        "hash": "b43fa8fb"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.swarm-medium-r5",
+    "kind": "threat-gen",
+    "description": "arch_swarm medium threat, round 5 (ranged mix on), party size 1.",
+    "input": {
+      "seed": 41,
+      "round": 5,
+      "type": "medium",
+      "partySize": 1,
+      "archetype": "arch_swarm"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_swarm",
+          "type": "medium",
+          "round": 5,
+          "partySize": 1,
+          "budget": 243,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 80,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 125,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 170,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 215,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 260,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 305,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 350,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 350,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 395,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 440,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 485,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 530,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 530,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 575,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 575,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 620,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 665,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 665,
+              "unit": "unit_archer",
+              "count": 1
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 245
+              }
+            ],
+            "buildings": []
+          }
+        },
+        "hash": "4aa24850"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.swarm-medium-r10-party2",
+    "kind": "threat-gen",
+    "description": "arch_swarm medium threat, round 10, party size 2.",
+    "input": {
+      "seed": 41,
+      "round": 10,
+      "type": "medium",
+      "partySize": 2,
+      "archetype": "arch_swarm"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_swarm",
+          "type": "medium",
+          "round": 10,
+          "partySize": 2,
+          "budget": 1474,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 80,
+              "unit": "unit_raider",
+              "count": 3
+            },
+            {
+              "tick": 125,
+              "unit": "unit_raider",
+              "count": 4
+            },
+            {
+              "tick": 125,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 170,
+              "unit": "unit_raider",
+              "count": 4
+            },
+            {
+              "tick": 170,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 170,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 215,
+              "unit": "unit_raider",
+              "count": 4
+            },
+            {
+              "tick": 215,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 260,
+              "unit": "unit_raider",
+              "count": 5
+            },
+            {
+              "tick": 260,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 260,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 305,
+              "unit": "unit_raider",
+              "count": 5
+            },
+            {
+              "tick": 305,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 305,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 350,
+              "unit": "unit_raider",
+              "count": 5
+            },
+            {
+              "tick": 350,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 395,
+              "unit": "unit_raider",
+              "count": 6
+            },
+            {
+              "tick": 395,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 395,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 440,
+              "unit": "unit_raider",
+              "count": 6
+            },
+            {
+              "tick": 440,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 440,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 485,
+              "unit": "unit_raider",
+              "count": 7
+            },
+            {
+              "tick": 485,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 485,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 530,
+              "unit": "unit_raider",
+              "count": 7
+            },
+            {
+              "tick": 530,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 530,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 575,
+              "unit": "unit_raider",
+              "count": 8
+            },
+            {
+              "tick": 575,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 575,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 620,
+              "unit": "unit_raider",
+              "count": 9
+            },
+            {
+              "tick": 620,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 620,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 665,
+              "unit": "unit_raider",
+              "count": 9
+            },
+            {
+              "tick": 665,
+              "unit": "unit_archer",
+              "count": 3
+            },
+            {
+              "tick": 665,
+              "unit": "unit_drone",
+              "count": 2
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 700
+              },
+              {
+                "x": 35,
+                "y": 3,
+                "health": 700
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 14,
+                "y": 5,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "11a451c4"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.swarm-hard-r15-party4",
+    "kind": "threat-gen",
+    "description": "arch_swarm hard threat, round 15, party size 4 (strength conversion).",
+    "input": {
+      "seed": 41,
+      "round": 15,
+      "type": "hard",
+      "partySize": 4,
+      "archetype": "arch_swarm"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_swarm",
+          "type": "hard",
+          "round": 15,
+          "partySize": 4,
+          "budget": 12576,
+          "unitStrengthPercent": 138,
+          "waves": [
+            {
+              "tick": 80,
+              "unit": "unit_raider",
+              "count": 13
+            },
+            {
+              "tick": 80,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 80,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 125,
+              "unit": "unit_raider",
+              "count": 14
+            },
+            {
+              "tick": 125,
+              "unit": "unit_archer",
+              "count": 3
+            },
+            {
+              "tick": 125,
+              "unit": "unit_drone",
+              "count": 2
+            },
+            {
+              "tick": 170,
+              "unit": "unit_raider",
+              "count": 15
+            },
+            {
+              "tick": 170,
+              "unit": "unit_archer",
+              "count": 3
+            },
+            {
+              "tick": 170,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 215,
+              "unit": "unit_raider",
+              "count": 16
+            },
+            {
+              "tick": 215,
+              "unit": "unit_archer",
+              "count": 3
+            },
+            {
+              "tick": 215,
+              "unit": "unit_drone",
+              "count": 2
+            },
+            {
+              "tick": 260,
+              "unit": "unit_raider",
+              "count": 18
+            },
+            {
+              "tick": 260,
+              "unit": "unit_archer",
+              "count": 4
+            },
+            {
+              "tick": 260,
+              "unit": "unit_drone",
+              "count": 2
+            },
+            {
+              "tick": 305,
+              "unit": "unit_raider",
+              "count": 19
+            },
+            {
+              "tick": 305,
+              "unit": "unit_archer",
+              "count": 4
+            },
+            {
+              "tick": 305,
+              "unit": "unit_drone",
+              "count": 2
+            },
+            {
+              "tick": 350,
+              "unit": "unit_raider",
+              "count": 20
+            },
+            {
+              "tick": 350,
+              "unit": "unit_archer",
+              "count": 4
+            },
+            {
+              "tick": 350,
+              "unit": "unit_drone",
+              "count": 2
+            },
+            {
+              "tick": 395,
+              "unit": "unit_raider",
+              "count": 22
+            },
+            {
+              "tick": 395,
+              "unit": "unit_archer",
+              "count": 5
+            },
+            {
+              "tick": 395,
+              "unit": "unit_drone",
+              "count": 2
+            },
+            {
+              "tick": 440,
+              "unit": "unit_raider",
+              "count": 24
+            },
+            {
+              "tick": 440,
+              "unit": "unit_archer",
+              "count": 5
+            },
+            {
+              "tick": 440,
+              "unit": "unit_drone",
+              "count": 2
+            },
+            {
+              "tick": 485,
+              "unit": "unit_raider",
+              "count": 26
+            },
+            {
+              "tick": 485,
+              "unit": "unit_archer",
+              "count": 5
+            },
+            {
+              "tick": 485,
+              "unit": "unit_drone",
+              "count": 3
+            },
+            {
+              "tick": 530,
+              "unit": "unit_raider",
+              "count": 27
+            },
+            {
+              "tick": 530,
+              "unit": "unit_archer",
+              "count": 6
+            },
+            {
+              "tick": 530,
+              "unit": "unit_drone",
+              "count": 3
+            },
+            {
+              "tick": 575,
+              "unit": "unit_raider",
+              "count": 30
+            },
+            {
+              "tick": 575,
+              "unit": "unit_archer",
+              "count": 7
+            },
+            {
+              "tick": 575,
+              "unit": "unit_drone",
+              "count": 3
+            },
+            {
+              "tick": 620,
+              "unit": "unit_raider",
+              "count": 32
+            },
+            {
+              "tick": 620,
+              "unit": "unit_archer",
+              "count": 8
+            },
+            {
+              "tick": 620,
+              "unit": "unit_drone",
+              "count": 4
+            },
+            {
+              "tick": 665,
+              "unit": "unit_raider",
+              "count": 34
+            },
+            {
+              "tick": 665,
+              "unit": "unit_archer",
+              "count": 8
+            },
+            {
+              "tick": 665,
+              "unit": "unit_drone",
+              "count": 4
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 2845
+              },
+              {
+                "x": 35,
+                "y": 3,
+                "health": 2845
+              },
+              {
+                "x": 59,
+                "y": 3,
+                "health": 2845
+              },
+              {
+                "x": 83,
+                "y": 3,
+                "health": 2845
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 11,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 33,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 57,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 58,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 14,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 62,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 81,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 86,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 14,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 38,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 81,
+                "y": 5,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 13,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 36,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 38,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 60,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 86,
+                "y": 6,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "f1d4abb5"
+      }
+    }
   }
 ]

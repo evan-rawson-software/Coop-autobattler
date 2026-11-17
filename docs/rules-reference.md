@@ -421,6 +421,10 @@ file that has boss-only archetypes but none with `fromRound` 1 and
 archetype at all is still accepted: every archetype is then a boss candidate,
 with no gating.
 
+An archetype's `waves.count` is an integer from 1 to 16 (was 12 until the Swarm's
+fourteen waves, issue #431) and `waves.growthPercent` from 100 to 300; the wave
+sizes `s_k` stay below 2^53 for these bounds (at most `100 * 3^15`).
+
 An archetype's optional `brood` (MM-9d, "Core bursts") is allowed only when
 `bossOnly` is true (rejected otherwise). `brood.thresholdsPercent` is a list of
 1 to 5 integers, each from 1 to 99, **strictly descending**; `brood.sharePercent`
@@ -4533,6 +4537,8 @@ Shipped values:
 | Rusher | 70 | 100, 120, 6, 115 | soldier 2 : raider 1 | 600, 0, 0, `open` |
 | Fortress | 20 | 600, 400, 3, 130 | soldier | 300, 30, 25, `ring` |
 | Escalator | 75 | 100, 75, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
+| Skirmishers (`arch_skirmishers`, from round 2) | 50 | 150, 150, 6, 120 | archer 3 : soldier 1 | 300, 0, 45, `open` |
+| Swarm (`arch_swarm`, from round 1) | 80 | 80, 45, 14, 108 | raider | 500, 0, 10, `open` |
 | Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Brood (`arch_boss_brood`, boss only, from round 3, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Bonded (`arch_boss_linked`, boss only, from round 5, party size 2 or more) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
@@ -4541,7 +4547,29 @@ Shipped values:
 
 Rusher tests defence (early frequent waves, a small open Core); Fortress tests
 ramp and siege (late light waves, a big walled Core with turrets); Escalator
-tests speed (waves that grow fast, a wall line); Boss mixes all of it, its
+tests speed (waves that grow fast, a wall line); Skirmishers (issue #431) sends
+mostly archers behind a soldier screen against an open stronghold with many
+turrets (the counter is fast melee that catches archers, and turrets; walls do
+nothing against ranged attacks); Swarm sends raiders only, in fourteen small
+waves 45 ticks apart, against an open stronghold with a small Core (the counter
+is area damage and turrets). Both are plain data: the generator needs no new
+rule (every unit of a composition is in `unitCost`, `open` is an existing
+layout). They interact with the ranged mix (step 4) as every archetype does: from
+`rangedMix.fromRound` each non-signature wave gives 25 percent of its budget to
+archers and 15 percent to drones. For Skirmishers this thins the soldier screen
+(about 32 percent soldiers by count in rounds 2 and 3 at large budgets, about 18
+percent from round 4, the rest archers and drones; at party size 1 the small
+budgets of rounds 2 to 5 buy no soldier at all), it is about 80 percent ranged; for Swarm
+raiders stay about 70 to 75 percent of the units (rounds 10 and 15, party 4).
+**Notes for a port:** nothing new to implement: two more entries in the archetype
+list (file order decides `pickArchetypes`' shuffle), and the wave `count` bound is
+now 16 (was 12).
+No per-archetype switch for the mix was needed. Swarm's waves are small
+(`growthPercent` 108, so the last wave is about 2.7 times the first): at party
+size 1, round 1 every wave is one raider; at round 10 the largest wave is 5
+raiders, an archer and a drone; at round 15, `unitStrengthPercent` is 75
+(party 1) or 71 (party 4), the largest wave 8 to 34 raiders with its ranged
+units, no more than `cap`. Boss mixes all of it, its
 every-Nth-wave signature being all raiders (a fast swarm of small, weak units; since issue #66 raiders no longer prefer any building, they are ordinary units with different numbers: health 25, damage 8, radius 0.25 cell, move cooldown 4). Brood has the Boss's waves and stronghold exactly, plus
 `brood: {thresholdsPercent: [75, 50, 25], sharePercent: 30}`: each of its Cores
 releases a burst of units when it falls to 75, 50 and 25 percent of its

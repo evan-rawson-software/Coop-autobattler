@@ -108,6 +108,47 @@
       }
     },
     {
+      "id": "arch_skirmishers",
+      "bossOnly": false,
+      "fromRound": 2,
+      "waveSharePercent": 50,
+      "waves": {
+        "firstTick": 150,
+        "intervalTicks": 150,
+        "count": 6,
+        "growthPercent": 120,
+        "composition": [
+          { "unit": "unit_archer", "weight": 3 },
+          { "unit": "unit_soldier", "weight": 1 }
+        ]
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 300,
+        "wallSharePercent": 0,
+        "turretSharePercent": 45,
+        "layout": "open"
+      }
+    },
+    {
+      "id": "arch_swarm",
+      "bossOnly": false,
+      "fromRound": 1,
+      "waveSharePercent": 80,
+      "waves": {
+        "firstTick": 80,
+        "intervalTicks": 45,
+        "count": 14,
+        "growthPercent": 108,
+        "composition": [{ "unit": "unit_raider", "weight": 1 }]
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 500,
+        "wallSharePercent": 0,
+        "turretSharePercent": 10,
+        "layout": "open"
+      }
+    },
+    {
       "id": "arch_boss",
       "bossOnly": true,
       "fromRound": 1,

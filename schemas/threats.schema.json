@@ -281,7 +281,7 @@
             "properties": {
               "firstTick": { "type": "integer", "minimum": 0 },
               "intervalTicks": { "type": "integer", "minimum": 1 },
-              "count": { "type": "integer", "minimum": 1, "maximum": 12 },
+              "count": { "type": "integer", "minimum": 1, "maximum": 16 },
               "growthPercent": {
                 "description": "Size of a wave as a percent of the previous one.",
                 "type": "integer",

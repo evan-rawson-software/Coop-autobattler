@@ -13451,5 +13451,1311 @@
       },
       "eventLogHash": "7c9094be"
     }
+  },
+  {
+    "id": "pve-battle.rush-vs-skirmishers-r2",
+    "kind": "pve-battle",
+    "description": "The rush reference board against a round 2 medium arch_skirmishers threat.",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 9,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 21,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 21,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 8,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 8,
+            "y": 9,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 10,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 13,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 9,
+            "x": 9,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 10,
+            "x": 14,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 9,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": []
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 2,
+        "type": "medium",
+        "partySize": 1,
+        "archetype": "arch_skirmishers"
+      },
+      "seed": 8
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "core_destroyed",
+          "endTick": 327
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 15,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 500,
+              "coreMaxHealth": 500,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 144,
+              "unitsKilled": 1,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            },
+            {
+              "unitsSpawned": 2,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 144,
+                  "overkill": 0,
+                  "destroyedTick": 326
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 144,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 1,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            }
+          ],
+          "points": [
+            {
+              "id": 0,
+              "controller": -1,
+              "pointHeldTicks": [0, 0]
+            }
+          ]
+        },
+        "threatHash": "e32816b3",
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 13,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 14,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 13,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 14,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 13,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
+        },
+        "stateHash": "f2541a98",
+        "events": 244
+      },
+      "eventLogHash": "517b0d41"
+    }
+  },
+  {
+    "id": "pve-battle.rush-vs-swarm-r1",
+    "kind": "pve-battle",
+    "description": "The rush reference board against a round 1 medium arch_swarm threat.",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 9,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 21,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 21,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 8,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 8,
+            "y": 9,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 10,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 13,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 9,
+            "x": 9,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 10,
+            "x": 14,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 9,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": []
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 1,
+        "type": "medium",
+        "partySize": 1,
+        "archetype": "arch_swarm"
+      },
+      "seed": 8
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "core_destroyed",
+          "endTick": 334
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 15,
+              "unitsLost": 2,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 500,
+              "coreMaxHealth": 500,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 100,
+              "unitsKilled": 5,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            },
+            {
+              "unitsSpawned": 6,
+              "unitsLost": 5,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 100,
+                  "overkill": 2,
+                  "destroyedTick": 333
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 100,
+              "coreOverkill": 2,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 2,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            }
+          ],
+          "points": [
+            {
+              "id": 0,
+              "controller": -1,
+              "pointHeldTicks": [0, 0]
+            }
+          ]
+        },
+        "threatHash": "b43fa8fb",
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 13,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 14,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 13,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 14,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 13,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
+        },
+        "stateHash": "5041dcf9",
+        "events": 272
+      },
+      "eventLogHash": "991afb2c"
+    }
+  },
+  {
+    "id": "pve-battle.poor-vs-skirmishers-r5",
+    "kind": "pve-battle",
+    "description": "The poor reference board against a round 5 hard arch_skirmishers threat (it loses).",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 2,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 10,
+                "y": 2
+              },
+              {
+                "x": 10,
+                "y": 3
+              },
+              {
+                "x": 10,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 6
+              },
+              {
+                "x": 10,
+                "y": 7
+              },
+              {
+                "x": 10,
+                "y": 8
+              },
+              {
+                "x": 10,
+                "y": 9
+              },
+              {
+                "x": 10,
+                "y": 10
+              },
+              {
+                "x": 10,
+                "y": 11
+              },
+              {
+                "x": 9,
+                "y": 11
+              },
+              {
+                "x": 8,
+                "y": 11
+              },
+              {
+                "x": 7,
+                "y": 11
+              },
+              {
+                "x": 6,
+                "y": 11
+              },
+              {
+                "x": 5,
+                "y": 11
+              },
+              {
+                "x": 4,
+                "y": 11
+              },
+              {
+                "x": 3,
+                "y": 11
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 21,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 1,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 2,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 22,
+            "y": 0,
+            "rotation": 0
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 5,
+        "type": "hard",
+        "partySize": 1,
+        "archetype": "arch_skirmishers"
+      },
+      "seed": 8
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "core_destroyed",
+          "endTick": 721
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 7,
+              "unitsLost": 5,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 5,
+                  "destroyedTick": 720
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 5,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            },
+            {
+              "unitsSpawned": 4,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 285,
+                  "maxHealth": 285,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 285,
+              "coreMaxHealth": 285,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 500,
+              "unitsKilled": 5,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            }
+          ],
+          "points": [
+            {
+              "id": 0,
+              "controller": -1,
+              "pointHeldTicks": [0, 0]
+            }
+          ]
+        },
+        "threatHash": "80a264dc",
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 13,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 14,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 13,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 14,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 13,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
+        },
+        "stateHash": "fb115bdd",
+        "events": 326
+      },
+      "eventLogHash": "1fcf9708"
+    }
+  },
+  {
+    "id": "pve-battle.poor-vs-swarm-r5",
+    "kind": "pve-battle",
+    "description": "The poor reference board against a round 5 hard arch_swarm threat.",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 2,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 10,
+                "y": 2
+              },
+              {
+                "x": 10,
+                "y": 3
+              },
+              {
+                "x": 10,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 6
+              },
+              {
+                "x": 10,
+                "y": 7
+              },
+              {
+                "x": 10,
+                "y": 8
+              },
+              {
+                "x": 10,
+                "y": 9
+              },
+              {
+                "x": 10,
+                "y": 10
+              },
+              {
+                "x": 10,
+                "y": 11
+              },
+              {
+                "x": 9,
+                "y": 11
+              },
+              {
+                "x": 8,
+                "y": 11
+              },
+              {
+                "x": 7,
+                "y": 11
+              },
+              {
+                "x": 6,
+                "y": 11
+              },
+              {
+                "x": 5,
+                "y": 11
+              },
+              {
+                "x": 4,
+                "y": 11
+              },
+              {
+                "x": 3,
+                "y": 11
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 21,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 1,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 2,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 22,
+            "y": 0,
+            "rotation": 0
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 5,
+        "type": "hard",
+        "partySize": 1,
+        "archetype": "arch_swarm"
+      },
+      "seed": 8
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "core_destroyed",
+          "endTick": 338
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 3,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 4,
+                  "destroyedTick": 337
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 4,
+              "rampSteps": 0,
+              "buildingDamageDealt": 54,
+              "unitsKilled": 1,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            },
+            {
+              "unitsSpawned": 7,
+              "unitsLost": 2,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 286,
+                  "maxHealth": 340,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 286,
+              "coreMaxHealth": 340,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 500,
+              "unitsKilled": 0,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            }
+          ],
+          "points": [
+            {
+              "id": 0,
+              "controller": -1,
+              "pointHeldTicks": [0, 0]
+            }
+          ]
+        },
+        "threatHash": "39bddbf4",
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 13,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 14,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 13,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 14,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 13,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": [
+            {
+              "id": 0,
+              "band": 0,
+              "x": 16,
+              "y": 3,
+              "buff": "poi_strength"
+            }
+          ]
+        },
+        "stateHash": "43255319",
+        "events": 177
+      },
+      "eventLogHash": "ba0e888c"
+    }
   }
 ]
