@@ -99,9 +99,9 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   <header>
     <span class="caption">Wireframes · solo view with co-op elements marked</span>
     <h1>Screens of a run</h1>
-    <p class="lede">Layout sketches for the screens of a run, drawn for a 1080p screen. Screens 1 to 4, 7 and 8 repeat every round; 5, 6 and 9 start and end a run. Specific numbers and example effects in the sketches are placeholders, not rules. Your base is at the bottom and the enemy is at the top, so the front edge runs across the screen and a bigger party makes the board wider, not taller. Sizes, numbers, and building names are placeholders.</p>
+    <p class="lede">Layout sketches for the screens of a run, drawn for a 1080p screen. Screens 1 to 4, 7 and 8 repeat every round; 5, 5b, 6 and 9 start and end a run. Specific numbers and example effects in the sketches are placeholders, not rules. Your base is at the bottom and the enemy is at the top, so the front edge runs across the screen and a bigger party makes the board wider, not taller. Sizes, numbers, and building names are placeholders.</p>
     <div class="flowline" aria-label="Order of screens in a run">
-      <span>5 Main menu</span><i>→</i><span>6 Core placement</span><i>→</i><span>4 Build</span><i>→</i><span>7 PvE choice</span><i>→</i><span class="on">1 Battle</span><i>→</i><span>8 Summary</span><i>→</i><span class="on">2 Event</span><i>→</i><span class="on">3 Shop</span><i>+</i><span class="on">4 Build</span><i>→</i><span>PvP battle …</span><i>→</i><span>9 Run over</span>
+      <span>5 Main menu</span><i>→</i><span>5b Specialist pick</span><i>→</i><span>6 Core placement</span><i>→</i><span>4 Build</span><i>→</i><span>7 PvE choice</span><i>→</i><span class="on">1 Battle</span><i>→</i><span>8 Summary</span><i>→</i><span class="on">2 Event</span><i>→</i><span class="on">3 Shop</span><i>+</i><span class="on">4 Build</span><i>→</i><span>PvP battle …</span><i>→</i><span>9 Run over</span>
     </div>
     <div class="legend" aria-label="Map legend">
       <span><b>Ex</b> extractor</span><span><b>Bk</b> barracks</span><span><b>Fo</b> foundry</span><span><b>Tu</b> turret</span><span><b>Sp</b> splitter</span><span><b>Ar</b> armory (economy)</span><span><b>Rc</b> Composite refinery (Ore + Power)</span><span><b>Ra</b> Aether refinery (Power + Flux)</span><span><b>Gf</b> Golem forge</span><span><b>Sr</b> Spire</span><span><b>■</b> wall</span><span><b>O / P / F</b> Ore, Power, Flux node</span>
@@ -113,7 +113,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <p>Nobody gives orders here. The party watches its factory start cold, ramp up, and send units across the neutral zone while the enemy does the same. Each player has their own Core, so each side shows one health bar per Core under a total. The sketch is a three-player party; a solo battle shows one bar per side.</p>
     <div class="sheet"><svg id="s-battle" class="big" viewBox="0 0 1280 720" role="img" aria-label="Battle screen wireframe: the stronghold board at the top, a neutral zone in the middle, the party's board at the bottom with three Cores, one of them fallen, and status panels on both sides with a health bar for each Core."></svg></div>
     <ol class="notes">
-      <li>Who you are fighting and what kind of battle it is. A ghost shows the other party's names; a boss says so and names the boss. Boss-only marks are in sketch 1b.</li>
+      <li>Who you are fighting and what kind of battle it is. A ghost shows the other party's names and each player's specialist (MM-11a); a boss says so and names the boss. Boss-only marks are in sketch 1b.</li>
       <li>Your board, at the bottom, exactly as you built it. Conduits light up as resources flow.</li>
       <li>The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Buildings do nothing here; only units fight.</li>
       <li>The enemy board, at the top, with one Core per player. Your units attack buildings in their way and finally the Cores: first the one opposite their owner’s plot, then the nearest still standing.</li>
@@ -221,6 +221,8 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>A small live view of the board that jumps to the Build tab.</li>
       <li>Ready is available on both tabs.</li>
       <li>Held run modifiers: a small chip in the run bar with the effects totalled and drawbacks marked with "!". It is on every run screen.</li>
+      <li>Your specialist, in the run bar of every run screen after the pick.</li>
+      <li>A signature building (here the Mana Well) is offered only in your own shop and is marked as such (EC-3b). A partner's shop never has it.</li>
     </ol>
   </section>
 
@@ -271,6 +273,20 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>A save from an older version says so before you resume: some things may have changed.</li>
       <li>A run someone else hosts. They hold the save, so you can only join when they open it. Hide removes it from your list without ending it.</li>
       <li>Records: the deepest round reached, kept per party size. Nothing else carries over between runs.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>5b. Specialist pick</h2>
+    <p>The first step after the map is shown, before Core placement (RS-13). Every player picks one of four specialists, solo too. Duplicates are allowed and there is no skip. Names, numbers and effects are placeholders.</p>
+    <div class="sheet"><svg id="s-spec" viewBox="0 0 960 540" role="img" aria-label="Specialist pick wireframe: four specialist cards, each with name, family, bonus and signature building, your pick highlighted, a panel with each party member's current pick, and a Ready button."></svg></div>
+    <ol class="notes">
+      <li>Four cards: the whole roster is always open (RS-13c). Each shows the specialist's name and family.</li>
+      <li>The family bonus: small, owner only, no downside (CB-51a).</li>
+      <li>The signature building: its name, footprint and what it does. Only this specialist can buy it, from round 2, in its own shop (EC-3b).</li>
+      <li>Your pick, highlighted. You can change it until you are Ready.</li>
+      <li>Every party member's current pick, visible as soon as it is made (RS-13b). Two players may pick the same specialist.</li>
+      <li>Ready needs a pick; a refused Ready says why. Ready locks your pick, and Unready reopens it. The step ends when everyone is Ready; solo, when you are (RS-13c). On the later screens your specialist stays in the run bar.</li>
     </ol>
   </section>
 
@@ -354,6 +370,10 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     w = w || 960; h = h || 540; var bh = w > 960 ? 40 : 36;
     R(p, 0, 0, w, h, "frame"); R(p, 0, 0, w, bh, "bar");
     T(p, 14, bh / 2 + 5, left, "th"); if (mid) T(p, w / 2, bh / 2 + 5, mid, "t tm", "middle"); T(p, w - 14, bh / 2 + 5, right, "t", "end");
+  }
+
+  function specchip(p, x, y, name, w) {
+    R(p, x, y, w || 150, 22, "btn"); T(p, x + (w || 150) / 2, y + 15, name, "ts", "middle");
   }
 
   // ---- board data: first number = depth (0 back .. 15 front), second = 0..23 along the front.
@@ -663,6 +683,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   (function () {
     var s = document.getElementById("s-shop");
     topbar(s, "Round 4 · Shop + Build", "", "1 of 3 ready  ·  Lives 4 / 5");
+    specchip(s, 196, 7, "Flowmancer", 110);
     btn(s, 380, 5, 96, 26, "Shop", true); btn(s, 482, 5, 96, 26, "Build");
     R(s, 604, 7, 130, 22, "btn"); T(s, 610, 22, "+20% str, -15% Core !", "ts");
     T(s, 24, 62, "YOUR OFFERS", "ts tm");
@@ -670,7 +691,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       ["Turret", "Defense · tier 1", "Needs: Power", ["Needs 0.50 / s at", "top speed (0.25", "shots / s)"], ["Shoots enemy units", "on your side."], "4"],
       ["Barracks", "Units · tier 1", "Needs: Ore", ["Needs 0.40 / s at", "top speed (0.25", "units / s)"], ["Spawns a soldier", "every few seconds."], "5"],
       ["Refinery", "Composite · tier 2", "Needs: Ore + Power", ["Ore 0.30 / s and", "Power 0.30 / s at", "top speed"], ["Makes Composite", "for a Golem forge."], "9"],
-      ["Extractor", "Source · tier 1", "Needs: nothing", ["Collects 0.50 / s"], ["Mines the resource", "node under it."], "3"],
+      ["Mana Well", "Signature · tier 1", "Needs: nothing", ["Makes 0.25 / s of the", "resource you set"], ["Any open cell, no", "node needed."], "5"],
       ["Armory", "Economy · tier 2", "Needs: Ore", ["Needs 0.30 / s at", "top speed (0.10", "steps / s)"], ["Units spawn stronger", "as battle goes on."], "8"]
     ];
     offers.forEach(function (o, i) {
@@ -709,13 +730,14 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     board(mg, 0, 0, 6, mine, false, true);
     T(s, 716, 462, "8 buildings placed · 5 in stash", "ts tm");
     btn(s, 716, 478, 208, 34, "Go to Build");
-    mark(s, 590, 18, 1); mark(s, 160, 80, 2); mark(s, px + pw - 14, 62, 3); mark(s, px + pw - 14, 180, 4); mark(s, 450, 332, 5); mark(s, 678, 332, 6); mark(s, 922, 332, 7); mark(s, 678, 466, 8); mark(s, 746, 18, 9);
+    mark(s, 590, 18, 1); mark(s, 160, 80, 2); mark(s, px + pw - 14, 62, 3); mark(s, px + pw - 14, 180, 4); mark(s, 450, 332, 5); mark(s, 678, 332, 6); mark(s, 922, 332, 7); mark(s, 678, 466, 8); mark(s, 746, 18, 9); mark(s, 316, 18, 10); mark(s, 600, 82, 11);
   })();
 
   // ================= 4. BUILD =================
   (function () {
     var s = document.getElementById("s-build"), S = 20, bx = 400, by = 70, bw = H * S, bh = W * S;
     topbar(s, "Round 4 · Shop + Build", "", "1 of 3 ready  ·  Lives 4 / 5", 1280, 720);
+    specchip(s, 250, 9, "Flowmancer", 130);
     btn(s, 536, 6, 100, 28, "Shop"); btn(s, 644, 6, 100, 28, "Build", true);
     T(s, bx + bw / 2, by - 8, "FRONT EDGE · enemy units enter here", "ts tm", "middle");
     R(s, 16, by, 368, bh, "plot"); T(s, 200, by + bh / 2, "co-op: another player’s plot", "ts tm", "middle"); T(s, 200, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
@@ -874,10 +896,45 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     mark(s, 258, 158, 1); mark(s, 470, 68, 2); mark(s, 306, 84 + 14, 3); mark(s, 306, 190 + 14, 4); mark(s, 306, 296 + 14, 5); mark(s, 258, 378, 6);
   })();
 
+  // ================= 5b. SPECIALIST PICK =================
+  (function () {
+    var s = document.getElementById("s-spec");
+    topbar(s, "New run · Pick a specialist", "", "Round 1 · Lives 5 / 5");
+    T(s, 24, 66, "CHOOSE ONE · DUPLICATES ARE ALLOWED · NO SKIP", "th");
+    var cs = [
+      ["Flowmancer", "Logistics", ["Collectors produce", "about 10% faster."], "Mana Well (1x1)", ["A weak collector for", "any open cell, no", "node. You pick the", "resource."], true],
+      ["Wardsmith", "Defense", ["Walls, gates, turrets", "get about 15% health."], "Rune Ward (1x1)", ["Enemies that hit a", "wall beside it take", "damage back."], false],
+      ["Beastbinder", "Units", ["Units from your", "producers get about", "10% more health."], "Familiar Roost (1x2)", ["Makes Familiars:", "fast, fragile melee", "units."], false],
+      ["Alchemist", "Industry", ["Refineries and ramp", "buildings work about", "15% faster."], "Transmuter (1x2)", ["Turns one base", "resource into another", "at a loss. You pick", "the output."], false]
+    ];
+    var who = [["You", "Ana"], [], [], ["Bo"]];
+    cs.forEach(function (c, i) {
+      var x = 24 + i * 232, y = 80, w = 216, h = 300;
+      R(s, x, y, w, h, "card" + (c[5] ? " pick" : ""));
+      T(s, x + 14, y + 30, c[0], "tb"); T(s, x + 14, y + 48, "Family: " + c[1], "ts tm");
+      el(s, "line", { x1: x + 14, y1: y + 60, x2: x + w - 14, y2: y + 60, class: "rule" });
+      T(s, x + 14, y + 80, "BONUS", "ts tm"); lines(s, x + 14, y + 98, c[2], "t", 15);
+      T(s, x + 14, y + 156, "SIGNATURE BUILDING", "ts tm"); T(s, x + 14, y + 174, c[3], "th");
+      R(s, x + 14, y + 184, 40, 40, "panel"); T(s, x + 34, y + 208, "art", "ts tm", "middle");
+      lines(s, x + 62, y + 198, c[4], "ts", 13);
+      var px = x + 14;
+      who[i].forEach(function (n, k) { R(s, px, y + 262, 44, 20, "box"); T(s, px + 22, y + 276, n, "ts", "middle"); px += 52; });
+    });
+    R(s, 24, 392, 600, 124, "panel"); T(s, 38, 412, "PARTY PICKS", "ts tm");
+    [["You", "Flowmancer", "not ready"], ["Ana", "Flowmancer", "ready · locked"], ["Bo", "Alchemist", "choosing"]].forEach(function (r, i) {
+      var y = 420 + i * 30;
+      R(s, 38, y, 572, 24, "box"); T(s, 50, y + 16, r[0], "th"); T(s, 150, y + 16, r[1], "t"); T(s, 596, y + 16, r[2], "ts tm", "end");
+    });
+    btn(s, 648, 404, 288, 44, "Ready", true); btn(s, 648, 458, 288, 36, "Unready (change the pick)");
+    T(s, 648, 508, "Ready locks your pick.", "ts tm"); T(s, 648, 522, "Nothing is given to a partner.", "ts tm");
+    mark(s, 222, 102, 1); mark(s, 222, 172, 2); mark(s, 222, 236, 3); mark(s, 222, 366, 4); mark(s, 600, 412, 5); mark(s, 922, 412, 6);
+  })();
+
   // ================= 6. CORE PLACEMENT =================
   (function () {
     var s = document.getElementById("s-core"), S = 18, bx = 40, by = 96, bw = H * S, bh = W * S, nbx = bx + bw;
     topbar(s, "New run · Place the Core", "", "", 1280, 720);
+    specchip(s, 250, 9, "Flowmancer", 130);
     // run bar: round, lives, the acting-player switcher (debug multi-seat), who is awaited, step, Menu
     T(s, 490, 25, "Round 1", "ts"); T(s, 552, 25, "Lives 5 / 5", "ts");
     T(s, 646, 25, "Playing as", "ts tm");

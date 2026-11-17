@@ -1,15 +1,15 @@
 # 01 — Run Structure
 
-Status: Draft v5.3
+Status: Draft v5.4
 
 ## Core loop
 
-Before the first round, the party's map is generated and revealed and each
-player places their own Core in their own plot; the Cores then stay put for
-the whole run (CB-3e, CB-7, CP-26).
+Before the first round, the party's map is generated and revealed, each
+player picks a specialist (RS-13), and each places their own Core in their
+own plot; the Cores then stay put for the whole run (CB-3e, CB-7, CP-26).
 
 ```
-Lobby -> Map + Core placement -> First build ->
+Lobby -> Map -> Specialist pick -> Core placement -> First build ->
   [ PvE battle -> Event -> Shop -> PvP battle -> Event -> Shop ] x N
 -> Defeat -> Run summary
 ```
@@ -247,7 +247,38 @@ the party's income to a trickle, so it falls behind the ghosts it meets. See
 
 - **RS-10 [DECIDED for now]** There is **no meta-progression**. Nothing
   carries over from one run to the next except records such as depth
-  reached. To be reconsidered once the game has been played.
+  reached. To be reconsidered once the game has been played. In particular
+  the four specialists (RS-13) are all open from the first run: nothing is
+  unlocked over time.
+
+## Specialist pick
+
+- **RS-13 [DECIDED]** **Every player picks one specialist** at the start of
+  the run, after the map is shown and before Core placement (issue #468).
+  The pick is from the whole roster (CB-51). A solo player picks one too. A
+  specialist gives its owner a small family bonus and a signature building
+  that only that specialist can buy (CB-51 to CB-51b).
+- **RS-13a [DECIDED]** **Duplicates are allowed**: all the players of a
+  party may pick the same specialist. **There is no skip**: a player who has
+  not picked cannot ready up, and the screen says why, as for a missing Core
+  (CP-26).
+- **RS-13b [DECIDED]** **Picks are visible to the party.** As soon as a
+  player picks, every player of the party sees it (the pick screen, the
+  party panel and the run bar show each player's specialist). Seeing a pick
+  gives no right to change it: only its owner can.
+- **RS-13c [DECIDED]** **Ready locks the pick** (CP-17a). A player who is
+  Ready is offered no choice and can pick again only after un-readying, which
+  they may do as long as at least one other player is not ready. The step
+  ends when every player has picked and is Ready; solo it ends when you are
+  Ready. From then on the pick is fixed for the whole run: there is no
+  respec, and no meta-progression (RS-10).
+- **RS-13d [PROPOSED]** The specialist is part of each player's team state
+  (CP-31, CB-32): it is saved with the run and carried in every snapshot
+  (MM-1e). The saved field is optional: a save or snapshot written before
+  specialists existed has none, stays readable, and plays as it always did
+  (see "Versions and saved formats" in `CONTRIBUTING.md`).
+- **RS-13e [PROPOSED]** The run summary (RS-9) names each player's
+  specialist next to the final team.
 
 ## Pace
 
@@ -255,6 +286,11 @@ the party's income to a trickle, so it falls behind the ghosts it meets. See
   every player is ready (CP-17). There are no session-length targets to
   hit; a run takes as long as the party wants to spend thinking.
 - **RS-12b [PROPOSED]** How each step ends:
+  - **Specialist pick** (start of run) — every player picks one specialist
+    (RS-13) and readies up. A player can change their pick until the step
+    ends: freely while they are not ready, and after un-readying otherwise
+    (Ready locks it, CP-17a). The step ends when every player has picked and
+    is ready. There is no vote. Then the Core placement step begins.
   - **Core placement** (start of run) — every player places their own Core
     in their own plot (CP-26) and readies up. A player can change their
     choice until the step ends: freely while they are not ready, and after

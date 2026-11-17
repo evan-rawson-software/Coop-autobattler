@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v5.3
+Status: Draft v5.4
 
 This file lists what is still waiting for a decision, and on what. Answered
 questions are kept below "Still open", under a "Decided" line, so the
@@ -28,6 +28,23 @@ answer. The decisions of November 2026 come from issue #392.
 - **Later refined resources (CB-5d, Q2).** Alloy, Surge, Essence and the
   Ore + Flux compound come after the first version; when, and which
   buildings use them, is not decided.
+
+- **Specialists: numbers and names (CB-51 to CB-57, issue #468).** The
+  bonuses (about 10% to 15%), the Mana Well rate (half an Extractor), the
+  Ward's return percent, the Familiar's stats, the Transmuter's 2:1 ratio and
+  the first round of each signature building (2) are [PROPOSED] and stay open
+  until the tuning issue #477. The names wait for the theme issue #393.
+- **Mana Well and the Flux trade-off (CB-52, CB-5i).** A Well can make Flux,
+  so a Flowmancer can run an Overclocker and an Aether refinery without
+  sharing the plot's one Flux node. The half rate is meant to bound it; to be
+  checked in the balance harness (#477).
+- **The Wardsmith's bonus and the Rune Ward (CB-51a, CB-53).** The Ward is
+  not boosted by its own specialist's bonus, and `turret` includes the
+  Mortar. Whether the Ward should count as a wall or a turret for the bonus
+  is decided from play.
+- **Specialist and a stronger pick.** One specialist may prove better than
+  the others at every depth; the answer is a balance matter (#477), not a
+  rule change. Duplicates stay allowed (RS-13a).
 
 ## Q1. Co-op model — decided (issue #124)
 

@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v5.6
+Status: Draft v5.7
 
 ## Direction
 
@@ -375,12 +375,12 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 | Kind | Role | In the game (`content/buildings.json`) | Not built yet |
 |------|------|----------|----------|
-| **Source** (collector) | Built on a resource node; produces that node's resource at a flow rate set by its tier | Extractor | — |
+| **Source** (collector) | Built on a resource node; produces that node's resource at a flow rate set by its tier | Extractor | Mana Well (1x1, any open cell, a weak collector; CB-52) |
 | **Route** | Splits, joins, or crosses conduits | Splitter (one in, three out); Merger (three in, one out); Crossover (two conduits pass at 90°) | Tunnel (two 1x1 ends, carries a conduit under buildings; CB-9g) |
-| **Refinery** | Turns one resource (common) or two (rare) into a refined resource | Composite Refinery (Ore + Power → Composite); Aether Refinery (Power + Flux → Aether) | One-input refineries such as a Smelter (Ore → Alloy), CB-5d |
+| **Refinery** | Turns one resource (common) or two (rare) into a refined resource | Composite Refinery (Ore + Power → Composite); Aether Refinery (Power + Flux → Aether) | One-input refineries such as a Smelter (Ore → Alloy), CB-5d; Transmuter (1x2, one base resource into another at a loss; CB-55) |
 | **Modifier** | Changes the flow passing through | — | Booster (more per tick); Buffer (stores, then releases a burst) |
-| **Unit producer** | Consumes resources → spawns units | Barracks (Soldier, cheap swarm); Range (Archer, ranged); Hangar (Drone, flying); Foundry (Ore + Power, Heavy, a bruiser); Golem forge (Composite, Golem, tanky front-liner); Spire (Aether, Caster, area damage) | Grand barracks (3x3, two soldiers at a time); Lancer hall (1x3, long-reach melee); CB-9f |
-| **Defense** | Blocks or kills enemy units | Walls (seven four-cell shapes, I, O, T, S, Z, L, J, and a one-cell wall that is not sold); Gate; Turret (needs Power to fire); Pylon (boss strongholds only, never in a shop, CB-29) | Mortar (2x2 turret, long range and splash, blind spot up close; CB-9f); Repair station |
+| **Unit producer** | Consumes resources → spawns units | Barracks (Soldier, cheap swarm); Range (Archer, ranged); Hangar (Drone, flying); Foundry (Ore + Power, Heavy, a bruiser); Golem forge (Composite, Golem, tanky front-liner); Spire (Aether, Caster, area damage) | Grand barracks (3x3, two soldiers at a time); Lancer hall (1x3, long-reach melee); CB-9f; Familiar Roost (1x2, fast fragile melee units; CB-54) |
+| **Defense** | Blocks or kills enemy units | Walls (seven four-cell shapes, I, O, T, S, Z, L, J, and a one-cell wall that is not sold); Gate; Turret (needs Power to fire); Pylon (boss strongholds only, never in a shop, CB-29) | Mortar (2x2 turret, long range and splash, blind spot up close; CB-9f); Rune Ward (1x1, hits back at attackers of the walls beside it; CB-53); Repair station |
 | **Economy** | Consumes resources → the factory gets stronger for the rest of this battle | Overclocker (Flux; collectors faster, up to a low cap, SC-12); Armory (Ore; later units spawn stronger) | Reactor (becomes a new source once fed enough) |
 | **Core** | One per player: that player's health. Fixed position (CB-3e). Needs no resources. | Core | — |
 
@@ -800,7 +800,9 @@ no building makes and only PvE waves field.
   help a partner, a player sends resources over a border link (CP-29,
   CP-30). (Owner decision 19 on issue #124. Implemented, issue #137; the
   caps are `maxSourceSpeedPercent` and `maxUnitStrengthPercent` in
-  `content/sim.json`.)
+  `content/sim.json`.) A specialist bonus is owner-scoped in the same way
+  (CP-31a, EC-8a); the Flowmancer's collector bonus counts toward the same
+  per-player collector cap (EC-8b, CB-51a).
   - **Exception**: a point of interest's buff applies to the **whole side**,
     every player of it (CB-8c, CB-8g).
 - **CB-25 [DECIDED]** **The board never expands.** It starts fairly large and
@@ -830,6 +832,175 @@ no building makes and only PvE waves field.
   must stay on nodes, buildings stay in their owner's plot, and a Core
   never moves (CB-3e). The map's terrain never changes during a run; only
   the Rich vein event adds resource nodes (RS-4i4).
+
+## Specialists
+
+Each player picks one specialist at the start of the run (RS-13). It gives
+its owner a small family bonus and a signature building that only that
+specialist can buy (issue #468). Everything here helps only the owner
+(PP-8, CP-31a), and nothing is given between players (CP-29). Names are
+working names (theme issue #393 renames them). All numbers are [PROPOSED]
+and set in content; the first values are placeholders and are tuned in issue
+#477.
+
+- **CB-51 [DECIDED roster / PROPOSED numbers]** **The roster** has four
+  specialists. The family names the kind of building or unit the bonus
+  touches.
+
+  | Specialist | Family | Family bonus (owner's own) | Signature building | What it does |
+  |---|---|---|---|---|
+  | Flowmancer | Logistics | Collectors produce about 10% faster | Mana Well (1x1) | A weak collector that works on any open cell, no node needed. The owner chooses which base resource it makes. |
+  | Wardsmith | Defense | Walls, gates and turrets get about 15% more health | Rune Ward (1x1) | Enemy units that hit a wall next to the Ward take damage back. |
+  | Beastbinder | Units | Units from the owner's producers get about 10% more health | Familiar Roost (1x2) | Produces Familiars: fast, fragile melee units. |
+  | Alchemist | Industry | Refineries and ramp buildings work about 15% faster | Transmuter (1x2) | Turns one base resource into another at a loss. The owner chooses the output. |
+
+  Every signature building has a footprint, a tier from 1 to 3 (CB-26c, CB-26d:
+  the same building with better numbers; footprint and inputs never change
+  with the tier), a first round and an input, and consumes resources (V-15):
+
+  | Building | Kind | Footprint | From round | Input |
+  |---|---|---|---|---|
+  | Mana Well | Source | 1x1 | 2 | none; it makes a resource |
+  | Rune Ward | Defense (type ward) | 1x1 | 2 | Power |
+  | Familiar Roost | Unit producer | 1x2 | 2 | Power |
+  | Transmuter | Refinery | 1x2 | 2 | one base resource, 2 per batch |
+
+  A signature building is offered only in its specialist's shop, from round
+  2, at tiers 1 to 3 (EC-3b); round 1 is the starting kit. Like every
+  building it is placed only in its owner's plot (CP-27, CP-28), is restored
+  after a battle (CB-11), and can be sold, stashed, moved and rotated by its
+  owner only (CB-26). Considered and left out: a specialist drawback, a
+  fifth specialist, unlocking specialists over time (out of scope of issue
+  #468).
+- **CB-51a [PROPOSED]** **Family bonuses are owner-scoped effects** (EC-8a).
+  Each reuses an existing effect kind where one fits and adds a new kind only
+  where none does:
+
+  | Specialist | Effect kind | Target | Percent |
+  |---|---|---|---|
+  | Flowmancer | `source_speed_percent` (new) | the owner's collectors, the Mana Well included | 10 |
+  | Wardsmith | `building_health_percent` (existing), three effects | `wall`, `gate`, `turret` | 15 each |
+  | Beastbinder | `unit_health_percent` (new) | units spawned by the owner's producers | 10 |
+  | Alchemist | `production_speed_percent` (new) | the owner's refineries and the ramp step of the owner's Overclockers and Armories | 15 |
+
+  - **Scope.** A specialist effect acts only on buildings and units the
+    owner owns (CB-15a: a unit's owner is the owner of the building that made
+    it). It never touches a partner's, a ghost's other players', a scheduled
+    PvE wave's or a neutral guard's. Shrine modifiers, which act on the whole
+    side, are added to it by EC-8a: summed, applied once.
+  - **Wardsmith.** `wall` matches every wall shape and the one-cell wall;
+    `turret` matches every turret, the Mortar included. The Rune Ward is a
+    defense of its own type and is not boosted. The health is raised at the
+    start of the battle, like any `building_health_percent` effect.
+  - **Beastbinder.** `unit_health_percent` raises a unit's health only. At
+    spawn the unit's health percent is the unit-strength total (CB-24a, run
+    modifiers and the point bonus of CB-8g) plus the sum of health effects,
+    **applied once** to the base health (integer, rounded down); its damage
+    uses the strength total only. It applies to every unit from the owner's
+    producers, the Familiar included. It is outside the Armory cap.
+  - **Flowmancer.** The bonus is added to the owner's ramp total of
+    `source_speed` and the sum is capped at `maxSourceSpeedPercent` (EC-8b),
+    so with an Overclocker the owner never exceeds +25%. It acts from the
+    first tick of a battle, before any ramp.
+  - **Rounding, integer intervals.** Production intervals are whole ticks
+    (CB-10a), so a speed bonus is lumpy, as with the speed modifiers of issue
+    #424. A bonus `P` turns an interval `T` into
+    `max(1, floor(T * 100 / (100 + P)))`: it rounds in favour of the owner,
+    never below 1 tick, and a short interval can gain more than the stated
+    percent. For the Flowmancer's 10 the Extractor's intervals 20, 14 and 10
+    (tiers 1 to 3) become 18, 12 and 9. A countdown already running is not
+    changed; only the next reset reads the new value. The exact order is in
+    the rules reference.
+- **CB-52 [PROPOSED]** **The Mana Well** (Flowmancer). A 1x1 collector
+  (kind Source, CB-9) that needs **no resource node**: it can stand on any
+  open cell of its owner's plot where a building fits, except a resource node
+  and except a cell a conduit uses. It consumes nothing; it makes the base
+  resource set on it (CB-56) at **half the rate of an Extractor of its tier**
+  (placeholder, tuned in #477): its interval is twice the Extractor's, so 40,
+  28 and 20 ticks at tiers 1 to 3 before bonuses. The Overclocker and the
+  Flowmancer's bonus speed it like any collector (CB-51a).
+  - **A stated exception to the rebalance principle** (SC-13a, issue #145):
+    a collector fully feeds exactly one consumer of its own tier. The Mana
+    Well is a **weaker collector**: it feeds only half of one, so a consumer
+    needs two Wells, joined by a Merger or two conduits (CB-10d: with one it
+    waits). This is the opposite of the Grand barracks exception (CB-10f).
+    What it buys the Flowmancer is freedom (any cell, any resource), not
+    supply, which stays limited by gold and space (CB-24).
+  - It can make Flux, so a Flowmancer is not tied to the plot's one Flux node
+    (CB-5i); the half rate bounds that, and the question is listed in
+    `07-open-questions.md`.
+- **CB-53 [PROPOSED]** **The Rune Ward** (Wardsmith). A 1x1 defense (type
+  `ward`, kind Defense, CB-9) with health, that needs Power (CB-10a:
+  a cost per charge and a shortest time between charges). It does
+  nothing alone.
+  - **When it acts.** When an enemy unit hits a **wall of the Ward's owner**
+    on one of the **eight cells around the Ward** (a wall cell, any shape;
+    gates and other buildings do not count), the Ward spends one charge and
+    returns damage to **the attacker**: a percent of the damage the wall
+    actually took (placeholder 50%), rounded down, at least 1. It returns
+    damage for melee, ranged and flying attackers alike. The returned damage
+    ignores armor, is dealt once, and is never itself returned or reflected.
+  - **Without a charge** it does nothing (CB-10d: it waits for resources,
+    never weaker). Each hit uses at most one Ward: if several Wards touch the
+    wall, the one with the lowest building order that has a charge acts.
+  - **Not boosted** by the Wardsmith's bonus (CB-51a). It has its own health
+    and can be attacked like any building.
+- **CB-54 [PROPOSED]** **The Familiar Roost and the Familiar** (Beastbinder).
+  The Roost is a 1x2 unit producer (CB-9, CB-13) that needs Power and makes
+  one Familiar per production, for a cost and shortest time of the same
+  order as a Barracks soldier (placeholder), so one collector of its tier
+  feeds one Roost: it follows the rebalance principle. The Familiar is a
+  **fast, fragile melee unit**: its health is a fraction of a Soldier's
+  (placeholder: about 40%), its reach and damage are of a Soldier's order,
+  and "fast" means **only a shorter move cooldown** (placeholder: about
+  two thirds of a Soldier's, rounded down by the integer rule of CB-51a).
+  It uses the **normal target rules** (CB-15b, CB-15c, CB-16): no special
+  targeting, it does not fly (CB-16c) and has no armor or area damage. It
+  is a unit of its owner like any other (CB-15a), so the Beastbinder's
+  health bonus applies to it. Numbers are set in `content/units.json`.
+- **CB-55 [PROPOSED]** **The Transmuter** (Alchemist). A 1x2 building of
+  kind Refinery (CB-9, CB-5f), so the Alchemist's bonus applies to it. It
+  turns **one base resource into another at a loss**: it takes **2 items of
+  the input resource and makes 1 item of the output resource** per batch
+  (placeholder 2:1; the shortest time between batches is a refinery's).
+  - The **output** is the resource set on the building (CB-56). The **input**
+    is whichever base resource the conduit that feeds it carries (CB-5b).
+    The input and the output must differ, and refined resources are never
+    accepted; the editor refuses a feed that breaks either rule and shows why.
+  - It is a **second stated exception** to SC-13a: refining pays a premium,
+    and this conversion pays a penalty. A collector feeding it makes half
+    as many items on the other side, so it never creates supply (V-15) and
+    cannot beat the rebalance principle. Its worth is turning a plot's
+    surplus into a resource the plot lacks.
+- **CB-56 [PROPOSED]** **The building resource setting.** The Mana Well and
+  the Transmuter each carry one **setting**: the base resource they output
+  (Ore, Power or Flux).
+  - It is a value **per building**, chosen by the owner when placing the
+    building and **changeable at any time between battles** with the other
+    free build actions (CB-27). It cannot be changed during a battle. A new
+    building starts with Ore.
+  - It is **stored in the team state** with the building, an optional field
+    that other buildings do not have (CB-32), so snapshots and saves carry it.
+  - It is **shown on the building**: its colour and the resource name on the
+    cell, the card and the inspector.
+  - A conduit carries one resource (CB-5b). When a setting changes, the
+    editor checks every conduit leaving the building again: one that no
+    longer matches what its far end accepts is marked as a problem in the
+    problems list and carries nothing, and it does not stop the player from
+    readying up. A Transmuter whose setting equals the resource arriving is
+    refused (CB-55).
+- **CB-57 [PROPOSED]** **What "ramp buildings work faster" means** (the
+  Alchemist). The Overclocker and the Armory raise their owner's bonus one
+  **step** every `stepIntervalTicks` (CB-3, the ramp). The Alchemist's
+  `production_speed_percent` shortens that interval for the owner's own
+  Overclockers and Armories by the rounding rule of CB-51a (for +15%: 40
+  ticks becomes 34, 42 becomes 36). The step size, each building's
+  `maxSteps` and the owner caps (`maxSourceSpeedPercent`,
+  `maxUnitStrengthPercent`) are **unchanged**: the ramp reaches its cap
+  sooner and never goes beyond it (SC-12, CB-24a). For a refinery
+  (and the Transmuter) it shortens the shortest time between batches the same
+  way. It changes nothing for other buildings. A running countdown is not
+  changed.
 
 ## Opponents
 
@@ -917,8 +1088,9 @@ no building makes and only PvE waves field.
 - **CB-32** A party is fully described by a serializable **team state**
   (CP-6): the map (terrain, nodes, features; nodes added by Rich vein, RS-4i4, are part of it), one Core
   position per player, every building with owner, tier, position and
-  orientation, every conduit with its owner (border links included), and run
-  modifiers that affect combat. This is exactly what a snapshot stores
+  orientation (and, for a Mana Well or a Transmuter, its resource setting,
+  CB-56), every conduit with its owner (border links included), each
+  player's specialist (CP-31), and run modifiers that affect combat. This is exactly what a snapshot stores
   (MM-1).
 - **CB-33 [DECIDED]** **Ties and the time limit.** A battle that is not
   decided by one side losing all of its Cores first is decided by this

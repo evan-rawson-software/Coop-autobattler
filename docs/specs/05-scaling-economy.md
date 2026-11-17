@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v5.4
+Status: Draft v5.5
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -172,6 +172,24 @@ first. Gold (next section) is never produced by the factory.
   | Grand barracks | 5 | 2 |
 
   Weights and prices are tuning numbers.
+- **EC-3b [PROPOSED]** **A signature building is offered only in its
+  specialist's shop** (CB-51, RS-13). It enters that player's own pool at a
+  normal weight, like any building of its kind, with the tier odds of EC-3
+  (tiers 1 to 3). No other player's shop, and no event pool (Blueprint,
+  Caravan), ever offers it; a Workshop may still raise one the player owns
+  (RS-4a). Like the four buildings of EC-3a it has a first round, through
+  `fromRound`:
+
+  | Signature building | Specialist | From round |
+  |---|---|---|
+  | Mana Well | Flowmancer | 2 |
+  | Rune Ward | Wardsmith | 2 |
+  | Familiar Roost | Beastbinder | 2 |
+  | Transmuter | Alchemist | 2 |
+
+  Round 1 is the starting kit and the first build; the family bonus works
+  from the first battle, the signature building from the round-2 shop.
+  Weights, tiers and prices are tuning numbers (issue #477).
 - **EC-4 [PROPOSED]** **Party-size economy**: every player earns full income
   at every party size. PvE threats scale by the same
   factor, so no discount curve is needed. Battle
@@ -208,3 +226,22 @@ first. Gold (next section) is never produced by the factory.
   pacts are never offered by it. Stacks are summed, not compounded (RS-4e).
   Gold modifiers are party-wide and act for every player. A modifier linked to
   a feature enters the content only once the feature has landed (RS-4m).
+- **EC-8a [PROPOSED]** **A specialist bonus is an owner-scoped effect.** It
+  uses the same effect machinery as a run modifier, with one difference of
+  scope: a Shrine modifier acts for the whole side (EC-8), a specialist
+  effect acts only for the buildings or units of the player who picked it
+  (CP-31a). **Stacking:** for one owner, one effect kind and one target, the
+  Shrine modifiers the party holds and the owner's specialist effect are
+  **summed and applied once**, never compounded (RS-4e), and the -50% floor
+  of EC-8 applies to that sum. Effect kinds (CB-51a): `building_health_percent`
+  and the new `unit_health_percent`, `source_speed_percent` and
+  `production_speed_percent`.
+- **EC-8b [PROPOSED]** **Specialist bonuses and the per-player caps.** The
+  Flowmancer's collector bonus is **inside the cap of SC-12 and CB-24a**:
+  for the owner, collector speed is `min(ramp total + specialist bonus,
+  maxSourceSpeedPercent)`, so the Flowmancer and an Overclocker never stack
+  past the +25% cap. The Beastbinder's health bonus is not an Armory effect
+  and is outside the Armory cap (`maxUnitStrengthPercent`), like a run
+  modifier. The Alchemist's bonus shortens ramp intervals only (CB-57), so
+  caps stay as they are. The Wardsmith's bonus raises building health, which
+  has no cap.
