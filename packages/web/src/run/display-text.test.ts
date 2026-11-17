@@ -57,6 +57,15 @@ describe('effectLine', () => {
     ).toBe('+10% raider and drone move speed');
   });
 
+  test('gold effects read as gold per shop and sell refund', () => {
+    expect(effectLine({ kind: 'shop_income_flat', amount: 1 })).toBe(
+      'Every player: +1 gold per shop',
+    );
+    expect(effectLine({ kind: 'sell_refund_percent', percent: 25 })).toBe(
+      'Every player: +25% sell refund',
+    );
+  });
+
   test('a negative percent reads with a real minus sign', () => {
     expect(effectLine({ kind: 'core_health_percent', percent: -15 })).toBe(
       'Your Core: −15% health',

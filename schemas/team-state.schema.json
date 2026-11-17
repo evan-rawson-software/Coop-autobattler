@@ -304,6 +304,24 @@
         },
         {
           "type": "object",
+          "required": ["kind", "amount"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "shop_income_flat" },
+            "amount": { "type": "integer", "minimum": 1, "maximum": 10 }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "percent"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "sell_refund_percent" },
+            "percent": { "type": "integer", "minimum": 1, "maximum": 90 }
+          }
+        },
+        {
+          "type": "object",
           "required": ["kind", "percent"],
           "additionalProperties": false,
           "properties": {

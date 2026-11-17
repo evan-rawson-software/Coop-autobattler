@@ -9,6 +9,7 @@
  * `validateGhostSnapshot` first. See docs/rules-reference.md, "Ghosts".
  */
 
+import type { ModifierEffect } from './modifiers.js';
 import { sortedIntEntries } from './collections.js';
 import { canonicalJson, sortedKeys } from './hash.js';
 import type { Content } from './content.js';
@@ -159,12 +160,23 @@ export function ghostMaxSerializedSize(
       }
     }
     if (Number.isFinite(cheapest)) {
+      // Worst case over what a run can hold: a Tithe at every event step
+      // (`2 * round - 1` of them), the best amount each.
+      let bestTithe = 0;
+      for (const m of ctx.events.modifiers) {
+        let a = 0;
+        for (const e of m.effects) {
+          if (e.kind === 'shop_income_flat') a += e.amount;
+        }
+        bestTithe = Math.max(bestTithe, a);
+      }
       const limit = ghostValueBound(
         round,
         partySize,
         content,
         ctx.economy,
         ctx.events,
+        bestTithe * (2 * round - 1),
       ).limit;
       items = Math.floor(limit / cheapest);
     }
@@ -391,6 +403,7 @@ export interface GhostValueBound {
  *   + bestPveWin * round                           best PvE reward in each round up to this one
  *   + bestPvpGold * (round - 1)                    best PvP reward in the rounds before
  *   + maxEventGold * (2 * round - 1)               every event a Windfall
+ *   + held Tithe amount * (2 * round - 1)          `shopIncomeHeld`: the `shop_income_flat` amounts held, paid at every shop (0 when none)
  *   + drill value                                  free collector raises (Drill), 0 without one
  *   + caravan value                                a free building or raise per Caravan step, 0 without one
  *   + kit                                          price of the starting kit
@@ -400,7 +413,10 @@ export interface GhostValueBound {
  * less than was paid, and a Workshop upgrade adds less building value
  * (`price(t+1) - price(t)`) than it costs (`floor(price(t+1) * percent / 100)`)
  * for every building and tier of the shipped content (a test checks this).
- * It rejects the impossible, not the strong.
+ * It rejects the impossible, not the strong. `shopIncomeHeld` is the sum of
+ * the `shop_income_flat` amounts the snapshot holds (Tithe, issue #425), each
+ * counted at every shop up to the round, so a snapshot without them has the
+ * same bound as before.
  */
 export function ghostValueBound(
   round: number,
@@ -408,6 +424,7 @@ export function ghostValueBound(
   content: Content,
   economy: EconomyConfig,
   events: EventsConfig,
+  shopIncomeHeld = 0,
 ): GhostValueBound {
   const shops = 2 * round - 1;
   const rewards = economy.rewards;
@@ -418,6 +435,7 @@ export function ghostValueBound(
       round +
     Math.max(rewards.pvpWin, rewards.pvpLoss) * (round - 1) +
     maxEventGold(events) * shops +
+    shopIncomeHeld * shops +
     drillValue(round, content, events) +
     caravanValue(round, content, economy, events);
   let kitPerPlayer = 0;
@@ -912,6 +930,19 @@ export function validateGhostSnapshot(
   return errors.length === 0 ? shape : { ok: false, errors: capErrors(errors) };
 }
 
+/** The sum of the `shop_income_flat` amounts in a held modifier list. */
+function heldShopIncome(
+  held: readonly { readonly effects: readonly ModifierEffect[] }[],
+): number {
+  let total = 0;
+  for (const m of held) {
+    for (const e of m.effects) {
+      if (e.kind === 'shop_income_flat') total += e.amount;
+    }
+  }
+  return total;
+}
+
 function plausibility(
   s: GhostSnapshot,
   ctx: GhostValidationContext,
@@ -924,6 +955,7 @@ function plausibility(
     ctx.content,
     ctx.economy,
     ctx.events,
+    heldShopIncome(s.team.modifiers ?? []),
   );
   const ownerLimit = bound.goldPerPlayer + bound.kitPerPlayer;
   const values = new Map<number, number>();

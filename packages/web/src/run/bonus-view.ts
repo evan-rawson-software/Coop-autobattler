@@ -5,6 +5,8 @@
  */
 import {
   clampModifierSum,
+  effectValue,
+  isGoldEffect,
   type ModifierEffect,
   type TeamModifier,
 } from '@game/core';
@@ -34,8 +36,12 @@ export interface BonusView {
   readonly held: readonly HeldModifier[];
 }
 
+function effectPercent(e: ModifierEffect): number {
+  return e.kind === 'shop_income_flat' ? 0 : e.percent;
+}
+
 function line(effect: ModifierEffect): BonusLine {
-  return { text: effectLine(effect), negative: effect.percent < 0 };
+  return { text: effectLine(effect), negative: effectValue(effect) < 0 };
 }
 
 /** What a sum is kept apart by: effect kind, target and unit set. */
@@ -64,18 +70,27 @@ export function totalEffects(
     for (const e of m.effects) {
       const key = totalKey(e);
       const prev = sums.get(key);
-      sums.set(
-        key,
-        prev === undefined ? e : { ...prev, percent: prev.percent + e.percent },
-      );
+      if (prev === undefined) sums.set(key, e);
+      else if (prev.kind === 'shop_income_flat' && e.kind === prev.kind) {
+        sums.set(key, { ...prev, amount: prev.amount + e.amount });
+      } else if (prev.kind !== 'shop_income_flat') {
+        sums.set(key, { ...prev, percent: prev.percent + effectPercent(e) });
+      }
     }
   }
   return [...sums.values()]
-    .map((e) => ({
-      ...e,
-      percent: clampModifierSum(e.percent, simConfig.minModifierSumPercent),
-    }))
-    .filter((e) => e.percent !== 0);
+    .map((e) =>
+      isGoldEffect(e)
+        ? e
+        : {
+            ...e,
+            percent: clampModifierSum(
+              e.percent,
+              simConfig.minModifierSumPercent,
+            ),
+          },
+    )
+    .filter((e) => effectValue(e) !== 0);
 }
 
 /** The modifiers grouped by id in the order first taken, with their counts. */

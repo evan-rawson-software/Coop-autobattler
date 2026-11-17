@@ -7,6 +7,7 @@
 import type { BuildingConfig, BuildingId } from './buildings.js';
 import type { EconomyConfig, TierOddsRow } from './economy.js';
 import { mulPct } from './int.js';
+import { sellRefundPercentFor } from './modifiers.js';
 import type { Rng } from './rng.js';
 import { addToStash, removeFromStash, type TeamState } from './team-state.js';
 import { pickWeightedIndex } from './weighted.js';
@@ -257,11 +258,16 @@ export function sellFromStash(
     id: args.id,
   });
   if (!removed.ok) return { ok: false, reason: 'not_in_stash' };
+  // Scrap dealer and the like (issue #425): the refund percent the team has.
+  const refundEconomy = {
+    sellRefundPercent: sellRefundPercentFor(team, economy.sellRefundPercent),
+  };
   return {
     ok: true,
     team: removed.state,
     shop: {
-      gold: shop.gold + sellValue(content, economy, entry.def, entry.tier),
+      gold:
+        shop.gold + sellValue(content, refundEconomy, entry.def, entry.tier),
       offers: shop.offers,
     },
   };

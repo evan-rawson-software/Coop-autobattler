@@ -86,6 +86,9 @@ export function signedPercent(percent: number): string {
 
 /** What one effect does, from its data. */
 export function effectLine(effect: ModifierEffect): string {
+  if (effect.kind === 'shop_income_flat') {
+    return `Every player: +${String(effect.amount)} gold per shop`;
+  }
   const pct = signedPercent(effect.percent);
   switch (effect.kind) {
     case 'building_health_percent':
@@ -106,6 +109,8 @@ export function effectLine(effect: ModifierEffect): string {
         : `${pct} ${unitNames(effect.units)} attack speed`;
     case 'turret_damage_percent':
       return `Turrets: ${pct} damage`;
+    case 'sell_refund_percent':
+      return `Every player: ${pct} sell refund`;
   }
 }
 

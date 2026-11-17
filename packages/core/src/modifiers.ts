@@ -36,6 +36,8 @@ export const MODIFIER_EFFECT_KINDS = [
   'unit_move_speed_percent',
   'unit_attack_speed_percent',
   'turret_damage_percent',
+  'shop_income_flat',
+  'sell_refund_percent',
 ] as const;
 export type ModifierEffectKind = (typeof MODIFIER_EFFECT_KINDS)[number];
 
@@ -62,7 +64,36 @@ export type ModifierEffect =
       /** As for `unit_strength_percent`: absent means every unit type. */
       readonly units?: readonly string[];
     }
-  | { readonly kind: 'turret_damage_percent'; readonly percent: number };
+  | { readonly kind: 'turret_damage_percent'; readonly percent: number }
+  /**
+   * Gold effects (issue #425), non-combat: the arena ignores them. Party-wide:
+   * every player gets them.
+   */
+  | {
+      readonly kind: 'shop_income_flat';
+      /** Whole gold per shop, 1 to `MAX_SHOP_INCOME_FLAT`. */
+      readonly amount: number;
+    }
+  | {
+      readonly kind: 'sell_refund_percent';
+      /** Added to the base sell refund percent, 1 to `MAX_SELL_REFUND_PERCENT_ADD`. */
+      readonly percent: number;
+    };
+
+/** The effect kinds the simulation ignores: they change gold only. */
+export function isGoldEffect(
+  e: ModifierEffect,
+): e is Extract<
+  ModifierEffect,
+  { kind: 'shop_income_flat' | 'sell_refund_percent' }
+> {
+  return e.kind === 'shop_income_flat' || e.kind === 'sell_refund_percent';
+}
+
+/** The signed number of an effect: its `percent`, or the `amount` of a flat one. */
+export function effectValue(e: ModifierEffect): number {
+  return e.kind === 'shop_income_flat' ? e.amount : e.percent;
+}
 
 /** A modifier as held by a team: ID and the effects it had when taken. */
 export interface TeamModifier {
@@ -102,6 +133,18 @@ export const MIN_MODIFIER_PERCENT = -90;
  */
 export const MAX_SPEED_MODIFIER_PERCENT = 100;
 
+/** Highest `amount` of a `shop_income_flat` effect (issue #425); lowest 1. */
+export const MAX_SHOP_INCOME_FLAT = 10;
+
+/** Highest `percent` of a `sell_refund_percent` effect (issue #425); lowest 1. */
+export const MAX_SELL_REFUND_PERCENT_ADD = 90;
+
+/**
+ * The most the sell refund percent can reach through modifiers, so that
+ * selling never refunds the full price (issue #425).
+ */
+export const SELL_REFUND_PERCENT_CAP = 90;
+
 /**
  * Parse one effect from untrusted data. Pushes readable errors and returns
  * undefined when it is not valid.
@@ -119,11 +162,28 @@ export function parseModifierEffect(
   const allowed =
     kind === 'building_health_percent'
       ? new Set(['kind', 'target', 'percent'])
-      : hasUnitsField(kind)
-        ? new Set(['kind', 'percent', 'units'])
-        : new Set(['kind', 'percent']);
+      : kind === 'shop_income_flat'
+        ? new Set(['kind', 'amount'])
+        : hasUnitsField(kind)
+          ? new Set(['kind', 'percent', 'units'])
+          : new Set(['kind', 'percent']);
   for (const key of sortedKeys(raw)) {
     if (!allowed.has(key)) errors.push(`${at}: unknown field "${key}".`);
+  }
+  if (kind === 'shop_income_flat') {
+    const amount = raw['amount'];
+    if (
+      typeof amount !== 'number' ||
+      !Number.isInteger(amount) ||
+      amount < 1 ||
+      amount > MAX_SHOP_INCOME_FLAT
+    ) {
+      errors.push(
+        `${at}: "amount" of ${kind} must be an integer from 1 to ${String(MAX_SHOP_INCOME_FLAT)}.`,
+      );
+      return undefined;
+    }
+    return { kind, amount };
   }
   const percent = raw['percent'];
   const percentOk =
@@ -132,7 +192,7 @@ export function parseModifierEffect(
     percent !== 0 &&
     percent >= MIN_MODIFIER_PERCENT &&
     percent <= MAX_MODIFIER_PERCENT;
-  if (!percentOk) {
+  if (!percentOk && kind !== 'sell_refund_percent') {
     errors.push(
       `${at}: "percent" must be an integer from ${String(MIN_MODIFIER_PERCENT)} to ${String(MAX_MODIFIER_PERCENT)}, not 0.`,
     );
@@ -187,6 +247,20 @@ export function parseModifierEffect(
     }
     if (!percentOk || !rangeOk || !unitsOk) return undefined;
     return units === undefined ? { kind, percent } : { kind, percent, units };
+  }
+  if (kind === 'sell_refund_percent') {
+    if (
+      typeof percent !== 'number' ||
+      !Number.isInteger(percent) ||
+      percent < 1 ||
+      percent > MAX_SELL_REFUND_PERCENT_ADD
+    ) {
+      errors.push(
+        `${at}: "percent" of ${kind} must be an integer from 1 to ${String(MAX_SELL_REFUND_PERCENT_ADD)}.`,
+      );
+      return undefined;
+    }
+    return { kind, percent };
   }
   if (kind === 'core_health_percent' || kind === 'turret_damage_percent') {
     return percentOk ? { kind, percent } : undefined;
@@ -274,7 +348,7 @@ export function modifierPercent(
   let total = 0;
   for (const m of team.modifiers ?? []) {
     for (const e of m.effects) {
-      if (e.kind !== kind) continue;
+      if (e.kind !== kind || e.kind === 'shop_income_flat') continue;
       if (
         e.kind === 'building_health_percent' &&
         target !== undefined &&
@@ -349,6 +423,52 @@ export function unitSpeedPercent(
     }
   }
   return total;
+}
+
+/**
+ * Gold a shop adds on top of `baseIncomePerShop`: the sum of the held
+ * `shop_income_flat` amounts (issue #425), checked like `modifierPercent`.
+ * Party-wide: every player gets it.
+ */
+export function shopIncomeBonus(team: HasModifiers): number {
+  let total = 0;
+  for (const m of team.modifiers ?? []) {
+    for (const e of m.effects) {
+      if (e.kind !== 'shop_income_flat') continue;
+      try {
+        total = addInt(total, e.amount);
+      } catch {
+        throw new RangeError(
+          `Modifier shop_income_flat: the amount sum must be an integer within the safe bound ${String(Number.MAX_SAFE_INTEGER)} (adding ${String(e.amount)} to ${String(total)}).`,
+        );
+      }
+    }
+  }
+  return total;
+}
+
+/**
+ * The sell refund percent a team gets: `base` (`sellRefundPercent`) plus the
+ * held `sell_refund_percent` effects, capped at `SELL_REFUND_PERCENT_CAP`
+ * (issue #425). With no such effect it is `base` itself; the cap never lowers
+ * the base.
+ */
+export function sellRefundPercentFor(team: HasModifiers, base: number): number {
+  let add = 0;
+  for (const m of team.modifiers ?? []) {
+    for (const e of m.effects) {
+      if (e.kind !== 'sell_refund_percent') continue;
+      try {
+        add = addInt(add, e.percent);
+      } catch {
+        throw new RangeError(
+          `Modifier sell_refund_percent: the percent sum must be an integer within the safe bound ${String(Number.MAX_SAFE_INTEGER)} (adding ${String(e.percent)} to ${String(add)}).`,
+        );
+      }
+    }
+  }
+  if (add === 0) return base;
+  return Math.max(base, Math.min(base + add, SELL_REFUND_PERCENT_CAP));
 }
 
 /** The ids of the modifiers a team holds, in the order taken. */

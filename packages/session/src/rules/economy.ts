@@ -27,6 +27,7 @@ import {
   type MapgenConfig,
   type PlayerShop,
   type ShopOffer,
+  shopIncomeBonus,
 } from '@game/core';
 import { createDeps } from './defaults.js';
 import {
@@ -151,6 +152,7 @@ export function economyHooks(
     },
 
     onShopEnter(state: RunState, rng: Rng): StatePatch {
+      const income = economy.baseIncomePerShop + shopIncomeBonus(state.team);
       return {
         perPlayer: state.perPlayer.map((p, i) => {
           const stream = rng.child(playerShopLabel(i));
@@ -165,7 +167,8 @@ export function economyHooks(
             p,
             content,
           );
-          return withShop(p, p.gold + economy.baseIncomePerShop, {
+          // Tithe (issue #425): the held shop income bonus, party-wide.
+          return withShop(p, p.gold + income, {
             offers,
             stream: stream.getState(),
           });

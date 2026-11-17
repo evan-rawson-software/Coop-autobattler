@@ -13,6 +13,7 @@ import {
   type BuildingDef,
   type Cell,
   type EventsConfig,
+  effectValue,
 } from '@game/core';
 import {
   BLUEPRINT_PROMPT,
@@ -212,8 +213,8 @@ export function eventCards(
       const id = typeof raw['pact'] === 'string' ? raw['pact'] : '';
       const def = config === undefined ? undefined : findModifier(config, id);
       const effects = def?.effects ?? [];
-      lines = effects.filter((e) => e.percent > 0).map(effectLine);
-      drawbacks = effects.filter((e) => e.percent < 0).map(effectLine);
+      lines = effects.filter((e) => effectValue(e) > 0).map(effectLine);
+      drawbacks = effects.filter((e) => effectValue(e) < 0).map(effectLine);
       if (lines.length === 0) lines = [modifierName(id)];
     } else if (type === 'workshop') {
       const tiers = num(raw['tiers'], 1);

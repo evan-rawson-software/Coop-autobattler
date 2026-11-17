@@ -20,6 +20,7 @@ import {
 } from './load-util.js';
 import {
   MODIFIER_ID,
+  effectValue,
   parseModifierEffect,
   type ModifierEffect,
 } from './modifiers.js';
@@ -333,10 +334,10 @@ export function loadEvents(
       }
       if (pact && Array.isArray(list) && effects.length === list.length) {
         // A pact has a benefit and a drawback, and is held once (RS-4i6).
-        if (!effects.some((e) => e.percent > 0)) {
+        if (!effects.some((e) => effectValue(e) > 0)) {
           errors.push(`${at}: a pact needs at least one positive effect.`);
         }
-        if (!effects.some((e) => e.percent < 0)) {
+        if (!effects.some((e) => effectValue(e) < 0)) {
           errors.push(`${at}: a pact needs at least one negative effect.`);
         }
         if (stackable === true) {

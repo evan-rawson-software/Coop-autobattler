@@ -1,8 +1,13 @@
 import { describe, expect, test } from 'vitest';
-import { loadEconomyOrThrow, type EconomyConfig } from '@game/core';
+import {
+  loadEconomyOrThrow,
+  Rng,
+  type EconomyConfig,
+  type TeamModifier,
+} from '@game/core';
 import economyJson from '../../../../content/economy.json';
 import { fixedBattle } from './defaults.js';
-import { createEconomyDeps, readShop } from './economy.js';
+import { createEconomyDeps, economyHooks, readShop } from './economy.js';
 import { applyIntent, createRun, replayRun } from './machine.js';
 import { allowedIntents } from './selectors.js';
 import {
@@ -406,5 +411,85 @@ describe('configuration', () => {
 
   test('the default deps are untouched by the economy', () => {
     expect(baseDeps.handlers).toEqual({});
+  });
+});
+
+const TITHE: TeamModifier = {
+  id: 'mod_tithe',
+  effects: [{ kind: 'shop_income_flat', amount: 1 }],
+};
+const SCRAP: TeamModifier = {
+  id: 'mod_scrap_dealer',
+  effects: [{ kind: 'sell_refund_percent', percent: 25 }],
+};
+
+function withMods(s: RunState, mods: readonly TeamModifier[]): RunState {
+  const team = { ...s.team } as { modifiers?: readonly TeamModifier[] };
+  delete team.modifiers;
+  return {
+    ...s,
+    team: (mods.length === 0
+      ? team
+      : { ...team, modifiers: mods }) as RunState['team'],
+  };
+}
+
+describe('gold modifiers (issue #425)', () => {
+  test('income with 0, 1 and 3 Tithes for 1 to 4 players: every player gets it', () => {
+    const hooks = economyHooks(content, economy);
+    const names = ['Ann', 'Bo', 'Cy', 'Di'];
+    for (let n = 1; n <= 4; n++) {
+      const deps = depsFor();
+      const s = start(deps, names.slice(0, n));
+      for (const tithes of [0, 1, 3]) {
+        const mods = Array.from({ length: tithes }, () => TITHE);
+        const state = withMods(s, mods);
+        const patch = hooks.onShopEnter(state, Rng.fromSeed(5));
+        const after = patch.perPlayer ?? [];
+        expect(after).toHaveLength(n);
+        after.forEach((p, i) => {
+          expect(p.gold).toBe(
+            (s.perPlayer[i]?.gold ?? 0) + economy.baseIncomePerShop + tithes,
+          );
+        });
+      }
+    }
+  });
+
+  test('a sell refund with and without Scrap dealer, and the cap at 90', () => {
+    const deps = depsFor();
+    const s = start(deps, ['Ann', 'Bo']);
+    const wall = s.team.stash.find(
+      (e) => e.owner === 1 && e.def.startsWith('bld_wall_'),
+    );
+    const id = wall?.id ?? -1;
+    const gold = (mods: readonly TeamModifier[]) =>
+      ok(withMods(s, mods), 1, { type: 'sell', id }, deps).state.perPlayer[1]
+        ?.gold;
+    // A tier 1 wall costs 8: 50% is 4, 75% is 6.
+    expect(gold([])).toBe(14);
+    expect(gold([SCRAP])).toBe(16);
+    // Only the seller is paid.
+    expect(
+      ok(withMods(s, [SCRAP]), 1, { type: 'sell', id }, deps).state.perPlayer[0]
+        ?.gold,
+    ).toBe(10);
+    // 50 + 25 + 25 would be 100: capped at 90, floor(8 * 90 / 100) = 7.
+    expect(gold([SCRAP, SCRAP])).toBe(17);
+    const big: TeamModifier = {
+      id: 'mod_x',
+      effects: [{ kind: 'sell_refund_percent', percent: 90 }],
+    };
+    expect(gold([big])).toBe(17);
+  });
+
+  test('a save and a replay reproduce gold exactly', () => {
+    const deps = depsFor();
+    const s0 = start(deps, ['Ann', 'Bo']);
+    // The gold modifiers are in the held list, so the state validates.
+    const held = withMods(s0, [TITHE, SCRAP]);
+    expect(validateRunState(JSON.parse(JSON.stringify(held)), deps)).toEqual(
+      expect.objectContaining({ ok: true }),
+    );
   });
 });

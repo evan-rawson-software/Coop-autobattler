@@ -6,6 +6,7 @@
  * read, so a teammate's offers can never show up here.
  */
 import {
+  sellRefundPercentFor,
   sellValue,
   type EconomyConfig,
   type SimConfig,
@@ -156,6 +157,12 @@ export function stashRows(team: TeamState, ctx: ShopContext): StashRow[] {
   const order = new Map(
     ctx.content.buildings.list().map((d, i) => [d.id, i] as const),
   );
+  const refundEconomy = {
+    sellRefundPercent: sellRefundPercentFor(
+      team,
+      ctx.economy.sellRefundPercent,
+    ),
+  };
   const groups = new Map<
     string,
     { def: string; tier: number; ids: number[] }
@@ -176,7 +183,7 @@ export function stashRows(team: TeamState, ctx: ShopContext): StashRow[] {
       name: buildingName(ctx.content, g.def),
       tier: g.tier,
       ids: g.ids.sort((a, b) => a - b),
-      refund: sellValue(ctx.content, ctx.economy, g.def, g.tier),
+      refund: sellValue(ctx.content, refundEconomy, g.def, g.tier),
     }));
 }
 
