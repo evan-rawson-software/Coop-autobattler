@@ -182,7 +182,10 @@ describe('stacking duration', () => {
     expect(r.pileUnitTicks / r.unitTicks).toBeLessThanOrEqual(0.099);
     expect(r.longestPile).toBeLessThanOrEqual(51);
     expect(r.longPiles).toBeLessThanOrEqual(0);
-    expect(r.maxInCell).toBeLessThanOrEqual(24);
+    // 26 in one cell (was 24) since units stop at the points of interest
+    // (CB-8f, #373): every other measure is within its limit; longest 21,
+    // 4.24 percent over 50, 0.114 over 90, 6.26 percent in piles.
+    expect(r.maxInCell).toBeLessThanOrEqual(26);
   }, 120_000);
 });
 
@@ -213,15 +216,22 @@ describe('stacking duration, tier 3 and mixed', () => {
     expect(a.longest).toBeLessThanOrEqual(34);
     expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.098);
     expect(a.over90 / a.unitTicks).toBeLessThanOrEqual(0.0053);
-    expect(a.pileUnitTicks / a.unitTicks).toBeLessThanOrEqual(0.13);
+    // With the points (CB-8f, #373) units wait at the capture radius of a
+    // point: tier 3 measures 28 longest, 9.73 percent over 50, 0.527 over
+    // 90, 13.16 percent in piles, longest pile 115, 2 long piles, 35 in a
+    // cell (the limits keep the values of #372 except where measured above).
+    expect(a.pileUnitTicks / a.unitTicks).toBeLessThanOrEqual(0.1317);
     expect(a.longestPile).toBeLessThanOrEqual(143);
     expect(a.longPiles).toBeLessThanOrEqual(4);
-    expect(a.maxInCell).toBeLessThanOrEqual(32);
+    expect(a.maxInCell).toBeLessThanOrEqual(35);
     expect(b.longest).toBeLessThanOrEqual(17);
     expect(b.over50 / b.unitTicks).toBeLessThanOrEqual(0.009);
     expect(b.over90 / b.unitTicks).toBeLessThanOrEqual(0.0002);
-    expect(b.pileUnitTicks / b.unitTicks).toBeLessThanOrEqual(0.0059);
-    expect(b.longestPile).toBeLessThanOrEqual(18);
+    // Tier 1 against tier 3 with the points (CB-8f, #373): longest 8, 0.47
+    // percent over 50, 0.003 over 90, 0.609 percent in piles, longest pile
+    // 23, 16 in a cell.
+    expect(b.pileUnitTicks / b.unitTicks).toBeLessThanOrEqual(0.0061);
+    expect(b.longestPile).toBeLessThanOrEqual(23);
     expect(b.longPiles).toBeLessThanOrEqual(0);
     expect(b.maxInCell).toBeLessThanOrEqual(20);
   }, 120_000);

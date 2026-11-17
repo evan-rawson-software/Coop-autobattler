@@ -182,7 +182,10 @@ export function makePveBattleKind(
       result: {
         ok: true,
         result: battle.result() as unknown as Json,
-        summary: { sides: summary.sides } as unknown as Json,
+        summary: {
+          sides: summary.sides,
+          ...(summary.points === undefined ? {} : { points: summary.points }),
+        } as unknown as Json,
         threatHash: hashJson(threat),
         zone: battle.zone as unknown as Json,
         stateHash: hashJson(battle.sim),

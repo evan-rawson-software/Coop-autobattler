@@ -501,6 +501,56 @@
       }
     },
     {
+      "title": "point_capture_started",
+      "description": "A side's units began capturing a point of interest (CB-8f): the point's progressSide became side with progress 0, because exactly one side had units in capture range, no guard of the point lived and the side did not hold it. Recorded in the capture step at the end of the tick, points in id order.",
+      "type": "object",
+      "required": ["tick", "type", "point", "side"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "point_capture_started"
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "point": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The id of the point of interest."
+        },
+        "side": {
+          "enum": [0, 1]
+        }
+      }
+    },
+    {
+      "title": "point_captured",
+      "description": "A side took a point of interest (CB-8f): its capture progress reached captureTicks. previous is the side that held the point before (-1 for nobody).",
+      "type": "object",
+      "required": ["tick", "type", "point", "side", "previous"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "point_captured"
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "point": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "side": {
+          "enum": [0, 1]
+        },
+        "previous": {
+          "enum": [-1, 0, 1]
+        }
+      }
+    },
+    {
       "title": "unit_died",
       "description": "A unit's health reached 0 or less and it was removed. A neutral guard's death (CB-8e) carries side 2; the death of a unit of a side has no side.",
       "type": "object",

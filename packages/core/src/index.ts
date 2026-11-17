@@ -420,6 +420,7 @@ export {
   type GuardPost,
   type GuardSetup,
   type GuardsSim,
+  type PointSim,
   startArenaBattle,
   stepArena,
   type TurretSim,
@@ -456,6 +457,7 @@ export {
   MAX_GUARD_GROWTH_PERCENT,
   MIN_GUARD_GROWTH_PERCENT,
   type GuardsConfig,
+  type CaptureConfig,
   type GuardUnit,
   MAX_POINT_BUFFS,
   POINT_BUFF_KINDS,
@@ -505,6 +507,8 @@ export {
   type StartBattleResult,
   sumOverkill,
   type TimelineSample,
+  type TimelinePoint,
+  type PointSummary,
   type TimelineSide,
 } from './battle.js';
 export { type EnemyPath, previewEnemyPaths } from './enemy-paths.js';

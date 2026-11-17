@@ -83,7 +83,12 @@ function scene(
   options: Parameters<typeof startArenaBattle>[5] = {},
 ): Scene {
   const s = startArenaBattle(a, b, GAP, content, simConfig, options);
-  placeGuards(s.sim, s.ctx, { leashCells: 3, posts: [POST], plans: [] });
+  placeGuards(s.sim, s.ctx, {
+    capture: content.points.capture,
+    leashCells: 3,
+    posts: [POST],
+    plans: [],
+  });
   return s;
 }
 
@@ -399,6 +404,7 @@ describe('placement at tick 0', () => {
       },
     );
     placeGuards(blocked.sim, blocked.ctx, {
+      capture: content.points.capture,
       leashCells: 3,
       posts: [POST],
       plans: [plan],
@@ -418,6 +424,7 @@ describe('placement at tick 0', () => {
       simConfig,
     );
     placeGuards(s.sim, s.ctx, {
+      capture: content.points.capture,
       leashCells: 3,
       posts: [POST],
       plans: [
@@ -629,6 +636,7 @@ describe('behaviour (CB-8e)', () => {
         simConfig,
       );
       placeGuards(s.sim, s.ctx, {
+        capture: content.points.capture,
         leashCells: 3,
         posts: [{ id: 0, x: 3, y: MID }],
         plans: [],
@@ -700,6 +708,7 @@ describe('behaviour (CB-8e)', () => {
   test('guards of two points never fight each other', () => {
     const s = scene();
     placeGuards(s.sim, s.ctx, {
+      capture: content.points.capture,
       leashCells: 3,
       posts: [
         { id: 0, x: 3, y: MID },

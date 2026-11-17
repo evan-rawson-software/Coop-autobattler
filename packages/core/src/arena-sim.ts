@@ -75,6 +75,7 @@ import {
   MAX_TICK_DAMAGE,
 } from './limits.js';
 import type { GuardPlan } from './guards.js';
+import type { CaptureConfig } from './points.js';
 import { maxHealthOf } from './max-health.js';
 import { modifierPercent, unitStrengthPercent } from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
@@ -257,6 +258,24 @@ export type ArenaEvent =
       readonly def: UnitId;
       readonly px: number;
       readonly py: number;
+    }
+  | {
+      /**
+       * A side's units began capturing a point of interest (CB-8f): its
+       * `progressSide` became `side` with progress 0 (capture step).
+       */
+      readonly tick: number;
+      readonly type: 'point_capture_started';
+      readonly point: number;
+      readonly side: number;
+    }
+  | {
+      /** A side took a point (CB-8f); `previous` is its controller before (-1 none). */
+      readonly tick: number;
+      readonly type: 'point_captured';
+      readonly point: number;
+      readonly side: number;
+      readonly previous: number;
     }
   | {
       readonly tick: number;
@@ -590,6 +609,26 @@ export interface ArenaSim {
    * points of interest): the posts of the neutral guards (CB-8e).
    */
   guards?: GuardsSim;
+  /**
+   * Present only when `placeGuards` was called (battles whose zone has
+   * points of interest): the capture state of each point, sorted by `id`
+   * (CB-8f).
+   */
+  points?: PointSim[];
+}
+
+/** The capture state of one point of interest (CB-8f). */
+export interface PointSim {
+  /** The point's `id`. */
+  readonly id: number;
+  /** The side that holds the point: 0 or 1, -1 for nobody (the start). */
+  controller: number;
+  /** The side whose capture progress `progress` is: 0, 1 or -1 for nobody. */
+  progressSide: number;
+  /** Capture progress of `progressSide`, from 0 up to below `captureTicks`. */
+  progress: number;
+  /** Ticks each side has held the point (counted at the end of each tick). */
+  held: [number, number];
 }
 
 /** A point of interest as the arena sees it: its arena cell (CB-8e). */
@@ -605,6 +644,8 @@ export interface GuardPost {
 export interface GuardsSim {
   /** A guard farther than this many cells from its post walks back. */
   readonly leashCells: number;
+  /** The capture numbers of the points (CB-8f), stored so a restored state needs nothing else. */
+  readonly capture: CaptureConfig;
   /** The posts, sorted by `id`. */
   readonly posts: readonly GuardPost[];
   /**
@@ -2301,6 +2342,8 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
 /** What `placeGuards` needs: the posts, the leash and the guards to place. */
 export interface GuardSetup {
   readonly leashCells: number;
+  /** How units divert to the points and capture them (`content.points.capture`). */
+  readonly capture: CaptureConfig;
   /** The points of interest as arena cells, sorted by `id`. */
   readonly posts: readonly GuardPost[];
   /** The guards of each point, in point `id` order (`planGuards`). */
@@ -2342,10 +2385,19 @@ export function placeGuards(
 ): void {
   sim.guards = {
     leashCells: setup.leashCells,
+    capture: { ...setup.capture },
     posts: setup.posts.map((p) => ({ id: p.id, x: p.x, y: p.y })),
     killed: [0, 0],
     lostToGuards: [0, 0],
   };
+  // Every point starts uncontrolled with no progress (CB-8f).
+  sim.points = setup.posts.map((p) => ({
+    id: p.id,
+    controller: -1,
+    progressSide: -1,
+    progress: 0,
+    held: [0, 0],
+  }));
   if (setup.plans.length === 0) return;
   const { width, boardHeight, gapRows } = ctx.arena.geom;
   buildUnitGrid(sim, ctx);
@@ -3105,6 +3157,95 @@ function moveToCore(
 }
 
 /**
+ * The index (in `sim.points`) of the point unit `u` of side 0 or 1 diverts to
+ * (CB-8f), or -1: the nearest by squared centre distance (ties by the lowest
+ * `id`) of the points whose controller is not the unit's side and whose cell
+ * centre is within `pointAggroRangeCells` of the unit's centre, seen with the
+ * cell-level line of sight of rule a2 (a flyer sees past solid cells).
+ */
+function divertPoint(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  u: UnitSim,
+  def: UnitDef,
+): number {
+  const points = sim.points;
+  const posts = sim.guards?.posts;
+  if (points === undefined || posts === undefined || sim.guards === undefined) {
+    return -1;
+  }
+  const range = sim.guards.capture.pointAggroRangeCells * S;
+  const range2 = range * range;
+  let best = -1;
+  let bestD = 0;
+  for (let k = 0; k < points.length; k++) {
+    const p = points[k];
+    const post = posts[k];
+    if (p === undefined || post === undefined || p.controller === u.side) {
+      continue;
+    }
+    const cx = post.x * S + S / 2;
+    const cy = post.y * S + S / 2;
+    const dx = cx - u.px;
+    const dy = cy - u.py;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > range2 || (best >= 0 && d2 >= bestD)) continue;
+    if (!def.flying && !lineClear(ctx, u.side, u.px, u.py, cx, cy)) continue;
+    best = k;
+    bestD = d2;
+  }
+  return best;
+}
+
+/**
+ * The move of a unit diverted to the point with index `k` (CB-8f): within
+ * `captureRadiusCells` of the point's centre it waits (no move); otherwise a
+ * ground unit takes one step of the point's movement field from its cell (or
+ * heads straight for the centre when that cell has no route), a flyer heads
+ * straight for it.
+ */
+function moveToPoint(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  i: number,
+  u: UnitSim,
+  def: UnitDef,
+  k: number,
+): void {
+  const post = sim.guards?.posts[k];
+  const rules = sim.guards?.capture;
+  if (post === undefined || rules === undefined) return;
+  const cx = post.x * S + S / 2;
+  const cy = post.y * S + S / 2;
+  const hx = cx - u.px;
+  const hy = cy - u.py;
+  const stop = rules.captureRadiusCells * S;
+  if (hx * hx + hy * hy <= stop * stop) return;
+  if (!def.flying) {
+    const { width, height } = ctx.arena.geom;
+    const cell =
+      ownCellCoord(u.side, u.py, height) * width +
+      ownCellCoord(u.side, u.px, width);
+    const field = postFieldFor(ctx, post);
+    if ((field.dist[cell] ?? -1) > 0) {
+      const next = fieldStep(ctx.arena, u.side, field, cell);
+      if (next >= 0) {
+        moveAlong(
+          sim,
+          ctx,
+          i,
+          u,
+          ((next % width) - (cell % width)) * S,
+          (divFloor(next, width) - divFloor(cell, width)) * S,
+        );
+        return;
+      }
+    }
+  }
+  moveAlong(sim, ctx, i, u, hx, hy);
+}
+
+/**
  * Decision pass 3 (rule c and the chase of rule a2): where the units that
  * neither attack nor wait move to.
  */
@@ -3136,6 +3277,15 @@ function decideMove(
   if (u.side === 2) {
     guardWalkHome(sim, ctx, i, u);
     return;
+  }
+
+  // A unit passing near a point its side does not hold diverts to it (CB-8f).
+  if (sim.points !== undefined) {
+    const k = divertPoint(sim, ctx, u, def);
+    if (k >= 0) {
+      moveToPoint(sim, ctx, i, u, def, k);
+      return;
+    }
   }
 
   // c. Move. A flying unit ignores the fields: it flies straight at its
@@ -3358,6 +3508,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   // 6. Deaths and destruction.
   removeDeadUnits(sim, ctx, units, tick);
   destroyFallenBuildings(sim, ctx, tick);
+  stepPoints(sim, ctx, tick);
 
   // 7. Cooldowns, then the tick counter.
   tickCooldowns(sim);
@@ -3921,6 +4072,95 @@ function destroyFallenBuildings(
         target: u.target,
       });
     }
+  }
+}
+
+/**
+ * Step 6, after the deaths and the destruction (CB-8f): the capture progress
+ * of every point, in `id` order, from the units that are alive now.
+ *
+ * 1. A point with a living guard changes nothing.
+ * 2. Count the units of side 0 and of side 1 whose centre is within
+ *    `captureRadiusCells` of the point's centre (flyers too).
+ * 3. Both counts above 0 (contested): nothing changes.
+ * 4. Exactly one side `s` in range and `s` is not the controller: if
+ *    `progressSide` is not `s`, it becomes `s` with progress 0
+ *    (`point_capture_started`); then `progress += min(count,
+ *    maxCapturersCounted)`; at `captureTicks` `s` takes the point
+ *    (`point_captured`), progress 0 and `progressSide` -1.
+ * 5. Nobody in range: progress falls by 1 to 0, `progressSide` -1 at 0.
+ *
+ * Last, every point with a controller adds a tick to that side's `held`.
+ */
+function stepPoints(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
+  const points = sim.points;
+  const guards = sim.guards;
+  if (points === undefined || guards === undefined || points.length === 0) {
+    return;
+  }
+  const rules = guards.capture;
+  const radius = rules.captureRadiusCells * S;
+  const radius2 = radius * radius;
+  const n = points.length;
+  const near = new Array<number>(2 * n).fill(0);
+  const guarded = new Array<number>(n).fill(0);
+  for (const u of sim.units) {
+    if (u.side === 2) {
+      const k = points.findIndex((p) => p.id === u.post);
+      if (k >= 0) guarded[k] = 1;
+      continue;
+    }
+    for (let k = 0; k < n; k++) {
+      const post = guards.posts[k];
+      if (post === undefined) continue;
+      const dx = post.x * S + S / 2 - u.px;
+      const dy = post.y * S + S / 2 - u.py;
+      if (dx * dx + dy * dy <= radius2) {
+        const at = 2 * k + u.side;
+        near[at] = (near[at] ?? 0) + 1;
+      }
+    }
+  }
+  for (let k = 0; k < n; k++) {
+    const p = points[k];
+    if (p === undefined) continue;
+    if (guarded[k] !== 1) {
+      const c0 = near[2 * k] ?? 0;
+      const c1 = near[2 * k + 1] ?? 0;
+      if (c0 === 0 && c1 === 0) {
+        if (p.progress > 0) p.progress -= 1;
+        if (p.progress === 0) p.progressSide = -1;
+      } else if ((c0 === 0) !== (c1 === 0)) {
+        const s = c0 > 0 ? 0 : 1;
+        if (s !== p.controller) {
+          if (p.progressSide !== s) {
+            p.progressSide = s;
+            p.progress = 0;
+            ctx.events?.push({
+              tick,
+              type: 'point_capture_started',
+              point: p.id,
+              side: s,
+            });
+          }
+          p.progress += Math.min(c0 + c1, rules.maxCapturersCounted);
+          if (p.progress >= rules.captureTicks) {
+            const previous = p.controller;
+            p.controller = s;
+            p.progress = 0;
+            p.progressSide = -1;
+            ctx.events?.push({
+              tick,
+              type: 'point_captured',
+              point: p.id,
+              side: s,
+              previous,
+            });
+          }
+        }
+      }
+    }
+    if (p.controller === 0 || p.controller === 1) p.held[p.controller] += 1;
   }
 }
 

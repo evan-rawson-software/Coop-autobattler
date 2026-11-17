@@ -8,7 +8,8 @@
  * scenario can bring waves of units or turrets that need no supply. Optional `modifiersA` and `modifiersB` give a side's run
  * modifiers, a list of `{ id, effects }` as held in a team state
  * (`TeamState.modifiers`). Result on success: `{ ok: true, result,
- * summary, zone, stateHash, events }` where `summary` has no timeline,
+ * summary, zone, stateHash, events }` where `summary` has no timeline (it has `points`, the final controller and
+ * `pointHeldTicks` of each point, when the zone has points),
  * `stateHash` is the hash of the final `ArenaSim` and `events` the number of
  * events; the event log is the vector's event log. On a refused battle:
  * `{ ok: false, error: { code, message } }`.
@@ -226,7 +227,10 @@ export function makeBattleKind(
       result: {
         ok: true,
         result: battle.result() as unknown as Json,
-        summary: { sides: summary.sides } as unknown as Json,
+        summary: {
+          sides: summary.sides,
+          ...(summary.points === undefined ? {} : { points: summary.points }),
+        } as unknown as Json,
         zone: battle.zone as unknown as Json,
         stateHash: hashJson(battle.sim),
         events: battle.eventLog.length,
