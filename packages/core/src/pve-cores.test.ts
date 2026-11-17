@@ -173,7 +173,7 @@ describe('PvE battles against several Cores', () => {
   test('a wave unit heads for the Core of the plot it enters', () => {
     const t = profile('arch_rusher', 'hard', 4, 12);
     const s = startPveBattle(
-      { team: denseParty(), threat: t, seed: 3 },
+      { round: t.round, team: denseParty(), threat: t, seed: 3 },
       content,
       config,
     );
@@ -198,7 +198,7 @@ describe('PvE battles against several Cores', () => {
   test('the party wins only after every stronghold Core is destroyed', () => {
     const t = profile('arch_rusher', 'easy', 4, 1);
     const r = simulatePveBattle(
-      { team: denseParty(), threat: t, seed: 3 },
+      { round: t.round, team: denseParty(), threat: t, seed: 3 },
       content,
       config,
     );

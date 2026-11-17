@@ -30,6 +30,7 @@ describe('several Cores per side', () => {
     const d: BattleDescription = {
       kind: 'versus',
       input: {
+        round: 1,
         teamA: cores(3, 2),
         teamB: cores(4, 2),
         seed: 3,
@@ -86,6 +87,7 @@ describe('several Cores per side', () => {
     const d: BattleDescription = {
       kind: 'versus',
       input: {
+        round: 1,
         teamA: cores(3, 4),
         teamB: cores(5, 4),
         seed: 5,
@@ -112,7 +114,7 @@ describe('several Cores per side', () => {
     const bad = simulateRecord(
       {
         kind: 'versus',
-        input: { teamA: partial, teamB: cores(5, 4), seed: 5 },
+        input: { round: 1, teamA: partial, teamB: cores(5, 4), seed: 5 },
       },
       content,
       battleConfig,
@@ -125,6 +127,7 @@ describe('several Cores per side', () => {
     const d: BattleDescription = {
       kind: 'versus',
       input: {
+        round: 1,
         teamA: cores(3, 3),
         teamB: cores(4, 3),
         seed: 7,

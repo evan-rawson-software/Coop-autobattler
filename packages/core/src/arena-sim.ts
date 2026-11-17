@@ -23,6 +23,7 @@ import {
   goalBuildings,
   goalRefs,
   standingPylons,
+  computeCellField,
   fieldStep,
   openFor,
   tieKey,
@@ -73,6 +74,7 @@ import {
   MAX_HIT,
   MAX_TICK_DAMAGE,
 } from './limits.js';
+import type { GuardPlan } from './guards.js';
 import { maxHealthOf } from './max-health.js';
 import { modifierPercent, unitStrengthPercent } from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
@@ -242,7 +244,27 @@ export type ArenaEvent =
       readonly unit: number;
       readonly damage: number;
     }
-  | { readonly tick: number; readonly type: 'unit_died'; readonly unit: number }
+  | {
+      readonly tick: number;
+      /**
+       * A neutral guard (CB-8e) was placed at its point at tick 0, before the
+       * first tick, in point `id` order. Its centre is in sub-cell units.
+       */
+      readonly type: 'guard_spawned';
+      readonly unit: number;
+      /** The `id` of the point it guards. */
+      readonly point: number;
+      readonly def: UnitId;
+      readonly px: number;
+      readonly py: number;
+    }
+  | {
+      readonly tick: number;
+      readonly type: 'unit_died';
+      readonly unit: number;
+      /** Only for a neutral guard (CB-8e): 2. Absent for a unit of a side. */
+      readonly side?: 2;
+    }
   | {
       readonly tick: number;
       readonly type: 'building_destroyed';
@@ -305,6 +327,7 @@ export type ArenaEvent =
 
 export interface UnitSim {
   readonly id: number;
+  /** 0 or 1, or 2 for a neutral guard (CB-8e). */
   readonly side: number;
   readonly def: UnitId;
   /** The centre of the unit's circle, arena sub-cell units (`CELL_UNITS` per cell). */
@@ -321,6 +344,11 @@ export interface UnitSim {
    * Changes only when that Core is destroyed (PP-11).
    */
   target: number;
+  /**
+   * Only for a neutral guard (CB-8e, `side` 2, `owner` and `target` -1): the
+   * `id` of the point it guards. No other unit has it.
+   */
+  readonly post?: number;
 }
 
 /** A player's Core in the `health` list (PP-9). */
@@ -557,6 +585,41 @@ export interface ArenaSim {
   readonly buildingDamageDealt: [number, number];
   /** Present only when a side was given options (PvE); absent otherwise. */
   readonly sideOptions?: [SideOptions, SideOptions];
+  /**
+   * Present only when `placeGuards` was called (battles whose zone has
+   * points of interest): the posts of the neutral guards (CB-8e).
+   */
+  guards?: GuardsSim;
+}
+
+/** A point of interest as the arena sees it: its arena cell (CB-8e). */
+export interface GuardPost {
+  /** The point's `id`. */
+  readonly id: number;
+  /** Arena cell: the zone's `x`, and `boardHeight + y` for its `y`. */
+  readonly x: number;
+  readonly y: number;
+}
+
+/** The neutral guards' part of the state (CB-8e). */
+export interface GuardsSim {
+  /** A guard farther than this many cells from its post walks back. */
+  readonly leashCells: number;
+  /** The posts, sorted by `id`. */
+  readonly posts: readonly GuardPost[];
+  /**
+   * Guards killed, by the side whose units dealt the most damage to the guard
+   * in the tick it died; equal damage counts for both. Not part of
+   * `spawned` or `unitsDied`.
+   */
+  readonly killed: [number, number];
+  /**
+   * Units of each side that died, counted in `unitsDied`, mainly to guards:
+   * the guards dealt more of the damage of their last tick than the other
+   * side's units. They are not kills of the other side (`unitsKilled`, the
+   * kills rung of the tiebreak).
+   */
+  readonly lostToGuards: [number, number];
 }
 
 export interface ArenaOptions {
@@ -695,6 +758,12 @@ export interface ArenaContext {
   fields: (Field | undefined)[][];
   breach: (Float64Array | undefined)[][];
   /**
+   * The movement field to each point of interest's cell (CB-8e), by point
+   * `id`, built on first use (the guards walk back along it) and dropped with
+   * the other fields when a building is destroyed. Part 4 shares it.
+   */
+  readonly postFields: Map<number, Field>;
+  /**
    * Cached `spawnCells` per (producer `ref`, target Core), key
    * `ref * SPAWN_KEY + core + 1` (`core` may be -1: no target); dropped with
    * the fields.
@@ -723,9 +792,9 @@ export interface ArenaContext {
    */
   readonly present: Int32Array[];
   presenceOn: boolean;
-  /** Per side: the indices of its units (ascending), and how many. */
+  /** Per side (2 = neutral guards): the indices of its units (ascending), and how many. */
   readonly bySide: Int32Array[];
-  readonly sideCount: [number, number];
+  readonly sideCount: [number, number, number];
   /** Scratch list of nearby units (x, y, radius triples) for spawn checks. */
   near: Int32Array;
   /** The part of `near` that can overlap one spawn cell. */
@@ -745,6 +814,13 @@ export interface ArenaContext {
    * past 2^31).
    */
   unitDamage: Float64Array;
+  /**
+   * Per unit index `j`, only for hits that involve a neutral guard (a guard
+   * is the target or the attacker): the damage of this tick that side 0
+   * (`3 * j`), side 1 (`3 * j + 1`) and the guards (`3 * j + 2`) dealt to it,
+   * summed like `unitDamage`. Decides whose kill a death counts as (CB-8e).
+   */
+  hitBy: Float64Array;
   buildingDamage: Float64Array;
   /** The part of `buildingDamage` that comes from unit attacks (no decay). */
   attackDamage: Float64Array;
@@ -951,7 +1027,11 @@ export function createArenaContext(
     air: {
       width: arena.geom.width,
       height: arena.geom.height,
-      solid: [new Uint8Array(cells), new Uint8Array(cells)] as const,
+      solid: [
+        new Uint8Array(cells),
+        new Uint8Array(cells),
+        new Uint8Array(cells),
+      ],
     },
     maxRadius: Math.max(
       1,
@@ -960,8 +1040,13 @@ export function createArenaContext(
     maxBody: Math.max(1, ...content.units.list().map((d) => d.radius)),
     fields: [[], []] as (Field | undefined)[][],
     breach: [[], []] as (Float64Array | undefined)[][],
+    postFields: new Map<number, Field>(),
     spawnCells: new Map<number, Int32Array>(),
-    heads: [new Int32Array(cells), new Int32Array(cells)],
+    heads: [
+      new Int32Array(cells),
+      new Int32Array(cells),
+      new Int32Array(cells),
+    ],
     next: new Int32Array(0),
     crad: new Int32Array(0),
     brad: new Int32Array(0),
@@ -971,16 +1056,18 @@ export function createArenaContext(
     present: [
       new Int32Array((arena.geom.width + 1) * (arena.geom.height + 1)),
       new Int32Array((arena.geom.width + 1) * (arena.geom.height + 1)),
+      new Int32Array((arena.geom.width + 1) * (arena.geom.height + 1)),
     ],
     presenceOn: false,
-    bySide: [new Int32Array(0), new Int32Array(0)],
-    sideCount: [0, 0] as [number, number],
+    bySide: [new Int32Array(0), new Int32Array(0), new Int32Array(0)],
+    sideCount: [0, 0, 0] as [number, number, number],
     near: new Int32Array(192),
     nearCell: new Int32Array(192),
     action: new Uint8Array(0),
     arg: new Int32Array(0),
     holds: new Uint8Array(0),
     unitDamage: new Float64Array(0),
+    hitBy: new Float64Array(0),
     buildingDamage: new Float64Array(arena.buildings.length),
     attackDamage: new Float64Array(arena.buildings.length),
   };
@@ -1451,6 +1538,7 @@ function ensureUnitCapacity(ctx: ArenaContext, n: number): void {
   ctx.next = g32(ctx.next);
   ctx.bySide[0] = g32(ctx.bySide[0] ?? new Int32Array(0));
   ctx.bySide[1] = g32(ctx.bySide[1] ?? new Int32Array(0));
+  ctx.bySide[2] = g32(ctx.bySide[2] ?? new Int32Array(0));
   ctx.crad = g32(ctx.crad);
   ctx.brad = g32(ctx.brad);
   ctx.arg = g32(ctx.arg);
@@ -1466,6 +1554,9 @@ function ensureUnitCapacity(ctx: ArenaContext, n: number): void {
   const damage = new Float64Array(size);
   damage.set(ctx.unitDamage);
   ctx.unitDamage = damage;
+  const hitBy = new Float64Array(3 * size);
+  hitBy.set(ctx.hitBy);
+  ctx.hitBy = hitBy;
   ctx.motion.ensure(size);
 }
 
@@ -1486,9 +1577,10 @@ function linkUnit(
   ctx.brad[i] = def.radius;
   ctx.fly[i] = def.flying ? 1 : 0;
   const list = ctx.bySide[u.side];
+  const slot = u.side === 0 ? 0 : u.side === 1 ? 1 : 2;
   if (list !== undefined) {
-    list[ctx.sideCount[u.side === 0 ? 0 : 1]] = i;
-    ctx.sideCount[u.side === 0 ? 0 : 1] += 1;
+    list[ctx.sideCount[slot]] = i;
+    ctx.sideCount[slot] += 1;
   }
 }
 
@@ -1497,8 +1589,10 @@ function buildUnitGrid(sim: ArenaSim, ctx: ArenaContext): void {
   ensureUnitCapacity(ctx, sim.units.length + 16);
   ctx.heads[0]?.fill(-1);
   ctx.heads[1]?.fill(-1);
+  ctx.heads[2]?.fill(-1);
   ctx.sideCount[0] = 0;
   ctx.sideCount[1] = 0;
+  ctx.sideCount[2] = 0;
   sim.units.forEach((u, i) => {
     linkUnit(ctx, i, u, defOf(ctx, u));
   });
@@ -1586,7 +1680,7 @@ function firstFreeIn(
   const r = def.collisionRadius;
   const m = S / 2 - r;
   const half = Math.floor(r / 2);
-  const sign = side === 0 ? 1 : -1;
+  const sign = side === 1 ? -1 : 1; // the neutral side 2 uses side 0's frame
   // Keep the gathered units that can overlap a position of this cell: a
   // position is at most `max(m, 0)` from the cell's centre.
   const mx = cx * S + S / 2;
@@ -2176,7 +2270,8 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     let bestD = Number.MAX_SAFE_INTEGER;
     for (let i = 0; i < units.length; i++) {
       const u = units[i];
-      if (u === undefined || u.side === t.side) continue;
+      // Turrets do not shoot neutral guards (CB-8e).
+      if (u === undefined || u.side === t.side || u.side === 2) continue;
       const row = ownCellCoord(t.side, u.py, geom.height);
       if (row < rowLo || row > rowHi) continue;
       const d = buildingDist2(u.px, u.py, turret);
@@ -2201,6 +2296,181 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
       damage: dealt,
     });
   }
+}
+
+/** What `placeGuards` needs: the posts, the leash and the guards to place. */
+export interface GuardSetup {
+  readonly leashCells: number;
+  /** The points of interest as arena cells, sorted by `id`. */
+  readonly posts: readonly GuardPost[];
+  /** The guards of each point, in point `id` order (`planGuards`). */
+  readonly plans: readonly GuardPlan[];
+}
+
+/**
+ * The cells a guard of a point is tried in, as offsets from the point cell:
+ * the cell itself, then its 8 neighbours N, E, S, W, NE, SE, SW, NW (north is
+ * towards larger `y`, as everywhere in the rules).
+ */
+const GUARD_CELLS: readonly (readonly [number, number])[] = [
+  [0, 0],
+  [0, 1],
+  [1, 0],
+  [0, -1],
+  [-1, 0],
+  [1, 1],
+  [1, -1],
+  [-1, -1],
+  [-1, 1],
+];
+
+/**
+ * Tick 0, before the first tick (CB-8e, "Spawning"): record the posts and the
+ * leash in the state and place the neutral guards, point by point in the
+ * order of `plans`, each guard in its plan's order, taking the next unit IDs.
+ * A guard goes to the first cell of `GUARD_CELLS` (relative to its point)
+ * that is inside the zone's rows, not blocked, and has a free position (the
+ * fit and overlap test of a producer's spawn, `firstFreeIn`), at the first
+ * free position of that cell; a guard with no room anywhere is not placed.
+ * Records `guard_spawned` for each. Guards are not counted in `spawned`.
+ */
+export function placeGuards(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  setup: GuardSetup,
+  tick = 0,
+): void {
+  sim.guards = {
+    leashCells: setup.leashCells,
+    posts: setup.posts.map((p) => ({ id: p.id, x: p.x, y: p.y })),
+    killed: [0, 0],
+    lostToGuards: [0, 0],
+  };
+  if (setup.plans.length === 0) return;
+  const { width, boardHeight, gapRows } = ctx.arena.geom;
+  buildUnitGrid(sim, ctx);
+  for (const plan of setup.plans) {
+    const post = sim.guards.posts.find((p) => p.id === plan.point);
+    if (post === undefined) {
+      throw new Error(`placeGuards: no post for point ${String(plan.point)}.`);
+    }
+    for (const g of plan.guards) {
+      const def = ctx.content.units.get(g.unit);
+      if (def === undefined) throw new Error(`Unknown unit "${g.unit}".`);
+      let pos: { x: number; y: number } | null = null;
+      for (const [dx, dy] of GUARD_CELLS) {
+        const cx = post.x + dx;
+        const cy = post.y + dy;
+        if (cx < 0 || cx >= width) continue;
+        if (cy < boardHeight || cy >= boardHeight + gapRows) continue;
+        if (ctx.world.solid[2]?.[cy * width + cx] === 1) continue;
+        pos = freeInCell(sim, ctx, 2, def, cx, cy);
+        if (pos !== null) break;
+      }
+      if (pos === null) continue;
+      const unit = addGuard(
+        sim,
+        ctx,
+        def,
+        pos.x,
+        pos.y,
+        post.id,
+        g.strengthPercent,
+      );
+      ctx.events?.push({
+        tick,
+        type: 'guard_spawned',
+        unit: unit.id,
+        point: post.id,
+        def: unit.def,
+        px: unit.px,
+        py: unit.py,
+      });
+    }
+  }
+}
+
+/** Create a guard unit (side 2, no owner, no target) and link it into the grid. */
+function addGuard(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  def: UnitDef,
+  px: number,
+  py: number,
+  post: number,
+  strengthPercent: number,
+): UnitSim {
+  const stats = unitStats(2, def, strengthPercent);
+  const unit: UnitSim = {
+    id: sim.nextUnitId,
+    side: 2,
+    def: def.id,
+    px,
+    py,
+    hp: stats.health,
+    damage: stats.damage,
+    attackCooldown: 0,
+    owner: -1,
+    target: -1,
+    post,
+  };
+  sim.nextUnitId += 1;
+  sim.units.push(unit);
+  const index = sim.units.length - 1;
+  ensureUnitCapacity(ctx, index + 1 + 16);
+  linkUnit(ctx, index, unit, def);
+  return unit;
+}
+
+/**
+ * Put a neutral guard of the point `post` on the map (tests and scenarios), at
+ * the centre of arena cell `(x, y)` or at `(px, py)` (sub-cell units), with
+ * `strengthPercent` extra health and damage. Throws if its circle does not
+ * fit for guards (inside the zone's rows, not blocked) or overlaps a living
+ * unit (unless `allowOverlap`). Emits no event and counts nothing.
+ */
+export function spawnGuardForTest(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  args: {
+    def: UnitId;
+    post: number;
+    x?: number;
+    y?: number;
+    px?: number;
+    py?: number;
+    strengthPercent?: number;
+    allowOverlap?: boolean;
+  },
+): UnitSim {
+  const def = ctx.content.units.get(args.def);
+  if (def === undefined) throw new Error(`Unknown unit "${args.def}".`);
+  const px = args.px ?? (args.x === undefined ? undefined : args.x * S + S / 2);
+  const py = args.py ?? (args.y === undefined ? undefined : args.y * S + S / 2);
+  if (px === undefined || py === undefined) {
+    throw new Error('spawnGuardForTest: give x and y or px and py.');
+  }
+  if (sim.guards?.posts.some((p) => p.id === args.post) !== true) {
+    throw new Error(`spawnGuardForTest: no post ${String(args.post)}.`);
+  }
+  if (!fits(ctx.world, 2, def.collisionRadius, px, py)) {
+    throw new Error(
+      `spawnGuardForTest: (${String(px)}, ${String(py)}) is not open.`,
+    );
+  }
+  for (const e of args.allowOverlap === true ? [] : sim.units) {
+    const other = ctx.content.units.get(e.def);
+    if (other?.flying !== def.flying) continue;
+    const rr = def.collisionRadius + other.collisionRadius;
+    const dx = e.px - px;
+    const dy = e.py - py;
+    if (dx * dx + dy * dy < rr * rr) {
+      throw new Error(
+        `spawnGuardForTest: (${String(px)}, ${String(py)}) overlaps unit ${String(e.id)}.`,
+      );
+    }
+  }
+  return addGuard(sim, ctx, def, px, py, args.post, args.strengthPercent ?? 0);
 }
 
 /**
@@ -2327,9 +2597,21 @@ function canHit(ctx: ArenaContext, def: UnitDef, j: number): boolean {
 }
 
 /**
+ * The sides whose units are enemies of a unit of each side (CB-8e): a side's
+ * enemies are the other side and the neutral guards; a guard's enemies are
+ * both sides.
+ */
+const ENEMY_SIDES: readonly (readonly number[])[] = [
+  [1, 2],
+  [0, 2],
+  [0, 1],
+];
+
+/**
  * Index of the enemy unit in contact with `u` (the gap between the circles is
  * at most `reach`) that is nearest by squared centre distance, ties by lowest
- * unit ID; -1 if none.
+ * unit ID; -1 if none. The enemies are the units of the other side and the
+ * neutral guards (a guard's: both sides).
  */
 function nearestContact(
   sim: ArenaSim,
@@ -2338,8 +2620,6 @@ function nearestContact(
   def: UnitDef,
 ): number {
   const { width, height } = ctx.arena.geom;
-  const heads = ctx.heads[1 - u.side];
-  if (heads === undefined) return -1;
   const win = Math.max(1, divCeil(def.reach + def.radius + ctx.maxBody, S));
   const gx = cellCoord(u.px, width);
   const gy = cellCoord(u.py, height);
@@ -2350,52 +2630,57 @@ function nearestContact(
   const y1 = Math.min(height - 1, gy + win);
   const x0 = Math.max(0, gx - win);
   const x1 = Math.min(width - 1, gx + win);
-  const few = ctx.sideCount[1 - u.side === 0 ? 0 : 1];
-  if (few <= FEW_UNITS) {
-    // Few enemies: look at all of them (the same result as the cell search).
-    const list = ctx.bySide[1 - u.side];
-    for (let q = 0; q < few; q++) {
-      const j = list?.[q] ?? -1;
-      const e = j >= 0 ? sim.units[j] : undefined;
-      if (e === undefined) continue;
-      const dx = e.px - u.px;
-      const dy = e.py - u.py;
-      const d2 = dx * dx + dy * dy;
-      const lim = def.reach + def.radius + (ctx.brad[j] ?? 0);
-      if (
-        d2 <= lim * lim &&
-        (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
-        canHit(ctx, def, j)
-      ) {
-        best = j;
-        bestD = d2;
-        bestId = e.id;
-      }
-    }
-    return best;
-  }
-  if (!anyPresent(ctx, 1 - u.side, x0, y0, x1, y1)) return -1;
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
-      let j = heads[y * width + x] ?? -1;
-      while (j !== -1) {
-        const e = sim.units[j];
-        if (e !== undefined) {
-          const dx = e.px - u.px;
-          const dy = e.py - u.py;
-          const d2 = dx * dx + dy * dy;
-          const lim = def.reach + def.radius + (ctx.brad[j] ?? 0);
-          if (
-            d2 <= lim * lim &&
-            (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
-            canHit(ctx, def, j)
-          ) {
-            best = j;
-            bestD = d2;
-            bestId = e.id;
-          }
+  for (const es of ENEMY_SIDES[u.side] ?? []) {
+    const few = ctx.sideCount[es] ?? 0;
+    if (few === 0) continue;
+    if (few <= FEW_UNITS) {
+      // Few enemies: look at all of them (the same result as the cell search).
+      const list = ctx.bySide[es];
+      for (let q = 0; q < few; q++) {
+        const j = list?.[q] ?? -1;
+        const e = j >= 0 ? sim.units[j] : undefined;
+        if (e === undefined) continue;
+        const dx = e.px - u.px;
+        const dy = e.py - u.py;
+        const d2 = dx * dx + dy * dy;
+        const lim = def.reach + def.radius + (ctx.brad[j] ?? 0);
+        if (
+          d2 <= lim * lim &&
+          (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
+          canHit(ctx, def, j)
+        ) {
+          best = j;
+          bestD = d2;
+          bestId = e.id;
         }
-        j = ctx.next[j] ?? -1;
+      }
+      continue;
+    }
+    if (!anyPresent(ctx, es, x0, y0, x1, y1)) continue;
+    const heads = ctx.heads[es];
+    if (heads === undefined) continue;
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        let j = heads[y * width + x] ?? -1;
+        while (j !== -1) {
+          const e = sim.units[j];
+          if (e !== undefined) {
+            const dx = e.px - u.px;
+            const dy = e.py - u.py;
+            const d2 = dx * dx + dy * dy;
+            const lim = def.reach + def.radius + (ctx.brad[j] ?? 0);
+            if (
+              d2 <= lim * lim &&
+              (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
+              canHit(ctx, def, j)
+            ) {
+              best = j;
+              bestD = d2;
+              bestId = e.id;
+            }
+          }
+          j = ctx.next[j] ?? -1;
+        }
       }
     }
   }
@@ -2437,7 +2722,8 @@ function lineClear(
 
 /**
  * Index of the nearest visible enemy unit within the aggro range (squared
- * centre distance, ties by lowest unit ID); -1 if none.
+ * centre distance, ties by lowest unit ID); -1 if none. The enemies are as in
+ * `nearestContact`.
  */
 function nearestVisible(
   sim: ArenaSim,
@@ -2446,8 +2732,6 @@ function nearestVisible(
   def: UnitDef,
 ): number {
   const { width, height } = ctx.arena.geom;
-  const heads = ctx.heads[1 - u.side];
-  if (heads === undefined) return -1;
   const range = ctx.simConfig.aggroRangeCells * S;
   const range2 = range * range;
   const win = Math.max(1, divCeil(range, S));
@@ -2460,51 +2744,56 @@ function nearestVisible(
   const y1 = Math.min(height - 1, gy + win);
   const x0 = Math.max(0, gx - win);
   const x1 = Math.min(width - 1, gx + win);
-  const few = ctx.sideCount[1 - u.side === 0 ? 0 : 1];
-  if (few <= FEW_UNITS) {
-    const list = ctx.bySide[1 - u.side];
-    for (let q = 0; q < few; q++) {
-      const j = list?.[q] ?? -1;
-      const e = j >= 0 ? sim.units[j] : undefined;
-      if (e === undefined) continue;
-      const dx = e.px - u.px;
-      const dy = e.py - u.py;
-      const d2 = dx * dx + dy * dy;
-      if (
-        d2 <= range2 &&
-        (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
-        canHit(ctx, def, j) &&
-        (def.flying || lineClear(ctx, u.side, u.px, u.py, e.px, e.py))
-      ) {
-        best = j;
-        bestD = d2;
-        bestId = e.id;
-      }
-    }
-    return best;
-  }
-  if (!anyPresent(ctx, 1 - u.side, x0, y0, x1, y1)) return -1;
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
-      let j = heads[y * width + x] ?? -1;
-      while (j !== -1) {
-        const e = sim.units[j];
-        if (e !== undefined) {
-          const dx = e.px - u.px;
-          const dy = e.py - u.py;
-          const d2 = dx * dx + dy * dy;
-          if (
-            d2 <= range2 &&
-            (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
-            canHit(ctx, def, j) &&
-            (def.flying || lineClear(ctx, u.side, u.px, u.py, e.px, e.py))
-          ) {
-            best = j;
-            bestD = d2;
-            bestId = e.id;
-          }
+  for (const es of ENEMY_SIDES[u.side] ?? []) {
+    const few = ctx.sideCount[es] ?? 0;
+    if (few === 0) continue;
+    if (few <= FEW_UNITS) {
+      const list = ctx.bySide[es];
+      for (let q = 0; q < few; q++) {
+        const j = list?.[q] ?? -1;
+        const e = j >= 0 ? sim.units[j] : undefined;
+        if (e === undefined) continue;
+        const dx = e.px - u.px;
+        const dy = e.py - u.py;
+        const d2 = dx * dx + dy * dy;
+        if (
+          d2 <= range2 &&
+          (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
+          canHit(ctx, def, j) &&
+          (def.flying || lineClear(ctx, u.side, u.px, u.py, e.px, e.py))
+        ) {
+          best = j;
+          bestD = d2;
+          bestId = e.id;
         }
-        j = ctx.next[j] ?? -1;
+      }
+      continue;
+    }
+    if (!anyPresent(ctx, es, x0, y0, x1, y1)) continue;
+    const heads = ctx.heads[es];
+    if (heads === undefined) continue;
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        let j = heads[y * width + x] ?? -1;
+        while (j !== -1) {
+          const e = sim.units[j];
+          if (e !== undefined) {
+            const dx = e.px - u.px;
+            const dy = e.py - u.py;
+            const d2 = dx * dx + dy * dy;
+            if (
+              d2 <= range2 &&
+              (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
+              canHit(ctx, def, j) &&
+              (def.flying || lineClear(ctx, u.side, u.px, u.py, e.px, e.py))
+            ) {
+              best = j;
+              bestD = d2;
+              bestId = e.id;
+            }
+          }
+          j = ctx.next[j] ?? -1;
+        }
       }
     }
   }
@@ -2532,6 +2821,8 @@ function decideContact(
   ctx.action[i] = ACT_NONE;
   ctx.holds[i] = 0;
   ctx.motion.want[i] = 0;
+  // A guard beyond its leash drops its target and walks back (CB-8e).
+  if (u.side === 2 && guardLeashed(sim, u)) return;
   const j = nearestContact(sim, ctx, u, defOf(ctx, u));
   if (j >= 0) {
     ctx.action[i] = ACT_UNIT;
@@ -2541,6 +2832,73 @@ function decideContact(
 }
 
 const EMPTY_BUILDINGS: readonly ArenaBuilding[] = [];
+
+/** The post of neutral guard `u` (CB-8e), or undefined when it has none. */
+function postOf(sim: ArenaSim, u: UnitSim): GuardPost | undefined {
+  return sim.guards?.posts.find((p) => p.id === u.post);
+}
+
+/**
+ * Whether guard `u` is more than `leashCells` from its post's centre
+ * (squared distance above `(leashCells * CELL_UNITS)^2`, CB-8e).
+ */
+function guardLeashed(sim: ArenaSim, u: UnitSim): boolean {
+  const post = postOf(sim, u);
+  if (post === undefined || sim.guards === undefined) return false;
+  const dx = u.px - (post.x * S + S / 2);
+  const dy = u.py - (post.y * S + S / 2);
+  const lim = sim.guards.leashCells * S;
+  return dx * dx + dy * dy > lim * lim;
+}
+
+/** The movement field to the cell of `post`, built once and cached. */
+function postFieldFor(ctx: ArenaContext, post: GuardPost): Field {
+  let f = ctx.postFields.get(post.id);
+  if (f === undefined) {
+    f = computeCellField(ctx.arena, 2, post.y * ctx.arena.geom.width + post.x);
+    ctx.postFields.set(post.id, f);
+  }
+  return f;
+}
+
+/**
+ * Decision pass 3 for a guard with nothing to fight (CB-8e, "Hold"): inside
+ * the 3x3 cells around its post's cell (where guards are placed) it stays;
+ * outside, it walks back along the movement field to the post's cell, or
+ * straight at the post's centre when the field has no route from its cell.
+ */
+function guardWalkHome(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  i: number,
+  u: UnitSim,
+): void {
+  const post = postOf(sim, u);
+  if (post === undefined) return;
+  const { width, height } = ctx.arena.geom;
+  const gx = cellCoord(u.px, width);
+  const gy = cellCoord(u.py, height);
+  if (Math.abs(gx - post.x) <= 1 && Math.abs(gy - post.y) <= 1) return;
+  const cell = gy * width + gx;
+  const field = postFieldFor(ctx, post);
+  if ((field.dist[cell] ?? -1) > 0) {
+    const k = fieldStep(ctx.arena, 2, field, cell);
+    if (k >= 0) {
+      moveAlong(
+        sim,
+        ctx,
+        i,
+        u,
+        ((k % width) - gx) * S,
+        (divFloor(k, width) - gy) * S,
+      );
+      return;
+    }
+  }
+  const hx = post.x * S + S / 2 - u.px;
+  const hy = post.y * S + S / 2 - u.py;
+  if (hx !== 0 || hy !== 0) moveAlong(sim, ctx, i, u, hx, hy);
+}
 
 /**
  * Decision pass 2 (rules a2 and b): chase the nearest visible enemy unit in
@@ -2556,6 +2914,18 @@ function decideAim(
   const arena = ctx.arena;
   const def = defOf(ctx, u);
   const reachR = def.reach + def.radius;
+  if (u.side === 2) {
+    // A guard fights units by the aggro rule only: it never aims at a
+    // building or a Core, and a leashed guard has dropped its target (CB-8e).
+    if (ctx.simConfig.aggroRangeCells > 0 && !guardLeashed(sim, u)) {
+      const a = nearestVisible(sim, ctx, u, def);
+      if (a >= 0) {
+        ctx.action[i] = ACT_AGGRO;
+        ctx.arg[i] = a;
+      }
+    }
+    return;
+  }
   if (ctx.simConfig.aggroRangeCells > 0) {
     const a = nearestVisible(sim, ctx, u, def);
     if (a >= 0) {
@@ -2685,7 +3055,7 @@ function moveAlong(
       }
     }
     if (best >= 0) {
-      const frame = u.side === 0 ? 1 : -1;
+      const frame = u.side === 1 ? -1 : 1;
       let sigma = bestCross > 0 ? 1 : bestCross < 0 ? -1 : 0;
       if (sigma === 0) {
         // On the line: towards positive x (then y) of the unit's own frame.
@@ -2761,6 +3131,12 @@ function decideMove(
     return;
   }
   if (act !== ACT_NONE) return;
+
+  // A guard with nothing to fight holds or walks back (CB-8e).
+  if (u.side === 2) {
+    guardWalkHome(sim, ctx, i, u);
+    return;
+  }
 
   // c. Move. A flying unit ignores the fields: it flies straight at its
   // target Core and never breaches (CB-16b).
@@ -3026,6 +3402,7 @@ function decideAll(
   const n = units.length;
   ensureUnitCapacity(ctx, n);
   ctx.unitDamage.fill(0, 0, n);
+  ctx.hitBy.fill(0, 0, 3 * n);
   buildPresence(sim, ctx);
   for (let i = 0; i < n; i++) {
     const u = units[i];
@@ -3067,7 +3444,11 @@ function resolveAttacks(
     // Damage order (CB-5h): spawn damage, then Overload, then the splash
     // percent (secondary targets only), then each target's armor (only for a
     // hit on a unit).
-    const hit = mulPct(u.damage, 100 + level * cfg.overloadDamageStepPercent);
+    // Overload does not affect neutral guards (CB-8e).
+    const hit =
+      u.side === 2
+        ? u.damage
+        : mulPct(u.damage, 100 + level * cfg.overloadDamageStepPercent);
     let damage = hit;
     const arg = ctx.arg[i] ?? 0;
     let target: UnitTarget;
@@ -3078,7 +3459,7 @@ function resolveAttacks(
       const t = units[arg];
       if (t === undefined) continue;
       damage = armorHit(hit, defOf(ctx, t).armor);
-      ctx.unitDamage[arg] = addDamage(ctx.unitDamage[arg] ?? 0, damage);
+      hurtUnit(ctx, units, arg, damage, u.side);
       target = { kind: 'unit', unit: t.id };
       const sp = defOf(ctx, u).splash;
       if (sp !== undefined) {
@@ -3139,6 +3520,26 @@ function resolveAttacks(
   }
 }
 
+/**
+ * Add `amount` to the damage unit index `j` takes this tick; when the target
+ * or the attacker is a neutral guard, also to the damage the attacker's side
+ * (0, 1 or 2 for a guard) dealt to it (`ctx.hitBy`, for the kill counts of
+ * CB-8e).
+ */
+function hurtUnit(
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+  j: number,
+  amount: number,
+  attackerSide: number,
+): void {
+  ctx.unitDamage[j] = addDamage(ctx.unitDamage[j] ?? 0, amount);
+  if (attackerSide === 2 || units[j]?.side === 2) {
+    const k = 3 * j + attackerSide;
+    ctx.hitBy[k] = addDamage(ctx.hitBy[k] ?? 0, amount);
+  }
+}
+
 interface SplashHit {
   readonly unit: number;
   readonly damage: number;
@@ -3166,25 +3567,29 @@ function splashHits(
   const part = mulPct(hit, sp.percent);
   if (part <= 0) return out;
   const { width, height } = ctx.arena.geom;
-  const heads = ctx.heads[attacker.side === 0 ? 1 : 0];
-  if (heads === undefined) return out;
   const r2 = sp.radiusSub * sp.radiusSub;
   const gx0 = cellCoord(primary.px - sp.radiusSub, width);
   const gx1 = cellCoord(primary.px + sp.radiusSub, width);
   const gy0 = cellCoord(primary.py - sp.radiusSub, height);
   const gy1 = cellCoord(primary.py + sp.radiusSub, height);
   const found: number[] = [];
-  for (let y = gy0; y <= gy1; y++) {
-    for (let x = gx0; x <= gx1; x++) {
-      let j = heads[y * width + x] ?? -1;
-      while (j !== -1) {
-        const e = units[j];
-        if (e !== undefined && j !== arg) {
-          const dx = e.px - primary.px;
-          const dy = e.py - primary.py;
-          if (dx * dx + dy * dy <= r2) found.push(j);
+  // Every unit of an enemy side of the attacker (CB-8e: the other side and
+  // the neutral guards).
+  for (const es of ENEMY_SIDES[attacker.side] ?? []) {
+    const heads = ctx.heads[es];
+    if (heads === undefined) continue;
+    for (let y = gy0; y <= gy1; y++) {
+      for (let x = gx0; x <= gx1; x++) {
+        let j = heads[y * width + x] ?? -1;
+        while (j !== -1) {
+          const e = units[j];
+          if (e !== undefined && j !== arg) {
+            const dx = e.px - primary.px;
+            const dy = e.py - primary.py;
+            if (dx * dx + dy * dy <= r2) found.push(j);
+          }
+          j = ctx.next[j] ?? -1;
         }
-        j = ctx.next[j] ?? -1;
       }
     }
   }
@@ -3193,7 +3598,7 @@ function splashHits(
     const e = units[j];
     if (e === undefined) continue;
     const dealt = armorHit(part, defOf(ctx, e).armor);
-    ctx.unitDamage[j] = addDamage(ctx.unitDamage[j] ?? 0, dealt);
+    hurtUnit(ctx, units, j, dealt, attacker.side);
     out.push({ unit: e.id, damage: dealt });
   }
   return out;
@@ -3428,11 +3833,36 @@ function removeDeadUnits(
 ): void {
   const events = ctx.events;
   let died = false;
-  for (const u of units) {
-    if (u.hp <= 0) {
-      died = true;
-      events?.push({ tick, type: 'unit_died', unit: u.id });
-      sim.unitsDied[u.side === 0 ? 0 : 1] += 1;
+  for (let i = 0; i < units.length; i++) {
+    const u = units[i];
+    if (u === undefined || u.hp > 0) continue;
+    died = true;
+    if (u.side === 2) {
+      // A guard death is not a unit death of a side (CB-8e): it counts in
+      // `guardsKilled` for the side whose units dealt it the most damage
+      // this tick, for both sides on a tie.
+      events?.push({ tick, type: 'unit_died', unit: u.id, side: 2 });
+      const killed = sim.guards?.killed;
+      const d0 = ctx.hitBy[3 * i] ?? 0;
+      const d1 = ctx.hitBy[3 * i + 1] ?? 0;
+      if (killed !== undefined) {
+        if (d0 >= d1) killed[0] += 1;
+        if (d1 >= d0) killed[1] += 1;
+      }
+      continue;
+    }
+    events?.push({ tick, type: 'unit_died', unit: u.id });
+    const side = u.side === 0 ? 0 : 1;
+    sim.unitsDied[side] += 1;
+    // A unit the guards killed (they dealt more than the other side's units in
+    // the tick it died) is a loss, but not a kill of the other side (CB-8e).
+    const byGuards = ctx.hitBy[3 * i + 2] ?? 0;
+    if (
+      sim.guards !== undefined &&
+      byGuards > 0 &&
+      byGuards > (ctx.unitDamage[i] ?? 0) - byGuards
+    ) {
+      sim.guards.lostToGuards[side] += 1;
     }
   }
   if (died) sim.units = units.filter((u) => u.hp > 0);
@@ -3463,6 +3893,7 @@ function destroyFallenBuildings(
   if (destroyed) {
     ctx.fields[0] = [];
     ctx.fields[1] = [];
+    ctx.postFields.clear();
     ctx.breach[0] = [];
     ctx.breach[1] = [];
     ctx.spawnCells.clear();

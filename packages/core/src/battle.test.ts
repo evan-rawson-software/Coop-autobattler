@@ -84,7 +84,12 @@ function run(
   cfg = config,
   options = {},
 ) {
-  const r = simulateBattle({ teamA: a, teamB: b, seed }, content, cfg, options);
+  const r = simulateBattle(
+    { round: 1, teamA: a, teamB: b, seed },
+    content,
+    cfg,
+    options,
+  );
   if (!r.ok) throw new Error(r.error.message);
   return r;
 }
@@ -100,7 +105,7 @@ describe('refused battles', () => {
       [noCore, two],
     ] as const) {
       const r = simulateBattle(
-        { teamA: a, teamB: b, seed: 1 },
+        { round: 1, teamA: a, teamB: b, seed: 1 },
         content,
         config,
       );
@@ -118,7 +123,7 @@ describe('refused battles', () => {
     lab.state = two;
     lab.core(2, 6, 0);
     const none = simulateBattle(
-      { teamA: createTeamState(two.map), teamB: lab.state, seed: 1 },
+      { round: 1, teamA: createTeamState(two.map), teamB: lab.state, seed: 1 },
       content,
       config,
     );
@@ -133,7 +138,11 @@ describe('refused battles', () => {
       cores: full.cores.map((c, p) => (gone.includes(p) ? null : c)),
     });
     const err = (a: TeamState, b: TeamState) => {
-      const r = startBattle({ teamA: a, teamB: b, seed: 1 }, content, config);
+      const r = startBattle(
+        { round: 1, teamA: a, teamB: b, seed: 1 },
+        content,
+        config,
+      );
       return r.ok ? null : [r.error.code, r.error.side, r.error.player];
     };
     expect(err(missing(1, 2), full)).toEqual(['core_not_placed', 0, 1]);
@@ -147,7 +156,7 @@ describe('refused battles', () => {
     const lab = new Lab(tiny([], 14));
     lab.core(5, 0);
     const r = simulateBattle(
-      { teamA: coreOnly(), teamB: lab.state, seed: 1 },
+      { round: 1, teamA: coreOnly(), teamB: lab.state, seed: 1 },
       content,
       config,
     );
@@ -157,7 +166,7 @@ describe('refused battles', () => {
   test('an unplaced Core is rejected, naming the side', () => {
     const open = new Lab(tiny()).state;
     const a = simulateBattle(
-      { teamA: open, teamB: coreOnly(), seed: 1 },
+      { round: 1, teamA: open, teamB: coreOnly(), seed: 1 },
       content,
       config,
     );
@@ -166,7 +175,7 @@ describe('refused battles', () => {
       0,
     ]);
     const b = simulateBattle(
-      { teamA: coreOnly(), teamB: open, seed: 1 },
+      { round: 1, teamA: coreOnly(), teamB: open, seed: 1 },
       content,
       config,
     );
@@ -175,7 +184,7 @@ describe('refused battles', () => {
       1,
     ]);
     const both = startBattle(
-      { teamA: open, teamB: open, seed: 1 },
+      { round: 1, teamA: open, teamB: open, seed: 1 },
       content,
       config,
     );
@@ -185,14 +194,14 @@ describe('refused battles', () => {
 
   test('a handed-in zone must fit', () => {
     const bad = startBattle(
-      { teamA: coreOnly(), teamB: coreOnly(), seed: 1 },
+      { round: 1, teamA: coreOnly(), teamB: coreOnly(), seed: 1 },
       content,
       config,
       { zone: emptyZone(24) },
     );
     expect(bad.ok ? null : bad.error.code).toBe('invalid_zone');
     const sealed = startBattle(
-      { teamA: coreOnly(), teamB: coreOnly(), seed: 1 },
+      { round: 1, teamA: coreOnly(), teamB: coreOnly(), seed: 1 },
       content,
       config,
       {
@@ -259,7 +268,10 @@ describe('events, summary and the incremental API', () => {
       expect(s.coreHealth).toBeGreaterThanOrEqual(0);
       expect(s.coreHealth > 0).toBe(s.coreOverkill === 0);
     }
-    const died = r.eventLog.filter((e) => e.type === 'unit_died').length;
+    // A guard's death (side 2, CB-8e) is not a unit loss of a side.
+    const died = r.eventLog.filter(
+      (e) => e.type === 'unit_died' && e.side === undefined,
+    ).length;
     expect(died).toBe(
       r.summary.sides[0].unitsLost + r.summary.sides[1].unitsLost,
     );
@@ -294,7 +306,11 @@ describe('events, summary and the incremental API', () => {
   });
 
   test('startBattle stepped by hand gives the same battle', () => {
-    const s = startBattle({ teamA: a, teamB: b, seed: 2 }, content, config);
+    const s = startBattle(
+      { round: 1, teamA: a, teamB: b, seed: 2 },
+      content,
+      config,
+    );
     if (!s.ok) throw new Error('refused');
     const battle = s.battle;
     expect(battle.isOver()).toBe(false);
@@ -313,7 +329,11 @@ describe('events, summary and the incremental API', () => {
   });
 
   test('a finished battle does not step any further', () => {
-    const s = startBattle({ teamA: a, teamB: b, seed: 2 }, content, config);
+    const s = startBattle(
+      { round: 1, teamA: a, teamB: b, seed: 2 },
+      content,
+      config,
+    );
     if (!s.ok) throw new Error('refused');
     while (!s.battle.isOver()) s.battle.step();
     const tick = s.battle.sim.tick;
@@ -380,7 +400,7 @@ describe('mirror matches (symmetry)', () => {
   function symmetricRun(zone: NeutralZone) {
     const team = farmTeam();
     const s = startBattle(
-      { teamA: team, teamB: team, seed: 3 },
+      { round: 1, teamA: team, teamB: team, seed: 3 },
       content,
       config,
       {
@@ -464,7 +484,11 @@ describe('buildings never reach into the zone, turrets only shoot into it', () =
    * rows of the turret owner's board or the zone.
    */
   function checkTurretShots(a: TeamState, b: TeamState, seed: number): number {
-    const s = startBattle({ teamA: a, teamB: b, seed }, content, config);
+    const s = startBattle(
+      { round: 1, teamA: a, teamB: b, seed },
+      content,
+      config,
+    );
     if (!s.ok) throw new Error('refused');
     const { battle } = s;
     const total = 2 * H + battle.zone.depth;
@@ -506,7 +530,11 @@ describe('buildings never reach into the zone, turrets only shoot into it', () =
       const ps = 1 + (seed % 4);
       const a = randomTeam(seed, ps);
       const b = randomTeam(seed + 50, ps);
-      const s = startBattle({ teamA: a, teamB: b, seed }, content, config);
+      const s = startBattle(
+        { round: 1, teamA: a, teamB: b, seed },
+        content,
+        config,
+      );
       if (!s.ok) throw new Error('refused');
       const { geom, buildings } = s.battle.ctx.arena;
       const lo = geom.boardHeight;
@@ -540,9 +568,14 @@ describe('end conditions', () => {
     b: TeamState,
     cfg: { sim: SimConfig; mapgen: typeof mapgen } = config,
   ) {
-    const s = startBattle({ teamA: a, teamB: b, seed: 1 }, content, cfg, {
-      zone: emptyZone(12),
-    });
+    const s = startBattle(
+      { round: 1, teamA: a, teamB: b, seed: 1 },
+      content,
+      cfg,
+      {
+        zone: emptyZone(12),
+      },
+    );
     if (!s.ok) throw new Error('refused');
     return s.battle;
   }
@@ -804,6 +837,7 @@ describe('end conditions', () => {
     ] as const) {
       const s = startBattle(
         {
+          round: 1,
           teamA: coreOnly(),
           teamB: coreOnly(),
           seed: 1,
@@ -837,6 +871,7 @@ describe('Overload helpers against real bare-Core battles (time limit)', () => {
   const bare = (hpA: number, hpB: number) => {
     const s = startBattle(
       {
+        round: 1,
         teamA: coreOnly(),
         teamB: coreOnly(),
         seed: 1,
@@ -946,7 +981,11 @@ describe('performance (CB-36)', () => {
     events: number;
     bytes: number;
   } {
-    const s = startBattle({ teamA: a, teamB: b, seed }, content, config);
+    const s = startBattle(
+      { round: 1, teamA: a, teamB: b, seed },
+      content,
+      config,
+    );
     if (!s.ok) throw new Error('refused');
     const { battle } = s;
     let peakPerSide = 0;

@@ -39,7 +39,7 @@ export type ContentLoadResult =
 
 /**
  * Load all content: resources, then terrain and units, then buildings, then
- * presentation (points have no dependency). A file that fails stops the files that depend on it, so the
+ * presentation (points need the unit list, for their guards). A file that fails stops the files that depend on it, so the
  * errors come from the first broken layer(s), each prefixed with its file.
  */
 export function loadAllContent(raw: RawContent): ContentLoadResult {
@@ -54,7 +54,12 @@ export function loadAllContent(raw: RawContent): ContentLoadResult {
   if (!terrain.ok) prefixed('terrain', terrain.errors);
   const units = loadUnits(raw.units);
   if (!units.ok) prefixed('units', units.errors);
-  const points = loadPoints(raw.points);
+  // Points check their guard units against the unit list; without a valid
+  // unit list only their own shape is checked.
+  const points = loadPoints(
+    raw.points,
+    units.ok ? { units: units.config } : {},
+  );
   if (!points.ok) prefixed('points', points.errors);
 
   if (!resources.ok || !terrain.ok || !units.ok || !points.ok)

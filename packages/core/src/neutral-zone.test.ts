@@ -277,6 +277,14 @@ describe('neutral zone generation', () => {
 
 const BAND_SEEDS = 500;
 
+const GUARDS = {
+  baseBudget: 44,
+  growthPercent: 125,
+  maxGuardsPerPoint: 5,
+  leashCells: 3,
+  units: [{ unit: 'unit_soldier', cost: 10, weight: 1 }],
+};
+
 function withPoints(chancePercent: number, bandMarginCells = 2) {
   return {
     ...content,
@@ -287,6 +295,7 @@ function withPoints(chancePercent: number, bandMarginCells = 2) {
         { id: 'poi_strength', kind: 'unit_strength', weight: 1 },
         { id: 'poi_heal', kind: 'heal', weight: 1 },
       ],
+      guards: GUARDS,
     }),
   };
 }
@@ -417,6 +426,7 @@ describe('points content', () => {
       chancePercent: 60,
       bandMarginCells: 2,
       buffs: [{ id: 'poi_a', kind: 'heal', weight: 1 }],
+      guards: GUARDS,
     };
     expect(loadPoints(ok).ok).toBe(true);
     for (const bad of [

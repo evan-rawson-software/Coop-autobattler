@@ -49,12 +49,18 @@ const ALLY_WEIGHT = [
  * arena rotated by half a turn (both axes negated). Two units of different
  * sides: towards positive in the frame of `u`'s own side, whatever the ids
  * (so side 0 goes up the axis, side 1 down it, and the two always separate).
+ * Neutral guards (side 2) use side 0's frame; two units of different sides
+ * with the same frame (a guard and a side-0 unit) are ordered by id as if of
+ * one side, so they separate too.
  * The push is applied along both axes with this sign. Decided by the ids and
  * the sides only, so a mirrored battle stays symmetric.
  */
 function coincidentSign(u: MotionUnit, other: MotionUnit): number {
-  const frame = u.side === 0 ? 1 : -1;
-  if (u.side !== other.side) return frame;
+  const frame = u.side === 1 ? -1 : 1;
+  const otherFrame = other.side === 1 ? -1 : 1;
+  // A neutral guard (side 2) uses side 0's frame: against a side-0 unit the
+  // ids decide, so the two always separate (CB-8e).
+  if (u.side !== other.side && frame !== otherFrame) return frame;
   return u.id > other.id ? frame : -frame;
 }
 

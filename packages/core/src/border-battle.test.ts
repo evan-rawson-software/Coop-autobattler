@@ -93,7 +93,7 @@ function start(state: TeamState, nodes?: GameMap['nodes']): Battle {
   lab.core(5, 0, 0);
   lab.core(17, 0, 1);
   const r = startBattle(
-    { teamA: state, teamB: lab.state, seed: 1 },
+    { round: 1, teamA: state, teamB: lab.state, seed: 1 },
     content,
     { sim: simConfig, mapgen },
     {

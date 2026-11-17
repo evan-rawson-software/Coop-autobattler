@@ -82,7 +82,7 @@ describe('generated threats stay within the content bounds', () => {
               maxStrength = Math.max(maxStrength, t.unitStrengthPercent);
             }
             const r = startPveBattle(
-              { team, threat: t, seed: 5 },
+              { round: t.round, team, threat: t, seed: 5 },
               content,
               config,
             );
@@ -103,7 +103,7 @@ describe('generated threats stay within the content bounds', () => {
         for (const round of [30, 42, ROUNDS]) {
           const t = profile(arch.id, 'boss', size, round);
           const r = simulatePveBattle(
-            { team: party(size), threat: t, seed: 9 },
+            { round: t.round, team: party(size), threat: t, seed: 9 },
             content,
             config,
           );

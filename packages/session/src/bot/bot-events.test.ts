@@ -58,7 +58,12 @@ function play(strategy: BotStrategyName, party: number, seed: number) {
 /**
  * The runs: the smallest set of (strategy, party, seed) found over seeds 1 to
  * 8 of rush, fortify and siege that takes every event with a follow-up in every
- * party size (and the shop events and pacts in each), plus the weak bot.
+ * party size (and the shop events and pacts in each), plus the weak bot. The
+ * neutral guards (#372) changed the battles, so the draws moved: the siege run
+ * of a party of 2 was searched again over seeds 1 to 8 of rush, fortify, siege
+ * and weak in every party size (all 128 runs end with no rejected intent): seed
+ * 1 no longer takes the Blueprint, seed 2 does (with Drill, Rich vein and the
+ * Caravan).
  */
 const RUNS: readonly (readonly [BotStrategyName, number, number])[] = [
   ['rush', 2, 2],
@@ -67,7 +72,7 @@ const RUNS: readonly (readonly [BotStrategyName, number, number])[] = [
   ['fortify', 1, 4],
   ['fortify', 1, 1],
   ['siege', 1, 1],
-  ['siege', 2, 1],
+  ['siege', 2, 2],
   ['siege', 3, 2],
   ['siege', 4, 2],
   ['weak', 1, 1],

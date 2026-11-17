@@ -312,7 +312,10 @@ export interface Contact {
 /** Depth of the leading band, in cells. */
 const BAND_CELLS = 8;
 
-/** Whether any opposing pair is in contact (gap at most `reach`). */
+/**
+ * Whether any opposing pair is in contact (gap at most `reach`): units of the
+ * two sides; the neutral guards of the points (side 2, CB-8e) are not an army.
+ */
 function anyContact(battle: Battle, ctx: SimContext): boolean {
   const units = battle.sim.units;
   const buckets = new Map<number, number[]>();
@@ -324,7 +327,7 @@ function anyContact(battle: Battle, ctx: SimContext): boolean {
   });
   for (let i = 0; i < units.length; i++) {
     const u = units[i];
-    if (u === undefined) continue;
+    if (u === undefined || u.side === 2) continue;
     const du = ctx.content.units.get(u.def);
     if (du === undefined) continue;
     const gx = Math.floor(u.px / 480);
@@ -333,7 +336,9 @@ function anyContact(battle: Battle, ctx: SimContext): boolean {
       for (let y = gy - 1; y <= gy + 1; y++) {
         for (const j of buckets.get(x * 65536 + y) ?? []) {
           const v = units[j];
-          if (v === undefined || v.side === u.side || j < i) continue;
+          if (v === undefined || v.side === u.side || v.side === 2 || j < i) {
+            continue;
+          }
           const dv = ctx.content.units.get(v.def);
           if (dv === undefined) continue;
           const r = du.reach + du.radius + dv.radius;
@@ -392,10 +397,14 @@ export function runVaried(
   b: VariedBoard,
   seed: number,
 ): VariedBattle {
-  const s = startBattle({ teamA: a.team, teamB: b.team, seed }, ctx.content, {
-    sim: ctx.sim,
-    mapgen: ctx.mapgen,
-  });
+  const s = startBattle(
+    { teamA: a.team, teamB: b.team, seed, round: 1 },
+    ctx.content,
+    {
+      sim: ctx.sim,
+      mapgen: ctx.mapgen,
+    },
+  );
   if (!s.ok) throw new Error(s.error.message);
   const battle = s.battle;
   const height = battle.ctx.arena.geom.height;

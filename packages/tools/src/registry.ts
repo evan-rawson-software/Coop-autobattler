@@ -121,9 +121,14 @@ export const contentRegistry: readonly ContentEntry[] = [
     key: 'points',
     contentFile: 'points.json',
     schemaFile: 'points.schema.json',
-    needs: ['mapgen'],
+    needs: ['mapgen', 'units'],
     load: (data, loaded) =>
-      wrap(loadPoints(data, { plotWidth: need(loaded, 'mapgen').plotWidth })),
+      wrap(
+        loadPoints(data, {
+          plotWidth: need(loaded, 'mapgen').plotWidth,
+          units: need(loaded, 'units'),
+        }),
+      ),
   },
   {
     key: 'sim',

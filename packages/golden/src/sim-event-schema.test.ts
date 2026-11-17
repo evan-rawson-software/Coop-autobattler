@@ -144,6 +144,37 @@ describe('sim-event.schema.json', () => {
     }
     expect(seen.has('zone_revealed')).toBe(true);
     expect(seen.has('battle_ended')).toBe(true);
+    // Neutral guards (CB-8e): placed at tick 0, and their deaths carry side 2.
+    expect(seen.has('guard_spawned')).toBe(true);
+    expect(
+      validate({
+        tick: 0,
+        type: 'guard_spawned',
+        unit: 1,
+        point: 0,
+        def: 'unit_soldier',
+        px: 1500,
+        py: 4680,
+      }),
+    ).toBe(true);
+    expect(
+      validate({
+        tick: 0,
+        type: 'guard_spawned',
+        unit: 0,
+        point: 0,
+        def: 'unit_soldier',
+        px: 1500,
+        py: 4680,
+      }),
+    ).toBe(false);
+    expect(validate({ tick: 9, type: 'unit_died', unit: 1, side: 2 })).toBe(
+      true,
+    );
+    expect(validate({ tick: 9, type: 'unit_died', unit: 1 })).toBe(true);
+    expect(validate({ tick: 9, type: 'unit_died', unit: 1, side: 1 })).toBe(
+      false,
+    );
     expect(
       validate({ tick: 3, type: 'battle_ended', winner: 2, reason: 'x' }),
     ).toBe(false);

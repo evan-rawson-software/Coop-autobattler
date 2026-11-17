@@ -151,7 +151,7 @@ describe('bot battle measurements', () => {
     const team = (name: 'rush' | 'poor') =>
       buildReferenceBoard(name, ctx.content, ctx.mapgen);
     const started = startBattle(
-      { teamA: team('rush'), teamB: team('poor'), seed: 1 },
+      { round: 1, teamA: team('rush'), teamB: team('poor'), seed: 1 },
       ctx.content,
       { sim: ctx.sim, mapgen: ctx.mapgen },
     );

@@ -22,6 +22,7 @@ describe('wave archers and drones on the Battle screen (issue #59)', () => {
     );
     const r = simulatePveBattle(
       {
+        round: threat.round,
         team: buildReferenceBoard('fortify', content, content.mapgen),
         threat,
         seed: 3,

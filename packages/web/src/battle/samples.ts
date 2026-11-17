@@ -161,7 +161,7 @@ export function buildSample(sel: SampleSelection): Sample {
     );
     const boss = c === 'boss';
     return {
-      battle: { kind: 'pve', input: { team, threat, seed: sel.seed } },
+      battle: { kind: 'pve', input: { team, threat, seed: sel.seed, round } },
       opponent: {
         name: `${archetypeText(a).name} threat, round ${String(round)}`,
         kind: boss ? 'boss' : 'pve',
@@ -199,6 +199,7 @@ export function buildSample(sel: SampleSelection): Sample {
           teamA: wide,
           teamB: wide,
           seed: sel.seed,
+          round: 1,
           sideOptions: [options, options],
         },
       },
@@ -212,7 +213,7 @@ export function buildSample(sel: SampleSelection): Sample {
   return {
     battle: {
       kind: 'versus',
-      input: { teamA: team, teamB, seed: sel.seed },
+      input: { teamA: team, teamB, seed: sel.seed, round: 1 },
     },
     opponent: {
       name: `ghost of the "${ghostBoard}" board`,

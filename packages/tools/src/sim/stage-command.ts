@@ -315,7 +315,7 @@ function wins(
   seed: number,
 ): boolean {
   const threat = threatFor(ctx, type, archetype, round, seed);
-  const started = startPveBattle({ team, threat, seed }, ctx.content, {
+  const started = startPveBattle({ team, threat, seed, round }, ctx.content, {
     sim: ctx.sim,
     mapgen: ctx.mapgen,
   });
@@ -361,6 +361,7 @@ export function soldiersMade(ctx: SimContext, team: TeamState): number {
       teamA: team,
       teamB: passive,
       seed: 1,
+      round: 1,
       // A Core too strong to fall inside the measurement.
       sideOptions: [null, { coreHealths: [1_000_000] }],
     },

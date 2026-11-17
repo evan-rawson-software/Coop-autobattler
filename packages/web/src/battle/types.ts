@@ -1,14 +1,24 @@
 /** Shared types of the battle screen. */
 
 import type { ComponentChildren } from 'preact';
-import type { BattleInput, PveBattleInput, TeamModifier } from '@game/core';
+import type {
+  BattleInput,
+  NeutralZone,
+  PveBattleInput,
+  TeamModifier,
+} from '@game/core';
 
 /**
  * What to play: a team-versus-team battle (a ghost or a boss board) or a PvE
  * battle against a generated threat. The simulation is run from this alone.
  */
 export type BattleDescription =
-  | { readonly kind: 'versus'; readonly input: BattleInput }
+  | {
+      readonly kind: 'versus';
+      readonly input: BattleInput;
+      /** Test-only: a hand-made neutral zone (`BattleOptions.zone`). */
+      readonly zone?: NeutralZone;
+    }
   | { readonly kind: 'pve'; readonly input: PveBattleInput };
 
 export type OpponentKind = 'ghost' | 'boss' | 'pve';

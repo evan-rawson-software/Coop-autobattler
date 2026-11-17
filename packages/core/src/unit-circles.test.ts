@@ -220,7 +220,12 @@ describe('the ground invariant: nothing inside blocked ground or outside the are
   test('random one-plot battles keep it at every tick', () => {
     for (let seed = 1; seed <= 6; seed++) {
       const s = startBattle(
-        { teamA: randomTeam(seed, 1), teamB: randomTeam(seed + 30, 1), seed },
+        {
+          round: 1,
+          teamA: randomTeam(seed, 1),
+          teamB: randomTeam(seed + 30, 1),
+          seed,
+        },
         content,
         config,
       );
@@ -255,6 +260,7 @@ describe('the ground invariant: nothing inside blocked ground or outside the are
       );
       const s = startPveBattle(
         {
+          round: 1,
           team: buildReferenceBoard('fortify', content, mapgen),
           threat,
           seed: 5,

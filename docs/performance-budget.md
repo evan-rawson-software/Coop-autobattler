@@ -81,6 +81,44 @@ size), so it was reverted (no gain, no risk taken). Skipping the search when no 
 possible from local data (an ally that moves also blocks when it overlaps), so
 it was not tried.
 
+## Neutral guards (2026-11-17, issue #372)
+
+Every point of interest now starts the battle with up to five neutral guards
+that fight units of both sides ("Neutral guards" in the rules reference). The
+bench was run twice on one machine in one sitting, once with the shipped
+`content/points.json` and once with `chancePercent` set to 0 (no points, no
+guards, so the battles of the baseline above; the ticks, peaks and log sizes of
+that run match the baseline table exactly, which shows that nothing changed for
+a battle without a point). Median of 5 runs, battles per second:
+
+| Board                         | No points | With guards | Peak units per side (no points / guards) | Ticks, seed 1 |
+| ----------------------------- | --------- | ----------- | ----------------------------------------- | ------------- |
+| One plot, 128 battles         | 107.6     | 91.9        | 21 / 20 (largest)                         | 3101          |
+| Legal dense, tier 1           | 9.10      | 7.04        | 24 / 24                                   | 3101 / 3101   |
+| Legal dense, tier 3           | 5.23      | 4.39        | 36 / 40                                   | 3101 / 3101   |
+| Stress, one Core, tier 1      | 1.72      | 1.61        | 411 / 368                                 | 1820 / 1767   |
+| Stress, four Cores, tier 1    | 1.09      | 0.95        | 478 / 441                                 | 2117 / 2476   |
+| Stress, one Core, tier 3      | 0.56      | 0.83        | 699 / 519                                 | 1667 / 1375   |
+| Stress, four Cores, tier 3    | 0.49      | 0.37        | 810 / 579                                 | 2318 / 2233   |
+
+The small boards get 15 to 23 percent slower per battle: the guards are extra
+units (up to 5 per point) in every search, and the battles run differently
+(units stop to fight at a point and stay alive longer; the tier 3 legal dense
+peak rises from 36 to 40 per side). The peaks count the units of each side
+only: `bench-report.ts` and `performance.test.ts` used to count every unit that
+was not side 0 as side 1, which would have put the guards on side 1, so they
+now count side 0 and side 1 separately. The stress rows are different battles (the
+guards change who meets whom, so the tick counts and peaks differ), so their
+rates are not a like-for-like cost; per unit-tick the cost is 1.47 us against
+1.36 (tier 1, one Core) and 1.85 against 1.57 (tier 3, four Cores). Event log
+sizes: one plot 0.46 MB (largest), legal dense 1.53 and 2.67 MB, stress up to
+6.88 MB, all inside the budget below. **No limit of the budget is crossed**
+(every floor and ceiling below holds with room: one plot 91.9 against the floor
+35, legal dense 7.04 and 4.39 against 2 and 1.5, stress tier 1 four Cores 0.95
+against 0.35, stress tier 3 four Cores one battle 2.7 s against 6 s, peak 579
+units against 1,000, battle length 3,101 ticks against 4,000), so the budget
+table is unchanged.
+
 ## Budget (W1-10)
 
 Strict floors are one quarter of the median above (a runner is about 4 times

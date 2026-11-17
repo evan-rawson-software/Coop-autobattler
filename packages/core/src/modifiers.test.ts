@@ -53,7 +53,11 @@ function fightResult(
     content,
     { threats, mapgen },
   );
-  const r = simulatePveBattle({ team, threat, seed: 3 }, content, config);
+  const r = simulatePveBattle(
+    { round: 1, team, threat, seed: 3 },
+    content,
+    config,
+  );
   if (!r.ok) throw new Error(r.error.message);
   return { winner: r.result.winner, kills: r.summary.sides[0].unitsKilled };
 }

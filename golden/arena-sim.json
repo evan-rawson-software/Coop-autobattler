@@ -16359,5 +16359,923 @@
       },
       "eventLogHash": "5b37c435"
     }
+  },
+  {
+    "id": "arena-sim.guards-walk-past-not-drawn-in",
+    "kind": "arena-sim",
+    "description": "A guard soldier holds a point on the zone's middle row (row 19). A soldier of side 0 walks up column 1, five cells from the point: outside the 3 cells of aggro, it is not drawn in, nobody attacks the guard and the guard does not move. The run is also saved and restored mid-way.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 160,
+      "report": "positions",
+      "restoreAt": [40],
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 1,
+          "y": 15
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ],
+        "units": [
+          {
+            "post": 0,
+            "def": "unit_soldier",
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 160,
+        "stateHash": "0e4eb044",
+        "events": 4,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 24,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [476]
+          }
+        ],
+        "guards": {
+          "alive": 1,
+          "killed": [0, 0]
+        },
+        "positions": [
+          [1, 360, 8760],
+          [2, 1560, 4680]
+        ]
+      },
+      "eventLogHash": "0cf1b191"
+    }
+  },
+  {
+    "id": "arena-sim.guards-soldier-kills-guard",
+    "kind": "arena-sim",
+    "description": "A soldier of side 0 starts three cells from a guard archer: inside aggro range it walks up, fights and kills the single guard (unit_died with side 2, one guard killed for side 0) and survives; nothing counts as a unit death of a side.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 220,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 16
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ],
+        "units": [
+          {
+            "post": 0,
+            "def": "unit_archer",
+            "x": 6,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 220,
+        "stateHash": "f1bc5436",
+        "events": 17,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 30,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [470]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [1, 0]
+        },
+        "positions": [
+          [1, 434, 8766]
+        ]
+      },
+      "eventLogHash": "06d51276"
+    }
+  },
+  {
+    "id": "arena-sim.guards-leashed-guard-returns",
+    "kind": "arena-sim",
+    "description": "A guard soldier stands 4.5 cells from its point, beyond the 3-cell leash, with a soldier of side 1 right next to it. While beyond the leash the guard drops its target (it does not attack) and walks back along the movement field to the point while the enemy hits it; once inside the leash it fights back. The enemy wins the duel and the kill is credited to side 1; positions are pinned.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 120,
+      "report": "positions",
+      "units": [
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "px": 2640,
+          "py": 5520
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ],
+        "units": [
+          {
+            "post": 0,
+            "def": "unit_soldier",
+            "px": 2460,
+            "py": 5430
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 120,
+        "stateHash": "522933b2",
+        "events": 13,
+        "sides": [
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 1]
+        },
+        "positions": [
+          [1, 2195, 3077]
+        ]
+      },
+      "eventLogHash": "5d22869d"
+    }
+  },
+  {
+    "id": "arena-sim.guards-archer-hits-drone-soldier-cannot",
+    "kind": "arena-sim",
+    "description": "Two points, a guard archer at one and a guard soldier at the other, each with a drone of side 0 two cells away. The archer hits its drone; the soldier cannot hit its drone (only ranged attackers hit flyers) while the drone shoots it.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 80,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_drone",
+          "x": 2,
+          "y": 17
+        },
+        {
+          "side": 0,
+          "def": "unit_drone",
+          "x": 9,
+          "y": 17
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 2,
+            "y": 19
+          },
+          {
+            "id": 1,
+            "x": 9,
+            "y": 19
+          }
+        ],
+        "units": [
+          {
+            "post": 0,
+            "def": "unit_archer",
+            "x": 2,
+            "y": 19
+          },
+          {
+            "post": 1,
+            "def": "unit_soldier",
+            "x": 9,
+            "y": 19
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 80,
+        "stateHash": "6a62a8df",
+        "events": 20,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 1,
+            "unitsDied": 1,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 1,
+          "killed": [1, 0]
+        },
+        "positions": [
+          [2, 2126, 4585],
+          [3, 600, 4680]
+        ]
+      },
+      "eventLogHash": "9f0f9f72"
+    }
+  },
+  {
+    "id": "arena-sim.guards-turret-ignores-guard",
+    "kind": "arena-sim",
+    "description": "Three powered tier 3 turrets on the front row (as in turret-kills-in-zone) with a guard soldier two cells in front of them, well in range, in the zone: no turret ever fires (a guard is not an enemy of a side's buildings).",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 3,
+              "y": 2,
+              "resource": "res_b"
+            },
+            {
+              "x": 5,
+              "y": 2,
+              "resource": "res_b"
+            },
+            {
+              "x": 8,
+              "y": 2,
+              "resource": "res_b"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 6,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 3,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 3,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 6
+              },
+              {
+                "x": 3,
+                "y": 7
+              },
+              {
+                "x": 3,
+                "y": 8
+              },
+              {
+                "x": 3,
+                "y": 9
+              },
+              {
+                "x": 3,
+                "y": 10
+              },
+              {
+                "x": 3,
+                "y": 11
+              },
+              {
+                "x": 3,
+                "y": 12
+              },
+              {
+                "x": 3,
+                "y": 13
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 5,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 5,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 5,
+                "y": 9
+              },
+              {
+                "x": 5,
+                "y": 10
+              },
+              {
+                "x": 5,
+                "y": 11
+              },
+              {
+                "x": 5,
+                "y": 12
+              },
+              {
+                "x": 5,
+                "y": 13
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 8,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 8,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 8,
+                "y": 3
+              },
+              {
+                "x": 8,
+                "y": 4
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 6
+              },
+              {
+                "x": 8,
+                "y": 7
+              },
+              {
+                "x": 8,
+                "y": 8
+              },
+              {
+                "x": 8,
+                "y": 9
+              },
+              {
+                "x": 8,
+                "y": 10
+              },
+              {
+                "x": 8,
+                "y": 11
+              },
+              {
+                "x": 8,
+                "y": 12
+              },
+              {
+                "x": 8,
+                "y": 13
+              }
+            ]
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 200,
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 3,
+            "y": 19
+          }
+        ],
+        "units": [
+          {
+            "post": 0,
+            "def": "unit_soldier",
+            "x": 3,
+            "y": 17
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 200,
+        "stateHash": "bb16c6c9",
+        "events": 66,
+        "sides": [
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 1,
+          "killed": [0, 0]
+        }
+      },
+      "eventLogHash": "be382617"
+    }
+  },
+  {
+    "id": "arena-sim.guards-both-sides-near-same-guards",
+    "kind": "arena-sim",
+    "description": "A guard soldier and a guard archer on one point, a soldier of side 0 two cells south of it and a soldier of side 1 two cells north: both sides fight the guards (and the guards fight back) rather than each other; the kills are credited to the side that dealt the most damage.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 300,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 17
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 7,
+          "y": 21
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19
+          }
+        ],
+        "units": [
+          {
+            "post": 0,
+            "def": "unit_soldier",
+            "x": 6,
+            "y": 19
+          },
+          {
+            "post": 0,
+            "def": "unit_archer",
+            "px": 1560,
+            "py": 4800
+          }
+        ]
+      }
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "8b540e08",
+        "events": 41,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 0,
+            "unitsDied": 1,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [422]
+          },
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 78,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 2]
+        },
+        "positions": [
+          [2, 2446, 592]
+        ]
+      },
+      "eventLogHash": "0b88b0fe"
+    }
   }
 ]

@@ -76,6 +76,7 @@ function start(
 ): Battle {
   const r = startBattle(
     {
+      round: 1,
       teamA: a,
       teamB: b,
       seed: 1,
@@ -332,7 +333,7 @@ describe('summary and helpers', () => {
     });
     expect(
       simulateBattle(
-        { teamA: team2(false), teamB: team2(false), seed: 1 },
+        { round: 1, teamA: team2(false), teamB: team2(false), seed: 1 },
         content,
         config,
         { zone: zoneOf(24) },

@@ -163,7 +163,7 @@ export function makePveBattleKind(
         },
       };
     }
-    const started = startPveBattle({ team, threat, seed }, content, {
+    const started = startPveBattle({ team, threat, seed, round: threat.round }, content, {
       sim: simConfig,
       mapgen,
     });

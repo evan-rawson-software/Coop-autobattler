@@ -166,11 +166,12 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
     team: TeamState,
     source: BattleSource,
     seed: number,
+    round: number,
     state: RunState,
   ): { battle: Battle; label: string } | { error: string } {
     if (source.type === 'ghost') {
       const started = startBattle(
-        { teamA: team, teamB: source.team, seed },
+        { teamA: team, teamB: source.team, seed, round },
         content,
         config,
       );
@@ -189,7 +190,11 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
     } else {
       threat = source.threat;
     }
-    const started = startPveBattle({ team, threat, seed }, content, config);
+    const started = startPveBattle(
+      { team, threat, seed, round },
+      content,
+      config,
+    );
     return started.ok
       ? { battle: started.battle, label: threat.archetype }
       : { error: started.error.message };
@@ -242,7 +247,7 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
           };
         }
       }
-      const started = startFor(state.team, source, seed, state);
+      const started = startFor(state.team, source, seed, state.round, state);
       if ('error' in started) {
         throw new Error(`Battle could not start: ${started.error}`);
       }
@@ -288,7 +293,13 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
       if (hashJson(state.team) !== detail.teamHash) {
         return { ok: false, reason: 'team_changed' };
       }
-      const started = startFor(state.team, detail.source, detail.seed, state);
+      const started = startFor(
+        state.team,
+        detail.source,
+        detail.seed,
+        detail.round,
+        state,
+      );
       if ('error' in started) return { ok: false, reason: started.error };
       return {
         ok: true,
