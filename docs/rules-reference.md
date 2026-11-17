@@ -379,8 +379,14 @@ In `points.json` (points of interest, "The neutral zone"): `chancePercent` is
 `plotWidth` (the loader checks this when it knows the mapgen file, `pnpm
 validate:content` always does; the generator also treats a band with no column
 left as having no point); `buffs` has 1 to 16 entries, each with a unique `id`
-matching `poi_[a-z0-9_]+`, a `kind` of `unit_strength` or `heal`, and an
-integer `weight` from 1 to 1000. `neutralZone.depth` in `mapgen.json` must be
+matching `poi_[a-z0-9_]+`, a `kind` of `unit_strength` or `heal`, an
+integer `weight` from 1 to 1000 and the numbers of its kind (CB-8g, no other
+keys): `strengthPercent` 1 to 10 000 for `unit_strength`; `healIntervalTicks` 1
+to 1 000 000, `healRadiusCells` 1 to 8 and `healAmount` 1 to 1 000 000 for
+`heal`; the file's `maxPointStrengthPercent` is 0 to 100 000 (outside the
+Armory cap). The point bonus must leave every unit within `MAX_HEALTH` and
+`MAX_DAMAGE` together with `maxUnitStrengthPercent`: checked by a test and, for
+the battle at hand, at tick 0 ("Points of interest", "Buffs"). `neutralZone.depth` in `mapgen.json` must be
 odd (the loader and `mapgen.schema.json` refuse an even one). `guards` (CB-8e):
 `baseBudget` 1 to 1 000 000, `growthPercent` 100 to 1000, `maxGuardsPerPoint` 1
 to 9 (the point's cell and its 8 neighbours), `leashCells` 1 to 8, `units`
@@ -1927,7 +1933,7 @@ integer; it never goes below 0. A building at 0 is destroyed (step 6 below).
 
 ### Units
 
-A unit is `{id, side, def, px, py, hp, damage, attackCooldown, owner, target}`
+A unit is `{id, side, def, px, py, hp, maxHp, damage, attackCooldown, owner, target}`
 (a neutral guard also has `post`, see "Neutral guards"). `side` is 0 or 1, or
 **2 for a neutral guard** (CB-8e), which has `owner = -1` and `target = -1`;
 guards are in the same list, sorted by `id`, with ids from the same counter
@@ -1938,7 +1944,7 @@ movement fields"). `(px, py)` is
 the **centre of the unit's circle** in arena **sub-cell units** (see "Unit
 geometry"). `id` is a positive integer taken from one counter shared by both
 sides, in spawn order (the counter starts at 1, is never reused); the unit list
-is kept sorted by `id`. `hp` starts at the unit definition's `health`.
+is kept sorted by `id`. `hp` starts at the unit definition's `health`; `maxHp` (CB-8g) is the same number, **fixed at spawn** from `unitStats` (so it includes the strength percent and a champion's health percent) and never changes: healing never takes `hp` above it. It is stored in the unit's state, so the state hash of every battle with units includes it; no saved format stores an arena state (the run state and the ghost snapshot store teams).
 `attackCooldown` counts down in ticks. **Units are circles that may overlap
 each other a little for a while but never solid ground** (soft collision,
 issue #82): see "Unit geometry" and step 5 of the tick. There is no
@@ -1958,7 +1964,8 @@ result above `MAX_HEALTH` is a `RangeError`. With `P = 0` and `hp = 100` the
 definition is returned as is. A scaled `health` above `MAX_HEALTH` or `damage` above `MAX_DAMAGE`
 is an error (`RangeError`), see "Content bounds". A spawn passes the side's
 current `unit_strength` bonus (see "In-battle ramp"; plus the side's
-`unitStrengthPercent` option, see "Side options"), and the unit starts with
+`unitStrengthPercent` option, see "Side options"; plus the side's point bonus,
+see "Points of interest", "Buffs"), and the unit starts with
 `hp = health` and `damage` of the result; units already on the field are never
 changed afterwards. A unit's `armor` (CB-5h) is never stored in the unit and
 never scaled: it is read from the definition each time a hit on the unit is
@@ -2160,11 +2167,12 @@ state at tick 0:
   counters");
 - `guards`: present **only** after `placeGuards` was called, that is, for a
   battle whose zone has points of interest: `{leashCells, capture, posts,
-  killed, lostToGuards}`, see "Neutral guards" and "Points of interest"
+  killed, lostToGuards, maxPointStrengthPercent, healed}`, see "Neutral guards" and "Points of interest"
   (`capture` holds the four numbers of `content/points.json` `capture`);
 - `points`: present **only** when `placeGuards` was called, like `guards`
   (CB-8f, "Points of interest"): one `{id, controller, progressSide,
-  progress, held}` per point of the zone, sorted by `id`;
+  progress, held, buff}` per point of the zone, sorted by `id` (`buff` is
+  the numbers of the point's buff, CB-8g, and absent for a point with none);
 - `sideOptions`: present **only** when a side was given options (PvE battles, see
   "Side options"); a ghost battle's state has no such field, so its hash is
   unchanged;
@@ -2551,6 +2559,13 @@ interest (CB-8f, "Points of interest") add the diversion of rule c in step 3
    queue is walked in the Production step of the **next** tick (a step taken
    in a tick takes effect from the next tick). The event comes before the
    `core_destroyed` event of step 6 when the same hit destroys the Core.
+
+   **Healing (CB-8g, last part of step 4).** After all damage of the step is
+   applied (units, buildings, Cores), a battle whose state has `points` runs
+   the heal beat of its `heal` points: see "Points of interest", "Buffs". It
+   comes before the removal of the dead in step 6, so a unit brought to 0
+   health this tick is not healed back, and before the moves of step 5, so
+   the unit's centre is where it fought.
 5. **Move and separate** (soft collision, issue #82). Every unit keeps its
    decision from step 3; the units that were killed in step 4 still move
    (decisions were simultaneous). The step works on arrays indexed by position
@@ -2964,8 +2979,8 @@ what it already did stays: running source countdowns and units already
 spawned keep their values. Each building is also limited by its own
 `maxSteps`, so the ramp has two limits: per building and per owner and effect.
 A unit of a scheduled PvE wave has no producer and so **no ramp bonus** (owner
-decision, issue #175): it gets only the side-wide `unitStrengthPercent` and run
-modifiers; pinned by a test in `ramp.test.ts`.
+decision, issue #175): it gets only the side-wide `unitStrengthPercent`, run
+modifiers and the side's point bonus (CB-8g); pinned by a test in `ramp.test.ts`.
 
 **`source_speed`.** Before each tick's flow step the arena sets the board's
 source interval modifiers to one value per player index: each owner's
@@ -2976,6 +2991,14 @@ unchanged: `max(1, floor(intervalTicks * 100 /
 per tick). With the maximum 25 a tier 1 extractor (20) drops to 16, a tier 2
 (14) to 11 and a tier 3 (10) to 8. The first countdown of a battle and any countdown already running
 are not changed when the bonus changes, only the next reset sees it.
+
+**Points of interest (CB-8g).** A side also has a **point bonus**: the
+`strengthPercent` of every `unit_strength` point it holds, summed and capped at
+`maxPointStrengthPercent` (40), see "Points of interest", "Buffs". It is the
+side's, not a player's: every unit the side spawns while it holds the points
+gets it, units of every player and units of a scheduled wave alike. It is
+**outside** `maxUnitStrengthPercent`: the capped Armory bonus and the point bonus
+add, so a player at the Armory cap still gains from a point.
 
 **`unit_strength`.** A unit spawned by a unit producer (or placed with
 `spawnUnitForTest` and an `owner`) while its producer's owner has the bonus `P`
@@ -3263,7 +3286,7 @@ gap cells are how the neutral zone enters), and does not end the battle: the
 neutral zone, the battle end and the top-level entry point are in "The neutral
 zone" and "Battles". The zone holds points of interest (CB-8d); they do not
 block movement, and each starts the battle with neutral guards ("Neutral
-guards", CB-8e). Capture and buffs are deferred (CB-8f, CB-8g).
+guards", CB-8e), can be captured (CB-8f) and give their holder a buff (CB-8g, "Points of interest").
 
 ### Decided simplifications
 
@@ -3340,8 +3363,8 @@ JSON `{ width, depth, features, pointsOfInterest }`:
   `content/points.json`. A point is one cell. It does **not** block movement
   and units walk over it; it never lies on a feature. There is at most one per
   band. Each point starts the battle with neutral guards ("Neutral guards") and
-  units divert to it and capture it ("Points of interest"); its `buff` is not
-  read yet (CB-8g).
+  units divert to it and capture it ("Points of interest"); its `buff` is the
+  buff its holder gets ("Points of interest", "Buffs").
 
 ### Parameters (`content/mapgen.json`, `neutralZone`)
 
@@ -3357,10 +3380,11 @@ A four-player battle therefore gets up to four lakes and four cliffs.
 
 The points of interest read `content/points.json` (schema
 `schemas/points.schema.json`, loader `points.ts`): `chancePercent` (60),
-`bandMarginCells` (2) and `buffs` (a list of `{id, kind, weight}`; `poi_strength`
-of kind `unit_strength` and `poi_heal` of kind `heal`, both weight 1). The tries
-per point are `placementTries` of `mapgen.json`. The numbers of each buff kind
-are not in the file yet (CB-8g). `guards` holds the neutral guards of every
+`bandMarginCells` (2), `buffs` (a list of `{id, kind, weight, ...numbers of the
+kind}`; `poi_strength` of kind `unit_strength` with `strengthPercent` 20 and
+`poi_heal` of kind `heal` with `healIntervalTicks` 10, `healRadiusCells` 3 and
+`healAmount` 2, both weight 1) and `maxPointStrengthPercent` (40, CB-8g). The
+tries per point are `placementTries` of `mapgen.json`. `guards` holds the neutral guards of every
 point (CB-8e, "Neutral guards"): `baseBudget` (44), `growthPercent` (125),
 `maxGuardsPerPoint` (5), `leashCells` (3) and `units`, the list of `{unit,
 cost, weight}` (`unit_soldier` 10 / 3 and `unit_archer` 14 / 1). `generateNeutralZone` takes the loaded points
@@ -3506,7 +3530,7 @@ numbers in `content/points.json` under `guards` (schema
 `schemas/points.schema.json`, loader `points.ts`). CB-8c and CB-8e (issue
 #372). Guards hold the points of interest of the neutral zone ("The neutral
 zone"). A point with a living guard cannot be captured ("Points of
-interest"); the buffs are a later part (CB-8g).
+interest"); the buffs are in "Points of interest", "Buffs" (CB-8g).
 
 ### Model
 
@@ -3721,8 +3745,8 @@ Implemented in `arena-sim.ts` (`divertPoint`, `moveToPoint`, `stepPoints`) and
 (schema `schemas/points.schema.json`, loader `points.ts`). CB-8c and CB-8f
 (issue #373). The points are placed by "The neutral zone" and guarded by
 "Neutral guards"; this section covers how units divert to a point, wait there,
-capture it and what is recorded. A held point has no effect yet (the buffs are
-CB-8g, a later part).
+capture it and what is recorded, and "Buffs" what a held point gives its side
+(CB-8g, issue #374).
 
 ### State
 
@@ -3736,6 +3760,7 @@ A battle whose zone has points (`placeGuards` was called) has `points` in the
 | `progressSide` | The side whose progress `progress` is: -1, 0 or 1.                           |
 | `progress`     | Capture progress, 0 up to `captureTicks - 1`.                                |
 | `held`         | `[ticks side 0 held it, ticks side 1 held it]`, from 0.                      |
+| `buff`         | The numbers of the point's buff (CB-8g, "Buffs"); absent: the point gives nothing. |
 
 At tick 0 every point is `{controller: -1, progressSide: -1, progress: 0,
 held: [0, 0]}`. `guards.capture` stores the four numbers of the content
@@ -3845,8 +3870,75 @@ progress), two units in 25, three or more in 17.
   It is **not** part of the tiebreak ladder (PP-10) and does not decide when
   a battle ends.
 
+### Buffs
+
+CB-8g (issue #374). A point's buff is `buff.kind` with its numbers, copied
+from the `content/points.json` entry the zone names (`point.buff` is the entry's
+`id`) into the state of the point at tick 0, so a restored state needs nothing
+else: `{kind: "unit_strength", strengthPercent}` or `{kind: "heal",
+healIntervalTicks, healRadiusCells, healAmount}`. The state also keeps
+`guards.maxPointStrengthPercent` (the top-level `maxPointStrengthPercent` of the
+file) and `guards.healed`, `[side 0, side 1]`. The buff is **active while the
+point's `controller` is 0 or 1**, for that side, and only then: it ends the
+moment the point is taken by the other side (the capture step, end of step 6,
+changes `controller`) and with the battle. Every player of the side benefits
+(an exception to PP-8). A point with no controller, and a point with no `buff`
+(scenarios), gives nothing. More entries of one kind with other numbers need no
+code: each point carries its own numbers.
+
+**`unit_strength`: stronger new units.** The side's **point bonus** is `min(sum,
+maxPointStrengthPercent)`, `sum` being the `strengthPercent` of every
+`unit_strength` point whose `controller` is the side (`pointStrengthBonus`; 20
+per point and a cap of 40 with the shipped numbers, so a third point adds
+nothing). `spawnStrength` of a unit of side `s` (producer units, units of a
+scheduled wave, test spawns) is `rampBonus(owner) + unitStrengthPercent option
++ run modifiers + pointBonus(s)`, with `rampBonus` 0 for a wave unit; this
+single number is the `strengthPercent` given to `unitStats`. The point bonus is
+outside the Armory cap `maxUnitStrengthPercent`. It is read at the moment of the
+spawn (step 2 of the tick for producers and waves; a wave unit waiting in `entering` reads it when it is placed on the field; the capture step that gives
+or takes a point runs at the end of step 6, so a point captured in tick `T`
+counts for the spawns of tick `T + 1` on), and a unit already on the field is
+never changed: not when the point is lost, not when another is taken. Neutral
+guards (side 2) are not spawned by this path and get no point bonus.
+**Content bound:** at `placeGuards` (tick 0) the largest possible bonus (the
+sum of every `unit_strength` point of the zone, capped) is added to each side's
+worst case (`base + modifiers + largest ramp bonus`) of the start check of "Content
+bounds" and every unit type must stay within `MAX_HEALTH` and `MAX_DAMAGE`
+(and the Overload hit within `MAX_HIT`); a battle for which a spawn could pass
+them is refused with a `RangeError` before the first tick. A test pins that
+every unit of `units.json` can take `maxUnitStrengthPercent +
+maxPointStrengthPercent` (`maxStrengthPercent(def)`).
+
+**`heal`: healing near the point.** In step 4, after the damage is applied
+(see "One battle tick"), for each point in `id` order whose `controller` is 0 or
+1, whose buff is `heal` and for which `T mod healIntervalTicks = 0` (`T` the
+tick being run; tick 0 is a beat), the point is a **beat** of its holder. Then
+for every unit of the arena in unit-`id` order that is not a guard, has `hp > 0`
+and `hp < maxHp`: `best` is the largest `healAmount` of the beats of the
+unit's own side whose point centre `(240 x + 120, 240 y + 120)` is within
+`healRadiusCells * 240` of the unit's centre (`dx^2 + dy^2 <= r^2`, squared
+integers); if `best > 0` the unit gains `g = min(best, maxHp - hp)`, `hp += g`
+and `guards.healed[side] += g`. A unit near several beats of its side gains
+**once**, with the largest amount (healing does not stack); a unit of the other
+side, a guard, a building and a Core are never healed, and a unit with `hp <=
+0` (killed in this very step) is not healed back. There is no event for a heal;
+playback reads `healedHp` from the summary, or `hp` from a later sample.
+
+**Summary.** `BattleSideSummary` has `pointBonus` (the side's point bonus at the
+end of the battle, `pointStrengthBonus`: 0 without points) and `healedHp`
+(`guards.healed[side]`, 0 without points); the `arena-sim` golden kind reports
+both for a state with points as `pointBonus` and `healed`. Neither is part of
+the tiebreak (PP-10). **Seam for a later modifier** (the Shrine modifier
+"Claimstakers", captured 50 percent faster, issue #426): the capture numbers are
+stored per battle in `guards.capture`; a modifier only needs to change what
+`placeGuards` is given.
+
 ### Notes for a port
 
+- A point's state also has its `buff` (copied numbers); the buff of a point
+  with a controller is looked up from the point's state alone. The point bonus
+  and the heal beat are computed from `points` at the moment of the spawn and
+  of step 4: nothing about them is cached or stored besides `guards.healed`.
 - The state of a point has four numbers and `held`; keep the list sorted by
   `id` and parallel to `guards.posts`. Do not keep a set of "diverted" units:
   the diversion is recomputed from the unit's position every tick.
@@ -3862,6 +3954,21 @@ progress), two units in 25, three or more in 17.
   units closer. This is a consequence of the numbers, not a rule.
 
 ### Golden vectors
+
+(Buffs, CB-8g: `arena-sim` also takes, per post, an optional `buff` (`{kind,
+...numbers}` as in the content) and `controller` (0 or 1: the starting holder,
+test setup), `guards.maxPointStrengthPercent`, per unit an optional `hp`, a
+list `lateUnits` placed after the guards and the controllers, and `report:
+"stats"` (`stats: [[id, hp, maxHp, damage], ...]`); its result has `pointBonus`
+and `healed`. Vectors: `arena-sim.points-strength-new-units-stronger`,
+`arena-sim.points-strength-two-points-capped`,
+`arena-sim.points-strength-lost-point-normal-units`,
+`arena-sim.points-heal-restores-up-to-max`,
+`arena-sim.points-heal-caps-at-max-health`,
+`arena-sim.points-heal-two-points-once-per-beat`,
+`arena-sim.points-heal-not-after-point-lost`, and for whole battles
+`battle.points-strength-wave-captures` and `battle.points-heal-wave-captures`.
+Every battle summary has `pointBonus` and `healedHp` per side.)
 
 `arena-sim` takes `guards.capture`, optional `{captureTicks,
 maxCapturersCounted, captureRadiusCells, pointAggroRangeCells}` (each

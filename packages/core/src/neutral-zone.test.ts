@@ -292,16 +292,33 @@ const CAPTURE = {
   pointAggroRangeCells: 3,
 };
 
+const BUFFS = [
+  { id: 'poi_strength', kind: 'unit_strength', weight: 1, strengthPercent: 20 },
+  {
+    id: 'poi_heal',
+    kind: 'heal',
+    weight: 1,
+    healIntervalTicks: 10,
+    healRadiusCells: 3,
+    healAmount: 2,
+  },
+];
+
+const HEAL = {
+  kind: 'heal',
+  healIntervalTicks: 10,
+  healRadiusCells: 3,
+  healAmount: 2,
+};
+
 function withPoints(chancePercent: number, bandMarginCells = 2) {
   return {
     ...content,
     points: loadPointsOrThrow({
       chancePercent,
       bandMarginCells,
-      buffs: [
-        { id: 'poi_strength', kind: 'unit_strength', weight: 1 },
-        { id: 'poi_heal', kind: 'heal', weight: 1 },
-      ],
+      buffs: BUFFS,
+      maxPointStrengthPercent: 40,
       guards: GUARDS,
       capture: CAPTURE,
     }),
@@ -433,7 +450,8 @@ describe('points content', () => {
     const ok = {
       chancePercent: 60,
       bandMarginCells: 2,
-      buffs: [{ id: 'poi_a', kind: 'heal', weight: 1 }],
+      maxPointStrengthPercent: 40,
+      buffs: [{ id: 'poi_a', weight: 1, ...HEAL }],
       guards: GUARDS,
       capture: CAPTURE,
     };
@@ -443,13 +461,22 @@ describe('points content', () => {
       { ...ok, bandMarginCells: -1 },
       { ...ok, buffs: [] },
       { ...ok, buffs: [{ id: 'poi_a', kind: 'fly', weight: 1 }] },
-      { ...ok, buffs: [{ id: 'a', kind: 'heal', weight: 1 }] },
-      { ...ok, buffs: [{ id: 'poi_a', kind: 'heal', weight: 0 }] },
+      { ...ok, buffs: [{ id: 'a', weight: 1, ...HEAL }] },
+      { ...ok, buffs: [{ id: 'poi_a', weight: 0, ...HEAL }] },
+      { ...ok, buffs: [{ id: 'poi_a', weight: 1, kind: 'heal' }] },
+      { ...ok, buffs: [{ id: 'poi_a', weight: 1, ...HEAL, healAmount: 0 }] },
+      {
+        ...ok,
+        buffs: [{ id: 'poi_a', weight: 1, ...HEAL, healRadiusCells: 9 }],
+      },
+      { ...ok, buffs: [{ id: 'poi_a', weight: 1, kind: 'unit_strength' }] },
+      { ...ok, maxPointStrengthPercent: undefined },
+      { ...ok, maxPointStrengthPercent: -1 },
       {
         ...ok,
         buffs: [
-          { id: 'poi_a', kind: 'heal', weight: 1 },
-          { id: 'poi_a', kind: 'heal', weight: 1 },
+          { id: 'poi_a', weight: 1, ...HEAL },
+          { id: 'poi_a', weight: 1, ...HEAL },
         ],
       },
       { ...ok, extra: 1 },

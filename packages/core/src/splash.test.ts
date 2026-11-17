@@ -338,6 +338,7 @@ describe('a caster hit', () => {
           'def',
           'hp',
           'id',
+          'maxHp',
           'owner',
           'px',
           'py',

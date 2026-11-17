@@ -251,7 +251,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "8a399d0a",
+        "stateHash": "b839f6d4",
         "events": 1282,
         "sides": [
           {
@@ -281,7 +281,7 @@
             [500],
             [500]
           ],
-          "stateHash": "41ef94eb"
+          "stateHash": "3a4fd82f"
         },
         {
           "tick": 260,
@@ -290,7 +290,7 @@
             [500],
             [500]
           ],
-          "stateHash": "91b5a20d"
+          "stateHash": "97f16727"
         },
         {
           "tick": 390,
@@ -299,7 +299,7 @@
             [500],
             [500]
           ],
-          "stateHash": "0c55d09c"
+          "stateHash": "c169c06a"
         },
         {
           "tick": 520,
@@ -308,7 +308,7 @@
             [500],
             [500]
           ],
-          "stateHash": "c02f13f8"
+          "stateHash": "50bc85d8"
         },
         {
           "tick": 650,
@@ -317,7 +317,7 @@
             [500],
             [500]
           ],
-          "stateHash": "17cbba9e"
+          "stateHash": "2d0537b2"
         },
         {
           "tick": 780,
@@ -326,7 +326,7 @@
             [500],
             [500]
           ],
-          "stateHash": "1812d9f3"
+          "stateHash": "97896933"
         }
       ]
     }
@@ -488,7 +488,7 @@
     "expected": {
       "result": {
         "tick": 1800,
-        "stateHash": "55d5cc78",
+        "stateHash": "45b5a038",
         "events": 887,
         "sides": [
           {
@@ -767,7 +767,7 @@
     "expected": {
       "result": {
         "tick": 2200,
-        "stateHash": "ad11fcb3",
+        "stateHash": "f307c91d",
         "events": 1092,
         "sides": [
           {
@@ -953,7 +953,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "0e1015f1",
+        "stateHash": "c37be533",
         "events": 69,
         "sides": [
           {
@@ -1159,7 +1159,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "ebbe84e8",
+        "stateHash": "7d221261",
         "events": 269,
         "sides": [
           {
@@ -2010,7 +2010,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "d91e6382",
+        "stateHash": "f504cb56",
         "events": 75,
         "sides": [
           {
@@ -2263,7 +2263,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "3d85a773",
+        "stateHash": "f51923bf",
         "events": 40,
         "sides": [
           {
@@ -3161,7 +3161,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "4e805e1a",
+        "stateHash": "0dffd444",
         "events": 421,
         "sides": [
           {
@@ -3191,7 +3191,7 @@
             [500],
             [500]
           ],
-          "stateHash": "76011281"
+          "stateHash": "b0d03e61"
         },
         {
           "tick": 90,
@@ -3200,7 +3200,7 @@
             [500],
             [500]
           ],
-          "stateHash": "816b8f5d"
+          "stateHash": "579440a9"
         },
         {
           "tick": 135,
@@ -3209,7 +3209,7 @@
             [476],
             [500]
           ],
-          "stateHash": "b19effbd"
+          "stateHash": "58431d43"
         },
         {
           "tick": 180,
@@ -3218,7 +3218,7 @@
             [314],
             [500]
           ],
-          "stateHash": "6e5c5a30"
+          "stateHash": "530770fc"
         },
         {
           "tick": 225,
@@ -3227,7 +3227,7 @@
             [152],
             [500]
           ],
-          "stateHash": "4e1c79f0"
+          "stateHash": "eb643742"
         },
         {
           "tick": 270,
@@ -3236,7 +3236,7 @@
             [0],
             [500]
           ],
-          "stateHash": "2f946757"
+          "stateHash": "05fbe183"
         },
         {
           "tick": 315,
@@ -3245,7 +3245,7 @@
             [0],
             [500]
           ],
-          "stateHash": "79c06773"
+          "stateHash": "1b4fb181"
         },
         {
           "tick": 360,
@@ -3254,7 +3254,7 @@
             [0],
             [500]
           ],
-          "stateHash": "aa7c5ef0"
+          "stateHash": "00969e2a"
         }
       ]
     }
@@ -3399,7 +3399,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "77dcf3e0",
+        "stateHash": "eee805c8",
         "events": 186,
         "sides": [
           {
@@ -3594,7 +3594,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "6c45cd37",
+        "stateHash": "f1270b29",
         "events": 246,
         "sides": [
           {
@@ -3758,7 +3758,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "2c24da11",
+        "stateHash": "b85d9f10",
         "events": 154,
         "sides": [
           {
@@ -4253,7 +4253,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "10c8a20f",
+        "stateHash": "54c7585b",
         "events": 635,
         "sides": [
           {
@@ -4830,7 +4830,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "3b529b11",
+        "stateHash": "d0c2a263",
         "events": 7,
         "sides": [
           {
@@ -4948,7 +4948,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "29377eb7",
+        "stateHash": "7237277e",
         "events": 21,
         "sides": [
           {
@@ -5423,7 +5423,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "21263a8a",
+        "stateHash": "dd8d8448",
         "events": 98,
         "sides": [
           {
@@ -5691,7 +5691,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "bec135c7",
+        "stateHash": "719d3820",
         "events": 245,
         "sides": [
           {
@@ -6122,7 +6122,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "15e13f1f",
+        "stateHash": "2994b88f",
         "events": 41,
         "sides": [
           {
@@ -6406,7 +6406,7 @@
     "expected": {
       "result": {
         "tick": 1,
-        "stateHash": "9c8e8c7f",
+        "stateHash": "45e90263",
         "events": 9,
         "sides": [
           {
@@ -6573,7 +6573,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "57eb75b3",
+        "stateHash": "6b97ce9d",
         "events": 156,
         "sides": [
           {
@@ -6723,7 +6723,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "78aa7ea8",
+        "stateHash": "39fb2ac6",
         "events": 183,
         "sides": [
           {
@@ -6753,7 +6753,7 @@
             [500, 500, 500, 500],
             [488, 488, 0, 0]
           ],
-          "stateHash": "6967637a"
+          "stateHash": "13340404"
         },
         {
           "tick": 260,
@@ -6762,7 +6762,7 @@
             [500, 500, 500, 500],
             [410, 356, 0, 0]
           ],
-          "stateHash": "0ff79260"
+          "stateHash": "1326856a"
         },
         {
           "tick": 390,
@@ -6771,7 +6771,7 @@
             [500, 500, 500, 500],
             [332, 122, 0, 0]
           ],
-          "stateHash": "11cb45ba"
+          "stateHash": "a6435d64"
         },
         {
           "tick": 520,
@@ -6780,7 +6780,7 @@
             [500, 500, 500, 500],
             [254, 0, 0, 0]
           ],
-          "stateHash": "b998f4be"
+          "stateHash": "c1a67a48"
         },
         {
           "tick": 650,
@@ -6789,7 +6789,7 @@
             [500, 500, 500, 500],
             [0, 0, 0, 0]
           ],
-          "stateHash": "95ebb714"
+          "stateHash": "070d9e72"
         },
         {
           "tick": 780,
@@ -6798,7 +6798,7 @@
             [500, 500, 500, 500],
             [0, 0, 0, 0]
           ],
-          "stateHash": "c88c7f32"
+          "stateHash": "e0bd1c70"
         }
       ]
     }
@@ -6929,7 +6929,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "78aa7ea8",
+        "stateHash": "39fb2ac6",
         "events": 183,
         "sides": [
           {
@@ -7042,7 +7042,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "cfeb08e8",
+        "stateHash": "90f4af0e",
         "events": 71,
         "sides": [
           {
@@ -7168,7 +7168,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "c8a8d744",
+        "stateHash": "86878bc0",
         "events": 27,
         "sides": [
           {
@@ -7294,7 +7294,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "ec0ffba2",
+        "stateHash": "57d7b070",
         "events": 47,
         "sides": [
           {
@@ -7901,7 +7901,7 @@
     "expected": {
       "result": {
         "tick": 1200,
-        "stateHash": "b7edc55b",
+        "stateHash": "99d92305",
         "events": 2766,
         "sides": [
           {
@@ -8499,7 +8499,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "e9f58624",
+        "stateHash": "7757e170",
         "events": 631,
         "sides": [
           {
@@ -8529,7 +8529,7 @@
             [500, 500],
             [500, 500]
           ],
-          "stateHash": "6a8c2efd"
+          "stateHash": "95ec3c79"
         },
         {
           "tick": 280,
@@ -8538,7 +8538,7 @@
             [500, 500],
             [494, 500]
           ],
-          "stateHash": "d20329a7"
+          "stateHash": "573fd20d"
         },
         {
           "tick": 420,
@@ -8547,7 +8547,7 @@
             [500, 500],
             [218, 266]
           ],
-          "stateHash": "5bd14763"
+          "stateHash": "5611e4ef"
         },
         {
           "tick": 560,
@@ -8556,7 +8556,7 @@
             [500, 500],
             [0, 0]
           ],
-          "stateHash": "d332b0fc"
+          "stateHash": "796529d6"
         },
         {
           "tick": 700,
@@ -8565,7 +8565,7 @@
             [500, 500],
             [0, 0]
           ],
-          "stateHash": "3444607f"
+          "stateHash": "e4fd7555"
         },
         {
           "tick": 840,
@@ -8574,7 +8574,7 @@
             [500, 500],
             [0, 0]
           ],
-          "stateHash": "e15bd4b3"
+          "stateHash": "23010e49"
         }
       ]
     }
@@ -9138,7 +9138,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "48d8ad71",
+        "stateHash": "329d9139",
         "events": 985,
         "sides": [
           {
@@ -9420,7 +9420,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "feb25ffa",
+        "stateHash": "7babb8ce",
         "events": 756,
         "sides": [
           {
@@ -9507,7 +9507,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "23ea7b3a",
+        "stateHash": "a9444dab",
         "events": 48,
         "sides": [
           {
@@ -9541,7 +9541,7 @@
             [500],
             [500]
           ],
-          "stateHash": "70b5d587"
+          "stateHash": "fdf42292"
         },
         {
           "tick": 80,
@@ -9550,7 +9550,7 @@
             [500],
             [479]
           ],
-          "stateHash": "c6a9fdf1"
+          "stateHash": "00a111fc"
         },
         {
           "tick": 120,
@@ -9559,7 +9559,7 @@
             [500],
             [435]
           ],
-          "stateHash": "f0858a90"
+          "stateHash": "ff4face5"
         },
         {
           "tick": 160,
@@ -9568,7 +9568,7 @@
             [500],
             [391]
           ],
-          "stateHash": "fc2746f3"
+          "stateHash": "12b19d6a"
         },
         {
           "tick": 200,
@@ -9577,7 +9577,7 @@
             [500],
             [347]
           ],
-          "stateHash": "34fe6b8f"
+          "stateHash": "b26b447e"
         },
         {
           "tick": 240,
@@ -9586,7 +9586,7 @@
             [500],
             [303]
           ],
-          "stateHash": "bdba277b"
+          "stateHash": "45ffd5f2"
         },
         {
           "tick": 280,
@@ -9595,7 +9595,7 @@
             [500],
             [259]
           ],
-          "stateHash": "e01e2655"
+          "stateHash": "050ad788"
         }
       ]
     }
@@ -9723,7 +9723,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "b62fa82c",
+        "stateHash": "928c7766",
         "events": 46,
         "sides": [
           {
@@ -9825,7 +9825,7 @@
     "expected": {
       "result": {
         "tick": 200,
-        "stateHash": "d8eacb7e",
+        "stateHash": "c29e1187",
         "events": 32,
         "sides": [
           {
@@ -10198,7 +10198,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "3a44e1d9",
+        "stateHash": "644938e9",
         "events": 224,
         "sides": [
           {
@@ -10424,7 +10424,7 @@
     "expected": {
       "result": {
         "tick": 1500,
-        "stateHash": "93ce054a",
+        "stateHash": "0bc5079e",
         "events": 291,
         "sides": [
           {
@@ -10773,7 +10773,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "d899a41d",
+        "stateHash": "313bc0f7",
         "events": 83,
         "sides": [
           {
@@ -11069,7 +11069,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "75c4c89c",
+        "stateHash": "723c3a5c",
         "events": 32,
         "sides": [
           {
@@ -11253,7 +11253,7 @@
     "expected": {
       "result": {
         "tick": 1000,
-        "stateHash": "4922e647",
+        "stateHash": "241ad828",
         "events": 461,
         "sides": [
           {
@@ -11646,7 +11646,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "19798cc8",
+        "stateHash": "ec160f23",
         "events": 371,
         "sides": [
           {
@@ -11909,7 +11909,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "4b34f17c",
+        "stateHash": "5f7844c3",
         "events": 466,
         "sides": [
           {
@@ -12725,7 +12725,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "5a1e4959",
+        "stateHash": "55891dcf",
         "events": 457,
         "sides": [
           {
@@ -12985,7 +12985,7 @@
     "expected": {
       "result": {
         "tick": 1000,
-        "stateHash": "3895b55d",
+        "stateHash": "9ab5755d",
         "events": 632,
         "sides": [
           {
@@ -13293,7 +13293,7 @@
     "expected": {
       "result": {
         "tick": 1000,
-        "stateHash": "6b88c295",
+        "stateHash": "a9366b95",
         "events": 632,
         "sides": [
           {
@@ -14240,7 +14240,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "24af5c4b",
+        "stateHash": "a86ddb8b",
         "events": 749,
         "sides": [
           {
@@ -14581,7 +14581,7 @@
     "expected": {
       "result": {
         "tick": 1500,
-        "stateHash": "452750fc",
+        "stateHash": "a0164a64",
         "events": 1878,
         "sides": [
           {
@@ -14976,7 +14976,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "2217bb3a",
+        "stateHash": "78bc7be6",
         "events": 256,
         "sides": [
           {
@@ -15384,7 +15384,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "9d67db3c",
+        "stateHash": "b8f2d07c",
         "events": 65,
         "sides": [
           {
@@ -15490,7 +15490,7 @@
     "expected": {
       "result": {
         "tick": 200,
-        "stateHash": "31a1c328",
+        "stateHash": "bbf15588",
         "events": 51,
         "sides": [
           {
@@ -15777,7 +15777,7 @@
     "expected": {
       "result": {
         "tick": 1500,
-        "stateHash": "6dcd76b3",
+        "stateHash": "f015d3d7",
         "events": 1545,
         "sides": [
           {
@@ -15931,7 +15931,7 @@
     "expected": {
       "result": {
         "tick": 120,
-        "stateHash": "2d30f3fc",
+        "stateHash": "8c1d6c6a",
         "events": 27,
         "sides": [
           {
@@ -16203,7 +16203,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "92f369d0",
+        "stateHash": "dbe16efe",
         "events": 87,
         "sides": [
           {
@@ -16330,7 +16330,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "48b0f18d",
+        "stateHash": "fb479886",
         "events": 136,
         "sides": [
           {
@@ -16434,7 +16434,7 @@
     "expected": {
       "result": {
         "tick": 160,
-        "stateHash": "2d349bb1",
+        "stateHash": "837cff4c",
         "events": 4,
         "sides": [
           {
@@ -16467,6 +16467,8 @@
             "held": [0, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 360, 8760],
           [2, 1560, 4680]
@@ -16548,7 +16550,7 @@
     "expected": {
       "result": {
         "tick": 220,
-        "stateHash": "e65362c7",
+        "stateHash": "ffdf3b12",
         "events": 14,
         "sides": [
           {
@@ -16581,6 +16583,8 @@
             "held": [117, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 457, 8690]
         ]
@@ -16661,7 +16665,7 @@
     "expected": {
       "result": {
         "tick": 120,
-        "stateHash": "93ba33e9",
+        "stateHash": "e7f8b546",
         "events": 14,
         "sides": [
           {
@@ -16694,6 +16698,8 @@
             "held": [0, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 1999, 4801]
         ]
@@ -16791,7 +16797,7 @@
     "expected": {
       "result": {
         "tick": 80,
-        "stateHash": "7d684491",
+        "stateHash": "be094877",
         "events": 21,
         "sides": [
           {
@@ -16831,6 +16837,8 @@
             "held": [0, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [2, 2280, 4200],
           [3, 600, 4680]
@@ -17177,7 +17185,7 @@
     "expected": {
       "result": {
         "tick": 200,
-        "stateHash": "bfc0f384",
+        "stateHash": "f6a9f3c9",
         "events": 66,
         "sides": [
           {
@@ -17209,7 +17217,9 @@
             "progress": 0,
             "held": [0, 0]
           }
-        ]
+        ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0]
       },
       "eventLogHash": "be382617"
     }
@@ -17299,7 +17309,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "91e5a954",
+        "stateHash": "d2f04be7",
         "events": 38,
         "sides": [
           {
@@ -17332,6 +17342,8 @@
             "held": [0, 185]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [2, 2446, 592]
         ]
@@ -17404,7 +17416,7 @@
     "expected": {
       "result": {
         "tick": 160,
-        "stateHash": "adca5473",
+        "stateHash": "d211017e",
         "events": 4,
         "sides": [
           {
@@ -17437,6 +17449,8 @@
             "held": [0, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 360, 8760]
         ]
@@ -17510,7 +17524,7 @@
     "expected": {
       "result": {
         "tick": 260,
-        "stateHash": "82f7af23",
+        "stateHash": "5248763e",
         "events": 11,
         "sides": [
           {
@@ -17543,6 +17557,8 @@
             "held": [211, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 434, 8766]
         ]
@@ -17627,7 +17643,7 @@
     "expected": {
       "result": {
         "tick": 40,
-        "stateHash": "24ac0f31",
+        "stateHash": "5a74abcc",
         "events": 2,
         "sides": [
           {
@@ -17660,6 +17676,8 @@
             "held": [23, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 704, 4896],
           [2, 944, 4816],
@@ -17758,7 +17776,7 @@
     "expected": {
       "result": {
         "tick": 40,
-        "stateHash": "d2d330fe",
+        "stateHash": "129dbf9b",
         "events": 2,
         "sides": [
           {
@@ -17791,6 +17809,8 @@
             "held": [23, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 713, 4897],
           [2, 944, 4816],
@@ -17873,7 +17893,7 @@
     "expected": {
       "result": {
         "tick": 50,
-        "stateHash": "59e2ca3c",
+        "stateHash": "e0668c35",
         "events": 10,
         "sides": [
           {
@@ -17906,6 +17926,8 @@
             "held": [0, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 1560, 4600],
           [2, 1560, 4760]
@@ -17987,7 +18009,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "095b53bc",
+        "stateHash": "7fba845d",
         "events": 38,
         "sides": [
           {
@@ -18020,6 +18042,8 @@
             "held": [270, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 550, 8248]
         ]
@@ -18106,7 +18130,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "fbdebd23",
+        "stateHash": "30a56b1a",
         "events": 57,
         "sides": [
           {
@@ -18139,6 +18163,8 @@
             "held": [337, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 432, 8788],
           [2, 327, 8762]
@@ -18224,7 +18250,7 @@
     "expected": {
       "result": {
         "tick": 420,
-        "stateHash": "bab099ec",
+        "stateHash": "67546bef",
         "events": 50,
         "sides": [
           {
@@ -18257,6 +18283,8 @@
             "held": [72, 299]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [2, 815, 393],
           [3, 819, 490]
@@ -18342,7 +18370,7 @@
     "expected": {
       "result": {
         "tick": 200,
-        "stateHash": "8da7e36a",
+        "stateHash": "e245159d",
         "events": 16,
         "sides": [
           {
@@ -18375,6 +18403,8 @@
             "held": [0, 119]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [2, 729, 586],
           [3, 921, 470]
@@ -18460,7 +18490,7 @@
     "expected": {
       "result": {
         "tick": 260,
-        "stateHash": "bf8ef031",
+        "stateHash": "23a0fba0",
         "events": 1,
         "sides": [
           {
@@ -18493,6 +18523,8 @@
             "held": [0, 0]
           }
         ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
         "positions": [
           [1, 1560, 4200],
           [2, 1248, 4992],
@@ -18500,6 +18532,903 @@
         ]
       },
       "eventLogHash": "46c96bbc"
+    }
+  },
+  {
+    "id": "arena-sim.points-strength-new-units-stronger",
+    "kind": "arena-sim",
+    "description": "One unit_strength point (+20 percent), held by side 0 from tick 0, and a soldier of each side. The soldier of side 0 placed before the point's holder was set (units) has the base health and damage; the soldier of side 0 placed after (lateUnits) has 20 percent more of both; a late soldier of side 1, which holds nothing, has the base. report stats lists [id, hp, maxHp, damage]; pointBonus is [20, 0].",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 3,
+      "report": "stats",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 2,
+          "y": 17
+        }
+      ],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19,
+            "controller": 0,
+            "buff": {
+              "kind": "unit_strength",
+              "strengthPercent": 20
+            }
+          }
+        ]
+      },
+      "lateUnits": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 4,
+          "y": 17
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 30
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 3,
+        "stateHash": "373c1f74",
+        "events": 0,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [3, 0]
+          }
+        ],
+        "pointBonus": [0, 0],
+        "healed": [0, 0],
+        "stats": [
+          [1, 40, 40, 6],
+          [2, 40, 40, 6],
+          [3, 40, 40, 6]
+        ]
+      },
+      "eventLogHash": "741638a5"
+    }
+  },
+  {
+    "id": "arena-sim.points-strength-two-points-capped",
+    "kind": "arena-sim",
+    "description": "Three unit_strength points all held by side 0 with maxPointStrengthPercent 40: the late soldier of side 0 has 40 percent more health and damage, not 60. pointBonus is [40, 0].",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 3,
+      "report": "stats",
+      "guards": {
+        "maxPointStrengthPercent": 40,
+        "posts": [
+          {
+            "id": 0,
+            "x": 2,
+            "y": 19,
+            "controller": 0,
+            "buff": {
+              "kind": "unit_strength",
+              "strengthPercent": 20
+            }
+          },
+          {
+            "id": 1,
+            "x": 6,
+            "y": 19,
+            "controller": 0,
+            "buff": {
+              "kind": "unit_strength",
+              "strengthPercent": 20
+            }
+          },
+          {
+            "id": 2,
+            "x": 9,
+            "y": 19,
+            "controller": 0,
+            "buff": {
+              "kind": "unit_strength",
+              "strengthPercent": 20
+            }
+          }
+        ]
+      },
+      "lateUnits": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 4,
+          "y": 17
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 3,
+        "stateHash": "b62ffe40",
+        "events": 0,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [3, 0]
+          },
+          {
+            "id": 1,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [3, 0]
+          },
+          {
+            "id": 2,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [3, 0]
+          }
+        ],
+        "pointBonus": [40, 0],
+        "healed": [0, 0],
+        "stats": [
+          [1, 56, 56, 8]
+        ]
+      },
+      "eventLogHash": "741638a5"
+    }
+  },
+  {
+    "id": "arena-sim.points-strength-lost-point-normal-units",
+    "kind": "arena-sim",
+    "description": "A unit_strength point held by side 1 from tick 0 (side 0 lost it): the late soldier of side 0 is normal, the late soldier of side 1 has +20 percent. pointBonus is [0, 20].",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 3,
+      "report": "stats",
+      "guards": {
+        "maxPointStrengthPercent": 40,
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19,
+            "controller": 1,
+            "buff": {
+              "kind": "unit_strength",
+              "strengthPercent": 20
+            }
+          }
+        ]
+      },
+      "lateUnits": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 4,
+          "y": 17
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 30
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 3,
+        "stateHash": "fd6cfa96",
+        "events": 0,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 1,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [0, 3]
+          }
+        ],
+        "pointBonus": [0, 20],
+        "healed": [0, 0],
+        "stats": [
+          [1, 40, 40, 6],
+          [2, 48, 48, 7]
+        ]
+      },
+      "eventLogHash": "741638a5"
+    }
+  },
+  {
+    "id": "arena-sim.points-heal-restores-up-to-max",
+    "kind": "arena-sim",
+    "description": "A heal point held by side 0. A side-0 soldier at the point with 10 health (max 40) heals 2 on ticks 0, 10, 20, ...; a soldier of side 0 5 cells away, outside the 3-cell radius, and a soldier of side 1 at the point are not healed. 55 ticks: the healed soldier ends below its max (hp 2 per beat, 6 beats); healed is [12, 0]. Saved and restored once.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 55,
+      "report": "stats",
+      "restoreAt": [30],
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19,
+            "controller": 0,
+            "buff": {
+              "kind": "heal",
+              "healIntervalTicks": 10,
+              "healRadiusCells": 3,
+              "healAmount": 2
+            }
+          }
+        ]
+      },
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 19,
+          "hp": 10
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 0,
+          "y": 19,
+          "hp": 10
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 7,
+          "y": 19,
+          "hp": 10
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 55,
+        "stateHash": "8b296b82",
+        "events": 5,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 1,
+            "alive": 0,
+            "unitsDied": 1,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [55, 0]
+          }
+        ],
+        "pointBonus": [0, 0],
+        "healed": [8, 0],
+        "stats": [
+          [1, 6, 40, 6],
+          [2, 10, 40, 6]
+        ]
+      },
+      "eventLogHash": "f7f549fa"
+    }
+  },
+  {
+    "id": "arena-sim.points-heal-caps-at-max-health",
+    "kind": "arena-sim",
+    "description": "A heal point held by side 0 and a soldier of side 0 at 39 of 40 health: the first beat heals 1 (never above the maximum), later beats nothing; healed is [1, 0].",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 35,
+      "report": "stats",
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19,
+            "controller": 0,
+            "buff": {
+              "kind": "heal",
+              "healIntervalTicks": 10,
+              "healRadiusCells": 3,
+              "healAmount": 2
+            }
+          }
+        ]
+      },
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 19,
+          "hp": 39
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 35,
+        "stateHash": "0c0d7416",
+        "events": 0,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [35, 0]
+          }
+        ],
+        "pointBonus": [0, 0],
+        "healed": [1, 0],
+        "stats": [
+          [1, 40, 40, 6]
+        ]
+      },
+      "eventLogHash": "741638a5"
+    }
+  },
+  {
+    "id": "arena-sim.points-heal-two-points-once-per-beat",
+    "kind": "arena-sim",
+    "description": "Two heal points of side 0 one cell apart; a soldier within range of both heals 2 per beat, not 4 (healing does not stack): after 25 ticks (beats at 0, 10, 20) it has 6 more health; healed is [6, 0].",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 25,
+      "report": "stats",
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19,
+            "controller": 0,
+            "buff": {
+              "kind": "heal",
+              "healIntervalTicks": 10,
+              "healRadiusCells": 3,
+              "healAmount": 2
+            }
+          },
+          {
+            "id": 1,
+            "x": 7,
+            "y": 19,
+            "controller": 0,
+            "buff": {
+              "kind": "heal",
+              "healIntervalTicks": 10,
+              "healRadiusCells": 3,
+              "healAmount": 2
+            }
+          }
+        ]
+      },
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 19,
+          "hp": 10
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 25,
+        "stateHash": "70616555",
+        "events": 0,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [25, 0]
+          },
+          {
+            "id": 1,
+            "controller": 0,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [25, 0]
+          }
+        ],
+        "pointBonus": [0, 0],
+        "healed": [4, 0],
+        "stats": [
+          [1, 14, 40, 6]
+        ]
+      },
+      "eventLogHash": "741638a5"
+    }
+  },
+  {
+    "id": "arena-sim.points-heal-not-after-point-lost",
+    "kind": "arena-sim",
+    "description": "A heal point held by side 1: a damaged soldier of side 0 on it is not healed (healed [0, 0]); the point holder's own soldier at 10 health is.",
+    "input": {
+      "gapRows": 7,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 15,
+      "report": "stats",
+      "guards": {
+        "posts": [
+          {
+            "id": 0,
+            "x": 6,
+            "y": 19,
+            "controller": 1,
+            "buff": {
+              "kind": "heal",
+              "healIntervalTicks": 10,
+              "healRadiusCells": 3,
+              "healAmount": 2
+            }
+          }
+        ]
+      },
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 6,
+          "y": 19,
+          "hp": 10
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 7,
+          "y": 19,
+          "hp": 10
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 15,
+        "stateHash": "fdc6f682",
+        "events": 5,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 0,
+            "unitsDied": 1,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "guards": {
+          "alive": 0,
+          "killed": [0, 0]
+        },
+        "points": [
+          {
+            "id": 0,
+            "controller": 1,
+            "progressSide": -1,
+            "progress": 0,
+            "held": [0, 15]
+          }
+        ],
+        "pointBonus": [0, 0],
+        "healed": [0, 4],
+        "stats": [
+          [2, 2, 40, 6]
+        ]
+      },
+      "eventLogHash": "0f4b9ec4"
     }
   }
 ]

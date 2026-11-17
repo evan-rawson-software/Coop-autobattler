@@ -21,7 +21,7 @@
  * show: `extraUnits`, a list of unit definitions in the format of
  * `content/units.json` that are added to the content for this run (a unit too
  * wide for a gap, a target dummy), and `report: "positions"`, which adds
- * `positions` to the result: `[[id, px, py], ...]` of the living units.
+ * `positions` to the result (`report: "stats"` adds `stats`, `[[id, hp, maxHp, damage], ...]`; a unit may have `hp`; `lateUnits` are placed after the guards and the posts' starting `controller`; a post may have a `buff` as in `content/points.json` and `guards.maxPointStrengthPercent` is the cap): `[[id, px, py], ...]` of the living units.
  * `extraBuildings` is a list of building definitions in the format of
  * `content/buildings.json`, added for this run (a consumer of a refined
  * resource, which no shipped building is yet).
@@ -37,6 +37,7 @@
  */
 import {
   placeGuards,
+  pointStrengthBonus,
   spawnGuardForTest,
   createArenaContext,
   createArenaSim,
@@ -52,6 +53,7 @@ import {
   type ArenaSim,
   type Json,
   type MapgenConfig,
+  type PointBuffEffect,
   type SimConfig,
   type TeamState,
 } from '@game/core';
@@ -102,6 +104,29 @@ export function summarizeArena(sim: ArenaSim): Json {
       coreHealth,
     };
   });
+}
+
+/** A post's buff in a vector: `{kind, ...numbers}` as in `content/points.json`. */
+function readBuff(raw: Json): PointBuffEffect {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new TypeError('arena-sim: guards.posts.buff must be an object');
+  }
+  const b = raw as Record<string, Json>;
+  if (b['kind'] === 'unit_strength') {
+    return {
+      kind: 'unit_strength',
+      strengthPercent: nonNegative(b['strengthPercent'], 'buff.strengthPercent'),
+    };
+  }
+  if (b['kind'] === 'heal') {
+    return {
+      kind: 'heal',
+      healIntervalTicks: nonNegative(b['healIntervalTicks'], 'buff.healIntervalTicks'),
+      healRadiusCells: nonNegative(b['healRadiusCells'], 'buff.healRadiusCells'),
+      healAmount: nonNegative(b['healAmount'], 'buff.healAmount'),
+    };
+  }
+  throw new TypeError('arena-sim: buff.kind must be unit_strength or heal');
 }
 
 export function makeArenaSimKind(
@@ -180,10 +205,12 @@ export function makeArenaSimKind(
     }
     const events: ArenaEvent[] = [];
     let ctx = createArenaContext(sim, content, simConfig, { events });
-    const units = field(input, 'units');
-    if (units !== undefined) {
+    // Each unit is `{side, def, x, y}` or `{side, def, px, py}`, with an
+    // optional `hp` (below its maximum, to start damaged).
+    const spawnList = (units: Json | undefined, name: string): void => {
+      if (units === undefined) return;
       if (!Array.isArray(units)) {
-        throw new TypeError('arena-sim: units must be an array');
+        throw new TypeError(`arena-sim: ${name} must be an array`);
       }
       for (const raw of units as Json[]) {
         if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -195,23 +222,30 @@ export function makeArenaSimKind(
           throw new TypeError('arena-sim: unit.def must be a string');
         }
         const side = nonNegative(u['side'], 'unit.side');
-        if (u['px'] !== undefined || u['py'] !== undefined) {
-          spawnUnitForTest(sim, ctx, {
-            side,
-            def,
-            px: nonNegative(u['px'], 'unit.px'),
-            py: nonNegative(u['py'], 'unit.py'),
-          });
-        } else {
-          spawnUnitForTest(sim, ctx, {
-            side,
-            def,
-            x: nonNegative(u['x'], 'unit.x'),
-            y: nonNegative(u['y'], 'unit.y'),
-          });
+        const spawned =
+          u['px'] !== undefined || u['py'] !== undefined
+            ? spawnUnitForTest(sim, ctx, {
+                side,
+                def,
+                px: nonNegative(u['px'], 'unit.px'),
+                py: nonNegative(u['py'], 'unit.py'),
+              })
+            : spawnUnitForTest(sim, ctx, {
+                side,
+                def,
+                x: nonNegative(u['x'], 'unit.x'),
+                y: nonNegative(u['y'], 'unit.y'),
+              });
+        if (u['hp'] !== undefined) {
+          const hp = nonNegative(u['hp'], 'unit.hp');
+          if (hp < 1 || hp > spawned.maxHp) {
+            throw new TypeError('arena-sim: unit.hp must be 1..maximum health');
+          }
+          spawned.hp = hp;
         }
       }
-    }
+    };
+    spawnList(field(input, 'units'), 'units');
     const guardsRaw = field(input, 'guards');
     if (guardsRaw !== undefined) {
       if (
@@ -252,10 +286,28 @@ export function makeArenaSimKind(
             id: nonNegative(p['id'], 'guards.posts.id'),
             x: nonNegative(p['x'], 'guards.posts.x'),
             y: nonNegative(p['y'], 'guards.posts.y'),
+            ...(p['buff'] === undefined ? {} : { buff: readBuff(p['buff']) }),
           };
         }),
+        ...(g['maxPointStrengthPercent'] === undefined
+          ? {}
+          : {
+              maxPointStrengthPercent: nonNegative(
+                g['maxPointStrengthPercent'],
+                'guards.maxPointStrengthPercent',
+              ),
+            }),
         plans: [],
       });
+      // Test setup: a post may start held by a side (`controller` 0 or 1).
+      for (const raw of posts as Json[]) {
+        const p = raw as Record<string, Json>;
+        if (p['controller'] === undefined) continue;
+        const point = sim.points?.find((q) => q.id === p['id']);
+        if (point !== undefined) {
+          point.controller = nonNegative(p['controller'], 'guards.posts.controller');
+        }
+      }
       const list = g['units'] ?? [];
       if (!Array.isArray(list)) {
         throw new TypeError('arena-sim: guards.units must be an array');
@@ -293,6 +345,9 @@ export function makeArenaSimKind(
         }
       }
     }
+    // Units placed after the guards and the starting holders of the points
+    // (so they spawn with the holder's point bonus).
+    spawnList(field(input, 'lateUnits'), 'lateUnits');
     const restoreRaw = field(input, 'restoreAt');
     const restoreAt = new Set<number>();
     if (restoreRaw !== undefined) {
@@ -349,8 +404,15 @@ export function makeArenaSimKind(
         held: [...p.held],
       }));
     }
+    if (sim.guards !== undefined) {
+      result['pointBonus'] = [0, 1].map((side) => pointStrengthBonus(sim, side));
+      result['healed'] = [...sim.guards.healed];
+    }
     if (field(input, 'report') === 'positions') {
       result['positions'] = sim.units.map((u) => [u.id, u.px, u.py]);
+    }
+    if (field(input, 'report') === 'stats') {
+      result['stats'] = sim.units.map((u) => [u.id, u.hp, u.maxHp, u.damage]);
     }
     const eventLog = events as unknown as Json[];
     return every > 0 ? { result, eventLog, checkpoints } : { result, eventLog };

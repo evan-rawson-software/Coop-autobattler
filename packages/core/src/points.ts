@@ -14,15 +14,35 @@ import {
   type LoadResult,
 } from './load-util.js';
 
-/** What a held point gives (CB-8g). The numbers of each kind come later. */
+/** What a held point gives (CB-8g). */
 export const POINT_BUFF_KINDS = ['unit_strength', 'heal'] as const;
 export type PointBuffKind = (typeof POINT_BUFF_KINDS)[number];
 
-export interface PointBuff {
-  readonly id: string;
-  readonly kind: PointBuffKind;
-  readonly weight: number;
+/** The numbers of a `unit_strength` point (CB-8g): new units are stronger. */
+export interface UnitStrengthBuffNumbers {
+  readonly kind: 'unit_strength';
+  /** Percent of health and damage each held point of this kind adds. */
+  readonly strengthPercent: number;
 }
+
+/** The numbers of a `heal` point (CB-8g): the holder's units near it heal. */
+export interface HealBuffNumbers {
+  readonly kind: 'heal';
+  /** On ticks where `T mod healIntervalTicks = 0` the units are healed. */
+  readonly healIntervalTicks: number;
+  /** Units whose centre is within this many cells of the point are healed. */
+  readonly healRadiusCells: number;
+  /** Health regained per beat. */
+  readonly healAmount: number;
+}
+
+/** What a buff does, by kind; the numbers copied into the arena state. */
+export type PointBuffEffect = UnitStrengthBuffNumbers | HealBuffNumbers;
+
+export type PointBuff = PointBuffEffect & {
+  readonly id: string;
+  readonly weight: number;
+};
 
 /** One kind of guard a point can have, with what it costs (CB-8e). */
 export interface GuardUnit {
@@ -64,6 +84,18 @@ export interface CaptureConfig {
   readonly pointAggroRangeCells: number;
 }
 
+/** The numbers of a buff without its `id` and `weight` (what the arena state keeps). */
+export function buffEffectOf(buff: PointBuff): PointBuffEffect {
+  return buff.kind === 'unit_strength'
+    ? { kind: 'unit_strength', strengthPercent: buff.strengthPercent }
+    : {
+        kind: 'heal',
+        healIntervalTicks: buff.healIntervalTicks,
+        healRadiusCells: buff.healRadiusCells,
+        healAmount: buff.healAmount,
+      };
+}
+
 export interface PointsConfig {
   /** Chance in percent that a plot band gets a point. */
   readonly chancePercent: number;
@@ -72,6 +104,11 @@ export interface PointsConfig {
   /** The buffs a point can have, in file order (the order of the pick). */
   readonly buffs: readonly PointBuff[];
   readonly buff: ReadonlyMap<string, PointBuff>;
+  /**
+   * The most a side's held `unit_strength` points add together (CB-8g). It is
+   * outside the Armory cap `maxUnitStrengthPercent`.
+   */
+  readonly maxPointStrengthPercent: number;
   readonly guards: GuardsConfig;
   readonly capture: CaptureConfig;
 }
@@ -93,6 +130,7 @@ const TOP_KEYS = new Set([
   'chancePercent',
   'bandMarginCells',
   'buffs',
+  'maxPointStrengthPercent',
   'capture',
   'guards',
 ]);
@@ -117,6 +155,12 @@ export const MAX_GUARD_COST = 1_000_000;
 export const MAX_GUARDS_PER_POINT = 9;
 export const MAX_GUARD_LEASH_CELLS = 8;
 export const MAX_GUARD_UNITS = 16;
+/** Bounds of the buff numbers (CB-8g). */
+export const MAX_POINT_STRENGTH_PERCENT = 100_000;
+export const MAX_BUFF_STRENGTH_PERCENT = 10_000;
+export const MAX_HEAL_INTERVAL_TICKS = 1_000_000;
+export const MAX_HEAL_RADIUS_CELLS = 8;
+export const MAX_HEAL_AMOUNT = 1_000_000;
 /** Largest `capture.captureTicks`, `maxCapturersCounted` and range in cells. */
 export const MAX_CAPTURE_TICKS = 1_000_000;
 export const MAX_CAPTURERS_COUNTED = 1000;
@@ -280,7 +324,26 @@ function loadCapture(
   };
 }
 
-const BUFF_KEYS = new Set(['id', 'kind', 'weight']);
+const BUFF_KEYS: Record<PointBuffKind, ReadonlySet<string>> = {
+  unit_strength: new Set(['id', 'kind', 'weight', 'strengthPercent']),
+  heal: new Set([
+    'id',
+    'kind',
+    'weight',
+    'healIntervalTicks',
+    'healRadiusCells',
+    'healAmount',
+  ]),
+};
+const BUFF_KEYS_ANY = new Set([
+  'id',
+  'kind',
+  'weight',
+  'strengthPercent',
+  'healIntervalTicks',
+  'healRadiusCells',
+  'healAmount',
+]);
 const BUFF_ID = /^poi_[a-z0-9_]+$/;
 
 /** Validate parsed points data (the contents of points.json). */
@@ -325,7 +388,6 @@ export function loadPoints(
         errors.push(`${at}: must be an object.`);
         return;
       }
-      rejectUnknownKeys(entry, BUFF_KEYS, at, errors);
       const id = readId(entry, BUFF_ID, at, errors);
       const kind = entry['kind'];
       const kindOk = POINT_BUFF_KINDS.includes(kind as PointBuffKind);
@@ -334,22 +396,83 @@ export function loadPoints(
           `${at}: "kind" must be one of ${POINT_BUFF_KINDS.join(', ')} (got ${show(kind)}).`,
         );
       }
+      rejectUnknownKeys(
+        entry,
+        kindOk ? BUFF_KEYS[kind as PointBuffKind] : BUFF_KEYS_ANY,
+        at,
+        errors,
+      );
       const weight = readInt(entry, 'weight', 1, at, errors, 1000);
       if (id !== undefined) {
         if (seen.has(id)) errors.push(`${at}: duplicate buff id "${id}".`);
         seen.add(id);
       }
-      if (id !== undefined && kindOk && weight !== undefined) {
-        buffs.push({ id, kind: kind as PointBuffKind, weight });
+      let effect: PointBuffEffect | undefined;
+      if (kind === 'unit_strength') {
+        const strengthPercent = readInt(
+          entry,
+          'strengthPercent',
+          1,
+          at,
+          errors,
+          MAX_BUFF_STRENGTH_PERCENT,
+        );
+        if (strengthPercent !== undefined) {
+          effect = { kind, strengthPercent };
+        }
+      } else if (kind === 'heal') {
+        const healIntervalTicks = readInt(
+          entry,
+          'healIntervalTicks',
+          1,
+          at,
+          errors,
+          MAX_HEAL_INTERVAL_TICKS,
+        );
+        const healRadiusCells = readInt(
+          entry,
+          'healRadiusCells',
+          1,
+          at,
+          errors,
+          MAX_HEAL_RADIUS_CELLS,
+        );
+        const healAmount = readInt(
+          entry,
+          'healAmount',
+          1,
+          at,
+          errors,
+          MAX_HEAL_AMOUNT,
+        );
+        if (
+          healIntervalTicks !== undefined &&
+          healRadiusCells !== undefined &&
+          healAmount !== undefined
+        ) {
+          effect = { kind, healIntervalTicks, healRadiusCells, healAmount };
+        }
+      }
+      if (id !== undefined && effect !== undefined && weight !== undefined) {
+        buffs.push({ ...effect, id, weight });
       }
     });
   }
+  const maxPointStrengthPercent = readInt(
+    data,
+    'maxPointStrengthPercent',
+    0,
+    'points',
+    errors,
+    MAX_POINT_STRENGTH_PERCENT,
+  );
   const guards = loadGuards(data['guards'], context, errors);
   const capture = loadCapture(data['capture'], errors);
   if (
     errors.length > 0 ||
     chancePercent === undefined ||
     bandMarginCells === undefined ||
+    maxPointStrengthPercent === undefined ||
     guards === undefined ||
     capture === undefined
   ) {
@@ -362,6 +485,7 @@ export function loadPoints(
       bandMarginCells,
       buffs,
       buff: new Map(buffs.map((b) => [b.id, b])),
+      maxPointStrengthPercent,
       guards,
       capture,
     },
