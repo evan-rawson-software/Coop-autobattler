@@ -31,17 +31,17 @@ differs from them in places:
 - The screens call a PvE battle a "Stronghold" battle and a PvP battle a
   "Rival party" battle; a phase stepper (Set up, Build, Fight, Reward) shows
   where the round is.
-- The Caravan draft (2b) and the four new buildings (4b, issue #437) are
+- The Caravan draft (2b), the four new buildings (4b, issue #437) and the specialist pick (5b, issue #468) are
   planned, not built.
 
-Order in a run: 5 main menu → 6 Core placement → 4 build → then each round:
+Order in a run: 5 main menu → 5b specialist pick → 6 Core placement → 4 build → then each round:
 7 PvE choice → 1 battle → 8 summary → 2 event (and 2b to 2d, if the event has a follow-up) → 3 shop + 4 build → PvP
 battle (1, 8) → 2 event → 3 shop + 4 build → … → 9 run over.
 
 - `screens.html` — all the wireframes on one page, with the callouts. Open
   it in a browser. The screens are drawn by a script in the page, so edit
   that script to change them, then re-export the images.
-- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks) and `1c-battle-points.png` (points of interest), both after the Battle screen and `2b-caravan.png`, `2c-rich-vein.png` and `2d-blueprint.png` (the event follow-ups, after the Event choice screen), and `4b-build-footprints.png` (placement previews for the four new buildings, after the Build screen).
+- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks) and `1c-battle-points.png` (points of interest), both after the Battle screen and `2b-caravan.png`, `2c-rich-vein.png` and `2d-blueprint.png` (the event follow-ups, after the Event choice screen), and `4b-build-footprints.png` (placement previews for the four new buildings, after the Build screen) and `5b-specialist-pick.png` (the specialist pick, after the Main menu).
 
 Not drawn: the lobby for forming a party and settings. Points of interest are
 drawn in 1c and on the Battle summary (issue #370). Refining (issue #378) is drawn on the
@@ -60,7 +60,7 @@ Nobody gives orders here. The party watches its factory start cold, ramp up, and
 
 ![Battle screen wireframe](1-battle.png)
 
-1. Who you are fighting and what kind of battle it is. A ghost shows the other party's names; a boss says so and names the boss. The marks a boss adds are in 1b below.
+1. Who you are fighting and what kind of battle it is. A ghost shows the other party's names and each player's specialist (MM-11a); a boss says so and names the boss. The marks a boss adds are in 1b below.
 2. Your board, at the bottom, exactly as you built it. Conduits light up as resources flow.
 3. The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Nothing can be built here. Turrets can shoot enemy units in it; otherwise only units fight here.
 4. The enemy board, at the top, with one Core per player. Your units attack buildings in their way and finally the enemy Cores: first the one opposite their owner's plot, then the nearest still standing.
@@ -161,6 +161,8 @@ The shop always follows the event. Each player has their own offers and their ow
 7. A small live view of the board that jumps to the Build tab.
 8. Ready is available on both tabs.
 9. Held run modifiers: a small chip in the run bar, effects totalled, drawbacks marked with "!" (RS-4j). It is on every run screen; it is drawn on this one only.
+10. Your specialist, a chip in the run bar. It is on every run screen after the pick, and drawn here, on Build and on Core placement (RS-13).
+11. A signature building (the Mana Well in the sketch) is offered only in its specialist's own shop and is marked "Signature" (EC-3b). A partner's shop never has it.
 
 ## 4. Build
 
@@ -209,6 +211,19 @@ Where a run starts or resumes. Saved runs are listed without limit. The host of 
 4. A save from an older version says so before you resume: some things may have changed.
 5. A run someone else hosts. They hold the save, so you can only join when they open it. Hide removes it from your list without ending it.
 6. Records: the deepest round reached, kept per party size. Nothing else carries over between runs.
+
+## 5b. Specialist pick
+
+The first step of a run after the map is shown, before Core placement (RS-13, issue #469). Every player picks one specialist, solo too. Duplicates are allowed and there is no skip. Names, numbers and effects are placeholders.
+
+![Specialist pick wireframe](5b-specialist-pick.png)
+
+1. Four cards: the whole roster is always open. Each shows the specialist's name and family.
+2. The family bonus: small, owner only, no downside (CB-51a).
+3. The signature building: its name, footprint and what it does. Only this specialist can buy it, from round 2, in its own shop (EC-3b).
+4. Your pick, highlighted. You can change it until you are Ready.
+5. Every party member's current pick, visible as soon as it is made (RS-13b). Two players may pick the same specialist.
+6. Ready needs a pick; a refused Ready says why. Ready locks your pick and Unready reopens it. The step ends when everyone is Ready; solo, when you are (RS-13c). On the later screens your specialist stays in the run bar.
 
 ## 6. Core placement
 

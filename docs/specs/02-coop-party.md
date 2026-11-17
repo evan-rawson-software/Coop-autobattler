@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v5.2
+Status: Draft v5.3
 
 ## Party basics
 
@@ -29,7 +29,8 @@ Status: Draft v5.2
   Everything therefore scales linearly from 1 to 4 players.
 - **CP-6 [PROPOSED]** The party's **team state** is that one board: its map
   (terrain, resource nodes, natural features; Rich vein can add nodes, RS-4i4), one Core position per player,
-  buildings with owner, tier, position and orientation, each player's stash,
+  buildings with owner, tier, position and orientation, each player's stash
+  and specialist (CP-31),
   every conduit with its owner (border links included), and run modifiers. It is what combat
   consumes and what a snapshot stores (CB-32, MM-1).
 - **CP-7 [PROPOSED]** Opponents are scaled to party size: ghosts match on
@@ -88,6 +89,19 @@ Status: Draft v5.2
   directly. (Replaces CP-11 and EC-4a.) A reward an event gives one player
   (Caravan, Drill, Rich vein, Blueprint; RS-4i) is not giving: it comes from
   the event, and nothing leaves a teammate.
+- **CP-31 [DECIDED]** **A specialist belongs to a player.** Each player has
+  exactly one, chosen by them at the start of the run (RS-13), and it is part
+  of the team state (CP-6, CB-32): it is saved with the run and carried in
+  snapshots (MM-1e). Nobody can pick, change or take away another player's
+  specialist.
+- **CP-31a [DECIDED]** **A specialist helps only its owner** (PP-8). Its
+  family bonus acts only on the owner's own buildings or units (CB-51a), and
+  its signature building is offered only in the owner's own shop (EC-3b) and
+  placed only in the owner's own plot (CP-27). Nothing is given between
+  players because of a specialist (CP-29): a partner of the same specialist
+  gets nothing from your bonus, and a signature building cannot be handed on.
+  What a Mana Well or a Transmuter makes can still be sent to a partner over
+  a border link like any resource (CP-30).
 - **CP-14 [DECIDED]** Resource nodes belong to the plot they are in: only
   that plot's player can build a source on them. (Replaces the earlier
   "nodes belong to the party as a whole".)
@@ -122,7 +136,7 @@ Status: Draft v5.2
   step.**
 - **CP-17a [DECIDED]** All players act at the same time within a step
   (everyone shops and builds simultaneously). **Ready locks a player's own
-  editing:** in the Core placement, build and shop steps, once a player is
+  editing:** in the Specialist pick, Core placement, build and shop steps, once a player is
   Ready, their Core placement, buy, sell, re-roll and board-editing actions
   are refused (reason
   `locked_ready`) until they Unready. A player can Unready for as long as at
@@ -306,6 +320,7 @@ it follows from CP-25 to CP-30.
 | Let a neighbour's units through | Yes: a gate lets every unit of the party through | CB-18 |
 | Agree who builds what, ping a cell or a border spot | Yes | CP-19a |
 | Give gold or a building | No | CP-29 |
+| Share your specialist's bonus, or buy a partner's signature building | No | CP-31a, EC-3b |
 | Place, move, rotate, return or sell a partner's building | No, not even while they are disconnected | CP-28, CP-21i |
 | Build in a partner's plot, or on a partner's resource node | No | CP-27, CP-14 |
 | Draw or erase a conduit in a partner's plot | No | CP-28 |

@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v6.1
+Status: Draft v6.2
 
 This file says what the game is and what every other spec serves: the
 owner's top-level requirements, the design pillars, the scope, the theme and
@@ -242,7 +242,9 @@ brackets.
 | Round | One pass through the loop: PvE battle, event, shop, PvP battle, event, shop. |
 | Run | One playthrough, from round 1 until the party is eliminated. |
 | Shop | The guaranteed step after every event. Each player gets their own offers and gold, buys buildings, re-rolls, and rearranges their plot before the next battle. |
-| Snapshot | A saved copy of a party's board (every plot) and run modifiers, taken at the start of a PvP battle. |
+| Signature building | A building that only one specialist can buy, offered in that player's own shop only (EC-3b). The roster has four (CB-51). It consumes resources like any other building (V-15) and helps only its owner. |
+| Snapshot | A saved copy of a party's board (every plot), run modifiers and each player's specialist, taken at the start of a PvP battle. |
+| Specialist | A choice each player makes once, at the start of the run: a small bonus for one family of the player's own buildings or units, plus a signature building only that specialist can buy (RS-13, CB-51). Duplicates are allowed; nothing is given between players. |
 | Splitter | The building that divides one conduit's flow between two or three conduits. The only way to split a conduit. |
 | Store | The small amount of resources a building can hold: enough for one production, plus a few items waiting at its inputs. Empty at the start of every battle. |
 | Stronghold | The base a PvE threat defends: one Core per player of the party, with walls and turrets laid out by its archetype. |

@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v5.3
+Status: Draft v5.4
 
 ## Encounter types
 
@@ -23,11 +23,19 @@ The loop is defined in `01-run-structure.md` RS-1.
   - round number
   - full team state: the party's map, every player's Core position,
     buildings (placed and stashed) and conduits with their owners (border
-    links included), and run modifiers (CB-32, CP-6)
+    links included), run modifiers, and each player's specialist (CB-32,
+    CP-6, MM-1e)
   - the run's ID and seed, and a signature (TA-22a)
   - party members' Steam IDs (display names are looked up from Steam)
   - metadata: lives remaining and PvP record at that point (for optional
     match-quality filtering)
+- **MM-1e [PROPOSED]** **A snapshot carries each player's specialist**
+  (CP-31). When the snapshot is a ghost, its players' specialist bonuses act
+  for their own buildings and units in the fight exactly as in the original
+  run (CB-51a), and the signature buildings on the board work as built. The
+  field is optional: a snapshot without it (written before specialists) has
+  no specialists and plays as before, so it stays eligible (see "Versions and
+  saved formats" in `CONTRIBUTING.md`). PvE threats and bosses have none.
 - **MM-1d [PROPOSED]** The run's action log, needed only for verification by
   replay (TA-22b), is stored alongside the snapshot as a separate file and
   is not downloaded for an ordinary battle (TA-19).
@@ -51,6 +59,10 @@ The loop is defined in `01-run-structure.md` RS-1.
   - snapshots from any party that includes a member of the requesting party
     (which also covers the party's own snapshots)
   - ghosts this party has already fought in this run
+- **MM-2a [DECIDED]** **Specialists play no part in matching.** They are not
+  in the eligibility key (MM-2), the selection (MM-4) or any weighting;
+  neither the party's specialists nor a ghost's are read to choose an
+  opponent.
 - **MM-4 [DECIDED]** **Ghost selection is uniform random among eligible
   snapshots** (issue #392).
   - **MM-4a [OPEN]** Any weighting (prefer recent snapshots; prefer
@@ -178,6 +190,13 @@ clears only the local rows. See `docs/rules-reference.md`, "Bundled ghosts".
   (MM-7 is unchanged for ghosts). Implemented: the shop's next-battle panel
   shows the boss's name, mechanic and counter (`bossMechanic*` and
   `bossCounter*` in `content/presentation.en.json`).
+
+- **MM-11a [PROPOSED]** **The PvP panel shows the ghost's specialists.** Once
+  the board is locked and the ghost is revealed (MM-7), the opponent panel of
+  the battle screen lists each ghost player next to their specialist, so the
+  party can read what it is facing. Before that, a ghost is still only a
+  "rival party" (MM-11), and the shop's next-battle panel says nothing about
+  specialists. Bosses have no specialists.
 
 ## Pool health
 
