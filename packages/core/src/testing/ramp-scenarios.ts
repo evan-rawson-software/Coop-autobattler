@@ -3,6 +3,7 @@
  * small boards on a 12 x 16 map built with the test `Lab`.
  */
 import buildingsJson from '../../../../content/buildings.json';
+import pointsJson from '../../../../content/points.json';
 import presentationJson from '../../../../content/presentation.en.json';
 import resourcesJson from '../../../../content/resources.json';
 import terrainJson from '../../../../content/terrain.json';
@@ -60,6 +61,7 @@ export const overclockerOnOre = (() => {
     terrain: terrainJson,
     units: unitsJson,
     buildings: { ...buildingsJson, buildings },
+    points: pointsJson,
     presentation: presentationJson,
   });
 })();

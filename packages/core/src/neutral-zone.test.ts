@@ -11,6 +11,7 @@ import {
 } from './neutral-zone.js';
 import { loadMapgen } from './mapgen.js';
 import mapgenJson from '../../../content/mapgen.json';
+import { loadPoints, loadPointsOrThrow } from './points.js';
 import { Rng } from './rng.js';
 import { content, mapgen } from './testing/support.js';
 
@@ -27,7 +28,6 @@ describe('neutral zone generation', () => {
     ]);
     expect(z.width).toBe(W);
     expect(z.depth).toBe(mapgen.neutralZone.depth);
-    expect(z.pointsOfInterest).toEqual([]);
     expect(JSON.parse(JSON.stringify(z))).toEqual(z);
     for (const f of z.features) {
       expect([mapgen.lakes.feature, mapgen.cliffs.feature]).toContain(
@@ -155,7 +155,7 @@ describe('neutral zone generation', () => {
         ...(mapgenJson as Record<string, unknown>),
         neutralZone: {
           ...mapgenJson.neutralZone,
-          depth: 2,
+          depth: 1,
         },
       },
       { terrain: content.terrain },
@@ -163,7 +163,8 @@ describe('neutral zone generation', () => {
     if (!flat.ok) throw new Error(flat.errors.join());
     const z = generateNeutralZone(3, 48, content, flat.config);
     expect(z.features).toEqual([]);
-    expect(z.depth).toBe(2);
+    expect(z.depth).toBe(1);
+    expect(z.pointsOfInterest).toEqual([]);
   });
 
   test('retries and gives up with a clear error', () => {
@@ -248,16 +249,195 @@ describe('neutral zone generation', () => {
 
   test('ASCII rendering puts side 0 first', () => {
     const z: NeutralZone = {
-      width: 4,
+      width: 5,
       depth: 3,
       features: [
         { x: 1, y: 1, feature: 'ter_lake' },
         { x: 2, y: 1, feature: 'ter_cliff' },
       ],
-      pointsOfInterest: [],
+      pointsOfInterest: [{ id: 0, band: 0, x: 4, y: 1, buff: 'poi_heal' }],
     };
     expect(renderNeutralZoneAscii(z, 'ter_lake', 'ter_cliff')).toBe(
-      '....\n.~#.\n....',
+      '.....\n.~#.*\n.....',
     );
+  });
+
+  test('depth must be odd', () => {
+    const even = loadMapgen(
+      {
+        ...(mapgenJson as Record<string, unknown>),
+        neutralZone: { ...mapgenJson.neutralZone, depth: 6 },
+      },
+      { terrain: content.terrain },
+    );
+    expect(even.ok).toBe(false);
+    if (!even.ok) expect(even.errors.join()).toMatch(/depth.*odd/);
+  });
+});
+
+const BAND_SEEDS = 500;
+
+function withPoints(chancePercent: number, bandMarginCells = 2) {
+  return {
+    ...content,
+    points: loadPointsOrThrow({
+      chancePercent,
+      bandMarginCells,
+      buffs: [
+        { id: 'poi_strength', kind: 'unit_strength', weight: 1 },
+        { id: 'poi_heal', kind: 'heal', weight: 1 },
+      ],
+    }),
+  };
+}
+
+describe('points of interest (CB-8d)', () => {
+  const middle = (mapgen.neutralZone.depth - 1) / 2;
+
+  test('are on the middle row, in their band, on open cells with open neighbours', () => {
+    let total = 0;
+    for (let plots = 1; plots <= 4; plots++) {
+      for (let seed = 1; seed <= BAND_SEEDS; seed++) {
+        const z = generateNeutralZone(seed, plots * W, content, mapgen);
+        const blocked = new Set(z.features.map((f) => f.y * z.width + f.x));
+        const bands = new Set<number>();
+        z.pointsOfInterest.forEach((p, i) => {
+          const at = `seed ${String(seed)}, ${String(plots)} plots, point ${String(i)}`;
+          total++;
+          expect(p.id, at).toBe(i);
+          expect(p.y, at).toBe(middle);
+          expect(p.band, at).toBeGreaterThanOrEqual(0);
+          expect(p.band, at).toBeLessThan(plots);
+          expect(bands.has(p.band), `${at}: two in a band`).toBe(false);
+          bands.add(p.band);
+          if (i > 0) {
+            expect(p.band, at).toBeGreaterThan(
+              (z.pointsOfInterest[i - 1] as { band: number }).band,
+            );
+          }
+          expect(p.x, at).toBeGreaterThanOrEqual(p.band * W + 2);
+          expect(p.x, at).toBeLessThanOrEqual((p.band + 1) * W - 1 - 2);
+          expect(['poi_strength', 'poi_heal'], at).toContain(p.buff);
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              expect(
+                blocked.has((p.y + dy) * z.width + p.x + dx),
+                `${at}: neighbour (${String(dx)}, ${String(dy)}) blocked`,
+              ).toBe(false);
+            }
+          }
+        });
+        expect(
+          neutralZoneProblem(z, content),
+          `seed ${String(seed)}, ${String(plots)} plots`,
+        ).toBeUndefined();
+      }
+    }
+    // 60% of 10 bands per seed over 500 seeds, less failed placements.
+    expect(total).toBeGreaterThan(BAND_SEEDS * 4);
+  });
+
+  test('lakes, cliffs and attempts do not depend on the points', () => {
+    for (const plots of [1, 2, 3, 4]) {
+      for (let seed = 1; seed <= BAND_SEEDS; seed++) {
+        const base = generateNeutralZoneWithStats(
+          seed,
+          plots * W,
+          withPoints(0),
+          mapgen,
+        );
+        for (const chance of [60, 100]) {
+          const other = generateNeutralZoneWithStats(
+            seed,
+            plots * W,
+            withPoints(chance, 3),
+            mapgen,
+          );
+          expect(other.zone.features).toEqual(base.zone.features);
+          expect(other.attempts).toBe(base.attempts);
+        }
+      }
+    }
+  });
+
+  test('chance 0 gives none; chance 100 gives one per band unless placement fails', () => {
+    let full = 0;
+    let zones = 0;
+    for (let plots = 1; plots <= 4; plots++) {
+      for (let seed = 1; seed <= 200; seed++) {
+        const none = generateNeutralZone(
+          seed,
+          plots * W,
+          withPoints(0),
+          mapgen,
+        );
+        expect(none.pointsOfInterest).toEqual([]);
+        const all = generateNeutralZone(
+          seed,
+          plots * W,
+          withPoints(100),
+          mapgen,
+        );
+        expect(all.pointsOfInterest.length).toBeLessThanOrEqual(plots);
+        zones++;
+        if (all.pointsOfInterest.length === plots) full++;
+      }
+    }
+    // Placement almost always works: 30 tries in a band of 20 columns.
+    expect(full).toBeGreaterThan(zones * 0.9);
+  });
+
+  test('a margin that leaves two columns still gives at most one point', () => {
+    // Columns 11 and 12 only; a failed placement never fails the zone.
+    const tight = withPoints(100, 11);
+    const z = generateNeutralZone(5, W, tight, mapgen);
+    expect(z.pointsOfInterest.length).toBeLessThanOrEqual(1);
+  });
+
+  test('a point on a blocked cell or an unknown buff is a problem', () => {
+    const z: NeutralZone = {
+      width: 8,
+      depth: 3,
+      features: [{ x: 3, y: 1, feature: 'ter_lake' }],
+      pointsOfInterest: [{ id: 0, band: 0, x: 3, y: 1, buff: 'poi_heal' }],
+    };
+    expect(neutralZoneProblem(z, content)).toMatch(/blocked cell/);
+    const bad = {
+      ...z,
+      features: [],
+      pointsOfInterest: [{ id: 0, band: 0, x: 3, y: 1, buff: 'poi_nope' }],
+    };
+    expect(neutralZoneProblem(bad, content)).toMatch(/unknown buff/);
+  });
+});
+
+describe('points content', () => {
+  test('is validated', () => {
+    const ok = {
+      chancePercent: 60,
+      bandMarginCells: 2,
+      buffs: [{ id: 'poi_a', kind: 'heal', weight: 1 }],
+    };
+    expect(loadPoints(ok).ok).toBe(true);
+    for (const bad of [
+      { ...ok, chancePercent: 101 },
+      { ...ok, bandMarginCells: -1 },
+      { ...ok, buffs: [] },
+      { ...ok, buffs: [{ id: 'poi_a', kind: 'fly', weight: 1 }] },
+      { ...ok, buffs: [{ id: 'a', kind: 'heal', weight: 1 }] },
+      { ...ok, buffs: [{ id: 'poi_a', kind: 'heal', weight: 0 }] },
+      {
+        ...ok,
+        buffs: [
+          { id: 'poi_a', kind: 'heal', weight: 1 },
+          { id: 'poi_a', kind: 'heal', weight: 1 },
+        ],
+      },
+      { ...ok, extra: 1 },
+    ]) {
+      expect(loadPoints(bad).ok).toBe(false);
+    }
+    expect(loadPoints(ok, { plotWidth: 4 }).ok).toBe(false);
+    expect(loadPoints(ok, { plotWidth: 5 }).ok).toBe(true);
   });
 });

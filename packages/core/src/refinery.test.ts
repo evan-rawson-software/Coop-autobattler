@@ -6,6 +6,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import buildingsJson from '../../../content/buildings.json';
+import pointsJson from '../../../content/points.json';
 import presentationJson from '../../../content/presentation.en.json';
 import resourcesJson from '../../../content/resources.json';
 import terrainJson from '../../../content/terrain.json';
@@ -81,6 +82,7 @@ const withSinks = loadAllContentOrThrow({
       sinkEntry('bld_sink_bc', 'res_bc_refined'),
     ],
   },
+  points: pointsJson,
   presentation: {
     ...presentationJson,
     buildings: {

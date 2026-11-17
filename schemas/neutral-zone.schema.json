@@ -24,7 +24,19 @@
     },
     "pointsOfInterest": {
       "type": "array",
-      "description": "Always empty for now; reserved so the format does not change when points of interest are added (TA-41a)."
+      "description": "Points of interest (CB-8d), sorted by id: at most one per plot band, one cell each on the middle row (y = (depth - 1) / 2), never on a blocked cell. A point does not block movement. id counts from 0 in band order; band is the plot band (columns band * plotWidth to (band + 1) * plotWidth - 1); buff is a buff ID of content/points.json.",
+      "items": {
+        "type": "object",
+        "required": ["id", "band", "x", "y", "buff"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer", "minimum": 0 },
+          "band": { "type": "integer", "minimum": 0 },
+          "x": { "type": "integer", "minimum": 0 },
+          "y": { "type": "integer", "minimum": 0 },
+          "buff": { "type": "string", "pattern": "^poi_[a-z0-9_]+$" }
+        }
+      }
     }
   }
 }

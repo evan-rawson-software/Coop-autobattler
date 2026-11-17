@@ -21,6 +21,7 @@ import {
   rawEconomy,
   rawEvents,
   rawMapgen,
+  rawPoints,
   rawPresentationEn,
   rawResources,
   rawSim,
@@ -48,6 +49,7 @@ export function loadSimContext(): SimContext {
     terrain: rawTerrain,
     units: rawUnits,
     buildings: rawBuildings,
+    points: rawPoints,
     presentation: rawPresentationEn,
   });
   const mapgen = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });

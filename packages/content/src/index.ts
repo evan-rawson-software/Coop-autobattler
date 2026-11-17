@@ -11,6 +11,7 @@ import mapgenJson from '../../../content/mapgen.json';
 import simJson from '../../../content/sim.json';
 import economyJson from '../../../content/economy.json';
 import eventsJson from '../../../content/events.json';
+import pointsJson from '../../../content/points.json';
 import threatsJson from '../../../content/threats.json';
 import presentationEnJson from '../../../content/presentation.en.json';
 
@@ -23,4 +24,5 @@ export const rawMapgen: unknown = mapgenJson;
 export const rawSim: unknown = simJson;
 export const rawEconomy: unknown = economyJson;
 export const rawEvents: unknown = eventsJson;
+export const rawPoints: unknown = pointsJson;
 export const rawThreats: unknown = threatsJson;

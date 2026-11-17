@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import buildingsJson from '../../../content/buildings.json';
 import eventsJson from '../../../content/events.json';
 import threatsJson from '../../../content/threats.json';
+import pointsJson from '../../../content/points.json';
 import presentationJson from '../../../content/presentation.en.json';
 import resourcesJson from '../../../content/resources.json';
 import terrainJson from '../../../content/terrain.json';
@@ -28,6 +29,7 @@ const raw = {
   terrain: terrainJson as unknown,
   units: unitsJson as unknown,
   buildings: buildingsJson as unknown,
+  points: pointsJson,
   presentation: presentationJson as unknown,
 };
 

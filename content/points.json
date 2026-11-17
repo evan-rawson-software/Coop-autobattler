@@ -1,0 +1,9 @@
+{
+  "$schema": "../schemas/points.schema.json",
+  "chancePercent": 60,
+  "bandMarginCells": 2,
+  "buffs": [
+    { "id": "poi_strength", "kind": "unit_strength", "weight": 1 },
+    { "id": "poi_heal", "kind": "heal", "weight": 1 }
+  ]
+}

@@ -15,6 +15,7 @@ import { createDeps, createRun, snapshotOf } from '@game/session';
 import {
   rawBuildings,
   rawMapgen,
+  rawPoints,
   rawPresentationEn,
   rawResources,
   rawTerrain,
@@ -42,6 +43,7 @@ describe('ghost-snapshot.schema.json', () => {
     terrain: rawTerrain,
     units: rawUnits,
     buildings: rawBuildings,
+    points: rawPoints,
     presentation: rawPresentationEn,
   });
   const mapgen = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });

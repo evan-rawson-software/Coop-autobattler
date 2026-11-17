@@ -6,12 +6,12 @@
  * threats".
  */
 
-import type { ArenaContent } from './arena.js';
 import type { SideOptions } from './arena-sim.js';
 import {
   startBattle,
   type Battle,
   type BattleConfig,
+  type BattleContent,
   type BattleError,
   type BattleResult,
   type BattleSummary,
@@ -91,7 +91,7 @@ export function threatSideOptions(threat: ThreatProfile): SideOptions {
  */
 export function startPveBattle(
   input: PveBattleInput,
-  content: ArenaContent,
+  content: BattleContent,
   config: BattleConfig,
 ): StartPveBattleResult {
   const { team, threat, seed } = input;
@@ -113,7 +113,7 @@ export function startPveBattle(
 /** Run a PvE battle to its end. Same shape as `simulateBattle`, plus `threat`. */
 export function simulatePveBattle(
   input: PveBattleInput,
-  content: ArenaContent,
+  content: BattleContent,
   config: BattleConfig,
 ): SimulatePveBattleResult {
   const started = startPveBattle(input, content, config);

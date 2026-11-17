@@ -22,7 +22,7 @@ import {
   runTeamStateOps,
   startPveBattle,
   type ArchetypeDef,
-  type ArenaContent,
+  type BattleContent,
   type Json,
   type MapgenConfig,
   type SimConfig,
@@ -63,7 +63,7 @@ function threatInput(v: Json | undefined): ThreatInput {
 }
 
 export function makeThreatGenKind(
-  content: ArenaContent,
+  content: BattleContent,
   mapgen: MapgenConfig,
   threats: ThreatsConfig,
 ): SimulationFn {
@@ -82,7 +82,7 @@ export function makeThreatGenKind(
 }
 
 export function makePveBattleKind(
-  content: ArenaContent,
+  content: BattleContent,
   mapgen: MapgenConfig,
   simConfig: SimConfig,
   threats: ThreatsConfig,

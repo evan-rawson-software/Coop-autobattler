@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import buildingsJson from '../../../content/buildings.json';
+import pointsJson from '../../../content/points.json';
 import presentationJson from '../../../content/presentation.en.json';
 import resourcesJson from '../../../content/resources.json';
 import simJson from '../../../content/sim.json';
@@ -43,6 +44,7 @@ function rawWith(health: number[]): {
   terrain: unknown;
   units: unknown;
   buildings: unknown;
+  points: unknown;
   presentation: unknown;
 } {
   const buildings = clone(buildingsJson) as { buildings: RawBuilding[] };
@@ -55,6 +57,7 @@ function rawWith(health: number[]): {
     terrain: terrainJson,
     units: unitsJson,
     buildings,
+    points: pointsJson,
     presentation: presentationJson,
   };
 }

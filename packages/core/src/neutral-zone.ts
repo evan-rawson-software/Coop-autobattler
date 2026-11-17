@@ -6,29 +6,43 @@
  */
 
 import { sortedIntEntries } from './collections.js';
-import type { Json } from './hash.js';
 import type { Cell, FeatureCell } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
+import type { PointsConfig } from './points.js';
 import { Rng } from './rng.js';
 import type { TerrainConfig } from './terrain.js';
+import { pickWeightedIndex } from './weighted.js';
 
 /**
  * A neutral zone as plain JSON. Zone-local coordinates: `x` along the front
  * edge, `y = 0` the row touching side 0's front edge, `y = depth - 1` the row
  * touching side 1's front edge. `features` is sorted by `(y, x)`.
- * `pointsOfInterest` is always empty for now (TA-41a: reserved so the format
- * does not change when they are added).
+ * `pointsOfInterest` is sorted by `id` (CB-8d).
  */
 export interface NeutralZone {
   readonly width: number;
   readonly depth: number;
   readonly features: readonly FeatureCell[];
-  readonly pointsOfInterest: readonly Json[];
+  readonly pointsOfInterest: readonly PointOfInterest[];
+}
+
+/**
+ * A point of interest (CB-8d): one cell on the zone's middle row that does
+ * not block movement. `band` is the plot band whose columns it lies in; `id`
+ * counts from 0 in band order; `buff` is an ID from content/points.json.
+ */
+export interface PointOfInterest {
+  readonly id: number;
+  readonly band: number;
+  readonly x: number;
+  readonly y: number;
+  readonly buff: string;
 }
 
 /** What the generator needs from the loaded content. */
 export interface NeutralZoneContent {
   readonly terrain: TerrainConfig;
+  readonly points: PointsConfig;
 }
 
 export interface GeneratedNeutralZone {
@@ -221,6 +235,54 @@ function openCellsConnected(
   return reached === open;
 }
 
+/**
+ * Place the points of interest (CB-8d): per band, in band order, one roll
+ * (always drawn), then up to `placementTries` columns, then one buff pick for
+ * a band that got a point. Uses only `rng`.
+ */
+function placePoints(
+  rng: Rng,
+  width: number,
+  depth: number,
+  plots: number,
+  isBlocked: (x: number, y: number) => boolean,
+  content: NeutralZoneContent,
+  config: MapgenConfig,
+): PointOfInterest[] {
+  const pc = content.points;
+  const y = (depth - 1) / 2;
+  const weights = pc.buffs.map((b) => b.weight);
+  const out: PointOfInterest[] = [];
+  for (let band = 0; band < plots; band++) {
+    const roll = rng.nextInt(100);
+    if (roll >= pc.chancePercent) continue;
+    const lo = band * config.plotWidth + pc.bandMarginCells;
+    const hi =
+      Math.min((band + 1) * config.plotWidth - 1, width - 1) -
+      pc.bandMarginCells;
+    if (lo > hi) continue;
+    let x = -1;
+    for (let t = 0; t < config.placementTries && x < 0; t++) {
+      const cx = between(rng, lo, hi);
+      let room = true;
+      for (let dy = -1; dy <= 1 && room; dy++) {
+        for (let dx = -1; dx <= 1 && room; dx++) {
+          const nx = cx + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= depth) room = false;
+          else if (isBlocked(nx, ny)) room = false;
+        }
+      }
+      if (room) x = cx;
+    }
+    if (x < 0) continue;
+    const buff = (pc.buffs[pickWeightedIndex(rng, weights)] as { id: string })
+      .id;
+    out.push({ id: out.length, band, x, y, buff });
+  }
+  return out;
+}
+
 /** One attempt: the zone, or why it failed (the reason is a string). */
 function attempt(
   zoneRng: Rng,
@@ -290,7 +352,16 @@ function attempt(
   if (!openCellsConnected(width, nz.depth, blocked)) {
     return 'the open cells of the zone are not connected';
   }
-  return { width, depth: nz.depth, features, pointsOfInterest: [] };
+  const pointsOfInterest = placePoints(
+    attemptRng.child('points'),
+    width,
+    nz.depth,
+    plots,
+    blocked,
+    content,
+    config,
+  );
+  return { width, depth: nz.depth, features, pointsOfInterest };
 }
 
 /**
@@ -382,6 +453,32 @@ export function neutralZoneProblem(
   };
   if (!openCellsConnected(width, depth, blocked)) {
     return 'the open cells are not connected';
+  }
+  let prevPoint: PointOfInterest | undefined;
+  for (const p of zone.pointsOfInterest) {
+    const where = `point ${String(p.id)}`;
+    if (
+      !Number.isInteger(p.id) ||
+      !Number.isInteger(p.band) ||
+      !Number.isInteger(p.x) ||
+      !Number.isInteger(p.y)
+    ) {
+      return `${where} has a non-integer field`;
+    }
+    if (p.x < 0 || p.x >= width || p.y < 0 || p.y >= depth) {
+      return `${where} is outside the zone`;
+    }
+    if (blocked(p.x, p.y)) return `${where} is on a blocked cell`;
+    if (content.points.buff.get(p.buff) === undefined) {
+      return `${where} has unknown buff "${p.buff}"`;
+    }
+    if (
+      prevPoint !== undefined &&
+      (p.id <= prevPoint.id || p.band <= prevPoint.band)
+    ) {
+      return 'points are not sorted by id, one per band';
+    }
+    prevPoint = p;
   }
   return undefined;
 }
