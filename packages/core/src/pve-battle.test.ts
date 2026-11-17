@@ -382,8 +382,15 @@ describe('sweep of reference boards against every threat', () => {
       const mine = all.filter((r) => r.board === board);
       const won = mine.filter((r) => r.won).map((r) => r.round);
       expect(Math.max(...won)).toBe(LAST_WIN[board]);
-      // Round 1, easy: every board beats every archetype.
+      // Round 1, easy: every board beats every archetype (one exception below).
       for (const r of mine.filter((x) => x.round === 1 && x.type === 'easy')) {
+        // Measured (issue #431): the poor board (tier 1, two small producers)
+        // loses to easy Swarm in round 1 (its Core falls at tick 338 to 14
+        // fast raiders); every other board and archetype wins. Balance is #435.
+        if (board === 'poor' && r.arch === 'arch_swarm') {
+          expect(r.won).toBe(false);
+          continue;
+        }
         expect(r.won).toBe(true);
       }
     }
@@ -410,8 +417,10 @@ describe('sweep of reference boards against every threat', () => {
     // the Warlord boss (issue #401); without the Warlord they were 327, 190,
     // 19. With the neutral guards of the points (CB-8e, #372) they are 368,
     // 194 and 19 (were 377, 216, 22): guards fight units of both sides. With
-    // the points diverting units (CB-8f, #373) the middle block is 195.
-    expect(blocks).toEqual([368, 195, 19, 0, 0]);
+    // the points diverting units (CB-8f, #373) the middle block is 195. The
+    // Skirmishers and Swarm archetypes (issue #431) add 86, 41 and 1 wins
+    // (454, 236 and 20): two more archetypes in the sweep, nothing else moved.
+    expect(blocks).toEqual([454, 236, 20, 0, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {

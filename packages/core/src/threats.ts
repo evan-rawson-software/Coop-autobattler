@@ -882,8 +882,8 @@ export function loadThreats(
       const firstTick = readInt(w, 'firstTick', 0, wat, errors);
       const intervalTicks = readInt(w, 'intervalTicks', 1, wat, errors);
       const count = readInt(w, 'count', 1, wat, errors);
-      if (count !== undefined && count > 12) {
-        errors.push(`${wat}: "count" must be at most 12.`);
+      if (count !== undefined && count > 16) {
+        errors.push(`${wat}: "count" must be at most 16.`);
       }
       const growth = readInt(w, 'growthPercent', 100, wat, errors);
       if (growth !== undefined && growth > 300) {

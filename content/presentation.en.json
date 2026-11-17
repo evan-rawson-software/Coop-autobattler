@@ -162,6 +162,16 @@
       "description": "Waves that grow quickly, behind a line of walls and turrets.",
       "tests": "speed"
     },
+    "arch_skirmishers": {
+      "name": "Skirmishers",
+      "description": "Archers behind a soldier screen, against an open stronghold ringed with turrets.",
+      "tests": "fast melee to catch archers, and turrets; walls do nothing against arrows"
+    },
+    "arch_swarm": {
+      "name": "Swarm",
+      "description": "Small raider waves, one after another, against an open stronghold with a small Core.",
+      "tests": "area damage and turrets"
+    },
     "arch_boss": {
       "name": "Boss",
       "description": "A strong stronghold with steady waves and a signature unit every few waves.",

@@ -10,8 +10,8 @@
     "expected": {
       "result": {
         "easy": "arch_fortress",
-        "medium": "arch_rusher",
-        "hard": "arch_escalator"
+        "medium": "arch_escalator",
+        "hard": "arch_swarm"
       }
     }
   },
@@ -26,9 +26,9 @@
     },
     "expected": {
       "result": {
-        "easy": "arch_escalator",
-        "medium": "arch_rusher",
-        "hard": "arch_fortress"
+        "easy": "arch_skirmishers",
+        "medium": "arch_swarm",
+        "hard": "arch_escalator"
       }
     }
   },

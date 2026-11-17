@@ -605,13 +605,17 @@ describe('pickArchetypes and threatSummary', () => {
         }
       }
     }
-    expect(seen.size).toBe(3);
+    // Rusher, Fortress, Escalator, Skirmishers (from round 2) and Swarm.
+    expect(seen.size).toBe(5);
   });
 
   test('wraps around when fewer than three archetypes exist', () => {
     const two: ThreatsConfig = {
       ...threats,
-      archetypes: threats.archetypes.filter((a) => a.id !== 'arch_escalator'),
+      archetypes: threats.archetypes.filter(
+        (a) =>
+          !['arch_escalator', 'arch_skirmishers', 'arch_swarm'].includes(a.id),
+      ),
     };
     const p = pickArchetypes(1, 1, two);
     expect(p.hard).toBe(p.easy);
@@ -828,5 +832,75 @@ describe('brood bursts (MM-9d)', () => {
     const total = got(p.stronghold.bursts).reduce((a, b) => a + b.count, 0);
     expect(p.stronghold.bursts).toHaveLength(12);
     expect(total).toBe(24);
+  });
+});
+
+describe('Skirmishers and Swarm (issue #431)', () => {
+  const gen = (
+    archetype: string,
+    round: number,
+    partySize: number,
+    type: ThreatType = 'medium',
+  ) =>
+    generateThreat(
+      { seed: 7, round, partySize, type, archetype },
+      content,
+      configs,
+    );
+  const countOf = (p: ReturnType<typeof gen>, unit: string) =>
+    p.waves.filter((w) => w.unit === unit).reduce((a, w) => a + w.count, 0);
+  const size = (p: ReturnType<typeof gen>) =>
+    p.waves.reduce((a, w) => a + w.count, 0);
+
+  test('the content has the issue numbers', () => {
+    const sk = got(threats.archetypes.find((a) => a.id === 'arch_skirmishers'));
+    const sw = got(threats.archetypes.find((a) => a.id === 'arch_swarm'));
+    expect(sk.fromRound).toBe(2);
+    expect(sk.waveSharePercent).toBe(50);
+    expect(sk.waves.count).toBe(6);
+    expect(sk.stronghold.turretSharePercent).toBe(45);
+    expect(sw.fromRound).toBe(1);
+    expect(sw.waveSharePercent).toBe(80);
+    expect(sw.waves.count).toBe(14);
+    expect(sw.stronghold.layout).toBe('open');
+  });
+
+  test('Swarm: fourteen waves of raiders, one every 45 ticks from tick 80', () => {
+    const p = gen('arch_swarm', 1, 1);
+    expect(p.waves.map((w) => w.tick)).toEqual(
+      Array.from({ length: 14 }, (_, k) => 80 + 45 * k),
+    );
+    expect(p.waves.every((w) => w.unit === 'unit_raider')).toBe(true);
+    expect(p.unitStrengthPercent).toBe(0);
+  });
+
+  test('Swarm keeps raiders as most of its units, and stays under the cap with strength', () => {
+    for (const round of [5, 10, 15]) {
+      for (const party of [1, 4]) {
+        const p = gen('arch_swarm', round, party);
+        expect(countOf(p, 'unit_raider') * 2).toBeGreaterThan(size(p));
+        const perTick = new Map<number, number>();
+        for (const w of p.waves)
+          perTick.set(w.tick, (perTick.get(w.tick) ?? 0) + w.count);
+        expect(Math.max(...perTick.values())).toBeLessThanOrEqual(
+          threats.maxUnitsPerWavePerPlot * party,
+        );
+      }
+    }
+    expect(gen('arch_swarm', 15, 1).unitStrengthPercent).toBeGreaterThan(0);
+  });
+
+  test('Skirmishers: mostly archers, none before round 2 in the offers', () => {
+    const p = gen('arch_skirmishers', 10, 4);
+    expect(countOf(p, 'unit_archer') * 2).toBeGreaterThan(size(p));
+    expect(countOf(p, 'unit_soldier')).toBeGreaterThan(0);
+    expect(p.waves[0]?.tick).toBe(150);
+    expect(p.stronghold.buildings.some((b) => b.def === 'bld_wall_block')).toBe(
+      false,
+    );
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      const r1 = pickArchetypes(seed, 1, threats);
+      expect(JSON.stringify(r1)).not.toContain('arch_skirmishers');
+    }
   });
 });
