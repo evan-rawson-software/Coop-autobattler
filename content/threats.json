@@ -44,7 +44,16 @@
       "gapMargin": 3,
       "turretMinDistance": 2
     },
-    "open": { "coreRow": 3, "turretMinDistance": 2 }
+    "open": { "coreRow": 3, "turretMinDistance": 2 },
+    "maze": {
+      "coreRow": 0,
+      "rows": 4,
+      "rowSpacing": 3,
+      "gapWidth": 2,
+      "firstRow": 13,
+      "turretMinDistance": 2,
+      "maxWallsPerPlot": 88
+    }
   },
   "archetypes": [
     {
@@ -146,6 +155,28 @@
         "wallSharePercent": 0,
         "turretSharePercent": 10,
         "layout": "open"
+      }
+    },
+    {
+      "id": "arch_maze",
+      "bossOnly": false,
+      "fromRound": 2,
+      "waveSharePercent": 25,
+      "waves": {
+        "firstTick": 400,
+        "intervalTicks": 300,
+        "count": 4,
+        "growthPercent": 125,
+        "composition": [
+          { "unit": "unit_soldier", "weight": 2 },
+          { "unit": "unit_raider", "weight": 1 }
+        ]
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 300,
+        "wallSharePercent": 40,
+        "turretSharePercent": 30,
+        "layout": "maze"
       }
     },
     {

@@ -605,8 +605,9 @@ describe('pickArchetypes and threatSummary', () => {
         }
       }
     }
-    // Rusher, Fortress, Escalator, Skirmishers (from round 2) and Swarm.
-    expect(seen.size).toBe(5);
+    // Rusher, Fortress, Escalator, Skirmishers (from round 2), Swarm and
+    // Maze (from round 2).
+    expect(seen.size).toBe(6);
   });
 
   test('wraps around when fewer than three archetypes exist', () => {
@@ -614,7 +615,12 @@ describe('pickArchetypes and threatSummary', () => {
       ...threats,
       archetypes: threats.archetypes.filter(
         (a) =>
-          !['arch_escalator', 'arch_skirmishers', 'arch_swarm'].includes(a.id),
+          ![
+            'arch_escalator',
+            'arch_skirmishers',
+            'arch_swarm',
+            'arch_maze',
+          ].includes(a.id),
       ),
     };
     const p = pickArchetypes(1, 1, two);
@@ -902,5 +908,182 @@ describe('Skirmishers and Swarm (issue #431)', () => {
       const r1 = pickArchetypes(seed, 1, threats);
       expect(JSON.stringify(r1)).not.toContain('arch_skirmishers');
     }
+  });
+});
+
+describe('Maze (issue #432)', () => {
+  const gen = (
+    round: number,
+    partySize: number,
+    type: ThreatType = 'medium',
+    seed = 7,
+  ) =>
+    generateThreat(
+      { seed, round, partySize, type, archetype: 'arch_maze' },
+      content,
+      configs,
+    );
+  const W = mapgen.plotWidth;
+  const H = mapgen.plotDepth;
+
+  /** 4-connected reachability from the front-most free row to the Core. */
+  function reaches(p: ReturnType<typeof gen>, plot: number): boolean {
+    const blocked = new Set(
+      p.stronghold.buildings.map((b) => `${String(b.x)},${String(b.y)}`),
+    );
+    const core = got(p.stronghold.cores[plot]);
+    const inCore = (x: number, y: number) =>
+      x >= core.x && x < core.x + 2 && y >= core.y && y < core.y + 2;
+    const lo = plot * W;
+    const seen = new Set<string>();
+    const stack: [number, number][] = [];
+    for (let x = lo; x < lo + W; x++) stack.push([x, H - 2]);
+    while (stack.length > 0) {
+      const [x, y] = got(stack.pop());
+      const k = `${String(x)},${String(y)}`;
+      if (x < lo || x >= lo + W || y < 0 || y > H - 2) continue;
+      if (seen.has(k) || blocked.has(k)) continue;
+      seen.add(k);
+      if (inCore(x, y)) return true;
+      stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+    }
+    return false;
+  }
+
+  test('the content has the issue numbers', () => {
+    const a = got(threats.archetypes.find((x) => x.id === 'arch_maze'));
+    expect(a.fromRound).toBe(2);
+    expect(a.waveSharePercent).toBe(25);
+    expect(a.waves).toMatchObject({
+      firstTick: 400,
+      intervalTicks: 300,
+      count: 4,
+      growthPercent: 125,
+    });
+    expect(a.stronghold).toEqual({
+      coreHealthPerBudget: 300,
+      wallSharePercent: 40,
+      turretSharePercent: 30,
+      layout: 'maze',
+    });
+    expect(pickArchetypes(1, 1, threats).easy).not.toBe('arch_maze');
+  });
+
+  test('the path to the Core is open at every round, type, party size and seed', () => {
+    for (const seed of [1, 7, 99]) {
+      for (const type of THREAT_TYPES) {
+        for (const party of [1, 2, 4]) {
+          for (let round = 1; round <= 25; round++) {
+            const p = gen(round, party, type, seed);
+            for (let plot = 0; plot < party; plot++) {
+              expect(reaches(p, plot)).toBe(true);
+            }
+            const cells = p.stronghold.buildings.map(
+              (b) => `${String(b.x)},${String(b.y)}`,
+            );
+            expect(new Set(cells).size).toBe(cells.length);
+            // Walls and turrets stay inside their plot's rows 0 .. H - 2.
+            for (const b of p.stronghold.buildings) {
+              expect(b.y).toBeLessThanOrEqual(H - 2);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  test('walls fill the front row first; a small budget gives a short maze', () => {
+    const wallYs = (p: ReturnType<typeof gen>) =>
+      p.stronghold.buildings
+        .filter((b) => b.def === 'bld_wall_block')
+        .map((b) => b.y);
+    const small = wallYs(gen(2, 1, 'easy'));
+    expect(small.length).toBeGreaterThan(0);
+    expect(new Set(small)).toEqual(new Set([13]));
+    const full = wallYs(gen(15, 1, 'hard'));
+    expect(new Set(full)).toEqual(new Set([13, 10, 7, 4]));
+    // Every row has exactly one gap of two cells, at the ends, alternating.
+    const p = gen(15, 1, 'hard');
+    const rowX = (y: number) =>
+      p.stronghold.buildings
+        .filter((b) => b.def === 'bld_wall_block' && b.y === y)
+        .map((b) => b.x);
+    const sides = [13, 10, 7, 4].map((y) => {
+      const xs = rowX(y);
+      expect(xs).toHaveLength(W - 2);
+      return xs.includes(0) ? 'right' : 'left';
+    });
+    expect(sides[0]).not.toBe(sides[1]);
+    expect(sides[0]).toBe(sides[2]);
+    expect(sides[1]).toBe(sides[3]);
+    expect(full.length).toBe(88);
+  });
+
+  test('the first row side comes from the plot stream, so plots differ by seed', () => {
+    const first = new Set<string>();
+    for (let seed = 1; seed <= 12; seed++) {
+      const xs = gen(15, 1, 'hard', seed)
+        .stronghold.buildings.filter(
+          (b) => b.def === 'bld_wall_block' && b.y === 13,
+        )
+        .map((b) => b.x);
+      first.add(xs.includes(0) ? 'right' : 'left');
+    }
+    expect(first.size).toBe(2);
+  });
+
+  test('turrets stay behind the first wall row, off the wall rows, and respect the cap', () => {
+    const p = gen(15, 1, 'hard');
+    const turrets = p.stronghold.buildings.filter(
+      (b) => b.def === 'bld_turret',
+    );
+    expect(turrets).toHaveLength(threats.maxTurretsPerPlot);
+    for (const t of turrets) {
+      expect([13, 10, 7, 4]).not.toContain(t.y);
+      expect(t.y).toBeLessThan(13);
+    }
+  });
+
+  test('a maze that does not fit the plot is a content error', () => {
+    const bad: ThreatsConfig = {
+      ...threats,
+      layouts: {
+        ...threats.layouts,
+        maze: { ...threats.layouts.maze, gapWidth: 1, rows: 4, firstRow: 15 },
+      },
+    };
+    expect(() =>
+      generateThreat(
+        {
+          seed: 1,
+          round: 5,
+          partySize: 1,
+          type: 'medium',
+          archetype: 'arch_maze',
+        },
+        content,
+        { threats: bad, mapgen },
+      ),
+    ).toThrow(RangeError);
+  });
+
+  test('the loader checks the maze parameters', () => {
+    const raw = JSON.parse(JSON.stringify(threatsJson)) as {
+      layouts: { maze: Record<string, unknown> };
+    };
+    raw.layouts.maze['rowSpacing'] = 1;
+    const r = loadThreats(raw, {
+      units: content.units,
+      buildings: content.buildings,
+    });
+    expect(r.ok).toBe(false);
+    const raw2 = JSON.parse(JSON.stringify(threatsJson)) as {
+      layouts: { maze: Record<string, unknown> };
+    };
+    delete raw2.layouts.maze['rows'];
+    expect(
+      loadThreats(raw2, { units: content.units, buildings: content.buildings })
+        .ok,
+    ).toBe(false);
   });
 });

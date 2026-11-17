@@ -425,6 +425,15 @@ An archetype's `waves.count` is an integer from 1 to 16 (was 12 until the Swarm'
 fourteen waves, issue #431) and `waves.growthPercent` from 100 to 300; the wave
 sizes `s_k` stay below 2^53 for these bounds (at most `100 * 3^15`).
 
+`layouts.maze` (issue #432) has seven integers: `coreRow` (at least 0), `rows`
+(1 to 16), `rowSpacing` (2 to 16), `gapWidth` (1 to 64), `firstRow` (1 to 64),
+`turretMinDistance` (at least 1) and `maxWallsPerPlot` (1 to 1024); all seven
+are required, as is `layouts.maze` itself (the loader and the schema reject a
+file without it). `stronghold.layout` may be `maze`. The generator also throws a
+`RangeError` (a content error) when `firstRow` is on or past the front-most free row
+(`plotDepth - 2`), when the last wall row would touch the Core's rows, when
+`gapWidth` is at least `plotWidth`, or when the path is sealed (see "Layouts").
+
 An archetype's optional `brood` (MM-9d, "Core bursts") is allowed only when
 `bossOnly` is true (rejected otherwise). `brood.thresholdsPercent` is a list of
 1 to 5 integers, each from 1 to 99, **strictly descending**; `brood.sharePercent`
@@ -4539,6 +4548,7 @@ Shipped values:
 | Escalator | 75 | 100, 75, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
 | Skirmishers (`arch_skirmishers`, from round 2) | 50 | 150, 150, 6, 120 | archer 3 : soldier 1 | 300, 0, 45, `open` |
 | Swarm (`arch_swarm`, from round 1) | 80 | 80, 45, 14, 108 | raider | 500, 0, 10, `open` |
+| Maze (`arch_maze`, from round 2) | 25 | 400, 300, 4, 125 | soldier 2 : raider 1 | 300, 40, 30, `maze` |
 | Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Brood (`arch_boss_brood`, boss only, from round 3, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Bonded (`arch_boss_linked`, boss only, from round 5, party size 2 or more) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
@@ -4564,6 +4574,16 @@ raiders stay about 70 to 75 percent of the units (rounds 10 and 15, party 4).
 **Notes for a port:** nothing new to implement: two more entries in the archetype
 list (file order decides `pickArchetypes`' shuffle), and the wave `count` bound is
 now 16 (was 12).
+Maze (issue #432) sends light, late waves (a quarter of the budget in four
+waves, the first at tick 400, 300 apart) against the
+new `maze` layout: a winding walled path to the Core, lined with turrets (the
+counter is a strong army that pushes through, or breaching). Its waves are plain
+data like the others; at round 15 `unitStrengthPercent` is 100 for hard, party 1
+and 4 (the waves fit the cap), 150 and 155 at round 16. The layout is the only new rule: see "Layouts".
+Its stronghold budget is three quarters of the budget; walls take 40 percent of
+it, turrets 30, and the rest becomes Core health. The wall cap is
+`layouts.maze.maxWallsPerPlot` (88), not `maxWallsPerPlot` (60): four full rows
+of 22 walls need it (the other option was fewer rows, which would not zig-zag).
 No per-archetype switch for the mix was needed. Swarm's waves are small
 (`growthPercent` 108, so the last wave is about 2.7 times the first): at party
 size 1, round 1 every wave is one raider; at round 10 the largest wave is 5
@@ -4702,7 +4722,8 @@ other invalid input; `pickBoss` never offers it then).
 7. **Stronghold** (`N = partySize`, `share(total, p) = floor(total / N) + (1 if
    p < total mod N else 0)`).
    - `wallsTotal = min(floor(floor(S' * wallSharePercent / 100) / wallPrice),
-     maxWallsPerPlot * N)`; `turretsTotal` likewise with the turret price and
+     maxWallsPerPlot * N)` (for the `maze` layout the cap is
+     `layouts.maze.maxWallsPerPlot * N` instead); `turretsTotal` likewise with the turret price and
      `maxTurretsPerPlot`. Plot `p` may place up to `share(wallsTotal, p)`
      walls and `share(turretsTotal, p)` turrets.
    - For `p = 0 .. N - 1` in order, with the random stream `holdRng.child(p)`
@@ -4809,6 +4830,38 @@ with `holdRng.shuffle` and its cells taken from the front.
   column, not on a wall, at Chebyshev distance at least `turretMinDistance`
   from the Core; key = `lineRow - y`.
 
+- **`maze`** (issue #432): `rows` wall rows across the plot on `y = firstRow -
+  k * rowSpacing`, `k = 0 .. rows - 1` (row 0 is the front-most), each with one
+  gap of `gapWidth` cells at the left end (`x = 0 .. gapWidth - 1`) or the
+  right end (`x = plotWidth - gapWidth .. plotWidth - 1`) of the plot; the sides
+  alternate row by row. The side of row 0 is the **first draw** of
+  `holdRng.child(p)`: `nextInt(2)`, 0 = left, 1 = right. Walls fill row 0
+  first, then row 1, ...; inside a row the cells nearest to the gap come first
+  (by distance to the gap's inner edge), then lower `x`; so a small budget gives
+  a partly filled front row, and a bigger one a longer maze, never a sealed one
+  (each row keeps its gap).
+  *The path.* Over the cells of rows `0 .. plotDepth - 2` that hold no wall, a
+  breadth-first search with 4 moves (order `y + 1`, `y - 1`, `x - 1`, `x + 1`)
+  from the Core's four cells gives each cell its step distance `d`. The
+  **entrance** is the cell of the front-most free row (`y = plotDepth - 2`)
+  with the least `d`, ties to the lowest `x`; if no cell of that row has a
+  distance the layout throws a `RangeError` (a sealed maze is a content
+  error). The path is the entrance, then repeatedly the first neighbour (same
+  move order) whose `d` is one less, down to the Core; the entrance has index
+  0.
+  *Turrets.* Candidates are the cells with `y < firstRow` that are on none of
+  the `rows` wall rows (the whole row, whether or not it holds walls), not on
+  the path, not in the Core, at Chebyshev distance at least `turretMinDistance`
+  from the Core, and within Chebyshev distance 1 of at least one path cell;
+  key = the least path index among the path cells within distance 1. They are
+  picked by `pickTurrets` with the same stream (after the side draw), the entrance
+  group first. A turret is never on the path, so turrets cannot seal the maze.
+  Shipped: `coreRow` 0, `rows` 4, `rowSpacing` 3, `gapWidth` 2, `firstRow` 13,
+  `turretMinDistance` 2, `maxWallsPerPlot` 88 (4 rows of 22).
+  A unit's own movement field (8 moves, see "Goals and movement fields") finds
+  its way through the gaps; walls are only attacked when a field is sealed, which
+  a maze never is.
+
 Every layout is computed once per plot around that plot's own Core, so a
 `ring` on a wide board is one ring set per plot (cells outside the plot are
 skipped, as cells outside the board are).
@@ -4834,6 +4887,37 @@ turrets, `C` the Core, the front row on top):
 .....D..DDD..DDD..D.....
 ........................
 ```
+
+Snapshot of a full Maze stronghold (round 15, hard, party size 1, 94 buildings:
+88 walls and 6 turrets; `D` walls and turrets, `C` the Core, the front row on
+top; the first row's gap is on the left, so units walk along the front to
+`x = 0, 1`, go through, walk right along the next corridor to `x = 22, 23`,
+and so on; the six turrets stand next to the path in the second corridor):
+
+```
+...........CC...........
+...........CC...........
+........................
+........................
+DDDDDDDDDDDDDDDDDDDDDD..
+........................
+........................
+..DDDDDDDDDDDDDDDDDDDDDD
+........................
+........................
+DDDDDDDDDDDDDDDDDDDDDD..
+D.......................
+D.DDDD..................
+..DDDDDDDDDDDDDDDDDDDDDD
+........................
+........................
+```
+
+**Notes for a port (Maze):** the layout needs a 4-move breadth-first search and
+the move order above; the only random draws are `nextInt(2)` for the first row's
+side, then `pickTurrets`; row order, gap sides and the cell order inside a row
+are fixed by the rules, so the walls need no randomness. The generator's wall
+cap for this layout is its own `maxWallsPerPlot`.
 
 ### The stronghold as a team state
 

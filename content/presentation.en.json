@@ -172,6 +172,11 @@
       "description": "Small raider waves, one after another, against an open stronghold with a small Core.",
       "tests": "area damage and turrets"
     },
+    "arch_maze": {
+      "name": "Maze",
+      "description": "Light waves, against a winding walled path to the Core lined with turrets.",
+      "tests": "a strong army that pushes through, or breaching the walls"
+    },
     "arch_boss": {
       "name": "Boss",
       "description": "A strong stronghold with steady waves and a signature unit every few waves.",

@@ -10,7 +10,7 @@ import { buildSaveRecord, createGameDeps, playBotRun } from '@game/session';
 import { loadSimContext } from '../../tools/src/sim/context.ts';
 
 // Optional arguments: strategy, seed, party size, run id. The defaults give the
-// party that beats the boss (`rush 2 2`); `siege 1 2` gives one that loses to
+// party that beats the boss (`rush 2 2`); `siege 4 2` gives one that loses to
 // it (both found by playing the bot on, nothing edited; the seeds changed when
 // the Brood boss joined the draw from round 3, issue #398, and `siege 4 2`
 // became `siege 10 2` when Market day joined the event pool, issue #410, and
@@ -20,7 +20,10 @@ import { loadSimContext } from '../../tools/src/sim/context.ts';
 // over seeds 1 to 30, the first that is alive at 5 lives in round 7 and loses 1 life
 // to the boss). Leaving out last round's threat types (#430) changed the PvE
 // options, so it became `siege 1 2` (searched over seeds 1 to 30: the first
-// that is alive in round 7 and loses 1 life to the boss).
+// that is alive in round 7 and loses 1 life to the boss). The Maze threat (#432)
+// changed the options again: `siege 1 2` now beats the boss (4 -> 4 lives), so
+// it became `siege 4 2` (searched over seeds 1 to 12: seeds 2 and 6 are lost
+// before the boss; of the rest, 4 is the first that loses a life, 3 -> 2).
 const [
   STRATEGY = 'rush',
   SEED_ARG = '2',
