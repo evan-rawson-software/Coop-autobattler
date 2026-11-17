@@ -101,6 +101,9 @@ const RARE_FROM_3 = [
   'bld_golem_forge',
   'bld_refinery_bc',
   'bld_spire',
+  // Weight 4 from round 3 (#443); the Grand barracks (weight 3) is rare from
+  // round 5.
+  'bld_mortar',
 ];
 
 describe('Blueprint: the definition and which buildings are rare', () => {
@@ -116,8 +119,13 @@ describe('Blueprint: the definition and which buildings are rare', () => {
 
   test("rare buildings of today's content, by round", () => {
     expect(rareOfferDefs(economy, 3, 4)).toEqual(RARE_FROM_3);
-    // Before round 3 the late buildings (refineries, golem forge, spire) are
-    // not sold, so they are not rare yet: same gate as the shop roll.
+    expect(rareOfferDefs(economy, 5, 4)).toEqual([
+      ...RARE_FROM_3,
+      'bld_grand_barracks',
+    ]);
+    // Before round 3 the late buildings (refineries, golem forge, spire,
+    // Mortar) are not sold, so they are not rare yet: same gate as the shop
+    // roll.
     expect(rareOfferDefs(economy, 2, 4)).toEqual(
       RARE_FROM_3.filter(
         (d) =>
@@ -126,6 +134,7 @@ describe('Blueprint: the definition and which buildings are rare', () => {
             'bld_golem_forge',
             'bld_refinery_bc',
             'bld_spire',
+            'bld_mortar',
           ].includes(d),
       ),
     );

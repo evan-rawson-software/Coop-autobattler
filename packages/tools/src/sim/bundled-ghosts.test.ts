@@ -21,5 +21,9 @@ describe('the bundled ghost file', () => {
       onDisk === fresh,
       'packages/web/src/run/bundled-ghosts.json is out of date: run `pnpm ghosts:update` and commit it',
     ).toBe(true);
-  }, 300_000);
+    // Regenerating the 96 ghosts takes 162 s before the new buildings (#443)
+    // and 219 s with them (the bot's layout dry runs for a Lancer hall, a
+    // Mortar and a Grand barracks), measured on an idle machine: the old limit
+    // of 300 s left 1.8 times that, this one leaves 2.7 times.
+  }, 600_000);
 });

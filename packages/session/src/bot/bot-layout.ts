@@ -28,6 +28,16 @@ import {
 } from '@game/core';
 import type { BoardIntent } from '../rules/types.js';
 
+/** The Grand barracks (two collectors and a Merger feed it) and the Merger (#443). */
+export const GRAND_BARRACKS = 'bld_grand_barracks';
+export const MERGER = 'bld_merger';
+export const LANCER_HALL = 'bld_lancer_hall';
+export const MORTAR = 'bld_mortar';
+
+/** Buildings searched for a place on the whole plot, not near their collector. */
+const WIDE_TRIES = 100;
+const WIDE_PLACEMENT: readonly string[] = [GRAND_BARRACKS, LANCER_HALL, MORTAR];
+
 export type Side = 'north' | 'east' | 'south' | 'west';
 
 /** How a strategy lays a factory out. */
@@ -313,10 +323,16 @@ function inPlot(env: Env, x: number, w: number): boolean {
 }
 
 /** Positions for a consumer near a cell, nearest first. */
-export function nearby(env: Env, around: Cell, w: number): Cell[] {
+export function nearby(
+  env: Env,
+  around: Cell,
+  w: number,
+  wideX = WINDOW_X,
+  wideY = WINDOW_Y,
+): Cell[] {
   const out: Cell[] = [];
-  for (let dy = -WINDOW_Y; dy <= WINDOW_Y; dy++) {
-    for (let dx = -WINDOW_X; dx <= WINDOW_X; dx++) {
+  for (let dy = -wideY; dy <= wideY; dy++) {
+    for (let dx = -wideX; dx <= wideX; dx++) {
       const x = around.x + dx;
       const y = around.y + dy;
       if (y >= 1 && inPlot(env, x, w)) out.push({ x, y });
@@ -330,6 +346,54 @@ export function nearby(env: Env, around: Cell, w: number): Cell[] {
       b.y - a.y ||
       a.x - b.x,
   );
+}
+
+/**
+ * Reorder the positions of a consumer by where its kind belongs (#443); the
+ * order of `positions` (nearest first) decides among equals. A Lancer hall
+ * goes behind or beside one of the player's placed Barracks, else along the
+ * edge of the plot; a Mortar as close to the player's Core as it can be (its
+ * walls are placed in front of it by `placeLoose`).
+ */
+function preferred(
+  env: Env,
+  team: TeamState,
+  def: string,
+  positions: Cell[],
+  size: { w: number; h: number },
+): Cell[] {
+  if (def === LANCER_HALL) {
+    const barracks = team.buildings
+      .filter((b) => b.owner === env.player && b.def === 'bld_barracks')
+      .map((b) => ({ b, box: boxOf(env, b) }));
+    const rank = (c: Cell): number => {
+      for (const { b, box } of barracks) {
+        const overlapX = c.x < b.x + box.w && b.x < c.x + size.w;
+        const overlapY = c.y < b.y + box.h && b.y < c.y + size.h;
+        const beside =
+          overlapY && (c.x + size.w === b.x || b.x + box.w === c.x);
+        const behind = overlapX && c.y + size.h === b.y;
+        if (beside || behind) return 0;
+      }
+      return c.x === env.x0 || c.x + size.w === env.x1 ? 1 : 2;
+    };
+    return stableByRank(positions, rank);
+  }
+  if (def === MORTAR && env.core !== null) {
+    const core = env.core;
+    return stableByRank(
+      positions,
+      (c) => Math.abs(c.x - core.x) + Math.abs(c.y - core.y),
+    );
+  }
+  return positions;
+}
+
+function stableByRank(positions: Cell[], rank: (c: Cell) => number): Cell[] {
+  return positions
+    .map((c, seq) => ({ c, seq, r: rank(c) }))
+    .sort((a, b) => a.r - b.r || a.seq - b.seq)
+    .map((e) => e.c);
 }
 
 /**
@@ -353,7 +417,21 @@ function* consumerPlacements(
   const sb = boxOf(env, s);
   const start = outsideCell(s, sb.w, sb.h, outSide, 0);
   const size = sizeOf(env, c.def);
-  for (const pos of nearby(env, start, size.w)) {
+  // A Grand barracks needs a 3x3 hole, a Lancer hall a place by a Barracks or
+  // at the edge, a Mortar one by the Core: all may be farther off than the
+  // usual window, so the whole plot is ranked and the best WIDE_TRIES tried
+  // (#443).
+  const wide = WIDE_PLACEMENT.includes(c.def);
+  const ranked = preferred(
+    env,
+    plan.team,
+    c.def,
+    wide
+      ? nearby(env, start, size.w, env.x1 - env.x0, plan.team.map.height)
+      : nearby(env, start, size.w),
+    size,
+  );
+  for (const pos of wide ? ranked.slice(0, WIDE_TRIES) : ranked) {
     const placed = withPlace(env, plan, consumerId, pos.x, pos.y);
     if (placed === null) continue;
     const done = withConduit(
@@ -424,7 +502,9 @@ function reservedNodes(env: Env, team: TeamState): Cell[] {
   const built = team.buildings.some(
     (b) =>
       b.owner === env.player &&
-      (defOf(env, b.def)?.kind === 'refinery' || b.def === 'bld_foundry'),
+      (defOf(env, b.def)?.kind === 'refinery' ||
+        b.def === 'bld_foundry' ||
+        b.def === MERGER),
   );
   if (built) return [];
   const out: Cell[] = [];
@@ -456,6 +536,14 @@ function resourceOf(
   b: PlacedBuilding,
 ): string | undefined {
   return occupancy(team, env.content).sourceResource(b);
+}
+
+/** The first placed Barracks of the player (where a Lancer hall wants to be), if any. */
+function lancerAnchor(env: Env, team: TeamState): Cell | undefined {
+  const b = team.buildings.find(
+    (x) => x.owner === env.player && x.def === 'bld_barracks',
+  );
+  return b === undefined ? undefined : { x: b.x, y: b.y };
 }
 
 /** Connect one consumer (placed or stashed) to a source of its resource. */
@@ -498,6 +586,21 @@ function connectConsumer(
     ? t.buildings.find((b) => b.id === consumerId)
     : undefined;
   let nodes = shuffle(freeNodes(env, t, resource), env.rng);
+  const hall = need.def === LANCER_HALL ? lancerAnchor(env, t) : undefined;
+  if (hall !== undefined) {
+    // A Lancer hall's collector goes near a Barracks, so that the hall can
+    // stand behind or beside it (#443).
+    nodes = nodes
+      .map((node, seq) => ({ node, seq }))
+      .sort(
+        (a, b) =>
+          Math.abs(a.node.x - hall.x) +
+            Math.abs(a.node.y - hall.y) -
+            (Math.abs(b.node.x - hall.x) + Math.abs(b.node.y - hall.y)) ||
+          a.seq - b.seq,
+      )
+      .map((e) => e.node);
+  }
   if (consumer !== undefined) {
     // Nearest first; equal distances keep the shuffled order.
     const dist = (n: { x: number; y: number }): number =>
@@ -523,11 +626,18 @@ function connectConsumer(
  * their own Core first (ties broken by the bot's generator), so walls and
  * turrets gather around it.
  */
-function scanCells(env: Env, team: TeamState, w: number, h: number): Cell[] {
-  const around: Cell = env.core ?? {
-    x: Math.floor((env.x0 + env.x1) / 2),
-    y: team.map.height - 1,
-  };
+function scanCells(
+  env: Env,
+  team: TeamState,
+  w: number,
+  h: number,
+  front?: Cell,
+): Cell[] {
+  const around: Cell = front ??
+    env.core ?? {
+      x: Math.floor((env.x0 + env.x1) / 2),
+      y: team.map.height - 1,
+    };
   const out: { c: Cell; d: number }[] = [];
   for (let y = team.map.height - 1 - h; y >= 1; y--) {
     for (let x = env.x0; x < env.x1; x++) {
@@ -541,6 +651,34 @@ function scanCells(env: Env, team: TeamState, w: number, h: number): Cell[] {
     .map((e) => e.c);
 }
 
+/**
+ * The cell just in front (toward the enemy, the north: units walk toward
+ * higher y) of a placed Mortar of the player that has fewer than two walls in
+ * front of it, or undefined: the walls go there first (#443).
+ */
+function mortarFront(env: Env, team: TeamState): Cell | undefined {
+  for (const m of team.buildings) {
+    if (m.owner !== env.player || m.def !== MORTAR) continue;
+    const box = boxOf(env, m);
+    const top = m.y + box.h;
+    const screens = team.buildings.filter((b) => {
+      if (b.owner !== env.player || !isWallLike(env, b.def)) return false;
+      const bb = boxOf(env, b);
+      return (
+        b.x < m.x + box.w + 1 &&
+        m.x - 1 < b.x + bb.w &&
+        b.y >= top &&
+        b.y < top + 3 &&
+        b.y + bb.h > top
+      );
+    });
+    if (screens.length < 2) {
+      return { x: m.x, y: Math.min(team.map.height - 2, top + 1) };
+    }
+  }
+  return undefined;
+}
+
 function placeLoose(env: Env, plan: Plan, id: number): Plan | null {
   const item = plan.team.stash.find((b) => b.id === id);
   if (item === undefined) return null;
@@ -550,7 +688,9 @@ function placeLoose(env: Env, plan: Plan, id: number): Plan | null {
   // Walls and gates keep to every other cell so the screen has gaps.
   const spaced = kind === 'defense' && item.def !== 'bld_turret';
   const kept = reservedNodes(env, plan.team);
-  for (const pos of scanCells(env, plan.team, size.w, size.h)) {
+  const front =
+    kind === 'defense' && spaced ? mortarFront(env, plan.team) : undefined;
+  for (const pos of scanCells(env, plan.team, size.w, size.h, front)) {
     if (spaced && (pos.x + pos.y) % 2 !== 0) continue;
     // Nothing loose goes on or around a node kept for a chain: the collector
     // there needs its output side and a way out.
@@ -613,14 +753,34 @@ export function plotRoom(
   player: number,
   content: Content,
   plotWidth: number,
+  /** With a style that keeps nodes back for a chain: those are not open (#443). */
+  style?: LayoutStyle,
 ): PlotRoom {
   const x0 = player * plotWidth;
   const x1 = Math.min(team.map.width, (player + 1) * plotWidth);
   const occ = occupancy(team, content);
+  const kept =
+    style === undefined
+      ? []
+      : reservedNodes(
+          {
+            content,
+            rng: Rng.fromSeed(1),
+            style,
+            player,
+            x0,
+            x1,
+            // Not read by `reservedNodes`; the sealed-in count is slow.
+            baselineSealed: 0,
+            core: team.cores[player] ?? null,
+          },
+          team,
+        );
   const openNodes = new Map<string, number>();
   let openNodeTotal = 0;
   for (const n of allNodes(team)) {
     if (n.x < x0 || n.x >= x1 || occ.buildingAt(n.x, n.y) !== null) continue;
+    if (kept.some((k) => k.x === n.x && k.y === n.y)) continue;
     openNodes.set(n.resource, (openNodes.get(n.resource) ?? 0) + 1);
     openNodeTotal++;
   }
@@ -919,6 +1079,8 @@ function refinedResources(content: Content): Set<string> {
  */
 export function isChainPiece(content: Content, def: string): boolean {
   const d = content.buildings.get(def);
+  // The Grand barracks and its Merger are wired as a whole too (#443).
+  if (def === MERGER || def === GRAND_BARRACKS) return d !== undefined;
   if (d === undefined || d.kind === 'route' || d.kind === 'source') {
     return false;
   }
@@ -1043,6 +1205,50 @@ function connectChain(
   });
 }
 
+/** Wire a Merger between two collectors and a Grand barracks, all or nothing (#443). */
+function connectMerged(
+  env: Env,
+  plan: Plan,
+  barracksId: number,
+  mergerId: number,
+): Plan | null {
+  const barracks = plan.team.stash.find((b) => b.id === barracksId);
+  const resource = defOf(env, barracks?.def ?? '')?.inputs[0]?.resource;
+  if (resource === undefined) return null;
+  let tries = 0;
+  for (const s1 of collectorStarts(env, plan, resource)) {
+    // The Merger beside the first collector, which enters its west side.
+    for (const p1 of consumerPlacements(
+      env,
+      s1.plan,
+      s1.id,
+      mergerId,
+      undefined,
+      'west',
+    )) {
+      const m = p1.team.buildings.find((b) => b.id === mergerId);
+      if (m === undefined) continue;
+      for (const s2 of collectorStarts(env, p1, resource, m)) {
+        if (tries++ >= WIRE_TRIES) return null;
+        const p2 = withConduit(
+          env,
+          s2.plan,
+          s2.id,
+          mergerId,
+          undefined,
+          'east',
+        );
+        if (p2 === null || !sealsNothingNew(env, p2.team)) continue;
+        // The Grand barracks (a free 3x3 hole) where the Merger's output reaches.
+        for (const done of consumerPlacements(env, p2, mergerId, barracksId)) {
+          return done;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * The chain step of the layout: every Foundry in the stash with two
  * collectors, every refinery with the consumer of its output. A chain that
@@ -1070,6 +1276,13 @@ function planChains(env: Env, start: Plan): Plan {
     );
     if (user === undefined) continue;
     const done = connectChain(env, plan, r.id, user.id);
+    if (done !== null) plan = done;
+  }
+  for (const g of stashed()) {
+    if (g.def !== GRAND_BARRACKS) continue;
+    const merger = stashed().find((b) => b.def === MERGER);
+    if (merger === undefined) continue;
+    const done = connectMerged(env, plan, g.id, merger.id);
     if (done !== null) plan = done;
   }
   return plan;
@@ -1292,6 +1505,15 @@ export function planLayout(
       .filter(
         (b) => !style.connect || (defOf(env, b.def)?.inputs.length ?? 0) === 0,
       )
+      // Nor does any bot leave a refinery on the board unwired (a weak bot
+      // can be handed one by an event).
+      .filter((b) => defOf(env, b.def)?.kind !== 'refinery')
+      // Nor a Tunnel end: the bot has no use for them and an unpaired end
+      // does nothing (#443).
+      .filter((b) => {
+        const d = defOf(env, b.def);
+        return !(d?.kind === 'route' && d.routeType.startsWith('tunnel'));
+      })
       .sort((a, b) => rank(a.def) - rank(b.def) || a.id - b.id);
     for (const b of loose) {
       const done = placeLoose(env, plan, b.id);
