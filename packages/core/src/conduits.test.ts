@@ -1502,8 +1502,9 @@ describe('property: random operations', () => {
     () => {
       const defs = content.buildings
         .list()
-        // The Range and the Hangar have the Barracks' shape, the Lancer hall is
-        // measured by its own rotation tests (lancer.test.ts), and the wall
+        // The Range and the Hangar have the Barracks' shape, the Lancer hall and
+        // the Grand barracks are measured by their own rotation tests
+        // (lancer.test.ts, grand-barracks.test.ts), and the wall
         // shapes only stand for the single wall; leaving them out keeps the
         // seeded operation sequence of this test unchanged (31 accepted
         // conduits, as measured).
@@ -1513,6 +1514,7 @@ describe('property: random operations', () => {
             b.id !== 'bld_range' &&
             b.id !== 'bld_hangar' &&
             b.id !== 'bld_lancer_hall' &&
+            b.id !== 'bld_grand_barracks' &&
             !/^bld_wall_[a-z]$/.test(b.id),
         )
         .map((b) => b.id);

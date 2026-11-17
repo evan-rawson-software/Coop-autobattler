@@ -107,6 +107,12 @@ describe('effect text', () => {
     expect(barracks.collects).toBeNull();
     expect(barracks.effect).toBe(`Trains 1 Soldier per 5 ${ore}`);
     expect(barracks.health).toBe('Health 60');
+    // Several units per production: the card says so, and its rate is the
+    // whole production per interval (8 Ore per 80 ticks).
+    const grand = stats('bld_grand_barracks');
+    expect(grand.uses).toBe(`Uses ${ore} 1.00/s`);
+    expect(grand.effect).toBe(`Trains Soldier x2 per 8 ${ore}`);
+    expect(grand.health).toBe('Health 150');
     const extractor = stats('bld_extractor');
     expect(extractor.uses).toBeNull();
     expect(extractor.collects).toBe('Collects 0.50/s');

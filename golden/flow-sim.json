@@ -7318,5 +7318,371 @@
       },
       "eventLogHash": "d4ae6a7a"
     }
+  },
+  {
+    "id": "flow-sim.grand-barracks-two-collectors-need",
+    "kind": "flow-sim",
+    "description": "Two tier 2 Ore collectors feed a tier 2 Grand barracks (3x3, 4 Ore per soldier, two soldiers per production, 8 items per production every 56 ticks) through a Merger: the dry run in need mode shows both collectors fully feeding it (need 142 per 1000 ticks, no source stalls).",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          },
+          {
+            "x": 5,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 4,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_grand_barracks",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 5,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "east"
+          },
+          "cells": [
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 4,
+              "y": 5
+            }
+          ]
+        }
+      ],
+      "ticks": 1000,
+      "consumers": "need"
+    },
+    "expected": {
+      "result": {
+        "tick": 1000,
+        "stateHash": "2949ada1",
+        "flow": {
+          "produced": 142,
+          "inConduits": 0,
+          "held": 0,
+          "inBuffers": 0,
+          "consumed": 142,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 71,
+            "lost": 0,
+            "stalledTicks": 0
+          },
+          {
+            "building": 4,
+            "resource": "res_a",
+            "produced": 71,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2",
+            "lost": 0,
+            "held": null
+          }
+        ],
+        "consumers": [
+          {
+            "building": 3,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 142,
+            "consumed": 142
+          }
+        ],
+        "pacers": [
+          {
+            "building": 3,
+            "progress": 6,
+            "cooldown": 11,
+            "productions": 17
+          }
+        ]
+      },
+      "eventLogHash": "ab104439"
+    }
+  },
+  {
+    "id": "flow-sim.grand-barracks-one-collector-need",
+    "kind": "flow-sim",
+    "description": "One tier 2 Ore collector feeds a tier 2 Grand barracks through a Merger: it fills its 8-item production at half the speed of two collectors (about half the productions of grand-barracks-two-collectors-need) and the collector never stalls.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 4,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_grand_barracks",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 4,
+              "y": 5
+            }
+          ]
+        }
+      ],
+      "ticks": 1000,
+      "consumers": "need"
+    },
+    "expected": {
+      "result": {
+        "tick": 1000,
+        "stateHash": "be50dbd0",
+        "flow": {
+          "produced": 71,
+          "inConduits": 0,
+          "held": 0,
+          "inBuffers": 0,
+          "consumed": 71,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 71,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2",
+            "lost": 0,
+            "held": null
+          }
+        ],
+        "consumers": [
+          {
+            "building": 3,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 71,
+            "consumed": 71
+          }
+        ],
+        "pacers": [
+          {
+            "building": 3,
+            "progress": 7,
+            "cooldown": 0,
+            "productions": 8
+          }
+        ]
+      },
+      "eventLogHash": "adbd20ff"
+    }
   }
 ]

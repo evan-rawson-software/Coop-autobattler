@@ -384,7 +384,9 @@ function topSpeed(ctx: SimContext, team: TeamState): number {
     if (def?.kind !== 'unit_producer') continue;
     const tier = def.tiers[b.tier - 1];
     if (tier !== undefined) {
-      n += Math.floor(PASSIVE_TICKS / tier.productionIntervalTicks);
+      n +=
+        Math.floor(PASSIVE_TICKS / tier.productionIntervalTicks) *
+        tier.unitsPerProduction;
     }
   }
   return n;

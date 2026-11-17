@@ -207,6 +207,42 @@ function barracksSprite(): Pix {
   return p;
 }
 
+/** A Grand barracks: a big barracks plate (3x3 tiles) with two pairs of crossed swords and a wide door at the south. */
+function grandBarracksSprite(): Pix {
+  const p = new Pix(48, 48);
+  plate(p, 1, 1, 46, 46, KIND_RAMP['unit_producer'] as Ramp);
+  for (const [x, y] of [
+    [3, 3],
+    [44, 3],
+    [3, 44],
+    [44, 44],
+  ] as const)
+    p.set(x, y, '4');
+  // Roof panel with rafters.
+  p.rect(5, 5, 38, 27, 'K');
+  p.rect(6, 6, 36, 25, 'R');
+  for (let x = 6; x < 42; x += 4) p.rect(x, 6, 1, 25, 'm');
+  p.rect(6, 6, 36, 1, 'm');
+  // Two pairs of crossed swords: two soldiers at a time.
+  for (const left of [10, 26]) {
+    p.line(left, 11, left + 9, 22, '5');
+    p.line(left + 9, 11, left, 22, '5');
+    p.line(left + 1, 11, left + 10, 22, '4');
+    p.line(left + 8, 11, left - 1, 22, '4');
+    p.set(left, 11, '6');
+    p.set(left + 9, 11, '6');
+    p.rect(left - 1, 19, 3, 1, 'y');
+    p.rect(left + 8, 19, 3, 1, 'y');
+  }
+  // Wide door facing south, where the input arrives.
+  p.rect(16, 34, 16, 13, 'K');
+  p.rect(17, 35, 14, 12, '1');
+  p.rect(18, 36, 12, 11, 'K');
+  p.rect(17, 35, 14, 1, '3');
+  arrow(p, 23, 39, 'n', 'T');
+  return p;
+}
+
 function rangeSprite(): Pix {
   const p = new Pix(32, 32);
   barracksPlate(p);
@@ -722,6 +758,7 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_merger: mergerSprite,
   bld_crossover: crossoverSprite,
   bld_barracks: barracksSprite,
+  bld_grand_barracks: grandBarracksSprite,
   bld_foundry: foundrySprite,
   bld_golem_forge: golemForgeSprite,
   bld_spire: spireSprite,

@@ -264,6 +264,10 @@ taken}`. The fields are optional and the follow-up is a new allowed shape of
   raised. Focus (issue #433) adds the optional `plot` to a wave entry of a
   threat profile (and to the arena's `scheduledWaves` entry); a profile
   without it means the whole width, as before, so no format number is raised.
+  Several units per production (issue #440) adds the optional
+  `unitsPerProduction` to a unit producer tier (content, absent means 1) and the
+  optional `held` to a producer of the arena state (omitted while 0); the arena
+  state is not a saved format, so no format number is raised.
   (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is

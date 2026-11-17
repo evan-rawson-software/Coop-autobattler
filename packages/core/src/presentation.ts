@@ -70,6 +70,7 @@ export const TEMPLATE_SLOTS: Readonly<Record<string, readonly string[]>> = {
   merger: ['ins'],
   crossover: [],
   unit_producer: ['unit', 'cost', 'resource'],
+  unit_producer_multi: ['unit', 'units', 'total', 'resource'],
   unit_producer_costs: ['unit', 'costs'],
   refinery: ['count', 'output', 'seconds'],
   wall: [],
