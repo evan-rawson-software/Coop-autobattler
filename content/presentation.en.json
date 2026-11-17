@@ -182,6 +182,16 @@
       "description": "Normal waves, but each one enters through a single plot, against a ring stronghold. Each wave hits one of you.",
       "tests": "covering each other across the borders"
     },
+    "arch_juggernaut": {
+      "name": "Juggernaut",
+      "description": "A few slow, very tough waves of heavies and Golems, against a stronghold behind a wall line.",
+      "tests": "focused damage, and walls to buy time"
+    },
+    "arch_coven": {
+      "name": "Coven",
+      "description": "Casters behind a soldier screen, against a ring stronghold.",
+      "tests": "spread-out units; armored Golems shrug off splash"
+    },
     "arch_boss": {
       "name": "Boss",
       "description": "A strong stronghold with steady waves and a signature unit every few waves.",

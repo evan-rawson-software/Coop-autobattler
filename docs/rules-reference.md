@@ -4582,6 +4582,8 @@ Shipped values:
 | Swarm (`arch_swarm`, from round 1) | 80 | 80, 45, 14, 108 | raider | 500, 0, 10, `open` |
 | Maze (`arch_maze`, from round 2) | 25 | 400, 300, 4, 125 | soldier 2 : raider 1 | 300, 40, 30, `maze` |
 | Focus (`arch_focus`, from round 3, `focus`) | 60 | 150, 160, 7, 120 | soldier 2 : raider 1 | 400, 20, 15, `ring` |
+| Juggernaut (`arch_juggernaut`, from round 3) | 60 | 250, 300, 4, 135 | heavy 2 : golem 1 | 350, 25, 15, `line` |
+| Coven (`arch_coven`, from round 3) | 55 | 200, 200, 6, 120 | caster 2 : soldier 2 | 350, 20, 20, `ring` |
 | Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Brood (`arch_boss_brood`, boss only, from round 3, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Bonded (`arch_boss_linked`, boss only, from round 5, party size 2 or more) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
@@ -4627,6 +4629,33 @@ stronghold is generated exactly as a `ring` of another archetype. **Notes for a
 port (Focus):** one flag on the template, one extra random stream (`wavesRng.child("focus")`,
 below) and the plot restriction of the entering walk in "Side options"; the
 wave sizes, composition and ranged mix are the ordinary ones.
+Juggernaut and Coven (issue #434, both from round 3) are plain data like
+Skirmishers and Swarm: no generator rule. Juggernaut sends few, slow, very tough
+waves (four waves from tick 250, 300 apart, growth 135 percent; heavies and
+Golems at weights 2 : 1) against a `line` stronghold with a wall line (Core 350
+per budget, 25 percent walls, 15 percent turrets); its counter is focused
+damage, and walls to buy time. Coven sends casters behind a soldier screen (six
+waves from tick 200, 200 apart, casters and soldiers at weights 2 : 2) against a
+`ring` stronghold (Core 350, 20 percent walls, 20 percent turrets); its counter
+is spread-out units (caster splash), and armored Golems shrug off splash. The
+two units are priced for the wave budget in `unitCost`: heavy 20 (about 2 times
+the 10 resources, 5 of each input, of the Foundry's tier 1 `costs`) and caster 8
+(2 times the Spire's tier 1 `costPerUnit` of 4); the Golem keeps its price of 50
+(the Forge's tier 1 `costPerUnit` of 4 would give 8, which would flood Juggernaut
+with Golems whose stats are several times a soldier's). The ranged mix (step 4)
+applies to both from `rangedMix.fromRound` (25 percent of a non-signature wave's
+budget to archers and 15 percent to drones). Units per wave at medium, party 1
+(measured with seed 7; at small budgets the integer split buys no Golem at
+all): Juggernaut has
+4 heavies at round 3 (one per wave), 3 heavies, 2 archers and a drone at round 5,
+7 heavies, 8 archers and 4 drones at round 10 (waves of 2, 3, 5 and 9) and 10
+heavies, 10 archers and 5 drones at round 15 (`unitStrengthPercent` 117); at
+party 4, 11 heavies and a Golem at round 3, 5 Golems at round 10, 6 at round 15.
+Coven has 4 casters and 3 soldiers at round 3 (waves of 1, 1, 1, 1, 1 and 2),
+12 casters at round 10 and 15 at round 15 (strength 142). Every wave has at
+least one unit (the existing minimum of step 5); no wave exceeds `cap`.
+**Notes for a port (Juggernaut, Coven):** two more archetype entries (file order
+sets `pickArchetypes`' shuffle) and two more `unitCost` entries.
 No per-archetype switch for the mix was needed. Swarm's waves are small
 (`growthPercent` 108, so the last wave is about 2.7 times the first): at party
 size 1, round 1 every wave is one raider; at round 10 the largest wave is 5
@@ -4658,8 +4687,9 @@ raider 8, archer 14, drone 16; about 2 times the producer's tier 1 `costPerUnit`
 of 5, 4, 7 and 8, rounded; golem 50, only bought as a champion: the soldier and
 raider cost about 1 per 2.4 to 3 points of health times damage per tick, and the
 Golem's 260 health at 6 damage per 14 ticks is about 111 of those points, so
-about 43, raised to 50 for its armor 3. No archetype's composition, signature
-or ranged mix names the Golem, so no other threat buys one). Building prices for the stronghold are the **tier 1** prices of the
+about 43, raised to 50 for its armor 3. Heavy 20 and caster 8 (issue #434) follow the same rule, see
+Juggernaut and Coven above. Only the Warlord's champion and Juggernaut's
+composition name the Golem). Building prices for the stronghold are the **tier 1** prices of the
 first building of defense type `wall` **with a one-cell footprint** (strongholds
 place walls cell by cell, so the tetromino shapes are not used; `bld_wall_block`)
 and of the first building of defense type `turret` in the
@@ -5161,6 +5191,11 @@ a Core destroyed by a hit that crosses all its lines) and
 `golden/reference-matrix.json` (the `pve-battle` kind again: the siege board
 against each archetype at round 1, and every reference board against each
 archetype at round 5 (medium) and round 10 (hard)).
+
+Juggernaut and Coven vectors (issue #434): for each, four `threat-gen` cases
+(medium round 3 party 1, medium round 5 party 2, medium round 10 party 1, hard
+round 15 party 4) and one `pve-battle` case (`rush-vs-juggernaut-r3`,
+`rush-vs-coven-r3`).
 
 Focus vectors (issue #433): three `threat-gen` cases for `arch_focus` (medium
 round 5 with party 1, medium round 6 with party 2, hard round 10 with party 4:

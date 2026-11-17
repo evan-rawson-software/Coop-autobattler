@@ -20,7 +20,9 @@
     { "unit": "unit_raider", "cost": 8 },
     { "unit": "unit_archer", "cost": 14 },
     { "unit": "unit_drone", "cost": 16 },
-    { "unit": "unit_golem", "cost": 50 }
+    { "unit": "unit_golem", "cost": 50 },
+    { "unit": "unit_heavy", "cost": 20 },
+    { "unit": "unit_caster", "cost": 8 }
   ],
   "rangedMix": {
     "fromRound": 4,
@@ -200,6 +202,50 @@
         "coreHealthPerBudget": 400,
         "wallSharePercent": 20,
         "turretSharePercent": 15,
+        "layout": "ring"
+      }
+    },
+    {
+      "id": "arch_juggernaut",
+      "bossOnly": false,
+      "fromRound": 3,
+      "waveSharePercent": 60,
+      "waves": {
+        "firstTick": 250,
+        "intervalTicks": 300,
+        "count": 4,
+        "growthPercent": 135,
+        "composition": [
+          { "unit": "unit_heavy", "weight": 2 },
+          { "unit": "unit_golem", "weight": 1 }
+        ]
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 350,
+        "wallSharePercent": 25,
+        "turretSharePercent": 15,
+        "layout": "line"
+      }
+    },
+    {
+      "id": "arch_coven",
+      "bossOnly": false,
+      "fromRound": 3,
+      "waveSharePercent": 55,
+      "waves": {
+        "firstTick": 200,
+        "intervalTicks": 200,
+        "count": 6,
+        "growthPercent": 120,
+        "composition": [
+          { "unit": "unit_caster", "weight": 2 },
+          { "unit": "unit_soldier", "weight": 2 }
+        ]
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 350,
+        "wallSharePercent": 20,
+        "turretSharePercent": 20,
         "layout": "ring"
       }
     },

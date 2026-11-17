@@ -2123,7 +2123,7 @@
           ["0 bld_armory t1 30", "1 bld_range t1 24", "2 bld_overclocker t1 30", "3 bld_hangar t1 30", "4 bld_splitter t1 5", null]
         ],
         "rng": [3284931280, 3321211597, 2469862114, 1381860622],
-        "stateHash": "b2160290"
+        "stateHash": "8a7f556b"
       }
     }
   },
@@ -2436,7 +2436,7 @@
           ["0 bld_overclocker t1 30", "1 bld_extractor t1 10", "2 bld_range t1 24", "3 bld_hangar t1 30", "4 bld_barracks t1 20", "5 bld_wall_l t1 8"]
         ],
         "rng": [3091127164, 4100099943, 578926084, 4194069035],
-        "stateHash": "cb93d657"
+        "stateHash": "3566db60"
       }
     }
   },

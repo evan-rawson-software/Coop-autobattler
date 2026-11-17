@@ -606,8 +606,8 @@ describe('pickArchetypes and threatSummary', () => {
       }
     }
     // Rusher, Fortress, Escalator, Skirmishers (from round 2), Swarm and
-    // Maze (from round 2) and Focus (from round 3).
-    expect(seen.size).toBe(7);
+    // Maze (from round 2), Focus, Juggernaut and Coven (from round 3).
+    expect(seen.size).toBe(9);
   });
 
   test('wraps around when fewer than three archetypes exist', () => {
@@ -1257,5 +1257,87 @@ describe('Focus (issue #433)', () => {
     const d = clone();
     got(d.archetypes.find((x) => x['id'] === 'arch_focus'))['focus'] = 'yes';
     expect(loadThreats(d, ctx).ok).toBe(false);
+  });
+});
+
+describe('Juggernaut and Coven (issue #434)', () => {
+  const gen = (
+    archetype: string,
+    round: number,
+    partySize: number,
+    type: ThreatType = 'medium',
+  ) =>
+    generateThreat(
+      { seed: 7, round, partySize, type, archetype },
+      content,
+      configs,
+    );
+  const countOf = (p: ReturnType<typeof gen>, unit: string) =>
+    p.waves.filter((w) => w.unit === unit).reduce((a, w) => a + w.count, 0);
+
+  test('the content has the issue numbers and the unit prices', () => {
+    const j = got(threats.archetypes.find((a) => a.id === 'arch_juggernaut'));
+    const c = got(threats.archetypes.find((a) => a.id === 'arch_coven'));
+    expect([j.fromRound, j.waveSharePercent, j.waves.count]).toEqual([
+      3, 60, 4,
+    ]);
+    expect([
+      j.waves.firstTick,
+      j.waves.intervalTicks,
+      j.waves.growthPercent,
+    ]).toEqual([250, 300, 135]);
+    expect(j.stronghold.layout).toBe('line');
+    expect(j.stronghold.coreHealthPerBudget).toBe(350);
+    expect([c.fromRound, c.waveSharePercent, c.waves.count]).toEqual([
+      3, 55, 6,
+    ]);
+    expect([
+      c.waves.firstTick,
+      c.waves.intervalTicks,
+      c.waves.growthPercent,
+    ]).toEqual([200, 200, 120]);
+    expect(c.stronghold.layout).toBe('ring');
+    const price = (u: string) =>
+      threats.unitCost.find((x) => x.unit === u)?.cost;
+    expect(price('unit_heavy')).toBe(20);
+    expect(price('unit_caster')).toBe(8);
+  });
+
+  test('every wave has a unit, heavies and casters lead, none before round 3', () => {
+    for (const arch of ['arch_juggernaut', 'arch_coven']) {
+      for (const round of [3, 5, 10, 15]) {
+        for (const party of [1, 4]) {
+          const p = gen(arch, round, party);
+          expect(p.waves.length).toBeGreaterThan(0);
+          for (const w of p.waves) expect(w.count).toBeGreaterThanOrEqual(1);
+          const lead =
+            arch === 'arch_juggernaut' ? 'unit_heavy' : 'unit_caster';
+          expect(countOf(p, lead)).toBeGreaterThan(0);
+        }
+      }
+    }
+    expect(
+      countOf(gen('arch_juggernaut', 10, 4), 'unit_golem'),
+    ).toBeGreaterThan(0);
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      for (const round of [1, 2]) {
+        const o = JSON.stringify(pickArchetypes(seed, round, threats));
+        expect(o).not.toContain('arch_juggernaut');
+        expect(o).not.toContain('arch_coven');
+      }
+    }
+  });
+
+  test('units per wave at rounds 3, 5, 10 and 15 (party 1)', () => {
+    const sizes = (arch: string, round: number) => {
+      const per = new Map<number, number>();
+      for (const w of gen(arch, round, 1).waves)
+        per.set(w.tick, (per.get(w.tick) ?? 0) + w.count);
+      return [...per.values()];
+    };
+    expect(sizes('arch_juggernaut', 3)).toEqual([1, 1, 1, 1]);
+    expect(sizes('arch_juggernaut', 10)).toEqual([2, 3, 5, 9]);
+    expect(sizes('arch_coven', 3)).toEqual([1, 1, 1, 1, 1, 2]);
+    expect(sizes('arch_coven', 15)).toEqual([5, 5, 6, 7, 8, 10]);
   });
 });

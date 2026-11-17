@@ -20527,5 +20527,5077 @@
         "hash": "5803773a"
       }
     }
+  },
+  {
+    "id": "threat-gen.juggernaut-medium-r3",
+    "kind": "threat-gen",
+    "description": "arch_juggernaut medium threat, round 3 (its first), party size 1 (few expensive units).",
+    "input": {
+      "seed": 41,
+      "round": 3,
+      "type": "medium",
+      "partySize": 1,
+      "archetype": "arch_juggernaut"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_juggernaut",
+          "type": "medium",
+          "round": 3,
+          "partySize": 1,
+          "budget": 156,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 250,
+              "unit": "unit_heavy",
+              "count": 1
+            },
+            {
+              "tick": 550,
+              "unit": "unit_heavy",
+              "count": 1
+            },
+            {
+              "tick": 850,
+              "unit": "unit_heavy",
+              "count": 1
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_heavy",
+              "count": 1
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 178
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 7,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 11,
+                "y": 10,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "7387d2fc"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.juggernaut-medium-r5-party2",
+    "kind": "threat-gen",
+    "description": "arch_juggernaut medium threat, round 5, party size 2.",
+    "input": {
+      "seed": 41,
+      "round": 5,
+      "type": "medium",
+      "partySize": 2,
+      "archetype": "arch_juggernaut"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_juggernaut",
+          "type": "medium",
+          "round": 5,
+          "partySize": 2,
+          "budget": 486,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 250,
+              "unit": "unit_heavy",
+              "count": 1
+            },
+            {
+              "tick": 550,
+              "unit": "unit_heavy",
+              "count": 1
+            },
+            {
+              "tick": 550,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 850,
+              "unit": "unit_heavy",
+              "count": 1
+            },
+            {
+              "tick": 850,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 850,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_heavy",
+              "count": 2
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_drone",
+              "count": 2
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 231
+              },
+              {
+                "x": 35,
+                "y": 3,
+                "health": 231
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 19,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 7,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 12,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 34,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 35,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 36,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 40,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 41,
+                "y": 10,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "938113e8"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.juggernaut-medium-r10",
+    "kind": "threat-gen",
+    "description": "arch_juggernaut medium threat, round 10 (ranged mix on), party size 1.",
+    "input": {
+      "seed": 41,
+      "round": 10,
+      "type": "medium",
+      "partySize": 1,
+      "archetype": "arch_juggernaut"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_juggernaut",
+          "type": "medium",
+          "round": 10,
+          "partySize": 1,
+          "budget": 737,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 250,
+              "unit": "unit_heavy",
+              "count": 1
+            },
+            {
+              "tick": 250,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 550,
+              "unit": "unit_heavy",
+              "count": 1
+            },
+            {
+              "tick": 550,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 550,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 850,
+              "unit": "unit_heavy",
+              "count": 2
+            },
+            {
+              "tick": 850,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 850,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_heavy",
+              "count": 3
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_archer",
+              "count": 4
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_drone",
+              "count": 2
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 675
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 4,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 21,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 0,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 1,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 2,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 3,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 4,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 7,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 11,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 12,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 16,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 17,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 19,
+                "y": 10,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "c19e0386"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.juggernaut-hard-r15-party4",
+    "kind": "threat-gen",
+    "description": "arch_juggernaut hard threat, round 15, party size 4 (strength conversion).",
+    "input": {
+      "seed": 41,
+      "round": 15,
+      "type": "hard",
+      "partySize": 4,
+      "archetype": "arch_juggernaut"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_juggernaut",
+          "type": "hard",
+          "round": 15,
+          "partySize": 4,
+          "budget": 12576,
+          "unitStrengthPercent": 198,
+          "waves": [
+            {
+              "tick": 250,
+              "unit": "unit_heavy",
+              "count": 7
+            },
+            {
+              "tick": 250,
+              "unit": "unit_golem",
+              "count": 1
+            },
+            {
+              "tick": 250,
+              "unit": "unit_archer",
+              "count": 6
+            },
+            {
+              "tick": 250,
+              "unit": "unit_drone",
+              "count": 3
+            },
+            {
+              "tick": 550,
+              "unit": "unit_heavy",
+              "count": 11
+            },
+            {
+              "tick": 550,
+              "unit": "unit_golem",
+              "count": 1
+            },
+            {
+              "tick": 550,
+              "unit": "unit_archer",
+              "count": 9
+            },
+            {
+              "tick": 550,
+              "unit": "unit_drone",
+              "count": 5
+            },
+            {
+              "tick": 850,
+              "unit": "unit_heavy",
+              "count": 12
+            },
+            {
+              "tick": 850,
+              "unit": "unit_golem",
+              "count": 3
+            },
+            {
+              "tick": 850,
+              "unit": "unit_archer",
+              "count": 12
+            },
+            {
+              "tick": 850,
+              "unit": "unit_drone",
+              "count": 6
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_heavy",
+              "count": 18
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_golem",
+              "count": 3
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_archer",
+              "count": 17
+            },
+            {
+              "tick": 1150,
+              "unit": "unit_drone",
+              "count": 9
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 3,
+                "health": 3247
+              },
+              {
+                "x": 35,
+                "y": 3,
+                "health": 3247
+              },
+              {
+                "x": 59,
+                "y": 3,
+                "health": 3247
+              },
+              {
+                "x": 83,
+                "y": 3,
+                "health": 3247
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 0,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 1,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 2,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 3,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 4,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 6,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 7,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 16,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 17,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 19,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 20,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 21,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 22,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 23,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 24,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 25,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 26,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 27,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 28,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 29,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 30,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 31,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 33,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 34,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 35,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 36,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 37,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 38,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 40,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 41,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 44,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 45,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 46,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 47,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 48,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 49,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 50,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 51,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 52,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 54,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 55,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 58,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 59,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 60,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 61,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 62,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 64,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 65,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 66,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 67,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 68,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 69,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 70,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 71,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 72,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 73,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 74,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 75,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 76,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 78,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 79,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 82,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 83,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 84,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 85,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 86,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 88,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 89,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 90,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 91,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 92,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 93,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 94,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 95,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 0,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 1,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 2,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 3,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 4,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 6,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 7,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 16,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 17,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 19,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 20,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 21,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 22,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 23,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 24,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 25,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 26,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 27,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 28,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 30,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 31,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 33,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 34,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 35,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 36,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 37,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 38,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 40,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 41,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 44,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 45,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 46,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 47,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 48,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 49,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 50,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 51,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 52,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 54,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 55,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 58,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 59,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 60,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 61,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 62,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 64,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 65,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 67,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 68,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 69,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 70,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 71,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 72,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 73,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 74,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 75,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 76,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 78,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 79,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 82,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 83,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 84,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 85,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 86,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 88,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 89,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 91,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 92,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 93,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 94,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 95,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 0,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 1,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 2,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 3,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 4,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 6,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 7,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 16,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 17,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 19,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 20,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 21,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 22,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 23,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 24,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 25,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 26,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 27,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 28,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 30,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 31,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 33,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 34,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 35,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 36,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 37,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 38,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 40,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 41,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 44,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 45,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 46,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 47,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 48,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 49,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 50,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 51,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 52,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 54,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 55,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 58,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 59,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 60,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 61,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 62,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 64,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 65,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 67,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 68,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 69,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 70,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 71,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 72,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 73,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 74,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 75,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 76,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 78,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 79,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 82,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 83,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 84,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 85,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 86,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 88,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 89,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 91,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 92,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 93,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 94,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 95,
+                "y": 10,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "361e065b"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.coven-medium-r3",
+    "kind": "threat-gen",
+    "description": "arch_coven medium threat, round 3 (its first), party size 1 (few expensive units).",
+    "input": {
+      "seed": 41,
+      "round": 3,
+      "type": "medium",
+      "partySize": 1,
+      "archetype": "arch_coven"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_coven",
+          "type": "medium",
+          "round": 3,
+          "partySize": 1,
+          "budget": 156,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 200,
+              "unit": "unit_caster",
+              "count": 1
+            },
+            {
+              "tick": 400,
+              "unit": "unit_caster",
+              "count": 1
+            },
+            {
+              "tick": 600,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 800,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_caster",
+              "count": 1
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_caster",
+              "count": 1
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 4,
+                "health": 206
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 8,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "d527d293"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.coven-medium-r5-party2",
+    "kind": "threat-gen",
+    "description": "arch_coven medium threat, round 5, party size 2.",
+    "input": {
+      "seed": 41,
+      "round": 5,
+      "type": "medium",
+      "partySize": 2,
+      "archetype": "arch_coven"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_coven",
+          "type": "medium",
+          "round": 5,
+          "partySize": 2,
+          "budget": 486,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 200,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 400,
+              "unit": "unit_caster",
+              "count": 1
+            },
+            {
+              "tick": 400,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 400,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 600,
+              "unit": "unit_caster",
+              "count": 1
+            },
+            {
+              "tick": 600,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 800,
+              "unit": "unit_caster",
+              "count": 1
+            },
+            {
+              "tick": 800,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 800,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 800,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_caster",
+              "count": 2
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_caster",
+              "count": 2
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_soldier",
+              "count": 2
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_drone",
+              "count": 1
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 4,
+                "health": 261
+              },
+              {
+                "x": 35,
+                "y": 4,
+                "health": 260
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 9,
+                "y": 4,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 33,
+                "y": 4,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 33,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 34,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 37,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 38,
+                "y": 8,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "4440260e"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.coven-medium-r10",
+    "kind": "threat-gen",
+    "description": "arch_coven medium threat, round 10 (ranged mix on), party size 1.",
+    "input": {
+      "seed": 41,
+      "round": 10,
+      "type": "medium",
+      "partySize": 1,
+      "archetype": "arch_coven"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_coven",
+          "type": "medium",
+          "round": 10,
+          "partySize": 1,
+          "budget": 737,
+          "unitStrengthPercent": 0,
+          "waves": [
+            {
+              "tick": 200,
+              "unit": "unit_caster",
+              "count": 1
+            },
+            {
+              "tick": 200,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 400,
+              "unit": "unit_caster",
+              "count": 2
+            },
+            {
+              "tick": 400,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 400,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 600,
+              "unit": "unit_caster",
+              "count": 2
+            },
+            {
+              "tick": 600,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 600,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 600,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 800,
+              "unit": "unit_caster",
+              "count": 2
+            },
+            {
+              "tick": 800,
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 800,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_caster",
+              "count": 3
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_soldier",
+              "count": 2
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_caster",
+              "count": 3
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_soldier",
+              "count": 3
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_drone",
+              "count": 2
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 4,
+                "health": 728
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 9,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 11,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 14,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 14,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 8,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "567274a1"
+      }
+    }
+  },
+  {
+    "id": "threat-gen.coven-hard-r15-party4",
+    "kind": "threat-gen",
+    "description": "arch_coven hard threat, round 15, party size 4 (strength conversion).",
+    "input": {
+      "seed": 41,
+      "round": 15,
+      "type": "hard",
+      "partySize": 4,
+      "archetype": "arch_coven"
+    },
+    "expected": {
+      "result": {
+        "profile": {
+          "archetype": "arch_coven",
+          "type": "hard",
+          "round": 15,
+          "partySize": 4,
+          "budget": 12576,
+          "unitStrengthPercent": 238,
+          "waves": [
+            {
+              "tick": 200,
+              "unit": "unit_caster",
+              "count": 7
+            },
+            {
+              "tick": 200,
+              "unit": "unit_soldier",
+              "count": 6
+            },
+            {
+              "tick": 200,
+              "unit": "unit_archer",
+              "count": 3
+            },
+            {
+              "tick": 200,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 400,
+              "unit": "unit_caster",
+              "count": 10
+            },
+            {
+              "tick": 400,
+              "unit": "unit_soldier",
+              "count": 6
+            },
+            {
+              "tick": 400,
+              "unit": "unit_archer",
+              "count": 4
+            },
+            {
+              "tick": 400,
+              "unit": "unit_drone",
+              "count": 2
+            },
+            {
+              "tick": 600,
+              "unit": "unit_caster",
+              "count": 9
+            },
+            {
+              "tick": 600,
+              "unit": "unit_soldier",
+              "count": 10
+            },
+            {
+              "tick": 600,
+              "unit": "unit_archer",
+              "count": 5
+            },
+            {
+              "tick": 600,
+              "unit": "unit_drone",
+              "count": 2
+            },
+            {
+              "tick": 800,
+              "unit": "unit_caster",
+              "count": 12
+            },
+            {
+              "tick": 800,
+              "unit": "unit_soldier",
+              "count": 10
+            },
+            {
+              "tick": 800,
+              "unit": "unit_archer",
+              "count": 6
+            },
+            {
+              "tick": 800,
+              "unit": "unit_drone",
+              "count": 3
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_caster",
+              "count": 16
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_soldier",
+              "count": 12
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_archer",
+              "count": 7
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_drone",
+              "count": 4
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_caster",
+              "count": 17
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_soldier",
+              "count": 16
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_archer",
+              "count": 9
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_drone",
+              "count": 5
+            }
+          ],
+          "stronghold": {
+            "cores": [
+              {
+                "x": 11,
+                "y": 4,
+                "health": 3798
+              },
+              {
+                "x": 35,
+                "y": 4,
+                "health": 3798
+              },
+              {
+                "x": 59,
+                "y": 4,
+                "health": 3797
+              },
+              {
+                "x": 83,
+                "y": 4,
+                "health": 3797
+              }
+            ],
+            "buildings": [
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 0,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 0,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 0,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 42,
+                "y": 0,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 0,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 0,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 0,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 0,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 33,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 34,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 37,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 38,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 42,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 56,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 57,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 58,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 61,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 62,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 80,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 81,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 82,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 85,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 86,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 1,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 11,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 12,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 33,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 42,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 56,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 57,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 58,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 80,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 86,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 2,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 14,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 42,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 56,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 62,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 80,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 81,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 86,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 3,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 14,
+                "y": 4,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 38,
+                "y": 4,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 81,
+                "y": 4,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 33,
+                "y": 5,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 33,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 42,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 56,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 80,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 81,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 6,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 11,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 13,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 36,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 38,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 42,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 56,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 58,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 59,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 60,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 80,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_turret",
+                "tier": 1,
+                "x": 86,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 7,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 33,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 34,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 37,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 38,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 42,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 56,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 57,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 58,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 61,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 62,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 80,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 81,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 82,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 85,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 86,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 8,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 42,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 9,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 42,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 10,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 5,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 6,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 7,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 16,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 17,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 18,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 29,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 30,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 31,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 33,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 34,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 37,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 38,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 40,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 41,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 42,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 53,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 54,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 55,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 56,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 57,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 58,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 61,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 62,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 64,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 65,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 66,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 77,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 78,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 79,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 80,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 81,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 82,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 85,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 86,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 88,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 89,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 90,
+                "y": 11,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 6,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 7,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 8,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 9,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 10,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 13,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 14,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 15,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 16,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 17,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 30,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 31,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 32,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 33,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 34,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 37,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 38,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 39,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 40,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 41,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 54,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 55,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 56,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 57,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 58,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 61,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 62,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 63,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 64,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 65,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 78,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 79,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 80,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 81,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 82,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 85,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 86,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 87,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 88,
+                "y": 14,
+                "rotation": 0
+              },
+              {
+                "def": "bld_wall_block",
+                "tier": 1,
+                "x": 89,
+                "y": 14,
+                "rotation": 0
+              }
+            ]
+          }
+        },
+        "hash": "c9cb7a89"
+      }
+    }
   }
 ]
