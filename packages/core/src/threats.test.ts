@@ -297,6 +297,10 @@ describe('generateThreat', () => {
     expect(hashJson(c as never)).not.toBe(hashJson(a as never));
   });
 
+  // Builds every archetype at several rounds and party sizes: about 2.5 s on
+  // its own, but it shares a CI shard with the 50 s threat-bounds test, where
+  // it has run past the default 5 s timeout. A long timeout, like the other
+  // heavy core tests.
   test('every profile builds, respects the caps and stays inside the budget', () => {
     const cap = (party: number): number =>
       threats.maxUnitsPerWavePerPlot * party;
@@ -344,7 +348,7 @@ describe('generateThreat', () => {
         }
       }
     }
-  });
+  }, 60_000);
 
   test('ranged mix: archers and drones from round 4, none before', () => {
     const count = (round: number, arch: string, unit: string): number =>
