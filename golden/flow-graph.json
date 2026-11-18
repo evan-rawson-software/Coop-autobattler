@@ -2928,5 +2928,223 @@
         "hash": "994ca33b"
       }
     }
+  },
+  {
+    "id": "flow-graph.mana-well-on-a-node",
+    "kind": "flow-graph",
+    "description": "A Mana Well on an Ore node set to Flux produces Flux, not the node's Ore (it feeds a Hangar), and a Well on open ground set to Ore feeds a Barracks: the flow graph's `produces` and the conduit resources come from the setting (issue #473).",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_mana_well",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0,
+          "resource": "res_b"
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_hangar",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_mana_well",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 10,
+          "y": 2,
+          "rotation": 0,
+          "resource": "res_a"
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 10,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 3,
+            "side": "north"
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 10,
+              "y": 3
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "graph": {
+          "nodes": [
+            {
+              "key": "1",
+              "building": 1,
+              "channel": null,
+              "def": "bld_mana_well",
+              "kind": "source",
+              "produces": "res_b",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 4
+                }
+              ]
+            },
+            {
+              "key": "2",
+              "building": 2,
+              "channel": null,
+              "def": "bld_hangar",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 4,
+                  "requires": "res_b"
+                }
+              ],
+              "outputs": []
+            },
+            {
+              "key": "3",
+              "building": 3,
+              "channel": null,
+              "def": "bld_mana_well",
+              "kind": "source",
+              "produces": "res_a",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 8
+                }
+              ]
+            },
+            {
+              "key": "4",
+              "building": 4,
+              "channel": null,
+              "def": "bld_barracks",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 8,
+                  "requires": "res_a"
+                }
+              ],
+              "outputs": []
+            }
+          ],
+          "edges": [
+            {
+              "conduitId": 4,
+              "linkedConduit": null,
+              "from": "1",
+              "to": "2",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 2,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 8,
+              "linkedConduit": null,
+              "from": "3",
+              "to": "4",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 1,
+              "resource": "res_a"
+            }
+          ],
+          "order": ["1", "2", "3", "4"],
+          "brokenLinks": []
+        },
+        "hash": "e942e506"
+      }
+    }
   }
 ]

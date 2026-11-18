@@ -79,6 +79,11 @@
           "owner": {
             "type": "integer",
             "minimum": 0
+          },
+          "resource": {
+            "description": "The resource setting (issue #473): the base resource its owner chose, present exactly on a placed building whose definition has `resourceSetting` (the Mana Well). Omitted otherwise, so a state without such a building is unchanged and no format number was raised. A stash entry has none.",
+            "type": "string",
+            "pattern": "^res_[a-z0-9_]+$"
           }
         }
       }

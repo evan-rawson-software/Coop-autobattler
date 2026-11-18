@@ -305,6 +305,14 @@ taken}`. The fields are optional and the follow-up is a new allowed shape of
   to an `offerWeights` entry (content, absent means every shop) and one ghost
   validation rule; no saved record gains a field, so no format number is
   raised.
+  The building resource setting (issue #473, the Mana Well) adds the optional
+  `resource` to a placed building of the team state (present only on a building
+  whose definition has the setting, so a state without one is unchanged and
+  hashes as before), which covers both the run state and ghost snapshots, the
+  optional `resource` of the `place_building` intent and the new intent
+  `set_building_resource` (new allowed values of the action log, not a changed
+  shape), and the optional `resourceSetting` of a building definition (content):
+  records without them stay readable, so no format number is raised.
   (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is

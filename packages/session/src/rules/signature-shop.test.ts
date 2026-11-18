@@ -46,7 +46,8 @@ function withSignatures(
   return {
     ...shipped,
     offerWeights: [
-      ...shipped.offerWeights,
+      // The shipped list already holds the Mana Well entry (issue #473).
+      ...shipped.offerWeights.filter((w) => w.specialist === undefined),
       ...ROSTER.filter((s) => only.includes(s.id)).map((s) => ({
         def: s.signature,
         weight,

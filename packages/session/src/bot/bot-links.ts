@@ -25,6 +25,7 @@ import {
   coveragePercent,
   defOf,
   isChainPiece,
+  isNodeCollector,
   freeCells,
   freeNodes,
   makeEnv,
@@ -145,7 +146,7 @@ function planOneLink(
   const se = makeEnv(team, sender, content, plotWidth, style, rng);
   const re = makeEnv(team, receiver, content, plotWidth, style, rng);
   const source = team.stash.find(
-    (x) => x.owner === sender && defOf(se, x.def)?.kind === 'source',
+    (x) => x.owner === sender && isNodeCollector(content, x.def),
   );
   if (source === undefined) return null;
   const supply = collectorSupply(content, source.def, source.tier);
@@ -237,9 +238,8 @@ export function planLinks(
   let cur = team;
   for (let b = 0; b + 1 < team.map.partySize; b++) {
     const spare = (p: number): number =>
-      cur.stash.filter(
-        (x) => x.owner === p && content.buildings.get(x.def)?.kind === 'source',
-      ).length;
+      cur.stash.filter((x) => x.owner === p && isNodeCollector(content, x.def))
+        .length;
     const first = spare(b + 1) > spare(b) ? b + 1 : b;
     for (const sender of [first, first === b ? b + 1 : b]) {
       const receiver = sender === b ? b + 1 : b;

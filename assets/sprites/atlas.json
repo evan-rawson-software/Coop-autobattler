@@ -1223,6 +1223,7 @@
       ],
       "category": "building",
       "id": "bld_mana_well",
+      "tintable": true,
       "note": "1x1 tiles."
     },
     "bld_rune_ward": {

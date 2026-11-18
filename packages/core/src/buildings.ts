@@ -205,6 +205,20 @@ interface BuildingCommon {
 export interface SourceBuildingDef extends BuildingCommon {
   readonly kind: 'source';
   readonly tiers: Tiers3<SourceTier>;
+  /**
+   * A building with a resource setting (issue #473, RS-13): its owner chooses
+   * one base resource when placing it and may change it between battles. A
+   * collector with the setting stands on any open cell of its owner's plot, no
+   * resource node needed (and gains nothing from a node it stands on); it
+   * makes the resource of its setting. Absent: an ordinary collector, which
+   * must stand on a node and makes the node's resource.
+   */
+  readonly resourceSetting?: true;
+}
+
+/** Whether a building definition has the resource setting (issue #473). */
+export function hasResourceSetting(def: BuildingDef): boolean {
+  return def.kind === 'source' && def.resourceSetting === true;
 }
 export interface RouteBuildingDef extends BuildingCommon {
   readonly kind: 'route';
@@ -447,6 +461,7 @@ const KIND_FIELDS: Readonly<Record<string, string>> = {
   defenseType: 'defense',
   effect: 'economy',
   output: 'refinery',
+  resourceSetting: 'source',
 };
 
 /** Upper bounds of per-tier fields (see `limits.ts`). */
@@ -802,6 +817,16 @@ function parseBuilding(
         footprint.cells !== undefined)
     ) {
       errors.push(`${label}: a tunnel end must be 1x1.`);
+    }
+  }
+  let resourceSetting: true | undefined;
+  if (kind === 'source' && entry['resourceSetting'] !== undefined) {
+    if (entry['resourceSetting'] === true) {
+      resourceSetting = true;
+    } else {
+      errors.push(
+        `${label}: "resourceSetting" must be true (or left out), got ${show(entry['resourceSetting'])}.`,
+      );
     }
   }
   if (kind === 'unit_producer') {
@@ -1187,6 +1212,7 @@ function parseBuilding(
             intervalTicks: num(t, 'intervalTicks'),
           })),
         ),
+        ...(resourceSetting === undefined ? {} : { resourceSetting }),
       };
     case 'route':
       if (routeType === undefined) return undefined;

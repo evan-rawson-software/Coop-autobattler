@@ -32,6 +32,8 @@ export interface PlaceArgs {
   readonly x: number;
   readonly y: number;
   readonly rotation: number;
+  /** The resource setting of a building that has one (issue #473). */
+  readonly resource?: string;
 }
 
 /** Would placing a stashed building here be accepted? */

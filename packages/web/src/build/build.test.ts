@@ -118,6 +118,7 @@ describe('reason messages', () => {
       'overlaps_conduit',
       'source_needs_node',
       'node_reserved',
+      'invalid_resource',
       // CoreReason
       'core_already_placed',
       'blocked',
@@ -143,6 +144,8 @@ describe('reason messages', () => {
       'resource_mismatch',
       'would_loop',
       'unknown_conduit',
+      // SetResourceReason (issue #473)
+      'no_resource_setting',
     ];
     for (const r of listed) {
       expect(KNOWN_REASONS, `no message for ${r}`).toContain(r);

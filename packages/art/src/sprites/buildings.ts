@@ -829,14 +829,26 @@ function tierTrim(size: number, tier: 2 | 3): Pix {
   return p;
 }
 
-/** Placeholder art for the Mana Well (#472): an Extractor with a blue ring. */
+/**
+ * The Mana Well (#473): a stone well on a collector plate. Its basin uses the
+ * three tint keys (X, x, Z), so the board draws it in the colour of the
+ * resource its owner set it to; untinted (the shop card) it is neutral grey.
+ */
 function manaWellSprite(): Pix {
   const p = new Pix(16, 16);
   plate(p, 1, 1, 14, 14, KIND_RAMP['source'] as Ramp);
-  p.ellipse(8, 9.5, 4.5, 4.5, 'K');
-  p.ellipse(8, 9.5, 3.5, 3.5, 'T');
-  p.ellipse(8, 9.5, 2.5, 2.5, '4');
-  p.set(7, 8, '6');
+  // The stone rim, shaded darker at the bottom.
+  p.ellipse(8, 9.5, 5.2, 5.2, 'K');
+  p.ellipse(8, 9.5, 4.4, 4.4, '4');
+  p.ellipse(8, 10, 4.4, 4, '3');
+  p.ellipse(8, 9.5, 3.4, 3.4, '1');
+  // The basin and the glint of the resource in it.
+  p.ellipse(8, 9.5, 2.8, 2.8, 'X');
+  p.ellipse(8, 9.5, 2, 2, 'x');
+  p.set(7, 8, 'Z');
+  p.set(8, 8, 'Z');
+  p.set(7, 9, 'Z');
+  // Output arrow on the north edge.
   arrow(p, 7, 2, 'n', 'y');
   return p;
 }
@@ -898,6 +910,12 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_hangar: hangarSprite,
 };
 
+/**
+ * Buildings whose basin takes the colour of a resource at draw time (a
+ * building with the resource setting, issue #473): they use the tint keys.
+ */
+const TINTED: ReadonlySet<string> = new Set(['bld_mana_well']);
+
 /** Buildings that have art ahead of their content; planned until content adds them. */
 const PLANNED: Readonly<Record<string, string>> = {
   bld_range: 'Planned: produces ranged ground units. 2x2 tiles.',
@@ -935,6 +953,7 @@ export function buildingSprites(
       category: 'building',
       frames: frame,
       anchor: [frame.w / 2, frame.h / 2],
+      ...(TINTED.has(b.id) ? { tintable: true } : {}),
       note: `${String(b.width)}x${String(b.height)} tiles.`,
     });
   }

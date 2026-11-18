@@ -23337,5 +23337,183 @@
       },
       "eventLogHash": "be94a8c2"
     }
+  },
+  {
+    "id": "arena-sim.specialist-flowmancer-mana-well",
+    "kind": "arena-sim",
+    "description": "Two plots, three unconnected Mana Wells each on open ground, no node (tiers 1, 2 and 3, intervals 40, 28 and 20). Player 0 picked the Flowmancer: the Extractor bonus (+10 percent collector speed) applies to a Well too, so after the first item their intervals are floor(4000 / 110) = 36, floor(2800 / 110) = 25 and floor(2000 / 110) = 18. Player 1 has no specialist and stays on 40, 28 and 20 (issue #473, CB-51a).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_flowmancer"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mana_well",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 1,
+            "rotation": 0,
+            "resource": "res_a"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mana_well",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 2,
+            "y": 1,
+            "rotation": 0,
+            "resource": "res_a"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mana_well",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 4,
+            "y": 1,
+            "rotation": 0,
+            "resource": "res_a"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mana_well",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 4,
+            "x": 12,
+            "y": 1,
+            "rotation": 0,
+            "resource": "res_a"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mana_well",
+            "tier": 2,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 5,
+            "x": 14,
+            "y": 1,
+            "rotation": 0,
+            "resource": "res_a"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_mana_well",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 6,
+            "x": 16,
+            "y": 1,
+            "rotation": 0,
+            "resource": "res_a"
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 200
+    },
+    "expected": {
+      "result": {
+        "tick": 200,
+        "stateHash": "73410503",
+        "events": 90,
+        "sides": [
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          }
+        ]
+      },
+      "eventLogHash": "b0dd9883"
+    }
   }
 ]

@@ -7,6 +7,7 @@
 
 import {
   coreFootprint,
+  hasResourceSetting,
   listLegalCorePositions,
   occupancy,
   validateCorePosition,
@@ -57,7 +58,7 @@ import {
   markerAt,
   sideMarkers,
 } from './sides.js';
-import { buildingName } from './view-model.js';
+import { buildingName, resourceName } from './view-model.js';
 import { DEFAULT_SEED } from './setup.js';
 import { shopReason } from '../shop/messages.js';
 import { READY_LOCK_TEXT } from './lock.js';
@@ -144,6 +145,11 @@ export interface Ui {
   readonly tool: Tool;
   readonly selection: Selection;
   readonly held: Held | null;
+  /**
+   * The resource the next building with the resource setting will be placed
+   * with (issue #473); null: the first base resource.
+   */
+  readonly placeResource: string | null;
   readonly moving: Moving | null;
   readonly draft: Draft | null;
   readonly hover: Cell | null;
@@ -174,6 +180,7 @@ const INITIAL_UI: Ui = {
   tool: 'select',
   selection: null,
   held: null,
+  placeResource: null,
   moving: null,
   draft: null,
   hover: null,
@@ -542,6 +549,9 @@ export class BuildController {
           x: a.x,
           y: a.y,
           rotation: ui.held.rotation,
+          ...(hasResourceSetting(def)
+            ? { resource: this.placeResourceOf(ui) }
+            : {}),
         },
         this.actor(),
       );
@@ -974,6 +984,9 @@ export class BuildController {
       x: a.x,
       y: a.y,
       rotation: h.rotation,
+      ...(hasResourceSetting(def)
+        ? { resource: this.placeResourceOf(this.ui) }
+        : {}),
     });
     if (r.ok) {
       this.set({
@@ -988,6 +1001,65 @@ export class BuildController {
         status: { text: msg, kind: 'error' },
       });
     }
+  }
+
+  // ---- The resource setting (issue #473) -----------------------------------
+
+  /** The resource a building with the setting is placed with now. */
+  placeResourceOf(ui: Ui = this.ui): string {
+    return ui.placeResource ?? content.resources.listBase()[0]?.id ?? '';
+  }
+
+  /** Choose the resource of the building being placed (the tray picker). */
+  setPlaceResource(resource: string): void {
+    if (!content.resources.listBase().some((r) => r.id === resource)) return;
+    const held = this.ui.held;
+    const item =
+      held === null
+        ? undefined
+        : this.session?.run.team.stash.find((x) => x.id === held.id);
+    this.set({
+      placeResource: resource,
+      ...(item === undefined
+        ? {}
+        : {
+            status: {
+              text: tx('statusResourceNext', {
+                name: buildingName(content, item.def),
+                resource: resourceName(content, resource),
+              }),
+              kind: 'info' as const,
+            },
+          }),
+    });
+  }
+
+  /**
+   * Change the resource of a placed building with the setting. Conduits
+   * attached to it are detached, as by a move; undo puts them back.
+   */
+  async setResource(id: number, resource: string): Promise<void> {
+    const s = this.session;
+    if (s === null) return;
+    const b = s.run.team.buildings.find((x) => x.id === id);
+    if (b === undefined) return;
+    if (b.resource === resource) return;
+    const n = attachedCount(s.run.team, id);
+    const r = await s.act({ t: 'setResource', id, resource });
+    if (!r.ok) {
+      this.refuse(r.reason, r.detail);
+      return;
+    }
+    const values = {
+      name: buildingName(content, b.def),
+      resource: resourceName(content, resource),
+    };
+    this.say(
+      n > 0
+        ? many(n, 'statusResourceSetDetached', values)
+        : tx('statusResourceSet', values),
+      'ok',
+    );
   }
 
   // ---- Rotate, return, erase ---------------------------------------------

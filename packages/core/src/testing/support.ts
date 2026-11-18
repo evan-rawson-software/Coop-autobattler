@@ -107,7 +107,15 @@ export class Lab {
   ) {
     this.state = createTeamState(map);
   }
-  put(def: string, x: number, y: number, rotation = 0, tier = 1): number {
+  put(
+    def: string,
+    x: number,
+    y: number,
+    rotation = 0,
+    tier = 1,
+    /** The resource setting of a building that has one (issue #473). */
+    resource?: string,
+  ): number {
     // The building belongs to the player whose plot column `x` is in.
     const owner = Math.floor(x / this.state.map.plotWidth);
     const s = addToStash(this.state, this.with_, { def, tier, owner });
@@ -118,6 +126,7 @@ export class Lab {
       x,
       y,
       rotation,
+      ...(resource === undefined ? {} : { resource }),
     });
     if (!p.ok) throw new Error(`${def}: ${p.reason}`);
     this.state = p.state;

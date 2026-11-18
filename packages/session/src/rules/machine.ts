@@ -16,6 +16,7 @@ import {
   placeFromStash,
   returnToStash,
   sealedProducers,
+  setBuildingResource,
   setSpecialist,
   specialistOf,
   type Json,
@@ -843,10 +844,31 @@ function applyBuiltin(
         y: intent.y,
         rotation: intent.rotation,
       };
+      if (intent.type === 'place_building') {
+        const resource: unknown = intent.resource;
+        if (resource !== undefined && typeof resource !== 'string') {
+          return fail('invalid_intent');
+        }
+        return withTeam(
+          placeFromStash(s.team, content, {
+            ...args,
+            ...(resource === undefined ? {} : { resource }),
+          }),
+        );
+      }
+      return withTeam(moveBuilding(s.team, content, args));
+    }
+    case 'set_building_resource': {
+      const resource: unknown = intent.resource;
+      if (!isInteger(intent.id) || typeof resource !== 'string') {
+        return fail('invalid_intent');
+      }
       return withTeam(
-        intent.type === 'place_building'
-          ? placeFromStash(s.team, content, args)
-          : moveBuilding(s.team, content, args),
+        setBuildingResource(s.team, content, {
+          actor: player,
+          id: intent.id,
+          resource,
+        }),
       );
     }
     case 'return_building':

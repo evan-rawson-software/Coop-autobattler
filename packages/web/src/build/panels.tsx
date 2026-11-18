@@ -3,6 +3,7 @@
 import {
   conduitResource,
   formatText,
+  hasResourceSetting,
   type Conduit,
   type DryRunResult,
   type TeamState,
@@ -89,6 +90,82 @@ export function groupStash(team: TeamState, player: number): StashGroup[] {
   return [...groups.values()].sort(
     (a, b) =>
       (order.get(a.def) ?? 0) - (order.get(b.def) ?? 0) || a.tier - b.tier,
+  );
+}
+
+/**
+ * The resource picker of a building with the resource setting (issue #473):
+ * one button per base resource, the chosen one pressed. Used on the tray while
+ * such a building is held and in the inspector of a placed one.
+ */
+export function ResourcePicker(props: {
+  /** The chosen resource ID (a base resource). */
+  value: string;
+  onPick: (resource: string) => void;
+  field: string;
+  /** Say "Makes" first (the tray; the inspector has its own row label). */
+  labelled?: boolean;
+}) {
+  return (
+    <div class="res-picker" data-field={props.field} role="group">
+      {props.labelled === true ? (
+        <span class="res-picker-label">{t('uiLblMakes')}</span>
+      ) : null}
+      {content.resources.listBase().map((r) => {
+        const name = resourceName(content, r.id);
+        const on = r.id === props.value;
+        return (
+          <button
+            type="button"
+            key={r.id}
+            class={`res-pick${on ? ' active' : ''}`}
+            data-resource={r.id}
+            aria-pressed={on}
+            title={t('uiResourcePickTip', { resource: name })}
+            onClick={() => {
+              props.onPick(r.id);
+            }}
+          >
+            <span class="res-dot" style={{ background: r.color }} />
+            {name}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * The panel of the info rail while a building with the resource setting is
+ * held for placing (issue #473): its name and the picker of the resource it
+ * will make. Nothing for any other held building.
+ */
+export function PlacingPanel(props: {
+  team: TeamState;
+  ctl: BuildController;
+  model: Model;
+}) {
+  const held = props.model.ui.held;
+  const item =
+    held === null ? undefined : props.team.stash.find((s) => s.id === held.id);
+  const def = item === undefined ? undefined : content.buildings.get(item.def);
+  if (item === undefined || def === undefined || !hasResourceSetting(def)) {
+    return null;
+  }
+  return (
+    <Panel title={t('uiPanelPlacing')} id="panel-placing">
+      <h3 class="insp-name" data-field="name">
+        {buildingName(content, item.def)}
+      </h3>
+      <ResourcePicker
+        field="place-resource"
+        labelled
+        value={props.ctl.placeResourceOf()}
+        onPick={(r) => {
+          props.ctl.setPlaceResource(r);
+        }}
+      />
+    </Panel>
   );
 }
 
@@ -582,6 +659,18 @@ export function InspectorPanel(props: {
                   {screenText(screenTexts, 'inspectorStalled', {
                     percent: String(figs.produces.stalledPercent),
                   })}
+                </dd>
+              </>
+            ) : null}
+            {hasResourceSetting(def) && b.resource !== undefined ? (
+              <>
+                <dt>{t('uiLblMakes')}</dt>
+                <dd>
+                  <ResourcePicker
+                    field="building-resource"
+                    value={b.resource}
+                    onPick={(r) => void ctl.setResource(b.id, r)}
+                  />
                 </dd>
               </>
             ) : null}

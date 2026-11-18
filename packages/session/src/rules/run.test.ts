@@ -230,6 +230,7 @@ describe('wrong_step', () => {
       'place_building',
       'move_building',
       'return_building',
+      'set_building_resource',
       'add_conduit',
       'erase_conduit',
     ];
@@ -269,6 +270,7 @@ describe('wrong_step', () => {
     { type: 'place_building', id: 1, x: 0, y: 0, rotation: 0 },
     { type: 'move_building', id: 1, x: 0, y: 0, rotation: 0 },
     { type: 'return_building', id: 1 },
+    { type: 'set_building_resource', id: 1, resource: 'res_b' },
     {
       type: 'add_conduit',
       from: { building: 1, side: 'north' },

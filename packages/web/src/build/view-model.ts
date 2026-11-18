@@ -9,6 +9,7 @@ import {
   allNodes,
   buildFlowGraph,
   dryRunFlow,
+  hasResourceSetting,
   occupancy,
   brokenLinks,
   type BuildingDef,
@@ -571,9 +572,11 @@ export function deriveProblems(
   const freeNodes = allNodes(state).filter(
     (n) => occ.buildingAt(n.x, n.y) === null,
   );
-  const sourceInStash = state.stash.find(
-    (s) => content.buildings.get(s.def)?.kind === 'source',
-  );
+  // A collector with the resource setting needs no node (issue #473).
+  const sourceInStash = state.stash.find((s) => {
+    const d = content.buildings.get(s.def);
+    return d?.kind === 'source' && !hasResourceSetting(d);
+  });
   if (freeNodes.length > 0 && sourceInStash !== undefined) {
     const stashed = state.stash.filter(
       (s) => s.def === sourceInStash.def,

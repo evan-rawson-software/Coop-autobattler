@@ -62,6 +62,8 @@ export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   core_not_allowed: reason('core_not_allowed'),
   invalid_tier: reason('invalid_tier'),
   invalid_owner: reason('invalid_owner'),
+  invalid_resource: reason('invalid_resource'),
+  no_resource_setting: reason('no_resource_setting'),
   // Conduits
   not_an_output: reason('not_an_output'),
   not_an_input: reason('not_an_input'),

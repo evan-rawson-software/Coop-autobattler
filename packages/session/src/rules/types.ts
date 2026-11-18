@@ -18,6 +18,7 @@ import type {
   MapgenConfig,
   Rng,
   RewardsConfig,
+  SetResourceReason,
   ThreatsConfig,
   TeamState,
 } from '@game/core';
@@ -286,6 +287,11 @@ export type BoardIntent =
       readonly x: number;
       readonly y: number;
       readonly rotation: number;
+      /**
+       * The resource setting of a building that has one (issue #473): a base
+       * resource ID. Left out, the first base resource.
+       */
+      readonly resource?: string;
     }
   | {
       readonly type: 'move_building';
@@ -295,6 +301,12 @@ export type BoardIntent =
       readonly rotation: number;
     }
   | { readonly type: 'return_building'; readonly id: number }
+  /** Change the resource setting of a placed building (issue #473). */
+  | {
+      readonly type: 'set_building_resource';
+      readonly id: number;
+      readonly resource: string;
+    }
   | {
       readonly type: 'add_conduit';
       readonly from: IntentConduitEnd;
@@ -347,6 +359,7 @@ export const BUILTIN_INTENT_TYPES: readonly BuiltinIntentType[] = [
   'place_building',
   'move_building',
   'return_building',
+  'set_building_resource',
   'add_conduit',
   'erase_conduit',
 ];
@@ -367,6 +380,7 @@ export type BuiltinReason =
   | 'unknown_intent'
   | 'specialist_not_picked'
   | 'unknown_specialist'
+  | SetResourceReason
   | AnyReason
   | ConduitReason
   | 'unknown_conduit'
