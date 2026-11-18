@@ -15,6 +15,8 @@ import {
 } from './phase.js';
 import { Panel } from './AppShell.js';
 import { markTipSeen, seenTipsStore } from './phase-tips.js';
+import { HintCard } from '../hints/HintCard.js';
+import { tipsOffStore } from '../hints/hint-store.js';
 import { TutorialContext } from '../tutorial/context.js';
 import { TutorialCard } from '../tutorial/TutorialCard.js';
 
@@ -118,8 +120,10 @@ export function PhaseInfoTop(props: { framePhase?: string }) {
   const info = useContext(PhaseContext);
   const tutorial = useContext(TutorialContext);
   const seen = useStore(seenTipsStore);
+  const tipsOff = useStore(tipsOffStore);
   if (info === null) return null;
   const showTip =
+    !tipsOff &&
     !seen.includes(info.phase) &&
     !(info.phase === 'build' && info.placed === true);
   return (
@@ -133,6 +137,7 @@ export function PhaseInfoTop(props: { framePhase?: string }) {
       ) : showTip ? (
         <PhaseBox phase={info.phase} />
       ) : null}
+      <HintCard />
       {info.next === null ? null : (
         <Panel class="phase-next">
           <p data-field="next-phase">

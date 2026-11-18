@@ -30,6 +30,10 @@ import {
   type PhaseInfo,
 } from '../shell/phase.js';
 import { markTipSeen } from '../shell/phase-tips.js';
+import { hintsSeenStore, tipsOffStore } from '../hints/hint-store.js';
+import { HintContext, dueHint } from '../hints/triggers.js';
+import { content } from '../content.js';
+import { gameConfigs } from '../build/setup.js';
 import { TutorialContext, useTutorialInfo } from '../tutorial/context.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import { RunBar } from './RunBar.js';
@@ -187,6 +191,23 @@ function ReadyRun(props: { run: ActiveRun }) {
       markTipSeen(phase);
     };
   }, [phase]);
+  const seenHints = useStore(hintsSeenStore);
+  const tipsOff = useStore(tipsOffStore);
+  const acting = run.session.acting;
+  const hint = useMemo(
+    () =>
+      dueHint(
+        {
+          run: state,
+          acting,
+          content,
+          deps: run.deps,
+          events: gameConfigs.events,
+        },
+        { seen: seenHints, tipsOff, tutorialActive: tutorial !== null },
+      ),
+    [state, acting, run.deps, seenHints, tipsOff, tutorial],
+  );
   const runEnds =
     state.thisRound.pvp?.won === false &&
     state.lives - run.deps.rules.pvpLossLifeCost <= 0;
@@ -252,7 +273,7 @@ function ReadyRun(props: { run: ActiveRun }) {
     <RunBarContext.Provider value={bar}>
       <PhaseContext.Provider value={phaseInfo}>
         <TutorialContext.Provider value={tutorial}>
-          {body}
+          <HintContext.Provider value={hint}>{body}</HintContext.Provider>
         </TutorialContext.Provider>
       </PhaseContext.Provider>
       {needsVersionPrompt(run) ? (

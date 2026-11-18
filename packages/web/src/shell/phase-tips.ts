@@ -5,6 +5,7 @@
  */
 import { createStore } from '../app-state.js';
 import { DEFAULT_PREFIX } from '../run/local-storage-store.js';
+import { resetHints } from '../hints/hint-store.js';
 import { resetPointHint } from '../battle/point-hint.js';
 import { resetRefineryHint } from '../shop/refinery-hint.js';
 import { PHASE_ORDER, type PhaseId } from './phase.js';
@@ -52,4 +53,5 @@ export function resetTips(): void {
   write([]);
   resetRefineryHint();
   resetPointHint();
+  resetHints();
 }
