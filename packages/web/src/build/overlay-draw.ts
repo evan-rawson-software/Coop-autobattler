@@ -35,6 +35,7 @@ import { simConfig } from './setup.js';
 import { sideMarkers, type SideMarker } from './sides.js';
 import { coreLabel, screenText, screenTexts } from './texts.js';
 import { partnerHint, tunnelMarks } from './tunnel-marks.js';
+import { wardReach } from './ward-reach.js';
 import { buildingName, type FlowView } from './view-model.js';
 
 export interface OverlayData {
@@ -951,6 +952,40 @@ export function drawBuildOverlay(
           ),
           col.accent,
         );
+      }
+    }
+  }
+
+  // ---- Reach of a Rune Ward being placed, moved or selected (CB-53) --------
+  // The cells that share an edge with it: a wall or gate of the player on one
+  // of them is struck back for. Cells that already hold one are ringed green.
+  {
+    let at: Cell | null = null;
+    let defId: string | null = null;
+    let ignore: number | null = null;
+    const g = d.ui.ghost;
+    if (g !== null && g.defId !== null && g.cells[0] !== undefined) {
+      at = g.cells[0];
+      defId = g.defId;
+      ignore = d.ui.moving?.id ?? null;
+    } else if (sel?.kind === 'building') {
+      const sb = d.team.buildings.find((x) => x.id === sel.id);
+      if (sb !== undefined && sb.owner === d.acting) {
+        at = { x: sb.x, y: sb.y };
+        defId = sb.def;
+        ignore = sb.id;
+      }
+    }
+    const reach =
+      at === null || defId === null
+        ? null
+        : wardReach(d.team, d.content, defId, at, d.acting, ignore);
+    if (reach !== null && at !== null) {
+      for (const c of reach.reach) fillCell(c, col.accent, 0.2);
+      ring([...reach.reach], col.accent, 1.5);
+      ring([...reach.covered], col.ok, 3.5);
+      if (g !== null && g.ok) {
+        label(at, screenText(screenTexts, 'uiWardReach'), col.accent);
       }
     }
   }

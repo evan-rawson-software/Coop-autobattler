@@ -129,6 +129,10 @@ function wiring(r: BotRunResult, id: number): { into: number; out: number } {
 // boards, so the seeds were searched again (over 1 to 80, 80 and 40; no
 // rejected intent, the chain on the board, its units spawned): rush Composite
 // 2, 6, 7; fortify Aether 39 (the only one in 80); rush Foundry 1, 3, 6.
+// The Rune Ward (#474: the Wardsmith's fortify bot now buys it, and it takes a
+// Power collector like a turret) changed the shops and boards again, so the
+// fortify Aether seed was searched again over 1 to 80: 9 and 70 (39 no longer
+// builds it). Rush Composite 2 and Foundry 1 still build theirs.
 describe('the bot builds the Foundry and the refining chains (issue #384)', () => {
   test('rush builds the Composite chain and its Golems fight', () => {
     for (const seed of [2]) {
@@ -141,7 +145,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('fortify builds the Aether chain and its casters fight', () => {
-    for (const seed of [39]) {
+    for (const seed of [9]) {
       const r = play('fortify', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_bc')).toBeGreaterThan(0);

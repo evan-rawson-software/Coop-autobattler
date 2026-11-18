@@ -187,7 +187,11 @@ describe('the bots and signature buildings (issue #472)', () => {
       const economy = withSignatures(2, 40);
       let bought = 0;
       let placed = 0;
-      for (const seed of [1, 2, 3, 4, 5, 6]) {
+      // Seeds 1 to 10: since the Rune Ward (#474) is a Power consumer, the
+      // fortify bot buys and places it only when a collector for it is on
+      // offer too, which happens in seeds 8 and 9 of the first 30 and in none
+      // of 1 to 7 (measured); the other strategies pass with the same seeds.
+      for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
         const deps = makeGameDeps(
           { battle: fixedBattle(true) },
           { ...gameConfigs, economy },

@@ -313,6 +313,11 @@ taken}`. The fields are optional and the follow-up is a new allowed shape of
   `set_building_resource` (new allowed values of the action log, not a changed
   shape), and the optional `resourceSetting` of a building definition (content):
   records without them stay readable, so no format number is raised.
+  The Rune Ward (issue #474) adds a defense type `ward` with the tier fields
+  `reflectDamage` and `costPerStrike` (content), the arena event `ward_struck`
+  and the optional `wards` list of the arena state (present only when a plot
+  has a Ward); no saved record holds either, and a team state or ghost that
+  holds the building is an ordinary state, so no format number is raised.
   (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is

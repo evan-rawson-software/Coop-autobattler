@@ -136,6 +136,18 @@
         "splashRadiusCells": ["splashPercent"]
       }
     },
+    "tierWard": {
+      "description": "The Rune Ward (CB-53): reflectDamage is returned to an enemy unit that hits a wall or gate of the owner next to the Ward (before armor); costPerStrike resource units are consumed per strike.",
+      "type": "object",
+      "required": ["health", "price", "reflectDamage", "costPerStrike"],
+      "additionalProperties": false,
+      "properties": {
+        "health": { "$ref": "#/$defs/health" },
+        "price": { "$ref": "#/$defs/nonNegative" },
+        "reflectDamage": { "$ref": "#/$defs/damage" },
+        "costPerStrike": { "$ref": "#/$defs/positive" }
+      }
+    },
     "tierEconomy": {
       "type": "object",
       "required": [
@@ -283,7 +295,7 @@
           "type": "string",
           "pattern": "^res_[a-z0-9_]+$"
         },
-        "defenseType": { "enum": ["wall", "gate", "turret", "pylon"] },
+        "defenseType": { "enum": ["wall", "gate", "turret", "pylon", "ward"] },
         "effect": {
           "type": "object",
           "required": ["type"],
@@ -434,6 +446,27 @@
                 "minItems": 3,
                 "maxItems": 3,
                 "items": { "$ref": "#/$defs/tierTurret" }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": { "const": "defense" },
+              "defenseType": { "const": "ward" }
+            },
+            "required": ["kind", "defenseType"]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "tiers": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "$ref": "#/$defs/tierWard" }
               }
             }
           }

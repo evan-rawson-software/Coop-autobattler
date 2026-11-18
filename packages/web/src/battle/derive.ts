@@ -670,6 +670,9 @@ export function buildingRows(
           for (const t of e.splash ?? []) get(e.building).damage += t.damage;
         }
         break;
+      case 'ward_struck':
+        if (e.side === side) get(e.building).damage += e.damage;
+        break;
       case 'splash': {
         const home = unitHome.get(e.attacker);
         if (home !== undefined) {

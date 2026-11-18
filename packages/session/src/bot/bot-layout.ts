@@ -34,6 +34,8 @@ export const GRAND_BARRACKS = 'bld_grand_barracks';
 export const MERGER = 'bld_merger';
 export const LANCER_HALL = 'bld_lancer_hall';
 export const MORTAR = 'bld_mortar';
+/** The Wardsmith's Rune Ward: it strikes for the walls it touches (#474). */
+export const RUNE_WARD = 'bld_rune_ward';
 
 /** Buildings searched for a place on the whole plot, not near their collector. */
 const WIDE_TRIES = 100;
@@ -410,6 +412,13 @@ function preferred(
     };
     return stableByRank(positions, rank);
   }
+  if (def === RUNE_WARD) {
+    // A Ward is worth something only beside a wall or gate of its owner (it
+    // strikes for the ones it shares an edge with, #474): cells that touch
+    // one come first, the nearest-first order decides among equals.
+    const walls = wallLikeCells(env, team);
+    return stableByRank(positions, (c) => (touchesCells(c, walls) ? 0 : 1));
+  }
   if (def === MORTAR && env.core !== null) {
     const core = env.core;
     return stableByRank(
@@ -418,6 +427,32 @@ function preferred(
     );
   }
   return positions;
+}
+
+const cellKey = (c: Cell): string => `${String(c.x)},${String(c.y)}`;
+const EDGE_STEPS: readonly Cell[] = [
+  { x: 0, y: 1 },
+  { x: 1, y: 0 },
+  { x: -1, y: 0 },
+  { x: 0, y: -1 },
+];
+
+/** The cells of the player's placed walls and gates (a Ward is not one). */
+function wallLikeCells(env: Env, team: TeamState): Set<string> {
+  const occ = occupancy(team, env.content);
+  const out = new Set<string>();
+  for (const b of team.buildings) {
+    if (b.owner !== env.player || !isWallLike(env, b.def)) continue;
+    for (const c of occ.cellsOf(b)) out.add(cellKey(c));
+  }
+  return out;
+}
+
+/** Whether `cell` shares an edge with one of `cells`. */
+function touchesCells(cell: Cell, cells: ReadonlySet<string>): boolean {
+  return EDGE_STEPS.some((d) =>
+    cells.has(cellKey({ x: cell.x + d.x, y: cell.y + d.y })),
+  );
 }
 
 function stableByRank(positions: Cell[], rank: (c: Cell) => number): Cell[] {
@@ -761,12 +796,46 @@ function mortarFront(env: Env, team: TeamState): Cell | undefined {
   return undefined;
 }
 
+/**
+ * A wall or gate placed to touch a Rune Ward of the player that has no wall
+ * beside it yet (#474), or null: the positions within three cells of the Ward
+ * are tried nearest first, and one is kept only if the new building shares an
+ * edge with the Ward's cell. The spacing rule of loose walls is not used here.
+ */
+function placeBesideWard(env: Env, plan: Plan, id: number): Plan | null {
+  const item = plan.team.stash.find((b) => b.id === id);
+  if (item === undefined) return null;
+  const size = sizeOf(env, item.def);
+  const walls = wallLikeCells(env, plan.team);
+  const wards = plan.team.buildings
+    .filter((b) => b.owner === env.player && b.def === RUNE_WARD)
+    .sort((a, b) => a.id - b.id);
+  for (const ward of wards) {
+    if (touchesCells(ward, walls)) continue;
+    for (const pos of nearby(env, ward, size.w, 3, 3)) {
+      const placed = withPlace(env, plan, id, pos.x, pos.y);
+      if (placed === null || !sealsNothingNew(env, placed.team)) continue;
+      const now = placed.team.buildings.find((b) => b.id === id);
+      if (now === undefined) continue;
+      const cells = new Set(
+        occupancy(placed.team, env.content).cellsOf(now).map(cellKey),
+      );
+      if (touchesCells(ward, cells)) return placed;
+    }
+  }
+  return null;
+}
+
 function placeLoose(env: Env, plan: Plan, id: number): Plan | null {
   const item = plan.team.stash.find((b) => b.id === id);
   if (item === undefined) return null;
   const size = sizeOf(env, item.def);
   const kind = defOf(env, item.def)?.kind;
   if (kind === 'source') return null;
+  if (isWallLike(env, item.def)) {
+    const beside = placeBesideWard(env, plan, id);
+    if (beside !== null) return beside;
+  }
   // Walls and gates keep to every other cell so the screen has gaps.
   const spaced = kind === 'defense' && item.def !== 'bld_turret';
   const kept = reservedNodes(env, plan.team);
@@ -795,7 +864,11 @@ function placeLoose(env: Env, plan: Plan, id: number): Plan | null {
 
 function isWallLike(env: Env, def: string): boolean {
   const d = defOf(env, def);
-  return d?.kind === 'defense' && d.defenseType !== 'turret';
+  return (
+    d?.kind === 'defense' &&
+    d.defenseType !== 'turret' &&
+    d.defenseType !== 'ward'
+  );
 }
 
 export function makeEnv(

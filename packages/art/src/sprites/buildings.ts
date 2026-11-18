@@ -853,6 +853,29 @@ function manaWellSprite(): Pix {
   return p;
 }
 
+/**
+ * The Rune Ward (#474): a defense plate with a standing stone and a glowing
+ * rune, so it reads as a ward and not as a wall. Its Power input is on the
+ * south edge.
+ */
+function runeWardSprite(): Pix {
+  const p = new Pix(16, 16);
+  plate(p, 1, 1, 14, 14, KIND_RAMP['defense'] as Ramp);
+  // The standing stone, above the input arrow on the south edge.
+  arrow(p, 7, 12, 'n', 'T');
+  p.rect(4, 3, 8, 8, 'K');
+  p.rect(5, 4, 6, 6, '3');
+  p.rect(5, 4, 2, 6, '4');
+  // The rune: a small diamond with a bright centre.
+  p.set(8, 5, 'y');
+  p.rect(7, 6, 3, 1, 'y');
+  p.rect(6, 7, 5, 1, 'y');
+  p.rect(7, 8, 3, 1, 'y');
+  p.set(8, 9, 'y');
+  p.set(8, 7, '6');
+  return p;
+}
+
 /** Placeholder art for the Familiar Roost (#472): a 1x2 producer with a perch. */
 function familiarRoostSprite(): Pix {
   const p = new Pix(16, 32);
@@ -894,6 +917,7 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_spire: spireSprite,
   bld_lancer_hall: lancerHallSprite,
   bld_mana_well: manaWellSprite,
+  bld_rune_ward: runeWardSprite,
   bld_familiar_roost: familiarRoostSprite,
   bld_transmuter: transmuterSprite,
   // Fill and stud colours stand in for the compound and its two inputs.

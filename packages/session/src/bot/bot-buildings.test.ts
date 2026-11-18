@@ -266,8 +266,11 @@ describe('whole bot runs use the new buildings (#443)', () => {
     expect(wiring.get('bld_merger')).toBe(2);
   });
 
+  // The Rune Ward (#474) changed the fortify shops: searched again over 1 to
+  // 120 (party of 2): a Mortar is placed in seeds 24, 43, 47, 86, 93, 115
+  // (none in 1 to 40 with a party of 1).
   test('fortify places a Mortar', () => {
-    const { result, seen } = played('fortify', 1, 1, ['bld_mortar']);
+    const { result, seen } = played('fortify', 2, 24, ['bld_mortar']);
     expect(result.rejected).toEqual([]);
     expect(seen.has('bld_mortar')).toBe(true);
   });

@@ -141,6 +141,13 @@ export function effectText(
       break;
     }
     case 'defense': {
+      if (def.defenseType === 'ward') {
+        const x = def.tiers[tier - 1];
+        if (x !== undefined) {
+          values['damage'] = String(x.reflectDamage);
+          values['cost'] = String(x.costPerStrike);
+        }
+      }
       if (def.defenseType === 'turret') {
         const x = def.tiers[tier - 1];
         if (x !== undefined) {

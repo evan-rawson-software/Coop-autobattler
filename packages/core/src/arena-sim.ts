@@ -220,6 +220,24 @@ export type ArenaEvent =
     }
   | {
       readonly tick: number;
+      /**
+       * A Rune Ward (CB-53) struck back at an enemy unit that hit a wall or
+       * gate next to it, recorded in step 4 right after the `unit_attacked`
+       * of that hit. `damage` is what the unit takes after its armor.
+       */
+      readonly type: 'ward_struck';
+      /** The Ward owner's side, which is also the side of the wall. */
+      readonly side: number;
+      /** The Ward's instance ID. */
+      readonly building: number;
+      /** The instance ID of the wall or gate that was hit. */
+      readonly wall: number;
+      /** The attacking unit. */
+      readonly unit: number;
+      readonly damage: number;
+    }
+  | {
+      readonly tick: number;
       readonly type: 'unit_retargeted';
       readonly unit: number;
       /** The new target: a player index of the enemy side, or -1. */
@@ -473,6 +491,14 @@ export interface TurretSim {
   cooldown: number;
 }
 
+/** A Rune Ward's charge (CB-53). */
+export interface WardSim {
+  readonly side: number;
+  readonly building: number;
+  /** Resource units collected towards the next strike (0 .. costPerStrike). */
+  charge: number;
+}
+
 export interface RampSim {
   readonly side: number;
   readonly building: number;
@@ -633,6 +659,11 @@ export interface ArenaSim {
   producers: ProducerSim[];
   /** Living turrets, by (side, building). */
   turrets: TurretSim[];
+  /**
+   * Living Rune Wards, by (side, building). Present only when a plot has a
+   * Ward at the start (so every other state, and its hash, is unchanged).
+   */
+  wards?: WardSim[];
   /** Living economy (in-battle ramp) buildings, by (side, building). */
   ramps: RampSim[];
   /** Living units, sorted by `id`. */
@@ -928,6 +959,12 @@ function specialistBonus(
   return ctx.specialist[side]?.[owner] ?? NO_SPECIALIST_BONUS;
 }
 
+interface WardInfo {
+  /** The damage a strike returns, before armor (CB-53). */
+  readonly reflectDamage: number;
+  readonly costPerStrike: number;
+}
+
 interface RampInfo {
   /** The player who owns the building (PP-8: only this player gains). */
   readonly owner: number;
@@ -964,6 +1001,13 @@ export interface ArenaContext {
   readonly producers: Map<number, ProducerInfo>;
   readonly turrets: Map<number, TurretInfo>;
   readonly ramps: Map<number, RampInfo>;
+  readonly wards: Map<number, WardInfo>;
+  /**
+   * `ref` of a wall or gate -> the `ref`s of the Rune Wards that may strike
+   * for a hit on it (CB-53): same side, same owner, sharing an edge with it,
+   * in Ward building-ID order. Empty for every other building.
+   */
+  readonly wardsOf: number[][];
   /**
    * Per side and player index, the bonuses of the player's specialist
    * (CB-51a): fixed for the battle, read at the moment they apply.
@@ -1185,6 +1229,8 @@ export function createArenaContext(
   const producers = new Map<number, ProducerInfo>();
   const turrets = new Map<number, TurretInfo>();
   const ramps = new Map<number, RampInfo>();
+  const wards = new Map<number, WardInfo>();
+  const wardsOf: number[][] = arena.buildings.map(() => []);
   const specialist = specialistBonusesOf(sim.teams, content);
   sim.teams.forEach((team, side) => {
     for (const p of team.buildings) {
@@ -1219,6 +1265,13 @@ export function createArenaContext(
           stepPercent: tier.stepPercent,
           maxSteps: tier.maxSteps,
         });
+      } else if (def.kind === 'defense' && def.defenseType === 'ward') {
+        const tier = def.tiers[p.tier - 1];
+        if (tier === undefined) continue;
+        wards.set(bkey(side, p.id), {
+          reflectDamage: tier.reflectDamage,
+          costPerStrike: tier.costPerStrike,
+        });
       } else if (def.kind === 'defense' && def.defenseType === 'turret') {
         const tier = def.tiers[p.tier - 1];
         if (tier === undefined) continue;
@@ -1243,6 +1296,35 @@ export function createArenaContext(
                 },
               }),
         });
+      }
+    }
+  });
+  // Which Rune Wards may strike for a hit on which wall or gate (CB-53): same
+  // side, same owner, an edge shared with the Ward's cell. Wards are visited
+  // in (side, building-ID) order, so each list is in Ward ID order.
+  sim.teams.forEach((team, side) => {
+    const ownerOf = new Map<number, number>();
+    for (const p of team.buildings) ownerOf.set(p.id, p.owner);
+    const sorted = [...team.buildings].sort((a, b) => a.id - b.id);
+    for (const w of sorted) {
+      if (!wards.has(bkey(side, w.id))) continue;
+      const wardRef = arena.byId[side]?.get(w.id);
+      const ward = wardRef === undefined ? undefined : arena.buildings[wardRef];
+      if (wardRef === undefined || ward === undefined) continue;
+      for (const b of arena.buildings) {
+        if (
+          b.side !== side ||
+          (b.defenseType !== 'wall' && b.defenseType !== 'gate') ||
+          ownerOf.get(b.id) !== w.owner
+        ) {
+          continue;
+        }
+        const touches = b.cells.some((c) =>
+          ward.cells.some(
+            (wc) => Math.abs(c.x - wc.x) + Math.abs(c.y - wc.y) === 1,
+          ),
+        );
+        if (touches) wardsOf[b.ref]?.push(wardRef);
       }
     }
   });
@@ -1272,6 +1354,8 @@ export function createArenaContext(
     producers,
     turrets,
     ramps,
+    wards,
+    wardsOf,
     specialist,
     flowEvents,
     world: { width: arena.geom.width, height: arena.geom.height, solid },
@@ -1504,6 +1588,12 @@ export function createArenaSim(
       turrets.push({ side: b.side, building: b.id, charge: 0, cooldown: 0 });
     }
   }
+  const wards: WardSim[] = [];
+  for (const b of arena.buildings) {
+    if (b.defenseType === 'ward') {
+      wards.push({ side: b.side, building: b.id, charge: 0 });
+    }
+  }
   const ramps: RampSim[] = [];
   for (const b of arena.buildings) {
     if (b.kind === 'economy') {
@@ -1548,6 +1638,7 @@ export function createArenaSim(
     health,
     producers,
     turrets,
+    ...(wards.length > 0 ? { wards } : {}),
     ramps,
     units: [],
     entering: [],
@@ -2613,6 +2704,25 @@ function chargeTurrets(sim: ArenaSim, ctx: ArenaContext): void {
     }
     const board = sim.boards[t.side === 0 ? 0 : 1];
     t.charge += intake(board, t.building, info.costPerShot - t.charge);
+  }
+}
+
+/**
+ * Ward charging (step 2, after turret charging): each living Rune Ward, in
+ * side then building-ID order, takes from its input buffers only as many
+ * items as it still needs to reach `costPerStrike` (a side with `freePower`
+ * has it full).
+ */
+function chargeWards(sim: ArenaSim, ctx: ArenaContext): void {
+  for (const w of sim.wards ?? []) {
+    const info = ctx.wards.get(bkey(w.side, w.building));
+    if (info === undefined || w.charge >= info.costPerStrike) continue;
+    if (sim.sideOptions?.[w.side === 0 ? 0 : 1]?.freePower === true) {
+      w.charge = info.costPerStrike;
+      continue;
+    }
+    const board = sim.boards[w.side === 0 ? 0 : 1];
+    w.charge += intake(board, w.building, info.costPerStrike - w.charge);
   }
 }
 
@@ -3856,6 +3966,11 @@ function destroyBuilding(
   sim.turrets = sim.turrets.filter(
     (t) => !(t.side === b.side && t.building === b.id),
   );
+  if (sim.wards !== undefined) {
+    sim.wards = sim.wards.filter(
+      (w) => !(w.side === b.side && w.building === b.id),
+    );
+  }
   sim.ramps = sim.ramps.filter(
     (r) => !(r.side === b.side && r.building === b.id),
   );
@@ -3929,6 +4044,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   buildUnitGrid(sim, ctx);
   produce(sim, ctx, tick);
   chargeTurrets(sim, ctx);
+  chargeWards(sim, ctx);
   chargeRamps(sim, ctx, tick);
 
   // 3. Decide, from a snapshot. `units` stays this tick's list until step 6.
@@ -4092,6 +4208,9 @@ function resolveAttacks(
       damage,
       ...(pool === undefined ? {} : { pool }),
     });
+    if (act === ACT_BUILDING && !blocked) {
+      wardStrike(sim, ctx, units, i, arg, tick);
+    }
     if (blocked && target.kind === 'core') {
       events?.push({
         tick,
@@ -4112,6 +4231,53 @@ function resolveAttacks(
         targets: splash,
       });
     }
+  }
+}
+
+/**
+ * The Rune Ward's strike (CB-53, step 4): a unit (index `i`) just hit the
+ * building `ref`. When that is a wall or gate with Rune Wards next to it that
+ * belong to the same owner, the first of them in building-ID order that is
+ * alive and holds a full charge spends it and adds its tier's `reflectDamage`,
+ * reduced by the unit's armor (CB-5h), to the damage the unit takes this
+ * tick. At most one Ward strikes per hit; `ward_struck` follows the
+ * `unit_attacked` of the hit.
+ */
+function wardStrike(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+  i: number,
+  ref: number,
+  tick: number,
+): void {
+  const candidates = ctx.wardsOf[ref];
+  const u = units[i];
+  const wall = ctx.arena.buildings[ref];
+  if (candidates === undefined || candidates.length === 0) return;
+  if (u === undefined || wall === undefined || u.side === wall.side) return;
+  for (const wardRef of candidates) {
+    const ward = ctx.arena.buildings[wardRef];
+    if (ward === undefined || !ward.alive) continue;
+    const state = sim.wards?.find(
+      (w) => w.side === ward.side && w.building === ward.id,
+    );
+    const info = ctx.wards.get(bkey(ward.side, ward.id));
+    if (state === undefined || info === undefined) continue;
+    if (state.charge < info.costPerStrike) continue;
+    state.charge -= info.costPerStrike;
+    const dealt = armorHit(info.reflectDamage, armorOf(ctx, u));
+    hurtUnit(ctx, units, i, dealt, ward.side);
+    ctx.events?.push({
+      tick,
+      type: 'ward_struck',
+      side: ward.side,
+      building: ward.id,
+      wall: wall.id,
+      unit: u.id,
+      damage: dealt,
+    });
+    return;
   }
 }
 

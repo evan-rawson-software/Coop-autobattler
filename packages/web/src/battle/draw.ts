@@ -1381,6 +1381,33 @@ export function drawBattleOverlay(
         ctx.setLineDash([]);
         break;
       }
+      case 'ward_struck': {
+        // A Rune Ward (CB-53) strikes back: a short bolt from the Ward to the
+        // attacker, and a ring on the Ward.
+        if (age >= LIFE_SHOT) break;
+        const side = e.side === 0 ? 0 : 1;
+        if (!rectCentre(index.rects[side].get(e.building), tmp)) break;
+        const ti = idToIndex[e.unit] ?? -1;
+        const t = ti >= 0 ? units[ti] : undefined;
+        const p = age / LIFE_SHOT;
+        const wx = ox + tmp.x * z;
+        const wy = oy + tmp.y * z;
+        ctx.globalAlpha = 1 - p;
+        ctx.strokeStyle = sideColor(side);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(wx, wy, z * (0.3 + 0.4 * p), 0, Math.PI * 2);
+        ctx.stroke();
+        if (t !== undefined && t.id === e.unit) {
+          pxOf(t, tmp2);
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(wx, wy);
+          ctx.lineTo(tmp2.x, tmp2.y);
+          ctx.stroke();
+        }
+        break;
+      }
       case 'ramp_step': {
         if (age >= LIFE_RAMP) break;
         const side = e.side === 0 ? 0 : 1;
