@@ -188,7 +188,11 @@ describe('the bots and signature buildings (issue #472)', () => {
       // fortify bot buys and places it only when a collector for it is on
       // offer too, which happens in seeds 8 and 9 of the first 30 and in none
       // of 1 to 7 (measured); the other strategies pass with the same seeds.
-      for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+      // Event tuning (#417): the siege run found none in seeds 1 to 10 any more,
+      // so the list is 1 to 16 (the checks below are unchanged).
+      for (const seed of [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      ]) {
         // The Alchemist's Transmuter (#476) is bought only where the plot
         // has no open node of what a consumer takes, so its run is played
         // on plots with one node of each common resource.

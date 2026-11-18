@@ -186,12 +186,12 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     events: [
       'pact',
       'windfall',
-      'drill',
       'caravan',
-      'blueprint',
-      'workshop',
+      'drill',
       'market_day',
+      'workshop',
       'rich_vein',
+      'blueprint',
       'shrine',
     ],
     modifiers: [
@@ -254,10 +254,10 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     events: [
       'pact',
       'shrine',
-      'drill',
       'workshop',
-      'caravan',
       'rich_vein',
+      'drill',
+      'caravan',
       'market_day',
       'blueprint',
       'windfall',
@@ -321,11 +321,11 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     events: [
       'workshop',
       'blueprint',
-      'drill',
       'caravan',
+      'drill',
+      'market_day',
       'pact',
       'shrine',
-      'market_day',
       'rich_vein',
       'windfall',
     ],
@@ -480,6 +480,8 @@ export interface BotRunResult {
 export interface TakenEvent {
   readonly type: string;
   readonly round: number;
+  /** The types on offer at that vote (the one taken included). */
+  readonly offered: readonly string[];
   /** The offer as voted for (Pact: `pact`; Rich vein: `resource`; ...). */
   readonly offer: Record<string, Json>;
   /**
@@ -503,6 +505,17 @@ function eventOfferOf(
     }
   }
   return undefined;
+}
+
+/** The event types a vote on `state` offers. */
+function offeredTypes(state: RunState): string[] {
+  const list = isRecord(state.pending) ? state.pending['options'] : undefined;
+  if (!Array.isArray(list)) return [];
+  const out: string[] = [];
+  for (const o of list) {
+    if (isRecord(o) && typeof o['type'] === 'string') out.push(o['type']);
+  }
+  return out;
 }
 
 class Driver {
@@ -540,6 +553,7 @@ class Driver {
             this.events.push({
               type: offer.type,
               round: before0.round,
+              offered: offeredTypes(before0),
               offer,
               applied: [],
             });

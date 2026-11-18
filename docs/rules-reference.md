@@ -6196,9 +6196,9 @@ through the Pact event.
 
 | Pact | Benefit | Drawback |
 | --- | --- | --- |
-| `mod_pact_fury` | `unit_strength_percent` +20 | `core_health_percent` -15 |
-| `mod_pact_bastion` | `building_health_percent` `all` +30 | `unit_strength_percent` -10 |
-| `mod_pact_overcharge` | `turret_damage_percent` +40 | `building_health_percent` `turret` -20 |
+| `mod_pact_fury` | `unit_strength_percent` +15 | `core_health_percent` -40 |
+| `mod_pact_bastion` | `building_health_percent` `all` +50 | `unit_strength_percent` -5 |
+| `mod_pact_overcharge` | `turret_damage_percent` +40 | `building_health_percent` `turret` -50 |
 
 Also in the content, each entered once the feature it needs had
 landed: stone skin
@@ -6455,7 +6455,7 @@ because wiring requires an event definition whose handler is `alwaysAvailable`
 `validateRunState` (1 or more offers in `event_choice`) and the schema accept
 any number of offers from 1 to `offerCount`. More event types will come later.
 
-- **Workshop** (`params.workshopPricePercent`, 80; an integer from 1 to 100,
+- **Workshop** (`params.workshopPricePercent`, 70; an integer from 1 to 100,
   checked by the schema and at wiring): every player may raise ONE building
   they own by one tier, paying from their own gold. Issue #50 replaced the
   earlier party-wide free upgrade.
@@ -6466,7 +6466,7 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     `floor(tierPrice(d, t + 1) * workshopPricePercent / 100)`. `tierPrice` is
     the shop price of that tier (the function the shop rolls offers with), the
     division is integer division rounding down, so with 80% a tier price of 9
-    gives 7. A building at tier 3 is never an option; events never add a
+    gives 7 (the shipped value is 70, issue #417). A building at tier 3 is never an option; events never add a
     building.
   - *Follow-up.* After the party votes for the Workshop (the usual party vote)
     the step is `event_resolve` with `pending.followUp = { prompt:
@@ -6757,7 +6757,7 @@ any number of offers from 1 to `offerCount`. More event types will come later.
   choice for a modifier whose `fromRound` is above the current round is
   refused (`not_unlocked`), as is a non-stackable one already held
   (`already_held`).
-- **Windfall** (`params.gold`): no follow-up; every player gets that much gold
+- **Windfall** (`params.gold`, 8 as shipped, issue #417): no follow-up; every player gets that much gold
   at once.
 - **Market day** (`params.extraOffers`, 1, and `params.freeRerolls`, 1; integers
   from 1 to 10, checked at wiring and by the schema; `fromRound` 2 in the shipped
@@ -8666,3 +8666,23 @@ The guard test `packages/session/src/rules/no-giving.test.ts` sends every intent
 player can send and checks that no other player's gold, stash or placed
 buildings change and no `owner` changes. Board intents aimed at a partner's
 buildings are rejected with `not_owner` (CP-28, PP-1, issue #129).
+
+### Numbers set in the event tuning (issue #417)
+
+Measured with the scripted bot over seeds 1 to 40 of each strategy (160 solo
+runs of 10 rounds, about 2600 event steps) and, for the pacts and Rich vein, 24
+seeds per cell. Version 1.0.55 (content changed, TA-8; no saved format number
+changes). Gold equivalent of an event taken: the shop price of the tier gained
+(or of the building) minus what was paid; modifiers and nodes are not counted.
+
+| Number | Where | Before | Shipped | Why |
+| ------ | ----- | ------ | ------- | --- |
+| Workshop `workshopPricePercent` | `events.json` | 80 | 70 | at 80 the net value was 4.6 / 5.8 / 7.0 gold (rounds 2-4 / 5-7 / 8-10), the lowest of the gold events; now 7.5 / 9.6 / 10.8. Not lower: the ghost check "a Workshop raise never adds as much value as it costs" needs 70 or more (Splitter tier 1 to 2: 7 gain, 8 cost) |
+| Windfall `gold` | `events.json` | 4 | 8 | now 8.0 at every round, +7% / -17% / -26% against the Workshop |
+| Caravan `gold` | `events.json` | 6 | 8 | the gold reward was the weakest item of the draft |
+| `mod_pact_fury` | `events.json` | +20 strength, -15 Core | +15 strength, -40 Core | rounds reached over no pact (24 seeds): rush +0.00, fortify +0.33, siege +0.50 (was +1.1, +0.9, +0.7) |
+| `mod_pact_bastion` | `events.json` | +30 buildings, -10 strength | +50 buildings, -5 strength | -0.25 to -0.33 rounds for every strategy: the strength drawback bites, building health barely matters |
+| `mod_pact_overcharge` | `events.json` | turret +40, turret health -20 | turret +40, turret health -50 | +0.1 to +0.2 rounds; the drawback does not change the result |
+| Bot event order | `bot.ts` | Drill first or second for three strategies | Drill after Caravan (and, for fortify, after Workshop and Rich vein); Market day above Blueprint | Drill was taken in 57% of its offers, Market day in 7%, Rich vein in 5% |
+| Event weights, `fromRound`s, Drill, Market day, Rich vein, Blueprint params | `events.json` | | unchanged | variety is already 8.8 of the 9 types seen per run |
+| Version | `version.ts` | 1.0.54 | 1.0.55 | content changed (TA-8); no saved format number changes |

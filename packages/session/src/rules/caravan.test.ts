@@ -155,7 +155,7 @@ describe('Caravan: the definition and availability', () => {
     ).toMatchObject({
       type: 'caravan',
       fromRound: 2,
-      params: { gold: 6 },
+      params: { gold: 8 },
     });
   });
 
@@ -248,7 +248,7 @@ describe('Caravan: the offer', () => {
         d.items.filter((i) => i.partyWide === true).length,
       ).toBeLessThanOrEqual(1);
       for (const i of d.items) {
-        if (i.kind === 'gold') expect(i.gold).toBe(6);
+        if (i.kind === 'gold') expect(i.gold).toBe(8);
         expect(i.partyWide === true).toBe(i.kind === 'modifier');
       }
       expect(d.order).toHaveLength(players);

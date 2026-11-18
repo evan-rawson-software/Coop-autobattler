@@ -179,7 +179,7 @@ describe('Rich vein: definition and availability', () => {
     // to the pool changes which events are picked, never what one holds.
     for (let seed = 1; seed <= 30; seed++) {
       const w = offersAt(s, 5, seed).find((x) => x.type === 'windfall');
-      if (w !== undefined) expect(w['gold']).toBe(4);
+      if (w !== undefined) expect(w['gold']).toBe(8);
     }
   });
 });
