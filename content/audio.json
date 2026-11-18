@@ -1,0 +1,610 @@
+{
+  "version": 1,
+  "groups": {
+    "master": 80,
+    "music": 50,
+    "effects": 80
+  },
+  "mix": {
+    "effectVoices": 16,
+    "duckAttackMs": 40,
+    "duckReleaseMs": 400,
+    "crossfadeMs": 1500,
+    "stingerFadeMs": 400,
+    "lowCorePercent": 30,
+    "thinWindowMs": {
+      "attack": 250,
+      "spawn": 333,
+      "death": 333
+    },
+    "speedFactor": {
+      "1": 1,
+      "2": 1.33,
+      "4": 2
+    },
+    "seekJumpTicks": 8
+  },
+  "cues": {
+    "ui.click": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 60,
+      "maxVoices": 2,
+      "volume": 60
+    },
+    "ui.hover": {
+      "group": "effects",
+      "priority": 1,
+      "minGapMs": 80,
+      "maxVoices": 1,
+      "volume": 25,
+      "enabled": false
+    },
+    "ui.confirm": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 120,
+      "maxVoices": 1,
+      "volume": 70
+    },
+    "ui.error": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 150,
+      "maxVoices": 1,
+      "volume": 65
+    },
+    "ui.toggle": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 80,
+      "maxVoices": 1,
+      "volume": 55
+    },
+    "build.place": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 80,
+      "maxVoices": 2,
+      "volume": 75
+    },
+    "build.rotate": {
+      "group": "effects",
+      "priority": 1,
+      "minGapMs": 60,
+      "maxVoices": 1,
+      "volume": 50
+    },
+    "build.move": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 80,
+      "maxVoices": 1,
+      "volume": 65
+    },
+    "build.stash": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 80,
+      "maxVoices": 1,
+      "volume": 60
+    },
+    "build.conduit_draw": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 80,
+      "maxVoices": 1,
+      "volume": 60
+    },
+    "build.conduit_erase": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 80,
+      "maxVoices": 1,
+      "volume": 55
+    },
+    "build.illegal": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 150,
+      "maxVoices": 1,
+      "volume": 65
+    },
+    "shop.buy": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 80,
+      "maxVoices": 2,
+      "volume": 80
+    },
+    "shop.sell": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 80,
+      "maxVoices": 2,
+      "volume": 70
+    },
+    "shop.reroll": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 120,
+      "maxVoices": 1,
+      "volume": 65
+    },
+    "shop.no_gold": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 150,
+      "maxVoices": 1,
+      "volume": 60
+    },
+    "run.ready": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 120,
+      "maxVoices": 1,
+      "volume": 65
+    },
+    "run.all_ready": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 300,
+      "maxVoices": 1,
+      "volume": 75
+    },
+    "run.vote_cast": {
+      "group": "effects",
+      "priority": 1,
+      "minGapMs": 100,
+      "maxVoices": 2,
+      "volume": 50
+    },
+    "run.vote_resolved": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 300,
+      "maxVoices": 1,
+      "volume": 70
+    },
+    "run.event_chosen": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 200,
+      "maxVoices": 1,
+      "volume": 70
+    },
+    "run.modifier_gained": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 300,
+      "maxVoices": 1,
+      "volume": 75
+    },
+    "run.life_lost": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 500,
+      "maxVoices": 1,
+      "volume": 75
+    },
+    "run.round_start": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 500,
+      "maxVoices": 1,
+      "volume": 65
+    },
+    "run.over": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 1000,
+      "maxVoices": 1,
+      "volume": 75,
+      "duck": {
+        "gain": 0.5,
+        "holdMs": 1500
+      }
+    },
+    "run.new_best": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 1000,
+      "maxVoices": 1,
+      "volume": 80,
+      "duck": {
+        "gain": 0.3,
+        "holdMs": 2500
+      }
+    },
+    "event.caravan_turn": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 300,
+      "maxVoices": 1,
+      "volume": 60,
+      "enabled": false
+    },
+    "battle.start": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 1000,
+      "maxVoices": 1,
+      "volume": 70
+    },
+    "battle.unit_spawned_ally": {
+      "group": "effects",
+      "priority": 1,
+      "minGapMs": 100,
+      "maxVoices": 2,
+      "volume": 40,
+      "thin": "spawn"
+    },
+    "battle.unit_spawned_foe": {
+      "group": "effects",
+      "priority": 1,
+      "minGapMs": 100,
+      "maxVoices": 2,
+      "volume": 40,
+      "thin": "spawn"
+    },
+    "battle.attack": {
+      "group": "effects",
+      "priority": 1,
+      "minGapMs": 120,
+      "maxVoices": 2,
+      "volume": 45,
+      "thin": "attack"
+    },
+    "battle.turret_fired": {
+      "group": "effects",
+      "priority": 1,
+      "minGapMs": 120,
+      "maxVoices": 2,
+      "volume": 45,
+      "thin": "attack"
+    },
+    "battle.splash": {
+      "group": "effects",
+      "priority": 1,
+      "minGapMs": 150,
+      "maxVoices": 1,
+      "volume": 50,
+      "thin": "attack"
+    },
+    "battle.ward_struck": {
+      "group": "effects",
+      "priority": 1,
+      "minGapMs": 150,
+      "maxVoices": 1,
+      "volume": 45,
+      "thin": "attack"
+    },
+    "battle.core_hit": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 200,
+      "maxVoices": 1,
+      "volume": 65,
+      "thin": "attack",
+      "duck": {
+        "gain": 0.8,
+        "holdMs": 200
+      }
+    },
+    "battle.core_hit_low": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 250,
+      "maxVoices": 1,
+      "volume": 85,
+      "thin": "attack",
+      "duck": {
+        "gain": 0.6,
+        "holdMs": 300
+      }
+    },
+    "battle.foe_core_hit": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 200,
+      "maxVoices": 1,
+      "volume": 55,
+      "thin": "attack"
+    },
+    "battle.unit_died": {
+      "group": "effects",
+      "priority": 1,
+      "minGapMs": 100,
+      "maxVoices": 2,
+      "volume": 40,
+      "thin": "death"
+    },
+    "battle.building_destroyed": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 120,
+      "maxVoices": 2,
+      "volume": 65
+    },
+    "battle.building_lost": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 120,
+      "maxVoices": 2,
+      "volume": 70
+    },
+    "battle.core_destroyed": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 400,
+      "maxVoices": 1,
+      "volume": 85,
+      "duck": {
+        "gain": 0.4,
+        "holdMs": 1000
+      }
+    },
+    "battle.core_lost": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 400,
+      "maxVoices": 1,
+      "volume": 85,
+      "duck": {
+        "gain": 0.4,
+        "holdMs": 1000
+      }
+    },
+    "battle.overload_started": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 2000,
+      "maxVoices": 1,
+      "volume": 75,
+      "duck": {
+        "gain": 0.6,
+        "holdMs": 1200
+      }
+    },
+    "battle.overload_level": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 1000,
+      "maxVoices": 1,
+      "volume": 65
+    },
+    "battle.overload_pulse": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 1500,
+      "maxVoices": 1,
+      "volume": 50
+    },
+    "battle.poi_capture_start": {
+      "group": "effects",
+      "priority": 2,
+      "minGapMs": 500,
+      "maxVoices": 1,
+      "volume": 55
+    },
+    "battle.poi_captured": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 500,
+      "maxVoices": 1,
+      "volume": 75
+    },
+    "battle.boss_burst": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 500,
+      "maxVoices": 1,
+      "volume": 80,
+      "duck": {
+        "gain": 0.6,
+        "holdMs": 600
+      }
+    },
+    "battle.boss_pylon": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 300,
+      "maxVoices": 1,
+      "volume": 75
+    },
+    "battle.boss_shield_down": {
+      "group": "effects",
+      "priority": 3,
+      "minGapMs": 500,
+      "maxVoices": 1,
+      "volume": 80
+    },
+    "music.build": {
+      "group": "music",
+      "priority": 1,
+      "minGapMs": 0,
+      "maxVoices": 1,
+      "volume": 100
+    },
+    "music.battle": {
+      "group": "music",
+      "priority": 1,
+      "minGapMs": 0,
+      "maxVoices": 1,
+      "volume": 100
+    },
+    "music.win": {
+      "group": "music",
+      "priority": 3,
+      "minGapMs": 0,
+      "maxVoices": 1,
+      "volume": 100
+    },
+    "music.loss": {
+      "group": "music",
+      "priority": 3,
+      "minGapMs": 0,
+      "maxVoices": 1,
+      "volume": 100
+    }
+  },
+  "battleMap": [
+    {
+      "event": "zone_revealed",
+      "when": {},
+      "cue": "battle.start"
+    },
+    {
+      "event": "unit_spawned",
+      "when": {
+        "side": 0
+      },
+      "cue": "battle.unit_spawned_ally"
+    },
+    {
+      "event": "unit_spawned",
+      "when": {
+        "side": 1
+      },
+      "cue": "battle.unit_spawned_foe"
+    },
+    {
+      "event": "unit_attacked",
+      "when": {
+        "target": "core",
+        "side": 0,
+        "coreLow": true
+      },
+      "cue": "battle.core_hit_low"
+    },
+    {
+      "event": "unit_attacked",
+      "when": {
+        "target": "core",
+        "side": 0
+      },
+      "cue": "battle.core_hit"
+    },
+    {
+      "event": "unit_attacked",
+      "when": {
+        "target": "core",
+        "side": 1
+      },
+      "cue": "battle.foe_core_hit"
+    },
+    {
+      "event": "unit_attacked",
+      "when": {
+        "target": "unit"
+      },
+      "cue": "battle.attack"
+    },
+    {
+      "event": "unit_attacked",
+      "when": {
+        "target": "building"
+      },
+      "cue": "battle.attack"
+    },
+    {
+      "event": "turret_fired",
+      "when": {},
+      "cue": "battle.turret_fired"
+    },
+    {
+      "event": "splash",
+      "when": {},
+      "cue": "battle.splash"
+    },
+    {
+      "event": "ward_struck",
+      "when": {},
+      "cue": "battle.ward_struck"
+    },
+    {
+      "event": "unit_died",
+      "when": {
+        "side": 0
+      },
+      "cue": "battle.unit_died"
+    },
+    {
+      "event": "unit_died",
+      "when": {
+        "side": 1
+      },
+      "cue": "battle.unit_died"
+    },
+    {
+      "event": "building_destroyed",
+      "when": {
+        "side": 1
+      },
+      "cue": "battle.building_destroyed"
+    },
+    {
+      "event": "building_destroyed",
+      "when": {
+        "side": 0
+      },
+      "cue": "battle.building_lost"
+    },
+    {
+      "event": "core_destroyed",
+      "when": {
+        "side": 1
+      },
+      "cue": "battle.core_destroyed"
+    },
+    {
+      "event": "core_destroyed",
+      "when": {
+        "side": 0
+      },
+      "cue": "battle.core_lost"
+    },
+    {
+      "event": "overload_started",
+      "when": {},
+      "cue": "battle.overload_started"
+    },
+    {
+      "event": "overload_level",
+      "when": {
+        "levelAtLeast": 2
+      },
+      "cue": "battle.overload_level"
+    },
+    {
+      "event": "overload_core_damage",
+      "when": {},
+      "cue": "battle.overload_pulse"
+    },
+    {
+      "event": "point_capture_started",
+      "when": {},
+      "cue": "battle.poi_capture_start"
+    },
+    {
+      "event": "point_captured",
+      "when": {},
+      "cue": "battle.poi_captured"
+    },
+    {
+      "event": "burst_released",
+      "when": {},
+      "cue": "battle.boss_burst"
+    },
+    {
+      "event": "pylon_destroyed",
+      "when": {},
+      "cue": "battle.boss_pylon"
+    },
+    {
+      "event": "core_shield_down",
+      "when": {},
+      "cue": "battle.boss_shield_down"
+    }
+  ]
+}

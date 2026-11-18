@@ -1,4 +1,11 @@
-import { loadSounds, type SoundsConfig } from '@game/audio';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import {
+  loadAudio,
+  loadSounds,
+  type AudioConfig,
+  type SoundsConfig,
+} from '@game/audio';
 import {
   loadBuildings,
   loadEconomy,
@@ -41,6 +48,7 @@ export interface LoadedContent {
   threats?: ThreatsConfig;
   presentation?: PresentationConfig;
   sounds?: SoundsConfig;
+  audio?: AudioConfig;
 }
 
 /** Outcome of running a core loader on parsed content. */
@@ -224,4 +232,37 @@ export const contentRegistry: readonly ContentEntry[] = [
       return r.ok ? { ok: true, value: r.config } : r;
     },
   },
+  {
+    key: 'audio',
+    contentFile: 'audio.json',
+    schemaFile: 'audio.schema.json',
+    needs: ['sounds'],
+    load: (data, loaded) => {
+      const r = loadAudio(data, {
+        soundIds: new Set(Object.keys(need(loaded, 'sounds').sounds)),
+        eventTypes: simEventTypes(),
+      });
+      return r.ok ? { ok: true, value: r.config } : r;
+    },
+  },
 ];
+
+/** The event types of `schemas/sim-event.schema.json`, for the battle map. */
+function simEventTypes(): Set<string> {
+  const file = fileURLToPath(
+    new URL('../../../schemas/sim-event.schema.json', import.meta.url),
+  );
+  const types = new Set<string>();
+  const walk = (o: unknown): void => {
+    if (Array.isArray(o)) o.forEach(walk);
+    else if (typeof o === 'object' && o !== null) {
+      const rec = o as Record<string, unknown>;
+      const t = rec['type'];
+      if (typeof t === 'object' && t !== null && 'const' in t)
+        types.add(String(t.const));
+      Object.values(rec).forEach(walk);
+    }
+  };
+  walk(JSON.parse(readFileSync(file, 'utf8')));
+  return types;
+}

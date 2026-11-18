@@ -20,6 +20,7 @@ import {
 } from '../run/router.js';
 import { getServices, type GameServices } from '../run/services.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
+import { SoundPanel } from '../audio/SoundPanel.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import { resetTips } from '../shell/phase-tips.js';
 import './menu.css';
@@ -139,6 +140,7 @@ export function MainMenuScreen() {
   const [starting, setStarting] = useState(false);
   const [ghostNote, setGhostNote] = useState<string | null>(null);
   const [tipsNote, setTipsNote] = useState(false);
+  const [soundOpen, setSoundOpen] = useState(false);
   const hash = useStore(hashStore);
   const seed = seedFromHash(hash);
   const alive = useRef(true);
@@ -342,6 +344,22 @@ export function MainMenuScreen() {
             <p class="muted fine" role="status" data-field="tips-note">
               {text('menuShowTipsDone')}
             </p>
+          ) : null}
+          <button
+            type="button"
+            id="sound-button"
+            class="text-link"
+            aria-expanded={soundOpen}
+            onClick={() => {
+              setSoundOpen((o) => !o);
+            }}
+          >
+            {text('audioButton')}
+          </button>
+          {soundOpen ? (
+            <Panel title={text('audioTitle')} id="panel-sound">
+              <SoundPanel />
+            </Panel>
           ) : null}
           {data === null || data.anyRecords ? (
             <Panel title="Records · deepest round" id="panel-records">

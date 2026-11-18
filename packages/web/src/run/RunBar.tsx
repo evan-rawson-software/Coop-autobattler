@@ -13,6 +13,7 @@ import { barLivesText } from './bar-lives.js';
 import { resultShown } from '../battle/result-shown.js';
 import { BonusesItem } from './BonusList.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
+import { SoundMenuItem } from '../audio/SoundPanel.js';
 import { barSpecialist } from '../specialist/view-model.js';
 
 const noStore = createStore<{ acting: number }>({ acting: 0 });
@@ -82,6 +83,7 @@ export function RunBar(props: {
       {props.storage === undefined ? null : (
         <NotSavedNote run={{ storage: props.storage }} />
       )}
+      <SoundMenuItem />
       {state.step === 'run_over' ? null : (
         <button
           type="button"
