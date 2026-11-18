@@ -488,9 +488,9 @@ describe('problem texts agree with their count', () => {
         .map((p) => p.text);
     };
     expect(nodes(0)).toEqual([]);
-    expect(nodes(1)[0]).toMatch(/^You have 1 Extractor to place\..*\(1 free\)/);
+    expect(nodes(1)[0]).toMatch(/^You have 1 Siphon to place\..*\(1 free\)/);
     expect(nodes(3, 2)[0]).toBe(
-      'You have 2 Extractors to place. Put them on a resource node (3 free).',
+      'You have 2 Siphons to place. Put them on a resource node (3 free).',
     );
   });
 });

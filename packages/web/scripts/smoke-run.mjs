@@ -1913,7 +1913,7 @@ export async function runRunSmoke({
           .locator('#panel-next-fight [data-field="next-boss-counter"]')
           .innerText();
         check(
-          /^(Boss|Brood|Bonded|Pylons|Warlord)$/.test(name) &&
+          /^(Boss|Brood|Bonded|Pillars|Warlord)$/.test(name) &&
             mechanic.length > 20 &&
             /^Counter: \S/.test(counter),
           `shop (round ${s.round}): the boss panel names the boss, its mechanic and a counter ("${name}", "${counter}")`,
@@ -2152,7 +2152,7 @@ export async function runRunSmoke({
       .locator('#vein-board [data-field="vein-hint"]')
       .innerText();
     check(
-      /Power node/.test(hint) && !/res_|mod_/.test(hint),
+      /Spark node/.test(hint) && !/res_|mod_/.test(hint),
       `rich vein: the picker names the resource ("${hint}")`,
     );
     const picked = [];
@@ -2222,7 +2222,7 @@ export async function runRunSmoke({
             n.x === picked[i].x &&
             n.y === picked[i].y,
         ),
-      'rich vein: the saved team holds one Power node for each player, on the chosen cells',
+      'rich vein: the saved team holds one Spark node for each player, on the chosen cells',
     );
   }
 

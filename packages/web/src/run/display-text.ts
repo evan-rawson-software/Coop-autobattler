@@ -62,7 +62,7 @@ const TARGET_WORDS: Readonly<Record<string, string>> = {
   all: 'All buildings except the Core',
   wall: 'Walls',
   gate: 'Gates',
-  turret: 'Turrets',
+  turret: `${content.presentation.get('bld_turret')?.name ?? 'Turret'}s`,
   source: 'Source buildings',
   route: 'Route buildings',
   unit_producer: 'Unit-producing buildings',
@@ -120,7 +120,7 @@ export function effectLine(effect: ModifierEffect): string {
     case 'poi_capture_speed_percent':
       return `Your units: ${pct} point capture speed`;
     case 'turret_damage_percent':
-      return `Turrets: ${pct} damage`;
+      return `${TARGET_WORDS['turret'] ?? ''}: ${pct} damage`;
     case 'sell_refund_percent':
       return `Every player: ${pct} sell refund`;
   }

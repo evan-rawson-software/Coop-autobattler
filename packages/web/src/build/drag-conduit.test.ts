@@ -13,7 +13,7 @@ import { deriveProblems } from './view-model.js';
 // Conduit placement by dragging, and the reasons a route is not possible
 // (issue #275).
 
-/** An Extractor on a node of Barracks' resource and a Barracks above it. */
+/** An Siphon on a node of Barracks' resource and a Barracks above it. */
 async function factory(): Promise<{
   s: BuildSession;
   ctl: BuildController;
@@ -69,7 +69,7 @@ function pointer(
   });
 }
 
-/** The straight-then-sideways path from the Extractor's output cell to the
+/** The straight-then-sideways path from the Siphon's output cell to the
  * cell outside the Barracks' south (input) side. */
 function planPath(team: TeamState, ex: number, bk: number): Cell[] {
   const occ = occupancy(team, content);
@@ -188,7 +188,7 @@ describe('dragging a conduit with the controller', () => {
     expect(ctl.model.get().ui.draft?.cells).toEqual(path.slice(0, 3));
     pointer(ctl, 'move', path[1] as Cell);
     expect(ctl.model.get().ui.draft?.cells).toEqual(path.slice(0, 2));
-    // Onto the Extractor: nothing is added, the status explains.
+    // Onto the Siphon: nothing is added, the status explains.
     const exB = s.run.team.buildings.find((b) => b.id === ex);
     pointer(ctl, 'move', {
       x: (exB as { x: number }).x,
@@ -196,7 +196,7 @@ describe('dragging a conduit with the controller', () => {
     });
     // (Walking down the column first backs up over the drawn cells.)
     expect(ctl.model.get().ui.draft?.cells).toEqual(path.slice(0, 1));
-    expect(ctl.model.get().ui.status.text).toBe('Extractor is in the way.');
+    expect(ctl.model.get().ui.status.text).toBe('Siphon is in the way.');
     expect(ctl.model.get().ui.status.kind).toBe('error');
     // Released away from an input side: the draft stays, nothing is built.
     pointer(ctl, 'up', path[0] as Cell);
@@ -273,13 +273,13 @@ describe('why there is no route', () => {
     expect(outputFacesEdge(top, content, b)).toBe(true);
     const from = { building: ex, side: 'north' as const };
     expect(whyNoRoute(top, content, from, null)).toBe(
-      "Extractor's output faces the board edge — rotate it (R).",
+      "Siphon's output faces the board edge — rotate it (R).",
     );
     expect(noRouteMessage('statusNoRouteCell', top, content, from, null)).toBe(
-      "No route to that cell. Extractor's output faces the board edge — rotate it (R).",
+      "No route to that cell. Siphon's output faces the board edge — rotate it (R).",
     );
     expect(placedMessage(top, content, b)).toEqual({
-      text: "Placed Extractor. Extractor's output faces the board edge — rotate it (R).",
+      text: "Placed Siphon. Siphon's output faces the board edge — rotate it (R).",
       warn: true,
     });
     // A building that is not at the edge raises nothing.
@@ -296,7 +296,7 @@ describe('why there is no route', () => {
       (p) => p.kind === 'output_faces_edge',
     );
     expect(found?.text).toBe(
-      "Extractor's output faces the board edge — rotate it (R).",
+      "Siphon's output faces the board edge — rotate it (R).",
     );
     expect(found?.building).toBe(ex);
     expect(
@@ -311,20 +311,20 @@ describe('why there is no route', () => {
     const team = s.run.team;
     const e = team.buildings.find((x) => x.id === ex);
     if (e === undefined) throw new Error('missing');
-    // The Barracks right above the Extractor blocks its output side.
+    // The Barracks right above the Siphon blocks its output side.
     const stacked = moved(team, bk, e.x, e.y + 1);
-    // A second Extractor beside the first fills the whole south side.
+    // A second Siphon beside the first fills the whole south side.
     const full: TeamState = {
       ...stacked,
       buildings: [...stacked.buildings, { ...e, id: 999, x: e.x + 1 }],
     };
     expect(
       whyNoRoute(stacked, content, { building: ex, side: 'north' }, null),
-    ).toBe("Extractor's output side is blocked by Barracks.");
-    // The Extractor right below the Barracks' south input blocks that side.
+    ).toBe("Siphon's output side is blocked by Barracks.");
+    // The Siphon right below the Barracks' south input blocks that side.
     expect(
       whyNoRoute(full, content, null, { building: bk, side: 'south' }),
-    ).toBe('That side is blocked by Extractor.');
+    ).toBe('That side is blocked by Siphon.');
     // Otherwise there is no particular reason to name.
     expect(
       whyNoRoute(

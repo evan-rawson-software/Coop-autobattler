@@ -56,7 +56,7 @@ describe('board hover info (issue #308)', () => {
     const name = content.resources.get(n.resource)?.name as string;
     const r = info(team, n.x, n.y);
     expect(r?.title).toBe(`${name} node`);
-    expect(r?.lines).toEqual([`Put an Extractor here to mine ${name}.`]);
+    expect(r?.lines).toEqual([`Put a Siphon here to mine ${name}.`]);
     expect(r?.tone).toBe('resource');
     expect(r?.color).toBe(content.resources.get(n.resource)?.color);
   });
@@ -64,7 +64,7 @@ describe('board hover info (issue #308)', () => {
   test('a placed building shows name, tier and the Selected panel stats', async () => {
     const { s, node } = await board();
     const r = info(s.run.team, node.x, node.y);
-    expect(r?.title).toBe('Extractor · Tier 1');
+    expect(r?.title).toBe('Siphon · Tier 1');
     expect(r?.lines.some((l) => l.startsWith('Collects '))).toBe(true);
     expect(r?.lines.some((l) => l.startsWith('Health '))).toBe(true);
     expect(r?.tone).toBe('building');
@@ -134,7 +134,7 @@ describe('board hover info (issue #308)', () => {
     const c = cells[0] as Cell;
     const res = info(s.run.team, c.x, c.y);
     expect(res?.title).toBe('Conduit');
-    expect(res?.lines[0]).toMatch(/^Carries \w+ from Extractor to Barracks\.$/);
+    expect(res?.lines[0]).toMatch(/^Carries \w+ from Siphon to Barracks\.$/);
   });
 
   test('a wall is hit on its mask cells only, not the bounding box', async () => {

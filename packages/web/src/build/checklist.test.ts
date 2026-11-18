@@ -36,7 +36,7 @@ describe('the Before you fight checklist', () => {
     const w = listOf(s, false).items.find(
       (i) => i.problem?.building === tu && i.state === 'warn',
     );
-    expect(w?.text).toMatch(/Turret has no conduit into its Power input/);
+    expect(w?.text).toMatch(/Arc turret has no conduit into its Spark input/);
   });
 
   test('a fresh kit: a reminder to place it, nothing satisfied', async () => {
@@ -245,7 +245,7 @@ describe('identical warnings are grouped', () => {
     const lines = list.items.filter((i) => i.problem?.kind === 'lost_output');
     if (raw[0]?.text === raw[1]?.text) {
       expect(lines).toHaveLength(1);
-      expect(lines[0]?.text).toMatch(/^2 Extractors .* have no conduit/);
+      expect(lines[0]?.text).toMatch(/^2 Siphons .* have no conduit/);
     } else {
       expect(lines).toHaveLength(2);
     }

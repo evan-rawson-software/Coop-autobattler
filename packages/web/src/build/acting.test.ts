@@ -266,6 +266,6 @@ describe('the event notice follows the viewing player', () => {
     s.setActing(1);
     expect(s.store.get().notice).toMatch(/^Golem forge/);
     s.setActing(0);
-    expect(s.store.get().notice).toMatch(/^Composite Refinery/);
+    expect(s.store.get().notice).toMatch(/^Sparksteel Refinery/);
   });
 });

@@ -124,7 +124,7 @@ describe('event cards', () => {
       ]),
       0,
     );
-    expect(c?.title).toBe('Workshop');
+    expect(c?.title).toBe("Tinkerer's sale");
     expect(c?.lines.join(' ')).toMatch(/by 2 tiers/);
   });
 
@@ -182,12 +182,12 @@ describe('event cards', () => {
     expect(cards.map((c) => c?.lines)).toEqual([
       ['Your units: +20% strength'],
       ['All buildings except the Core: +30% health'],
-      ['Turrets: +40% damage'],
+      ['Arc turrets: +40% damage'],
     ]);
     expect(cards.map((c) => c?.drawbacks)).toEqual([
       ['Your Core: −15% health'],
       ['Your units: −10% strength'],
-      ['Turrets: −20% health'],
+      ['Arc turrets: −20% health'],
     ]);
     expect(cards[0]?.title).toBe('Pact');
     // Other events have no drawback line.
@@ -249,13 +249,13 @@ describe('event cards', () => {
       withOffers(run, [{ id: 'evt_drill', event: 'evt_drill', type: 'drill' }]),
       0,
     )[0];
-    expect(c?.title).toBe('Drill');
+    expect(c?.title).toBe('Tune-up');
     expect(c?.lines).toEqual([
       'Raise one of your collectors by one tier, free.',
     ]);
   });
 
-  test('a Rich vein card names the resource: "Rich vein: Power"', () => {
+  test('a Rich vein card names the resource: "Rich vein: Spark"', () => {
     const c = eventCards(
       withOffers(run, [
         {
@@ -269,9 +269,9 @@ describe('event cards', () => {
       config,
       content,
     )[0];
-    expect(c?.title).toBe('Rich vein: Power');
+    expect(c?.title).toBe('Rich vein: Spark');
     expect(c?.lines).toEqual([
-      'Add one Power node to a free cell of your area.',
+      'Add one Spark node to a free cell of your area.',
     ]);
   });
 
@@ -345,7 +345,7 @@ describe('follow-ups', () => {
       s = send(r, { type: 'vote', choice: 'evt_drill' });
     }
     const v = followUpView(s, config, content, 0, realDeps());
-    expect(v?.eventTitle).toBe('Drill');
+    expect(v?.eventTitle).toBe('Tune-up');
     expect(v?.free).toBe(true);
     expect(v?.prompt).toBe('Raise a collector');
     const cards = (v?.options ?? []).filter((o) => !o.skip);
@@ -370,7 +370,7 @@ describe('follow-ups', () => {
     );
     expect(
       appliedNotice([{ player: 0, result: 'skip' }], 0, content, 'drill'),
-    ).toBe('Drill skipped.');
+    ).toBe('Tune-up skipped.');
   });
 
   test('a Blueprint card, its follow-up options with tier 1 prices, and its notices', () => {
@@ -417,7 +417,7 @@ describe('follow-ups', () => {
         content,
         'blueprint',
       ),
-    ).toBe('Spire will be held in your next shop.');
+    ).toBe('Caster spire will be held in your next shop.');
     expect(
       appliedNotice([{ player: 0, result: 'skip' }], 0, content, 'blueprint'),
     ).toBe('Blueprint skipped.');
@@ -489,7 +489,7 @@ describe('follow-ups', () => {
     expect(s).not.toBeNull();
     const run = s as RunState;
     const v = followUpView(run, config, content, 0, realDeps());
-    expect(v?.eventTitle).toBe('Workshop');
+    expect(v?.eventTitle).toBe("Tinkerer's sale");
     expect(v?.perPlayer).toBe(true);
     expect(v?.prompt).toMatch(/Upgrade a building/);
     const cards = (v?.options ?? []).filter((o) => !o.skip);
@@ -608,7 +608,7 @@ describe('follow-ups', () => {
 
   test('appliedNotice words a skip and a dropped pick', () => {
     expect(appliedNotice([{ player: 0, result: 'skip' }], 0, content)).toBe(
-      'Workshop skipped.',
+      "Tinkerer's sale skipped.",
     );
     expect(
       appliedNotice(

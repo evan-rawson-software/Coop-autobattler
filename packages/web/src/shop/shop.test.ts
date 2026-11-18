@@ -202,8 +202,8 @@ describe('the shop route setup', () => {
     const view = nextBattleView(fixed('arch_boss_pylons'), run.deps);
     expect(view?.title).toBe('Boss battle next');
     expect(view?.boss).toBe(true);
-    expect(view?.bossInfo?.name).toBe('Pylons');
-    expect(view?.bossInfo?.mechanic).toMatch(/pylons/);
+    expect(view?.bossInfo?.name).toBe('Pillars');
+    expect(view?.bossInfo?.mechanic).toMatch(/ward pillars/);
     expect(view?.bossInfo?.counter).toMatch(/^Counter: Bring enough units/);
     // A save from before the boss was chosen: a generic boss line.
     const older = nextBattleView(fixed(), run.deps);

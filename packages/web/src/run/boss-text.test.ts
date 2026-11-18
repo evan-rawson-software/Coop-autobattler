@@ -7,7 +7,7 @@ describe('boss text', () => {
     [
       'arch_boss',
       'Boss',
-      'Every third wave is a swarm of raiders.',
+      'Every third wave is a swarm of scamps.',
       'Counter: Defense against swarms.',
     ],
     [
@@ -24,9 +24,9 @@ describe('boss text', () => {
     ],
     [
       'arch_boss_pylons',
-      'Pylons',
-      'Its Cores take no damage while the pylons beside them stand.',
-      'Counter: Bring enough units to break through, and ranged units to reach the pylons.',
+      'Pillars',
+      'Its Cores take no damage while the ward pillars beside them stand.',
+      'Counter: Bring enough units to break through, and ranged units to reach the ward pillars.',
     ],
     [
       'arch_boss_warlord',

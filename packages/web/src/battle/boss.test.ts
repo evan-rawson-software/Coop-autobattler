@@ -154,6 +154,6 @@ describe('burst text', () => {
         ],
         content,
       ),
-    ).toBe('4 Soldiers, 1 Raider');
+    ).toBe('4 Soldiers, 1 Scamp');
   });
 });

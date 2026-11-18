@@ -104,7 +104,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <span>5 Main menu</span><i>→</i><span>5b Specialist pick</span><i>·</i><span>5c Sound settings</span><i>→</i><span>6 Core placement</span><i>→</i><span>4 Build</span><i>→</i><span>7 PvE choice</span><i>→</i><span class="on">1 Battle</span><i>→</i><span>8 Summary</span><i>→</i><span class="on">2 Event</span><i>→</i><span class="on">3 Shop</span><i>+</i><span class="on">4 Build</span><i>→</i><span>PvP battle …</span><i>→</i><span>9 Run over</span>
     </div>
     <div class="legend" aria-label="Map legend">
-      <span><b>Ex</b> extractor</span><span><b>Bk</b> barracks</span><span><b>Fo</b> foundry</span><span><b>Tu</b> turret</span><span><b>Sp</b> splitter</span><span><b>Ar</b> armory (economy)</span><span><b>Rc</b> Composite refinery (Ore + Power)</span><span><b>Ra</b> Aether refinery (Power + Flux)</span><span><b>Gf</b> Golem forge</span><span><b>Sr</b> Spire</span><span><b>■</b> wall</span><span><b>O / P / F</b> Ore, Power, Flux node</span>
+      <span><b>Ex</b> siphon</span><span><b>Bk</b> barracks</span><span><b>Fo</b> foundry</span><span><b>Tu</b> arc turret</span><span><b>Sp</b> splitter</span><span><b>Ar</b> armory (economy)</span><span><b>Rc</b> Sparksteel refinery (Ore + Spark)</span><span><b>Ra</b> Aether refinery (Spark + Flux)</span><span><b>Gf</b> Golem forge</span><span><b>Sr</b> Caster spire</span><span><b>■</b> wall</span><span><b>O / P / F</b> Ore, Spark, Flux node</span>
     </div>
   </header>
 
@@ -133,11 +133,11 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   <section>
     <h2>1b. Battle: boss marks</h2>
     <p>A boss battle looks like screen 1, with one extra mark for the boss in play. Each boss changes only its own side, never the party's factory. Four marks are sketched together here; a real battle shows only the one for its boss. All names are placeholders.</p>
-    <div class="sheet"><svg id="s-boss" viewBox="0 0 960 540" role="img" aria-label="Boss marks on the battle screen: Core health bars with threshold ticks, one shared health bar for linked Cores, a Core ringed by shield pylons, and a champion leading a wave."></svg></div>
+    <div class="sheet"><svg id="s-boss" viewBox="0 0 960 540" role="img" aria-label="Boss marks on the battle screen: Core health bars with threshold ticks, one shared health bar for linked Cores, a Core ringed by shield ward pillars, and a champion leading a wave."></svg></div>
     <ol class="notes">
       <li>Brood stronghold: each boss Core bar has ticks at 75%, 50% and 25%. When a Core falls below one, it releases a burst of units, and the log says so.</li>
       <li>Linked Cores: one shared bar for all the boss Cores, with the Cores listed under it. Damage to any Core comes off the bar, and they all fall together.</li>
-      <li>Pylons: the shield pylons drawn around a boss Core, a shield ring on the Core while any stands, and a count (“Pylons 2/4”). Your units go for the pylons first.</li>
+      <li>Pillars: the shield ward pillars drawn around a boss Core, a shield ring on the Core while any stands, and a count (“Pillars 2/4”). Your units go for the ward pillars first.</li>
       <li>Warlord: the champion leading each wave, drawn bigger than a Golem and marked as the champion, with its own health bar.</li>
     </ol>
   </section>
@@ -213,7 +213,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <div class="sheet"><svg id="s-shop" viewBox="0 0 960 540" role="img" aria-label="Shop screen wireframe: five building offers including a refinery, gold and re-roll, the player's stash, teammates, and a small view of the board."></svg></div>
     <ol class="notes">
       <li>Tabs for the two halves of this step.</li>
-      <li>Your offers. A card shows the kind, what it needs, its rate per second (a consumer's need at top speed, an extractor's collect rate), what it does, and its price. A refinery card shows its two inputs and what it makes.</li>
+      <li>Your offers. A card shows the kind, what it needs, its rate per second (a consumer's need at top speed, a siphon's collect rate), what it does, and its price. A refinery card shows its two inputs and what it makes.</li>
       <li>Gold buys buildings and re-rolls, nothing else.</li>
       <li>Your stash: buildings you own that are not on the board. Drag here to sell.</li>
       <li>Teammates' gold and stash, for information only. You do not see their offers. Hidden in solo.</li>
@@ -222,7 +222,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Ready is available on both tabs.</li>
       <li>Held run modifiers: a small chip in the run bar with the effects totalled and drawbacks marked with "!". It is on every run screen.</li>
       <li>Your specialist, in the run bar of every run screen after the pick.</li>
-      <li>A signature building (here the Mana Well) is offered only in your own shop and is marked as such (EC-3b). A partner's shop never has it.</li>
+      <li>A signature building (here the Wellspring) is offered only in your own shop and is marked as such (EC-3b). A partner's shop never has it.</li>
     </ol>
   </section>
 
@@ -233,7 +233,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <ol class="notes">
       <li>Stash. Drag a building onto the board to place it; placing is free.</li>
       <li>Tools. Conduit is always available and unlimited. Rotate turns the selected building. Undo covers layout changes only, never buying, selling, or re-rolling.</li>
-      <li>The board. Lakes and cliffs cannot be built on. Extractors only go on resource nodes.</li>
+      <li>The board. Lakes and cliffs cannot be built on. Siphons only go on resource nodes.</li>
       <li>Conduits, one resource each, coloured by resource. They cannot cross; the splitter is what lets one line feed two buildings. A conduit drawn to a border spot on the plot edge joins a neighbour's conduit at the same spot; the neighbour's half is drawn dimmed. Buildings carry their owner's tag (P1, P2), and an under-supplied consumer is marked LOW.</li>
       <li>The Core. Placed once at the start of the run; it has no move handle.</li>
       <li>The front edge, along the top. Enemy units enter along it.</li>
@@ -244,9 +244,9 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>In co-op each extra player adds a plot to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.</li>
       <li>Border links: each of your own halves with its state, what it carries, and a Remove my half button.</li>
       <li>A border spot, where a conduit crosses into the neighbour's plot, with the neighbour's dimmed half beside it.</li>
-      <li>A Composite chain: an Ore conduit and a Power conduit come into the refinery (Rc) from two sides, and a Composite conduit, in its own colour, goes to the Golem forge (Gf). The Foundry (Fo) also takes Ore and Power. The small text on each shows its need per second for each input (O = Ore, P = Power, F = Flux).</li>
-      <li>An Aether chain: Power and Flux go into the refinery (Ra), and an Aether conduit goes to the Spire (Sr).</li>
-      <li>The one Flux node feeds this chain; an Overclocker would need to share it, for example over a border link.</li>
+      <li>A Sparksteel chain: an Ore conduit and a Spark conduit come into the refinery (Rc) from two sides, and a Sparksteel conduit, in its own colour, goes to the Golem forge (Gf). The Foundry (Fo) also takes Ore and Spark. The small text on each shows its need per second for each input (O = Ore, P = Spark, F = Flux).</li>
+      <li>An Aether chain: Spark and Flux go into the refinery (Ra), and an Aether conduit goes to the Caster spire (Sr).</li>
+      <li>The one Flux node feeds this chain; a Surge coil would need to share it, for example over a border link.</li>
     </ol>
   </section>
 
@@ -466,7 +466,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     // A party battle against a PvE stronghold, three Cores per side. Each Core sits in its player's plot (plots of 8 columns).
     var myB = Object.assign({}, mine, { core: null, cores: [{ fr: 3, n: 1 }, { fr: 11, n: 2, fallen: true }, { fr: 19, n: 3 }] });
     var foeB = Object.assign({}, theirs, { core: null, cores: [{ fr: 3, n: 1 }, { fr: 11, n: 2 }, { fr: 19, n: 3 }] });
-    topbar(s, "Round 4 · PvE battle", "vs. Hard · Rusher", "Battle time 1:24  ·  Lives 4 / 5", 1280, 720);
+    topbar(s, "Round 4 · PvE battle", "vs. Hard · Stampede", "Battle time 1:24  ·  Lives 4 / 5", 1280, 720);
     var zy = by + W * S, zh = 7 * S, my = zy + zh, bw = H * S;
     board(s, bx, by, S, foeB, true);
     R(s, bx, zy, bw, zh, "zone");
@@ -501,7 +501,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     coreBars(lx, 102, ["Cores 2/3", 840, 1500], [["Core 1", 380], ["Core 2 (fallen)", 0], ["Core 3", 460]], "hp-a");
     T(s, lx + 12, 204, "Walls: 11 / 11 standing", "ts tm");
     R(s, lx, 240, pw, 160, "panel"); T(s, lx + 12, 264, "PRODUCTION (per sec)", "ts tm");
-    lines(s, lx + 12, 288, ["Ore     3.0   ▲ ramping", "Power   1.0", "Flux    0.0"], "t", 22);
+    lines(s, lx + 12, 288, ["Ore     3.0   ▲ ramping", "Spark   1.0", "Flux    0.0"], "t", 22);
     el(s, "line", { x1: lx + 12, y1: 342, x2: lx + pw - 12, y2: 342, class: "rule" });
     lines(s, lx + 12, 364, ["Units alive   12  vs  10", "Units lost     7  vs  11"], "t", 22);
     R(s, lx, 412, pw, 102, "panel"); T(s, lx + 12, 434, "PARTY", "ts tm");
@@ -514,11 +514,11 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     lines(s, lx + 12, 634, ["Overload at 4:00 would destroy your Core first", "at 5:12 — break the stronghold before then."], "ts tm", 16);
     // right: stronghold and controls
     R(s, rx, 52, pw, 176, "panel"); T(s, rx + 12, 76, "STRONGHOLD", "ts tm");
-    T(s, rx + 12, 98, "Hard · Rusher", "ts"); T(s, rx + pw - 12, 98, "PvE threat", "ts tm", "end");
+    T(s, rx + 12, 98, "Hard · Stampede", "ts"); T(s, rx + pw - 12, 98, "PvE threat", "ts tm", "end");
     coreBars(rx, 124, ["Cores 3/3", 1210, 1500], [["Core 1", 300], ["Core 2", 500], ["Core 3", 410]], "hp-e");
     T(s, rx + 12, 214, "Walls: 5 / 5 standing", "ts tm");
     R(s, rx, 240, pw, 178, "panel"); T(s, rx + 12, 264, "BATTLE LOG", "ts tm");
-    lines(s, rx + 12, 290, ["1:12  Your Core 2 fell", "1:10  Front line formed in the neutral zone", "0:45  Enemy raiders stopped by your turret", "0:20  First units spawned on both sides", "0:02  Neutral zone revealed"], "ts", 22);
+    lines(s, rx + 12, 290, ["1:12  Your Core 2 fell", "1:10  Front line formed in the neutral zone", "0:45  Enemy scamps stopped by your arc turret", "0:20  First units spawned on both sides", "0:02  Neutral zone revealed"], "ts", 22);
     R(s, rx, 430, pw, 110, "panel"); T(s, rx + 12, 454, "SPEED", "ts tm");
     btn(s, rx + 12, 466, 86, 34, "1×", true); btn(s, rx + 108, 466, 86, 34, "2×"); btn(s, rx + 204, 466, 86, 34, "4×"); btn(s, rx + 300, 466, 88, 34, "Skip");
     T(s, rx + 12, 522, "co-op: all players must agree", "ts tm");
@@ -555,7 +555,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     T(s, 492, 100, "Cores 3/3 · shared pool", "ts"); R(s, 492, 108, 330, 16, "hp"); R(s, 492, 108, 240, 16, "hp-e"); T(s, 832, 121, "1210 / 1500", "ts");
     ["Core 1", "Core 2", "Core 3"].forEach(function (c, i) { R(s, 492 + i * 110, 142, 100, 28, "box"); T(s, 542 + i * 110, 160, c, "ts", "middle"); el(s, "line", { x1: 542 + i * 110, y1: 142, x2: 542 + i * 110, y2: 124, class: "rule" }); });
     T(s, 492, 196, "A hit on any Core comes off the pool.", "ts"); T(s, 492, 210, "All Cores fall together at 0. Not drawn in solo.", "ts tm");
-    // 3. Pylons
+    // 3. Pillars
     quad(24, 296, "PYLONS · shielded Core", 3);
     var cx = 150, cy = 420;
     el(s, "circle", { cx: cx, cy: cy, r: 58, class: "blast" });
@@ -567,7 +567,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     });
     [[cx - 100, cy + 76], [cx - 90, cy + 56]].forEach(function (u) { el(s, "circle", { cx: u[0], cy: u[1], r: 4, class: "u-a" }); });
     el(s, "line", { x1: cx - 86, y1: cy + 54, x2: cx - 52, y2: cy + 38, class: "shot" });
-    lines(s, 250, 392, ["Pylons 3/4", "", "Core takes no damage", "while any pylon stands.", "", "Your units attack the", "pylons first."], "ts", 14);
+    lines(s, 250, 392, ["Pillars 3/4", "", "Core takes no damage", "while any ward pillar stands.", "", "Your units attack the", "ward pillars first."], "ts", 14);
     // 4. Warlord
     quad(480, 296, "WARLORD · champion per wave", 4);
     el(s, "circle", { cx: 560, cy: 410, r: 22, class: "golem", style: "fill:var(--enemy)" });
@@ -582,7 +582,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     var s = document.getElementById("s-event");
     topbar(s, "Round 4 · Event", "pick one event", "Lives 4 / 5");
     R(s, 24, 48, 912, 40, "panel");
-    T(s, 38, 73, "PvE battle won  ·  Hard  ·  Rusher", "th"); T(s, 922, 73, "+12 gold each", "t", "end");
+    T(s, 38, 73, "PvE battle won  ·  Hard  ·  Stampede", "th"); T(s, 922, 73, "+12 gold each", "t", "end");
     var cards = [
       ["Workshop", ["Pay gold to raise one of", "your buildings by one tier."], ["Each player chooses their", "own building, or skips."], ["You"], true],
       ["Pact", ["+20% unit strength", "for the rest of the run."], ["Take both, or skip."], ["Bo"], false, ["Drawback: -15% Core health"]],
@@ -655,7 +655,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     R(s, px, 100, 360, 120, "panel"); T(s, px + 14, 126, "THE VEIN", "ts tm");
     var q = [px + 40, 172], r = 14;
     el(s, "path", { class: "n-power", d: "M" + q[0] + "," + (q[1] - r) + " L" + (q[0] + r) + "," + q[1] + " L" + q[0] + "," + (q[1] + r) + " L" + (q[0] - r) + "," + q[1] + " Z" });
-    T(s, px + 70, 168, "Power node", "tb"); T(s, px + 70, 190, "Type is random. Shown before the vote.", "ts tm");
+    T(s, px + 70, 168, "Spark node", "tb"); T(s, px + 70, 190, "Type is random. Shown before the vote.", "ts tm");
     mark(s, px + 342, 116, 2);
     R(s, px, 236, 360, 80, "panel"); T(s, px + 14, 262, "ADDED THIS RUN", "ts tm"); T(s, px + 14, 292, "1 / 3 on your plot", "tb");
     mark(s, px + 342, 252, 3);
@@ -670,9 +670,9 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     topbar(s, "Round 4 · Event", "Blueprint", "Lives 4 / 5");
     T(s, 24, 66, "CHOOSE ONE RARE BUILDING", "th");
     var cs = [
-      ["Aether refinery", "Needs: Power + Flux", "Makes Aether", "Finishes the Aether chain", "36", false],
-      ["Spire", "Needs: Aether", "Trains a ranged caster", "Uses Aether output", "40", true],
-      ["Golem forge", "Needs: Composite", "Trains a Golem", "Uses Composite output", "34", false]
+      ["Aether refinery", "Needs: Spark + Flux", "Makes Aether", "Finishes the Aether chain", "36", false],
+      ["Caster spire", "Needs: Aether", "Trains a ranged caster", "Uses Aether output", "40", true],
+      ["Golem forge", "Needs: Sparksteel", "Trains a Golem", "Uses Sparksteel output", "34", false]
     ];
     cs.forEach(function (c, i) {
       var x = 40 + i * 300, y = 90, w = 280, h = 280;
@@ -701,10 +701,10 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     R(s, 604, 7, 130, 22, "btn"); T(s, 610, 22, "+20% str, -15% Core !", "ts");
     T(s, 24, 62, "YOUR OFFERS", "ts tm");
     var offers = [
-      ["Turret", "Defense · tier 1", "Needs: Power", ["Needs 0.50 / s at", "top speed (0.25", "shots / s)"], ["Shoots enemy units", "on your side."], "4"],
+      ["Arc turret", "Defense · tier 1", "Needs: Spark", ["Needs 0.50 / s at", "top speed (0.25", "shots / s)"], ["Shoots enemy units", "on your side."], "4"],
       ["Barracks", "Units · tier 1", "Needs: Ore", ["Needs 0.40 / s at", "top speed (0.25", "units / s)"], ["Spawns a soldier", "every few seconds."], "5"],
-      ["Refinery", "Composite · tier 2", "Needs: Ore + Power", ["Ore 0.30 / s and", "Power 0.30 / s at", "top speed"], ["Makes Composite", "for a Golem forge."], "9"],
-      ["Mana Well", "Signature · tier 1", "Needs: nothing", ["Makes 0.25 / s of the", "resource you set"], ["Any open cell, no", "node needed."], "5"],
+      ["Refinery", "Sparksteel · tier 2", "Needs: Ore + Spark", ["Ore 0.30 / s and", "Spark 0.30 / s at", "top speed"], ["Makes Sparksteel", "for a Golem forge."], "9"],
+      ["Wellspring", "Signature · tier 1", "Needs: nothing", ["Makes 0.25 / s of the", "resource you set"], ["Any open cell, no", "node needed."], "5"],
       ["Armory", "Economy · tier 2", "Needs: Ore", ["Needs 0.30 / s at", "top speed (0.10", "steps / s)"], ["Units spawn stronger", "as battle goes on."], "8"]
     ];
     offers.forEach(function (o, i) {
@@ -721,7 +721,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     R(s, px, 48, pw, 110, "panel"); T(s, px + 10, 66, "GOLD", "ts tm"); T(s, px + 10, 94, "14", "tb");
     btn(s, px + 10, 112, pw - 20, 32, "Re-roll · 1 gold");
     R(s, px, 166, pw, 136, "panel"); T(s, px + 10, 184, "YOUR STASH", "ts tm");
-    lines(s, px + 10, 204, ["Wall × 3", "Turret × 1", "Extractor × 1"], "t", 17);
+    lines(s, px + 10, 204, ["Wall × 3", "Arc turret × 1", "Siphon × 1"], "t", 17);
     R(s, px + 10, 262, pw - 20, 30, "box"); T(s, px + pw / 2, 281, "drag here to sell", "ts tm", "middle");
     // party
     R(s, 24, 318, 440, 206, "panel"); T(s, 36, 338, "PARTY (co-op)", "ts tm");
@@ -732,9 +732,9 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     T(s, 36, 508, "You see only your own offers. Help a partner over a border link.", "ts tm");
     // next battle
     R(s, 476, 318, 216, 206, "panel"); T(s, 488, 338, "NEXT BATTLE", "ts tm");
-    T(s, 488, 362, "PvP · Boss: Pylons", "tb");
-    lines(s, 488, 380, ["Shield pylons guard each", "boss Core. A Core takes no", "damage while its pylons", "stand."], "ts", 12);
-    T(s, 488, 436, "Counter: enough units to", "ts tm"); T(s, 488, 448, "break through, and ranged", "ts tm"); T(s, 488, 460, "units to reach pylons.", "ts tm");
+    T(s, 488, 362, "PvP · Boss: Pillars", "tb");
+    lines(s, 488, 380, ["Shield ward pillars guard each", "boss Core. A Core takes no", "damage while its ward pillars", "stand."], "ts", 12);
+    T(s, 488, 436, "Counter: enough units to", "ts tm"); T(s, 488, 448, "break through, and ranged", "ts tm"); T(s, 488, 460, "units to reach ward pillars.", "ts tm");
     T(s, 488, 473, "Lose: −1 life", "ts");
     btn(s, 488, 480, 192, 32, "Ready", true);
     // mini board
@@ -755,7 +755,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     T(s, bx + bw / 2, by - 8, "FRONT EDGE · enemy units enter here", "ts tm", "middle");
     R(s, 16, by, 368, bh, "plot"); T(s, 200, by + bh / 2, "co-op: another player’s plot", "ts tm", "middle"); T(s, 200, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
     R(s, 896, by, 368, bh, "plot"); T(s, 1080, by + bh / 2, "co-op: another player’s plot", "ts tm", "middle"); T(s, 1080, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
-    // the build screen adds refining to the factory: Composite chain at the back, Aether chain on the right, a two-input Foundry
+    // the build screen adds refining to the factory: Sparksteel chain at the back, Aether chain on the right, a two-input Foundry
     var bb = Object.assign({}, mine, {
       nodes: mine.nodes.concat([[1,14,"ore"],[8,20,"power"]]),
       cond: mine.cond.concat([
@@ -792,7 +792,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     R(s, bx + 8 * S - 2, by + 2 * S - 2, 2 * S + 4, 2 * S + 4, "sel");
     // dock A: stash + tools
     R(s, 16, 404, 320, 156, "panel"); T(s, 28, 426, "STASH · drag onto the board", "ts tm");
-    [["Wall", "× 3"], ["Turret", "× 1"], ["Extractor", "× 1"]].forEach(function (r, i) {
+    [["Wall", "× 3"], ["Arc turret", "× 1"], ["Siphon", "× 1"]].forEach(function (r, i) {
       var y = 436 + i * 40; R(s, 28, y, 296, 34, "box"); R(s, 34, y + 5, 24, 24, "bld"); T(s, 70, y + 22, r[0], "t"); T(s, 314, y + 22, r[1], "t", "end");
     });
     R(s, 16, 568, 320, 140, "panel"); T(s, 28, 590, "TOOLS", "ts tm");
@@ -805,7 +805,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     lines(s, 364, 476, ["Top speed  0.25 units / sec", "Needs      0.40 / sec at top speed", "           · UNDER-SUPPLIED: gets 0.30 / sec", "Receiving  Ore 0.30 / sec (estimate)", "Health     120"], "t", 19);
     btn(s, 364, 566, 120, 28, "Rotate"); btn(s, 492, 566, 150, 28, "To stash"); btn(s, 650, 566, 138, 28, "Sell in Shop");
     R(s, 352, 610, 448, 98, "panel"); T(s, 364, 628, "BORDER LINKS (co-op)", "ts tm");
-    [["Linked with Ana (receiving)", "carries Ore", 636], ["Not connected: waiting for your", "neighbour (receiving) · carries Power", 670]].forEach(function (r) {
+    [["Linked with Ana (receiving)", "carries Ore", 636], ["Not connected: waiting for your", "neighbour (receiving) · carries Spark", 670]].forEach(function (r) {
       R(s, 364, r[2], 424, 32, "box"); T(s, 372, r[2] + 14, r[0], "ts"); T(s, 372, r[2] + 27, r[1], "ts");
       btn(s, 652, r[2] + 5, 130, 22, "Remove my half");
     });
@@ -813,9 +813,9 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     R(s, 816, 404, 448, 156, "panel"); T(s, 828, 426, "OVERLAYS", "ts tm");
     btn(s, 828, 436, 136, 30, "Resource flow"); btn(s, 972, 436, 136, 30, "Enemy paths", true); btn(s, 1116, 436, 136, 30, "Dry run 60s");
     T(s, 828, 492, "PROBLEMS", "ts tm");
-    lines(s, 828, 512, ["⚠ Barracks gets 0.30/s of the 0.40/s it needs.", "⚠ Extractor in stash: no free node left.", "⚠ Ana has 2 under-supplied buildings."], "ts", 18);
+    lines(s, 828, 512, ["⚠ Barracks gets 0.30/s of the 0.40/s it needs.", "⚠ Siphon in stash: no free node left.", "⚠ Ana has 2 under-supplied buildings."], "ts", 18);
     R(s, 816, 568, 448, 140, "panel"); T(s, 828, 590, "PARTY (co-op) · each edits their own plot", "ts tm");
-    lines(s, 828, 614, ["You   placing walls near the front    ready: no", "Ana   routing Power to turrets        ready: yes", "Bo    in Shop                         ready: no"], "ts", 18);
+    lines(s, 828, 614, ["You   placing walls near the front    ready: no", "Ana   routing Spark to turrets        ready: yes", "Bo    in Shop                         ready: no"], "ts", 18);
     T(s, 828, 690, "Next: PvP · opponent unknown", "ts tm");
     btn(s, 1104, 668, 148, 30, "Ready", true);
     // marks
@@ -915,7 +915,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     topbar(s, "New run · Pick a specialist", "", "Round 1 · Lives 5 / 5");
     T(s, 24, 66, "CHOOSE ONE · DUPLICATES ARE ALLOWED · NO SKIP", "th");
     var cs = [
-      ["Flowmancer", "Logistics", ["Collectors produce", "about 10% faster."], "Mana Well (1x1)", ["A weak collector for", "any open cell, no", "node. You pick the", "resource."], true],
+      ["Flowmancer", "Logistics", ["Collectors produce", "about 10% faster."], "Wellspring (1x1)", ["A weak collector for", "any open cell, no", "node. You pick the", "resource."], true],
       ["Wardsmith", "Defense", ["Walls, gates, turrets", "get about 15% health."], "Rune Ward (1x1)", ["Enemies that hit a", "wall beside it take", "damage back."], false],
       ["Beastbinder", "Units", ["Units from your", "producers get about", "10% more health."], "Familiar Roost (1x2)", ["Makes Familiars:", "fast, fragile melee", "units."], false],
       ["Alchemist", "Industry", ["Refineries and ramp", "buildings work about", "15% faster."], "Transmuter (1x2)", ["Turns one base", "resource into another", "at a loss. You pick", "the output."], false]
@@ -1031,7 +1031,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     T(s, 946, 522, "No cells are highlighted.", "ts tm");
     // starting kit
     R(s, 16, 556, 1248, 148, "panel"); T(s, 30, 580, "STARTING KIT · in your stash when the run begins", "ts tm");
-    ["Extractor × 2", "Barracks × 1", "Wall × 3", "Turret × 1", "10 gold"].forEach(function (k, i) { R(s, 30 + i * 240, 592, 224, 42, "box"); T(s, 30 + i * 240 + 112, 618, k, "t", "middle"); });
+    ["Siphon × 2", "Barracks × 1", "Wall × 3", "Arc turret × 1", "10 gold"].forEach(function (k, i) { R(s, 30 + i * 240, 592, 224, 42, "box"); T(s, 30 + i * 240 + 112, 618, k, "t", "middle"); });
     T(s, 30, 668, "When every player is Ready you go to the Build screen, then to the first PvE battle.", "ts tm");
     mark(s, 64, 366, 1); mark(s, bx + bw / 2 + 150, by - 15, 2); mark(s, cx + 2 * S + 22, cy + 20, 3); mark(s, 136, 288, 4);
     mark(s, ax + 2 * S + 64, ay - 14, 5); mark(s, 790, 50, 6); mark(s, 790, 424, 7); mark(s, 1243, 415, 8); mark(s, 1246, 574, 9);
@@ -1044,8 +1044,8 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     R(s, 24, 48, 912, 40, "panel"); T(s, 38, 73, "Win: take the reward.    Lose: no reward, and no life lost.", "th");
     var cards = [
       ["Easy", "Fortress", ["A heavily defended", "stronghold. Light waves."], "Tests: ramp and siege", "+6 gold each", 1, [], false],
-      ["Medium", "Escalator", ["Waves that grow", "quickly."], "Tests: speed", "+10 gold each", 2, ["Bo"], false],
-      ["Hard", "Rusher", ["Heavy waves from the", "first seconds."], "Tests: defense", "+14 gold each", 3, ["You"], true]
+      ["Medium", "Crescendo", ["Waves that grow", "quickly."], "Tests: speed", "+10 gold each", 2, ["Bo"], false],
+      ["Hard", "Stampede", ["Heavy waves from the", "first seconds."], "Tests: defense", "+14 gold each", 3, ["You"], true]
     ];
     cards.forEach(function (c, i) {
       var x = 40 + i * 300, y = 104, w = 280, h = 336;
@@ -1144,7 +1144,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     board(s, 490, 184, 7, myS, false, true); R(s, 490 + 16 * 7 - 2, 184 + 4, 60, 18, "sel");
     lines(s, 488, 314, ["Enemy units came through the", "open right flank, cut the splitter", "and took Cores 1 and 2."], "ts", 14);
     R(s, 708, 154, 228, 200, "panel"); T(s, 720, 174, "YOUR BUILDINGS", "ts tm");
-    lines(s, 720, 198, ["Barracks    14 soldiers", "Foundry      3 heavies", "Turret      22 kills", "Armory       2 upgrades", "Walls        5 of 11 lost", "Splitter     destroyed 1:05"], "t", 22);
+    lines(s, 720, 198, ["Barracks    14 soldiers", "Foundry      3 brutes", "Arc turret      22 kills", "Armory       2 upgrades", "Walls        5 of 11 lost", "Splitter     destroyed 1:05"], "t", 22);
     R(s, 24, 366, 672, 84, "panel"); T(s, 36, 384, "POINTS OF INTEREST", "ts tm");
     lines(s, 36, 402, ["Point 1   held by you at the end    you 2:40 · them 0:50   healing near it", "Point 2   held by them at the end   you 1:15 · them 3:10   +20% new units", "Point 3   never captured            guards still alive"], "ts", 14);
     R(s, 24, 458, 672, 58, "panel"); T(s, 36, 474, "NEXT", "ts tm");

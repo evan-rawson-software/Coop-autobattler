@@ -698,7 +698,7 @@ export function appliedNotice(
         ? 'Upgrade skipped: not enough gold.'
         : 'Upgrade skipped.';
     }
-    return drill ? 'Drill skipped.' : 'Workshop skipped.';
+    return `${eventText(drill ? 'drill' : 'workshop').name} skipped.`;
   }
   return null;
 }

@@ -674,7 +674,7 @@ describe('breaches and markers from synthetic event logs', () => {
     expect(m?.focus).not.toBeNull();
     const entries = breachEntries(rec, content, moments, 0, 10);
     expect(entries).toHaveLength(1);
-    expect(entries[0]?.text).toMatch(/^1 turret at 0:10$/i);
+    expect(entries[0]?.text).toMatch(/^1 arc turret at 0:10$/i);
   });
 
   test('all walls and gates are listed, grouped with their time span', () => {

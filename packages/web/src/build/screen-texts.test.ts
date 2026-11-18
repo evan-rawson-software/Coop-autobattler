@@ -473,7 +473,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ],
   ['uiChainTitle', {}, 'Refining chains'],
   ['uiChainRefinery', {}, 'Refinery'],
-  ['bossMechanicPlain', {}, 'Every third wave is a swarm of raiders.'],
+  ['bossMechanicPlain', {}, 'Every third wave is a swarm of scamps.'],
   [
     'bossMechanicBurst',
     {},
@@ -487,7 +487,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'bossMechanicShield',
     {},
-    'Its Cores take no damage while the pylons beside them stand.',
+    'Its Cores take no damage while the ward pillars beside them stand.',
   ],
   [
     'bossMechanicChampion',
@@ -505,7 +505,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'bossCounterShield',
     {},
-    'Bring enough units to break through, and ranged units to reach the pylons.',
+    'Bring enough units to break through, and ranged units to reach the ward pillars.',
   ],
   [
     'bossCounterChampion',
@@ -535,7 +535,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'battleLogPylonDown',
     { who: 'Stronghold', count: '2' },
-    'Stronghold pylon destroyed, 2 left',
+    'Stronghold ward pillar destroyed, 2 left',
   ],
   [
     'battleLogShieldDown',
@@ -549,7 +549,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ],
   ['battleSumBoss', { boss: 'Brood' }, 'Boss: Brood'],
   ['battleSharedCores', { label: 'Their Core' }, 'Their Cores (linked)'],
-  ['battlePylonsCount', { standing: '2', total: '3' }, 'Pylons 2/3'],
+  ['battlePylonsCount', { standing: '2', total: '3' }, 'Ward pillars 2/3'],
   ['battleSharedChip', {}, 'Shared health'],
   ['pointNameStrength', {}, 'Strength point'],
   ['pointNameHeal', {}, 'Healing point'],
@@ -794,8 +794,8 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['hoverFrontTitle', {}, 'Front edge'],
   [
     'hoverNodeLine',
-    { building: 'Extractor', resource: 'Ore' },
-    'Put an Extractor here to mine Ore.',
+    { building: 'Siphon', resource: 'Ore' },
+    'Put a Siphon here to mine Ore.',
   ],
   ['hoverNodeTitle', { resource: 'Ore' }, 'Ore node'],
   ['hoverUnitFoe', { health: '5', max: '9' }, 'Enemy unit · Health 5/9'],
@@ -1132,7 +1132,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'battleTipGeneric',
     {},
-    'Add turrets or more unit buildings before pressing Ready.',
+    'Add arc turrets or more unit buildings before pressing Ready.',
   ],
   ['battleStatTime', {}, 'Time'],
   ['battleSumTitle', {}, 'Battle summary'],
@@ -1235,39 +1235,39 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'tutStep2Body',
     {},
-    'Drag **one Extractor** from the tray below the board onto a glowing **Ore node**. Keep the other one for later.',
+    'Drag **one Siphon** from the tray below the board onto a glowing **Ore node**. Keep the other one for later.',
   ],
   ['tutStep3Head', {}, 'Feed a Barracks with a conduit'],
   [
     'tutStep3Place',
     {},
-    'Drag a **Barracks** from the tray onto the board, close to your Extractor.',
+    'Drag a **Barracks** from the tray onto the board, close to your Siphon.',
   ],
   [
     'tutStep3Link',
     {},
-    'Pick the **Conduit** tool, then drag from the Extractor to the Barracks. The dashed line is one way to run it.',
+    'Pick the **Conduit** tool, then drag from the Siphon to the Barracks. The dashed line is one way to run it.',
   ],
-  ['tutStep4Head', {}, 'Guard the Core with a Turret'],
+  ['tutStep4Head', {}, 'An Arc turret guards the Core'],
   [
     'tutStep4Body',
     {},
-    'Drag a **Turret** from the tray next to your Core. **Enemy paths** are on: the red dashes are where enemies walk.',
+    'Drag an **Arc turret** from the tray next to your Core. **Enemy paths** are on: the red dashes are where enemies walk.',
   ],
   [
     'tutStep4Power',
     {},
-    'A Turret shoots Power. Drag your second **Extractor** onto a ringed **Power node**.',
+    'An Arc turret zaps with Spark. Drag your second **Siphon** onto a ringed **Spark node**.',
   ],
   [
     'tutStep4Link',
     {},
-    'Pick the **Conduit** tool, then drag from the Power Extractor to the Turret. The dashed line is one way to run it.',
+    'Pick the **Conduit** tool, then drag from the Spark Siphon to the Arc turret. The dashed line is one way to run it.',
   ],
   [
     'tutStep4NoSpare',
     {},
-    'A Turret shoots Power, and you have no Extractor left. Pick one up from the board and move it onto a ringed **Power node**.',
+    'An Arc turret zaps with Spark, and you have no Siphon left. Pick one up from the board and move it onto a ringed **Spark node**.',
   ],
   ['tutStep4Skip', {}, 'Skip this step'],
   ['tutStep5Head', {}, 'Pick a fight'],
@@ -1286,7 +1286,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'tutStep6Body',
     {},
-    'Nothing to do here. Your Soldiers march to their Core and your Turret guards yours. Use the **speed controls** to go faster, or skip.',
+    'Nothing to do here. Your Soldiers march to their Core and your Arc turret guards yours. Use the **speed controls** to go faster, or skip.',
   ],
   ['tutClosingHead', {}, 'Tutorial complete'],
   [
@@ -1302,7 +1302,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'tutClosingLostStep2',
     {},
-    'You lost this one. Step 2 was not done: put an Extractor on an Ore node, or nothing can be built.',
+    'You lost this one. Step 2 was not done: put a Siphon on an Ore node, or nothing can be built.',
   ],
   [
     'tutClosingLostStep3',
@@ -1312,14 +1312,14 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'tutClosingLostStep4',
     {},
-    'You lost this one. Step 4 was not done: a Turret near your Core only fires when a conduit brings it Power.',
+    'You lost this one. Step 4 was not done: an Arc turret near your Core only fires when a conduit brings it Spark.',
   ],
   ['tutClosingDone', {}, 'Close'],
   ['tutListTitle', {}, 'Your first base'],
   ['tutList1', {}, 'Place your Core'],
-  ['tutList2', {}, 'Mine Ore with an Extractor'],
+  ['tutList2', {}, 'Draw up Ore with a Siphon'],
   ['tutList3', {}, 'Feed a Barracks with a conduit'],
-  ['tutList4', {}, 'Power a Turret next to the Core'],
+  ['tutList4', {}, 'Power an Arc turret next to the Core'],
   ['tutList5', {}, 'Press Ready, pick a fight'],
   ['tutList6', {}, 'Watch the battle'],
   ['tutReadyLocked', {}, 'Unlocks at step 5'],
@@ -1515,7 +1515,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'menuStepBuildBody',
     {},
-    'Place buildings around your Core. Extractors mine resources, conduits carry them, and other buildings turn them into units and turret fire.',
+    'Place buildings around your Core. Siphons draw up resources, conduits carry them, and other buildings turn them into units and arc turret fire.',
   ],
   ['menuStepFightTitle', {}, 'Fight'],
   [

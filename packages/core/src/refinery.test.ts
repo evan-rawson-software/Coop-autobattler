@@ -188,7 +188,7 @@ describe('refined resources in content', () => {
   test('the two refined resources, with their own colours and no rarity', () => {
     const ab = got(content.resources.get('res_ab_refined'));
     const bc = got(content.resources.get('res_bc_refined'));
-    expect(ab.name).toBe('Composite');
+    expect(ab.name).toBe('Sparksteel');
     expect(bc.name).toBe('Aether');
     expect(ab.refinedFrom).toEqual(['res_a', 'res_b']);
     expect(bc.refinedFrom).toEqual(['res_b', 'res_c']);
