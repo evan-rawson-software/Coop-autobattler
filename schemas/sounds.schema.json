@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sounds.schema.json",
+  "title": "Sound effect recipes",
+  "description": "Synthesis parameters for every sound effect (AU-42). packages/audio renders each one to assets/audio/sfx/<id>.wav.",
+  "type": "object",
+  "required": ["version", "sampleRate", "sounds"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "sampleRate": { "const": 22050 },
+    "sounds": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z]+_[a-z0-9_]+$" },
+      "additionalProperties": { "$ref": "#/$defs/recipe" }
+    }
+  },
+  "$defs": {
+    "recipe": {
+      "type": "object",
+      "required": [
+        "wave",
+        "seed",
+        "freq",
+        "attackMs",
+        "holdMs",
+        "decayMs",
+        "gain"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "wave": { "enum": ["sine", "triangle", "square", "saw", "noise"] },
+        "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+        "freq": { "type": "number", "minimum": 40, "maximum": 4000 },
+        "slide": { "type": "number", "minimum": -8, "maximum": 8 },
+        "minFreq": { "type": "number", "minimum": 20, "maximum": 4000 },
+        "duty": { "type": "number", "minimum": 0.05, "maximum": 0.95 },
+        "attackMs": { "type": "integer", "minimum": 1, "maximum": 1200 },
+        "holdMs": { "type": "integer", "minimum": 0, "maximum": 1200 },
+        "decayMs": { "type": "integer", "minimum": 1, "maximum": 1200 },
+        "vibrato": {
+          "type": "object",
+          "required": ["depth", "rateHz"],
+          "additionalProperties": false,
+          "properties": {
+            "depth": { "type": "number", "minimum": 0, "maximum": 12 },
+            "rateHz": { "type": "number", "minimum": 0.5, "maximum": 40 }
+          }
+        },
+        "arpeggio": {
+          "type": "object",
+          "required": ["steps", "stepMs"],
+          "additionalProperties": false,
+          "properties": {
+            "steps": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "integer", "minimum": -36, "maximum": 36 }
+            },
+            "stepMs": { "type": "integer", "minimum": 10, "maximum": 1200 }
+          }
+        },
+        "lowpass": { "type": "number", "minimum": 50, "maximum": 6000 },
+        "highpass": { "type": "number", "minimum": 20, "maximum": 6000 },
+        "gain": { "type": "number", "minimum": 0.01, "maximum": 1 }
+      }
+    }
+  }
+}

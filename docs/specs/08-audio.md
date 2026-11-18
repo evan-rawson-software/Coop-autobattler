@@ -392,8 +392,13 @@ the contract between them.
   generated files are committed. A test in `packages/audio` regenerates all
   in memory and fails if a committed file or the manifest differs (as
   `packages/art` does for the sprite atlas), and another checks the size
-  limits of AU-44. The web build copies `assets/audio/sfx` and the manifest
-  into `dist`.
+  limits of AU-44. The sound IDs are exactly the effect cues of the cue list
+  (every `ui`, `build`, `shop`, `run` and `battle` row; not `music.*` and not
+  the reserved `event.caravan_turn`); a test reads the cue tables of this file
+  and fails when the sets differ. In the manifest, `file` is relative to
+  `assets/audio` (`sfx/<id>.wav`), and `durationMs` is rounded. The recipes
+  are also validated by `pnpm validate:content` (`packages/audio` exports the
+  loader). The copy into `dist` is done by the web build (#448).
 - **AU-44 [PROPOSED]** **Size budget.** All audio, counted as bytes
   downloaded without compression, is at most **2 MB** (AU-6). Planned split:
   - effects (`assets/audio/sfx`): at most 1.0 MB in total, and at most

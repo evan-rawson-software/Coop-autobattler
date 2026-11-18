@@ -4,7 +4,7 @@ Schemas (JSON Schema) for the data files in [`../content/`](../content/) and
 for other language-neutral formats.
 
 - **Content:** one schema per file in `content/` (`buildings`, `economy`,
-  `events`, `mapgen`, `presentation`, `resources`, `sim`, `terrain`,
+  `events`, `mapgen`, `presentation`, `resources`, `sim`, `sounds`, `terrain`,
   `threats`, `units`). `pnpm validate:content` checks every content file
   against its schema and the core loaders.
 - **Saved and exchanged formats:** `run-state`, `save`, `ghost-snapshot`,

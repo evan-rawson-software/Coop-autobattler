@@ -1,0 +1,621 @@
+{
+  "$schema": "../schemas/sounds.schema.json",
+  "version": 1,
+  "sampleRate": 22050,
+  "sounds": {
+    "ui_click": {
+      "wave": "triangle",
+      "seed": 1007,
+      "freq": 900,
+      "slide": -3,
+      "minFreq": 400,
+      "lowpass": 3000,
+      "attackMs": 1,
+      "holdMs": 0,
+      "decayMs": 50,
+      "gain": 0.6
+    },
+    "ui_hover": {
+      "wave": "sine",
+      "seed": 1014,
+      "freq": 1200,
+      "attackMs": 3,
+      "holdMs": 0,
+      "decayMs": 30,
+      "gain": 0.3
+    },
+    "ui_confirm": {
+      "wave": "triangle",
+      "seed": 1021,
+      "freq": 659,
+      "arpeggio": {
+        "steps": [0, 7],
+        "stepMs": 70
+      },
+      "attackMs": 3,
+      "holdMs": 60,
+      "decayMs": 120,
+      "gain": 0.6
+    },
+    "ui_error": {
+      "wave": "square",
+      "seed": 1028,
+      "freq": 220,
+      "duty": 0.3,
+      "slide": -0.5,
+      "lowpass": 1200,
+      "attackMs": 3,
+      "holdMs": 60,
+      "decayMs": 130,
+      "gain": 0.4
+    },
+    "ui_toggle": {
+      "wave": "sine",
+      "seed": 1035,
+      "freq": 700,
+      "arpeggio": {
+        "steps": [0, 5],
+        "stepMs": 40
+      },
+      "attackMs": 2,
+      "holdMs": 30,
+      "decayMs": 70,
+      "gain": 0.6
+    },
+    "build_place": {
+      "wave": "sine",
+      "seed": 1042,
+      "freq": 160,
+      "slide": -1.5,
+      "minFreq": 70,
+      "lowpass": 800,
+      "attackMs": 2,
+      "holdMs": 20,
+      "decayMs": 140,
+      "gain": 0.9
+    },
+    "build_rotate": {
+      "wave": "triangle",
+      "seed": 1049,
+      "freq": 600,
+      "slide": 1.5,
+      "attackMs": 2,
+      "holdMs": 0,
+      "decayMs": 60,
+      "gain": 0.5
+    },
+    "build_move": {
+      "wave": "triangle",
+      "seed": 1056,
+      "freq": 330,
+      "arpeggio": {
+        "steps": [0, 4],
+        "stepMs": 50
+      },
+      "attackMs": 2,
+      "holdMs": 40,
+      "decayMs": 120,
+      "gain": 0.6
+    },
+    "build_stash": {
+      "wave": "sine",
+      "seed": 1063,
+      "freq": 700,
+      "slide": -2,
+      "minFreq": 200,
+      "attackMs": 3,
+      "holdMs": 20,
+      "decayMs": 150,
+      "gain": 0.6
+    },
+    "build_conduit_draw": {
+      "wave": "sine",
+      "seed": 1070,
+      "freq": 500,
+      "slide": 1,
+      "vibrato": {
+        "depth": 0.3,
+        "rateHz": 12
+      },
+      "attackMs": 3,
+      "holdMs": 40,
+      "decayMs": 120,
+      "gain": 0.6
+    },
+    "build_conduit_erase": {
+      "wave": "sine",
+      "seed": 1077,
+      "freq": 600,
+      "slide": -1.5,
+      "attackMs": 3,
+      "holdMs": 10,
+      "decayMs": 130,
+      "gain": 0.55
+    },
+    "build_illegal": {
+      "wave": "square",
+      "seed": 1084,
+      "freq": 180,
+      "duty": 0.25,
+      "slide": -0.8,
+      "lowpass": 1000,
+      "vibrato": {
+        "depth": 0.5,
+        "rateHz": 25
+      },
+      "attackMs": 3,
+      "holdMs": 80,
+      "decayMs": 120,
+      "gain": 0.4
+    },
+    "shop_buy": {
+      "wave": "sine",
+      "seed": 1091,
+      "freq": 1047,
+      "arpeggio": {
+        "steps": [0, 7, 12],
+        "stepMs": 55
+      },
+      "attackMs": 2,
+      "holdMs": 60,
+      "decayMs": 250,
+      "gain": 0.7
+    },
+    "shop_sell": {
+      "wave": "triangle",
+      "seed": 1098,
+      "freq": 784,
+      "arpeggio": {
+        "steps": [0, 4, -5],
+        "stepMs": 55
+      },
+      "attackMs": 2,
+      "holdMs": 40,
+      "decayMs": 200,
+      "gain": 0.6
+    },
+    "shop_reroll": {
+      "wave": "square",
+      "seed": 1105,
+      "freq": 400,
+      "duty": 0.2,
+      "lowpass": 2500,
+      "arpeggio": {
+        "steps": [0, 3, 7, 3, 10],
+        "stepMs": 35
+      },
+      "attackMs": 2,
+      "holdMs": 40,
+      "decayMs": 120,
+      "gain": 0.4
+    },
+    "shop_no_gold": {
+      "wave": "sine",
+      "seed": 1112,
+      "freq": 392,
+      "slide": -0.6,
+      "vibrato": {
+        "depth": 0.4,
+        "rateHz": 10
+      },
+      "attackMs": 3,
+      "holdMs": 60,
+      "decayMs": 140,
+      "gain": 0.6
+    },
+    "run_ready": {
+      "wave": "triangle",
+      "seed": 1119,
+      "freq": 523,
+      "arpeggio": {
+        "steps": [0, 4, 7],
+        "stepMs": 60
+      },
+      "attackMs": 3,
+      "holdMs": 40,
+      "decayMs": 160,
+      "gain": 0.6
+    },
+    "run_all_ready": {
+      "wave": "sine",
+      "seed": 1126,
+      "freq": 392,
+      "arpeggio": {
+        "steps": [0, 7, 12, 16],
+        "stepMs": 70
+      },
+      "attackMs": 3,
+      "holdMs": 120,
+      "decayMs": 300,
+      "gain": 0.7
+    },
+    "run_vote_cast": {
+      "wave": "sine",
+      "seed": 1133,
+      "freq": 880,
+      "slide": 0.5,
+      "attackMs": 3,
+      "holdMs": 0,
+      "decayMs": 80,
+      "gain": 0.5
+    },
+    "run_vote_resolved": {
+      "wave": "triangle",
+      "seed": 1140,
+      "freq": 523,
+      "arpeggio": {
+        "steps": [0, 4, 7],
+        "stepMs": 80
+      },
+      "attackMs": 3,
+      "holdMs": 100,
+      "decayMs": 250,
+      "gain": 0.6
+    },
+    "run_event_chosen": {
+      "wave": "sine",
+      "seed": 1147,
+      "freq": 659,
+      "arpeggio": {
+        "steps": [0, 5],
+        "stepMs": 90
+      },
+      "attackMs": 3,
+      "holdMs": 60,
+      "decayMs": 200,
+      "gain": 0.6
+    },
+    "run_modifier_gained": {
+      "wave": "sine",
+      "seed": 1154,
+      "freq": 784,
+      "arpeggio": {
+        "steps": [0, 4, 7, 12],
+        "stepMs": 80
+      },
+      "vibrato": {
+        "depth": 0.3,
+        "rateHz": 6
+      },
+      "attackMs": 5,
+      "holdMs": 200,
+      "decayMs": 450,
+      "gain": 0.65
+    },
+    "run_life_lost": {
+      "wave": "triangle",
+      "seed": 1161,
+      "freq": 392,
+      "lowpass": 1800,
+      "arpeggio": {
+        "steps": [0, -3, -7],
+        "stepMs": 130
+      },
+      "vibrato": {
+        "depth": 0.2,
+        "rateHz": 5
+      },
+      "attackMs": 5,
+      "holdMs": 200,
+      "decayMs": 400,
+      "gain": 0.6
+    },
+    "run_round_start": {
+      "wave": "sine",
+      "seed": 1168,
+      "freq": 330,
+      "arpeggio": {
+        "steps": [0, 7],
+        "stepMs": 100
+      },
+      "attackMs": 3,
+      "holdMs": 100,
+      "decayMs": 300,
+      "gain": 0.6
+    },
+    "run_over": {
+      "wave": "triangle",
+      "seed": 1175,
+      "freq": 440,
+      "lowpass": 2000,
+      "arpeggio": {
+        "steps": [0, -2, -5, -9],
+        "stepMs": 160
+      },
+      "attackMs": 5,
+      "holdMs": 400,
+      "decayMs": 500,
+      "gain": 0.6
+    },
+    "run_new_best": {
+      "wave": "sine",
+      "seed": 1182,
+      "freq": 523,
+      "arpeggio": {
+        "steps": [0, 4, 7, 12, 16, 19],
+        "stepMs": 100
+      },
+      "attackMs": 5,
+      "holdMs": 500,
+      "decayMs": 600,
+      "gain": 0.7
+    },
+    "battle_start": {
+      "wave": "triangle",
+      "seed": 1189,
+      "freq": 262,
+      "slide": 0.5,
+      "arpeggio": {
+        "steps": [0, 7],
+        "stepMs": 150
+      },
+      "attackMs": 5,
+      "holdMs": 150,
+      "decayMs": 400,
+      "gain": 0.7
+    },
+    "battle_unit_spawned_ally": {
+      "wave": "sine",
+      "seed": 1196,
+      "freq": 500,
+      "slide": 2,
+      "attackMs": 2,
+      "holdMs": 20,
+      "decayMs": 90,
+      "gain": 0.5
+    },
+    "battle_unit_spawned_foe": {
+      "wave": "triangle",
+      "seed": 1203,
+      "freq": 350,
+      "slide": 1.5,
+      "attackMs": 2,
+      "holdMs": 20,
+      "decayMs": 90,
+      "gain": 0.5
+    },
+    "battle_attack": {
+      "wave": "noise",
+      "seed": 1210,
+      "freq": 600,
+      "lowpass": 1800,
+      "attackMs": 2,
+      "holdMs": 10,
+      "decayMs": 50,
+      "gain": 0.5
+    },
+    "battle_turret_fired": {
+      "wave": "square",
+      "seed": 1217,
+      "freq": 700,
+      "duty": 0.15,
+      "slide": -3,
+      "minFreq": 200,
+      "lowpass": 2500,
+      "attackMs": 2,
+      "holdMs": 0,
+      "decayMs": 70,
+      "gain": 0.35
+    },
+    "battle_splash": {
+      "wave": "noise",
+      "seed": 1224,
+      "freq": 300,
+      "slide": -1,
+      "lowpass": 900,
+      "attackMs": 3,
+      "holdMs": 30,
+      "decayMs": 200,
+      "gain": 0.6
+    },
+    "battle_ward_struck": {
+      "wave": "sine",
+      "seed": 1231,
+      "freq": 1500,
+      "arpeggio": {
+        "steps": [0, 12],
+        "stepMs": 60
+      },
+      "vibrato": {
+        "depth": 0.3,
+        "rateHz": 8
+      },
+      "attackMs": 2,
+      "holdMs": 20,
+      "decayMs": 120,
+      "gain": 0.5
+    },
+    "battle_core_hit": {
+      "wave": "triangle",
+      "seed": 1238,
+      "freq": 140,
+      "lowpass": 600,
+      "attackMs": 2,
+      "holdMs": 40,
+      "decayMs": 220,
+      "gain": 0.8
+    },
+    "battle_core_hit_low": {
+      "wave": "triangle",
+      "seed": 1245,
+      "freq": 90,
+      "slide": -0.8,
+      "vibrato": {
+        "depth": 1,
+        "rateHz": 8
+      },
+      "attackMs": 3,
+      "holdMs": 90,
+      "decayMs": 350,
+      "gain": 1
+    },
+    "battle_foe_core_hit": {
+      "wave": "sine",
+      "seed": 1252,
+      "freq": 180,
+      "slide": -1.5,
+      "attackMs": 2,
+      "holdMs": 0,
+      "decayMs": 160,
+      "gain": 0.6
+    },
+    "battle_unit_died": {
+      "wave": "sine",
+      "seed": 1259,
+      "freq": 600,
+      "slide": -3,
+      "minFreq": 150,
+      "attackMs": 2,
+      "holdMs": 10,
+      "decayMs": 140,
+      "gain": 0.5
+    },
+    "battle_building_destroyed": {
+      "wave": "noise",
+      "seed": 1266,
+      "freq": 250,
+      "slide": -0.5,
+      "lowpass": 700,
+      "attackMs": 5,
+      "holdMs": 60,
+      "decayMs": 350,
+      "gain": 0.7
+    },
+    "battle_building_lost": {
+      "wave": "noise",
+      "seed": 1273,
+      "freq": 180,
+      "lowpass": 500,
+      "attackMs": 5,
+      "holdMs": 80,
+      "decayMs": 450,
+      "gain": 0.7
+    },
+    "battle_core_destroyed": {
+      "wave": "sine",
+      "seed": 1280,
+      "freq": 200,
+      "slide": -1.2,
+      "minFreq": 50,
+      "attackMs": 5,
+      "holdMs": 150,
+      "decayMs": 700,
+      "gain": 0.9
+    },
+    "battle_core_lost": {
+      "wave": "triangle",
+      "seed": 1287,
+      "freq": 220,
+      "slide": -1,
+      "minFreq": 45,
+      "vibrato": {
+        "depth": 1,
+        "rateHz": 6
+      },
+      "attackMs": 5,
+      "holdMs": 200,
+      "decayMs": 800,
+      "gain": 0.9
+    },
+    "battle_overload_started": {
+      "wave": "sine",
+      "seed": 1294,
+      "freq": 150,
+      "slide": 0.5,
+      "lowpass": 1500,
+      "vibrato": {
+        "depth": 2,
+        "rateHz": 6
+      },
+      "attackMs": 10,
+      "holdMs": 400,
+      "decayMs": 600,
+      "gain": 0.8
+    },
+    "battle_overload_level": {
+      "wave": "triangle",
+      "seed": 1301,
+      "freq": 200,
+      "slide": 0.8,
+      "attackMs": 5,
+      "holdMs": 100,
+      "decayMs": 400,
+      "gain": 0.7
+    },
+    "battle_overload_pulse": {
+      "wave": "sine",
+      "seed": 1308,
+      "freq": 100,
+      "vibrato": {
+        "depth": 1,
+        "rateHz": 10
+      },
+      "attackMs": 5,
+      "holdMs": 50,
+      "decayMs": 300,
+      "gain": 0.6
+    },
+    "battle_poi_capture_start": {
+      "wave": "triangle",
+      "seed": 1315,
+      "freq": 440,
+      "arpeggio": {
+        "steps": [0, 7],
+        "stepMs": 80
+      },
+      "attackMs": 3,
+      "holdMs": 60,
+      "decayMs": 200,
+      "gain": 0.55
+    },
+    "battle_poi_captured": {
+      "wave": "sine",
+      "seed": 1322,
+      "freq": 659,
+      "arpeggio": {
+        "steps": [0, 4, 7, 12],
+        "stepMs": 80
+      },
+      "attackMs": 3,
+      "holdMs": 150,
+      "decayMs": 400,
+      "gain": 0.7
+    },
+    "battle_boss_burst": {
+      "wave": "saw",
+      "seed": 1329,
+      "freq": 110,
+      "slide": -0.6,
+      "lowpass": 1500,
+      "attackMs": 5,
+      "holdMs": 100,
+      "decayMs": 500,
+      "gain": 0.7
+    },
+    "battle_boss_pylon": {
+      "wave": "sine",
+      "seed": 1336,
+      "freq": 800,
+      "slide": -1,
+      "arpeggio": {
+        "steps": [0, -7],
+        "stepMs": 120
+      },
+      "attackMs": 3,
+      "holdMs": 50,
+      "decayMs": 350,
+      "gain": 0.6
+    },
+    "battle_boss_shield_down": {
+      "wave": "triangle",
+      "seed": 1343,
+      "freq": 900,
+      "slide": -1.5,
+      "minFreq": 150,
+      "attackMs": 3,
+      "holdMs": 100,
+      "decayMs": 550,
+      "gain": 0.7
+    }
+  }
+}

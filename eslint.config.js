@@ -249,7 +249,11 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/tools/**/*.ts', 'packages/art/**/*.ts'],
+    files: [
+      'packages/tools/**/*.ts',
+      'packages/art/**/*.ts',
+      'packages/audio/**/*.ts',
+    ],
     languageOptions: { globals: globals.node },
   },
   {

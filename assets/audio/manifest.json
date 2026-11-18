@@ -1,0 +1,349 @@
+{
+  "version": 1,
+  "sampleRate": 22050,
+  "files": [
+    {
+      "id": "battle_attack",
+      "file": "sfx/battle_attack.wav",
+      "bytes": 2778,
+      "durationMs": 62,
+      "sha256": "39ce8f9b6c20795bad5e1b8d12c57f1699a787da263263755dff0aefda552615"
+    },
+    {
+      "id": "battle_boss_burst",
+      "file": "sfx/battle_boss_burst.wav",
+      "bytes": 26724,
+      "durationMs": 605,
+      "sha256": "ea35c062fdbc6797727ef17cfeda4035e1fcb7a9110956be2835257771e3c469"
+    },
+    {
+      "id": "battle_boss_pylon",
+      "file": "sfx/battle_boss_pylon.wav",
+      "bytes": 17816,
+      "durationMs": 403,
+      "sha256": "ac3c2822d1a20c148c07f1a9e81aa420066cd58966d153996a1861ead6464ccd"
+    },
+    {
+      "id": "battle_boss_shield_down",
+      "file": "sfx/battle_boss_shield_down.wav",
+      "bytes": 28842,
+      "durationMs": 653,
+      "sha256": "2c5d60ed5c8ee707d04340d7a0c1323ae7faecf47b2a6af47f5b61c217a4b032"
+    },
+    {
+      "id": "battle_building_destroyed",
+      "file": "sfx/battle_building_destroyed.wav",
+      "bytes": 18346,
+      "durationMs": 415,
+      "sha256": "d5b1cda026517a658bd233361e157c7c41d709d39d986c019fcee02adfebf88e"
+    },
+    {
+      "id": "battle_building_lost",
+      "file": "sfx/battle_building_lost.wav",
+      "bytes": 23638,
+      "durationMs": 535,
+      "sha256": "f7fb8562078eb29321496ba7a24cff4590b720a7e8e9fd90a0f6919130adb23c"
+    },
+    {
+      "id": "battle_core_destroyed",
+      "file": "sfx/battle_core_destroyed.wav",
+      "bytes": 37750,
+      "durationMs": 855,
+      "sha256": "eff14b720bc9a7eeac38d6828684800916152fed984074bad9013386d1d9a1e1"
+    },
+    {
+      "id": "battle_core_hit",
+      "file": "sfx/battle_core_hit.wav",
+      "bytes": 11598,
+      "durationMs": 262,
+      "sha256": "14ab2e7da1a791820b270fe053e96c32d477c439b5534f6c89fcf4772fd34531"
+    },
+    {
+      "id": "battle_core_hit_low",
+      "file": "sfx/battle_core_hit_low.wav",
+      "bytes": 19580,
+      "durationMs": 443,
+      "sha256": "be6af8c4908e122fa00335119b64629344427fc6f9b3a6418189a55a247c1616"
+    },
+    {
+      "id": "battle_core_lost",
+      "file": "sfx/battle_core_lost.wav",
+      "bytes": 44364,
+      "durationMs": 1005,
+      "sha256": "a0404425dbb7d3ed97cec752c457a738c08fde42332dea23f7cd369942d2c2e9"
+    },
+    {
+      "id": "battle_foe_core_hit",
+      "file": "sfx/battle_foe_core_hit.wav",
+      "bytes": 7188,
+      "durationMs": 162,
+      "sha256": "0a1582b1e2259d38752728475c780ff3eb9b5a58adf699713a235551b3b71626"
+    },
+    {
+      "id": "battle_overload_level",
+      "file": "sfx/battle_overload_level.wav",
+      "bytes": 22314,
+      "durationMs": 505,
+      "sha256": "52a7f0df89038329f0470db54e389f73698abbb309afab1dc504fc3d625a1272"
+    },
+    {
+      "id": "battle_overload_pulse",
+      "file": "sfx/battle_overload_pulse.wav",
+      "bytes": 15700,
+      "durationMs": 355,
+      "sha256": "905a75cf2342e7a7bb417cd7aac26961270561d5ba1bcc681993eb3b8c38f14a"
+    },
+    {
+      "id": "battle_overload_started",
+      "file": "sfx/battle_overload_started.wav",
+      "bytes": 44586,
+      "durationMs": 1010,
+      "sha256": "1346749937f1ef78ac86642802d5b2838385c5b171b6ba98d7e889c14bccc62f"
+    },
+    {
+      "id": "battle_poi_capture_start",
+      "file": "sfx/battle_poi_capture_start.wav",
+      "bytes": 11642,
+      "durationMs": 263,
+      "sha256": "0a0549a8566db0807f8c27276d82d33ce54976a0913f286ccde26e3ba3bf6713"
+    },
+    {
+      "id": "battle_poi_captured",
+      "file": "sfx/battle_poi_captured.wav",
+      "bytes": 24432,
+      "durationMs": 553,
+      "sha256": "eb1773677019b13fa09dfa70890fb78e8524315fdf995604e7f18d3799052151"
+    },
+    {
+      "id": "battle_splash",
+      "file": "sfx/battle_splash.wav",
+      "bytes": 10320,
+      "durationMs": 233,
+      "sha256": "1984ef02e0ec8507e7ea237f2209c1641ac872cff894db1a80c53f89633babd0"
+    },
+    {
+      "id": "battle_start",
+      "file": "sfx/battle_start.wav",
+      "bytes": 24520,
+      "durationMs": 555,
+      "sha256": "8a068a9295048608098e857f892e0a9621b0b06845915685404c2b72ba1b2a7c"
+    },
+    {
+      "id": "battle_turret_fired",
+      "file": "sfx/battle_turret_fired.wav",
+      "bytes": 3220,
+      "durationMs": 72,
+      "sha256": "fcbb7711432d69754cc7ef1187245e9277a1957e292ae471c14f40210df3984d"
+    },
+    {
+      "id": "battle_unit_died",
+      "file": "sfx/battle_unit_died.wav",
+      "bytes": 6748,
+      "durationMs": 152,
+      "sha256": "5bba6ca2064e071a3f15d9917fed822810a0a2a7940e8ee4dc25baede46b4d76"
+    },
+    {
+      "id": "battle_unit_spawned_ally",
+      "file": "sfx/battle_unit_spawned_ally.wav",
+      "bytes": 4984,
+      "durationMs": 112,
+      "sha256": "5c2a3d10eba0ada29cd67173650f0f2b10c4c5149fd2199edfcd667b3b7dbe82"
+    },
+    {
+      "id": "battle_unit_spawned_foe",
+      "file": "sfx/battle_unit_spawned_foe.wav",
+      "bytes": 4984,
+      "durationMs": 112,
+      "sha256": "07fb5d7e61520365b25e8c30cc488f69e6ffa47a65db2cdb5ecdae679301bb28"
+    },
+    {
+      "id": "battle_ward_struck",
+      "file": "sfx/battle_ward_struck.wav",
+      "bytes": 6306,
+      "durationMs": 142,
+      "sha256": "4dc715ccac02e7239ecc041dbbb763278bb3bbc60191e3fa00226049c38e993c"
+    },
+    {
+      "id": "build_conduit_draw",
+      "file": "sfx/build_conduit_draw.wav",
+      "bytes": 7232,
+      "durationMs": 163,
+      "sha256": "c68df6b03a98e7b04fb0bcd4335ed2322be75aecff0400bdac534e553366b9d9"
+    },
+    {
+      "id": "build_conduit_erase",
+      "file": "sfx/build_conduit_erase.wav",
+      "bytes": 6350,
+      "durationMs": 143,
+      "sha256": "12cf52f0888dc63ab372bd8073e36e5263934e99ab3974fbf66bfc087d15ef3a"
+    },
+    {
+      "id": "build_illegal",
+      "file": "sfx/build_illegal.wav",
+      "bytes": 8996,
+      "durationMs": 203,
+      "sha256": "d4c17ddbfb32421ee087cb5d9f0fb37fac5f893ac2a34c2849ab3be93b279e6a"
+    },
+    {
+      "id": "build_move",
+      "file": "sfx/build_move.wav",
+      "bytes": 7188,
+      "durationMs": 162,
+      "sha256": "79f15ef9dcf6bd9adca33cb0a29336e5f2e67148971ad13f8f2a8ea654380782"
+    },
+    {
+      "id": "build_place",
+      "file": "sfx/build_place.wav",
+      "bytes": 7188,
+      "durationMs": 162,
+      "sha256": "bb502e50f4985ac06142ec21dd500c82b67b5308fbe54ba3439ea3fbe70f98f9"
+    },
+    {
+      "id": "build_rotate",
+      "file": "sfx/build_rotate.wav",
+      "bytes": 2778,
+      "durationMs": 62,
+      "sha256": "1290a21092a6d97f60b08b66d87e0db3b9204acd74775921b708fa982d15cd31"
+    },
+    {
+      "id": "build_stash",
+      "file": "sfx/build_stash.wav",
+      "bytes": 7674,
+      "durationMs": 173,
+      "sha256": "bb32b9410dc02f24e99e7e8ba271723a7a91bb05b4f420b7974e70dc8992d283"
+    },
+    {
+      "id": "run_all_ready",
+      "file": "sfx/run_all_ready.wav",
+      "bytes": 18698,
+      "durationMs": 423,
+      "sha256": "24e32268d5225cee0253ea0c50b39e737adb110b5ac3088eb1188a20513a0e4b"
+    },
+    {
+      "id": "run_event_chosen",
+      "file": "sfx/run_event_chosen.wav",
+      "bytes": 11642,
+      "durationMs": 263,
+      "sha256": "c366ec2db886c302a8b623c775c9fbd0a2b454fc7c19360ca9bbf501936d1a64"
+    },
+    {
+      "id": "run_life_lost",
+      "file": "sfx/run_life_lost.wav",
+      "bytes": 26724,
+      "durationMs": 605,
+      "sha256": "cb73832c2fc418f4fcff10261e3f032cea532823cfdcbd69e283e476c82f10e9"
+    },
+    {
+      "id": "run_modifier_gained",
+      "file": "sfx/run_modifier_gained.wav",
+      "bytes": 28930,
+      "durationMs": 655,
+      "sha256": "b3e2469a5ae33a51d25806e4341b85c22d748f7a2ab723c3859432fc49a75124"
+    },
+    {
+      "id": "run_new_best",
+      "file": "sfx/run_new_best.wav",
+      "bytes": 48774,
+      "durationMs": 1105,
+      "sha256": "67a7a29f56c89ceb0369d765ffc95f3aee37582d190cf5d72c4095307640081b"
+    },
+    {
+      "id": "run_over",
+      "file": "sfx/run_over.wav",
+      "bytes": 39954,
+      "durationMs": 905,
+      "sha256": "2aa9b8c9612afa8f9b16ad81d7a043e8f2ba8add09d3ff1cbab16bf5138898bd"
+    },
+    {
+      "id": "run_ready",
+      "file": "sfx/run_ready.wav",
+      "bytes": 8996,
+      "durationMs": 203,
+      "sha256": "342c5012b272af5a3e8ed4bf833bb0a5392810569a67ed79f4880a4e72e8e8ef"
+    },
+    {
+      "id": "run_round_start",
+      "file": "sfx/run_round_start.wav",
+      "bytes": 17816,
+      "durationMs": 403,
+      "sha256": "ed609be8ecc6692d4709478c2a52040ebaf901d7f3560cf341f7fde614fa786a"
+    },
+    {
+      "id": "run_vote_cast",
+      "file": "sfx/run_vote_cast.wav",
+      "bytes": 3704,
+      "durationMs": 83,
+      "sha256": "8dacaf8758c7ae6aaf138c56681de52241a9910ec1a8db78bb56d772b9c74734"
+    },
+    {
+      "id": "run_vote_resolved",
+      "file": "sfx/run_vote_resolved.wav",
+      "bytes": 15612,
+      "durationMs": 353,
+      "sha256": "2114550c357f2095d9f697bbd0ed2e23cd1101e6bba5c9e21f8b9748bc2c1a20"
+    },
+    {
+      "id": "shop_buy",
+      "file": "sfx/shop_buy.wav",
+      "bytes": 13804,
+      "durationMs": 312,
+      "sha256": "49cd1bf1a6c821a1297f08571937960946747b99c6c7d45b12dfec8c4840b356"
+    },
+    {
+      "id": "shop_no_gold",
+      "file": "sfx/shop_no_gold.wav",
+      "bytes": 8996,
+      "durationMs": 203,
+      "sha256": "832dddcb287e75a12efb2c8166b7d4c660ca7d2ab77637b15f77d81e3b8a9973"
+    },
+    {
+      "id": "shop_reroll",
+      "file": "sfx/shop_reroll.wav",
+      "bytes": 7188,
+      "durationMs": 162,
+      "sha256": "d72482e284528faf57a2fccdc41020278742dd97382747bf30670b6081e0682b"
+    },
+    {
+      "id": "shop_sell",
+      "file": "sfx/shop_sell.wav",
+      "bytes": 10716,
+      "durationMs": 242,
+      "sha256": "b8acbe2924b8ce5e52c43dc1ac017c198cf4d14b68461af9189ac6375168ea29"
+    },
+    {
+      "id": "ui_click",
+      "file": "sfx/ui_click.wav",
+      "bytes": 2294,
+      "durationMs": 51,
+      "sha256": "918644054ba7be0cbde56a0ffa8acfe27d9058a9195facfc037c3ac91ae7fecc"
+    },
+    {
+      "id": "ui_confirm",
+      "file": "sfx/ui_confirm.wav",
+      "bytes": 8114,
+      "durationMs": 183,
+      "sha256": "738fa2599801b3105350e46cf97c99606da00b54ab1584289edd6b576e7a73d1"
+    },
+    {
+      "id": "ui_error",
+      "file": "sfx/ui_error.wav",
+      "bytes": 8556,
+      "durationMs": 193,
+      "sha256": "bc5df193f16a35fbcc7009da48ea20c8417d05ffc57c423de43e454c58752060"
+    },
+    {
+      "id": "ui_hover",
+      "file": "sfx/ui_hover.wav",
+      "bytes": 1500,
+      "durationMs": 33,
+      "sha256": "d236c2f1ccac6e6bc91e9da2b0a33a14f89961c787e12743129bab4ac755f2d9"
+    },
+    {
+      "id": "ui_toggle",
+      "file": "sfx/ui_toggle.wav",
+      "bytes": 4542,
+      "durationMs": 102,
+      "sha256": "3d62923a1c6c1d6c4a82e2f76182fd3b9737a64b8a3f29643e3dc3cb68329452"
+    }
+  ]
+}
