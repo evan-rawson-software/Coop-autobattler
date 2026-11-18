@@ -824,7 +824,7 @@ describe('brood bursts (MM-9d)', () => {
       configs,
     );
     const p = make(1, 8);
-    // Same waves; the Core is smaller by the burst share (30 percent of S).
+    // Same waves; the Core is smaller by the burst share (15 percent of S).
     expect(p.waves).toEqual(plain.waves);
     expect(p.budget).toBe(plain.budget);
     const sum = (x: typeof p) =>
@@ -837,7 +837,8 @@ describe('brood bursts (MM-9d)', () => {
     const p = make(4, 14);
     const total = got(p.stronghold.bursts).reduce((a, b) => a + b.count, 0);
     expect(p.stronghold.bursts).toHaveLength(12);
-    expect(total).toBe(24);
+    // The burst share is 15 percent (30 before issue #403: 24 units).
+    expect(total).toBe(12);
   });
 });
 

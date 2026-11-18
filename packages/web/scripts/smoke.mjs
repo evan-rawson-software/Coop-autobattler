@@ -2262,7 +2262,7 @@ try {
       {
         await bossBattle(
           'arch_boss_brood',
-          262,
+          274,
           'core-hp-1',
           'battle-7-boss-brood',
           true,

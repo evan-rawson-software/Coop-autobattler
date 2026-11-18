@@ -84,6 +84,7 @@ pnpm sim batch --a rush --b fortify --count 300 --seed 1 [--time]
 pnpm sim batch --a siege --archetype fortress --round 5 --count 100
 pnpm sim bot --strategy all --count 3 --party 2 --verify
 pnpm sim stage [--rounds 12] [--seeds 6] [--chains]
+pnpm exec tsx packages/tools/src/sim/boss-report.ts [--party 1,2] [--rounds 3,5,8] [--seeds 1,2] [--cache FILE]   # boss win rates (#403)
 pnpm sim ghosts [--check]          # same as: pnpm ghosts:update
 pnpm sim --help
 ```

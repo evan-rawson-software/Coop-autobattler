@@ -296,7 +296,7 @@
         "turretSharePercent": 20,
         "layout": "ring"
       },
-      "brood": { "thresholdsPercent": [75, 50, 25], "sharePercent": 30 }
+      "brood": { "thresholdsPercent": [75, 50, 25], "sharePercent": 15 }
     },
     {
       "id": "arch_boss_linked",
@@ -348,7 +348,7 @@
       },
       "pylons": {
         "perPlot": 3,
-        "sharePercent": 25,
+        "sharePercent": 10,
         "minDistance": 2,
         "maxDistance": 4
       }
@@ -379,7 +379,7 @@
       "champion": {
         "unit": "unit_golem",
         "healthPercent": 600,
-        "sharePercent": 35
+        "sharePercent": 40
       }
     }
   ]

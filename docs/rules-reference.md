@@ -5081,23 +5081,23 @@ raiders, an archer and a drone; at round 15, `unitStrengthPercent` is 75
 (party 1) or 71 (party 4), the largest wave 8 to 34 raiders with its ranged
 units, no more than `cap`. Boss mixes all of it, its
 every-Nth-wave signature being all raiders (a fast swarm of small, weak units; since issue #66 raiders no longer prefer any building, they are ordinary units with different numbers: health 25, damage 8, radius 0.25 cell, move cooldown 4). Brood has the Boss's waves and stronghold exactly, plus
-`brood: {thresholdsPercent: [75, 50, 25], sharePercent: 30}`: each of its Cores
+`brood: {thresholdsPercent: [75, 50, 25], sharePercent: 15}`: each of its Cores
 releases a burst of units when it falls to 75, 50 and 25 percent of its
 starting health (MM-9d). Its burst budget comes out of the stronghold budget,
 so its Cores are smaller than the Boss's. Bonded also has
 the Boss's waves and stronghold exactly (no budget is set aside; the Cores
 have the Boss's size), plus `linkedCores: true`: its Cores share one health
 pool (below). The Pylons stronghold has the Boss's waves and stronghold, plus
-`pylons: {perPlot: 3, sharePercent: 25, minDistance: 2, maxDistance: 4}`: three
-pylons around each Core, paid from a quarter of the stronghold budget, and a
+`pylons: {perPlot: 3, sharePercent: 10, minDistance: 2, maxDistance: 4}`: three
+pylons around each Core, paid from a tenth of the stronghold budget, and a
 Core takes no damage while one of its pylons stands (MM-9d); like Brood, its
 Cores are smaller than the Boss's (the budget is spent on the pylons first).
 The Warlord has the Boss's waves and stronghold exactly (the stronghold budget
 is not touched, its Cores have the Boss's size), plus `champion: {unit:
-"unit_golem", healthPercent: 600, sharePercent: 35}`: 35 percent of every
+"unit_golem", healthPercent: 600, sharePercent: 40}`: 40 percent of every
 wave's budget buys one champion Golem per boss plot (up to 600 percent of a
 Golem's health), which leads the wave (MM-9d); the composition is bought from
-the other 65 percent. There is no aura or other rule: the champion is a
+the other 60 percent. There is no aura or other rule: the champion is a
 plain, sturdy Golem.
 Unit
 prices for spending wave budget are `unitCost` in `threats.json` (soldier 10,
@@ -7998,6 +7998,52 @@ by under 3 points. Casters die fast (lifetime 143 ticks), which is the counter
 of fast melee units. Bot strategies (12 runs at party 1, 6 at parties 2 and 4)
 reach the same mean depths before and after (rush 12.3, fortify 11.8, siege 9.5,
 weak 5.0 at party 1), so no strategy changed by more than a round.
+
+### Numbers set in the boss tuning (issue #403)
+
+Measured with the balance harness (`pnpm exec tsx packages/tools/src/sim/boss-report.ts`;
+see its header). Boards: the scripted bot's boards (rush, fortify, siege, weak;
+bot seeds 1 to 8, stopped after the round fought) at party sizes 1 to 4, each
+fought against `arch_boss` and each new boss at the same round with 4 threat
+seeds (1280 battles per boss column over rounds 3 to 12). Every number stays
+**proposed** until the owner accepts it after the playtest. The bot boards win
+less than 5 percent against `arch_boss` from round 9 and almost never from round
+12, so rounds above 12 cannot tell the bosses apart (all at 0 to 2 percent).
+
+| Number | Where | Before | Shipped | Why |
+| ------ | ----- | ------ | ------- | --- |
+| Brood `brood.sharePercent` | `threats.json` | 30 | 15 | a bigger burst share makes the Cores smaller and the fight easier (win rate gap to Boss at rounds 5 to 9: +4, +8, +12, +10, +11 points at 30; -3, +3, +1, +5, +2 at 15); thresholds unchanged |
+| Pylons `pylons.sharePercent` | `threats.json` | 25 | 10 | the pylons' share also shrinks the Cores; gap at rounds 7 to 9 +8, +10, +5 at 25, +3, -1, +2 at 10 |
+| Warlord `champion.sharePercent` | `threats.json` | 35 | 40 | the champion is paid from the wave and is health-limited in early rounds, so more share is an easier wave; gap at round 9 to 12 +1 to +3 points; fought below its own `fromRound` (`--early`) the Warlord is harder, -13 points at round 4 rising to +4 at round 8 |
+| Warlord `champion.healthPercent`, Brood thresholds, pylon count and distances, Bonded (no number), every `fromRound` | `threats.json` | | unchanged | `healthPercent` has no effect before round 9 (the share, not the cap, limits the champion); no measurement tells the bosses apart where it binds |
+| Version | `version.ts` | 1.0.53 | 1.0.54 | content changed (TA-8); no saved format number changes |
+
+Win rate of the bot boards against each boss (all party sizes, 4 threat seeds,
+32 boards per party size and round, so 128 to 512 battles per cell; points of
+difference to Boss in brackets):
+
+| Round | Boss | Brood | Bonded | Pylons | Warlord | Bundled ghosts or peer bot boards |
+| ----- | ---- | ----- | ------ | ------ | ------- | ------ |
+| 3 | 64 | 64 (-0) | | | | 53 |
+| 4 | 60 | 56 (-4) | | | | 49 |
+| 5 | 53 | 50 (-3) | 54 (+1) | | | 63 |
+| 6 | 41 | 44 (+3) | 44 (+3) | | | 25 |
+| 7 | 26 | 28 (+1) | 30 (+4) | 30 (+4) | | 32 |
+| 8 | 11 | 16 (+6) | 10 (-1) | 10 (-0) | | 32 |
+| 9 | 3 | 6 (+2) | 3 (+0) | 5 (+2) | 4 (+1) | |
+| 10 | 4 | 4 (+0) | 6 (+2) | 5 (+1) | 6 (+2) | |
+| 11 | 2 | 2 (-0) | 3 (+1) | 2 (+0) | 6 (+3) | |
+| 12 | 0 | 0 (+0) | 1 (+0) | 0 (+0) | 2 (+2) | |
+
+Before the tuning (same boards and seeds): Brood +4, +8, +12, +10, +11 at rounds
+5 to 9; Pylons +8, +10, +5 at rounds 7 to 9; Warlord +1 to +2 at rounds 9 to 12
+(+0 at round 8, -9 to -14 at rounds 4 to 6 with `--early`).
+The last column is the bundled ghosts (rounds 3 to 6; party size and round
+bucket) and, at rounds 7 and 8 where there are none, the other bot boards of
+the same party size and round. Counter builds (target 3) were not shown: bot
+fortify and rush boards do not win measurably more against the Brood (58 and 60
+percent against Boss 55 and 59) or the Pylons boss (57 and 62 against 55 and 59)
+than against Boss.
 
 ### PP-1. Ownership and plots
 

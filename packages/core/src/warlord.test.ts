@@ -27,7 +27,7 @@ describe('Warlord champion (MM-9d)', () => {
     expect(champion).toEqual({
       unit: 'unit_golem',
       healthPercent: 600,
-      sharePercent: 35,
+      sharePercent: 40,
     });
     expect(threats.unitCost.find((c) => c.unit === 'unit_golem')?.cost).toBe(
       50,

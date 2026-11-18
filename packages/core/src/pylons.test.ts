@@ -115,7 +115,7 @@ describe('pylons content (MM-9d)', () => {
       bossOnly: true,
       fromRound: 7,
       minPartySize: 1,
-      pylons: { perPlot: 3, sharePercent: 25, minDistance: 2, maxDistance: 4 },
+      pylons: { perPlot: 3, sharePercent: 10, minDistance: 2, maxDistance: 4 },
     });
     for (const a of threats.archetypes) {
       if (a !== pylonsArch) expect('pylons' in a).toBe(false);
@@ -239,7 +239,7 @@ describe('pylon layout and budget (MM-9d)', () => {
       const p = make(size, round);
       const full =
         p.budget - Math.floor((p.budget * pylonsArch.waveSharePercent) / 100);
-      const share = Math.floor((full * 25) / 100);
+      const share = Math.floor((full * 10) / 100);
       const pylons = got(p.stronghold.pylons);
       const total = pylons.reduce((a, q) => a + q.health, 0);
       const n = pylons.length;
