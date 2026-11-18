@@ -698,6 +698,11 @@ Still unconfirmed:
   vectors; loads the same content files.
 - **G2 — Solo game:** the full loop with real UI and presentation, at
   parity with the proof of concept.
+  Audio carries over as data: the Godot client reads `content/audio.json`,
+  `content/sounds.json` and `content/music.json`, plays the same generated
+  WAV effects, and renders or sequences the music from the same notes; cue
+  IDs are the contract, so recorded sounds can replace generated ones per ID
+  (`specs/08-audio.md`, "For the Godot port").
 
 **Phase 3 — Multiplayer and Steam** (issues #366 to #368)
 

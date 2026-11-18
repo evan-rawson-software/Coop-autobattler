@@ -78,6 +78,10 @@ The same page has "Point of interest": force a point of a chosen buff into your 
 - Do Golems feel tanky? Do casters feel strong against swarms?
 - Is two-input routing fun, or a chore?
 - Did you change what you built after seeing which boss was next?
+- Did any sound get annoying (say which one, and after how long)?
+- Could you tell what happened in a battle by ear, with your eyes off the screen: Core hits, losses, an Overload, a win or a loss? Was it still readable at 2× and 4×?
+- Did the music sit under the effects, or did you not notice it at all?
+- Did you turn the music or the sound off? Why?
 - Do points feel worth fighting for, or are they a distraction? Are they noticeable in the battle, and is it clear what they give and who holds them?
 - Anything that confused you, broke, or looked wrong, with what you were doing at the time.
 

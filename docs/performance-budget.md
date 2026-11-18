@@ -375,6 +375,14 @@ measured sizes as they land. Sizes are bytes served, without compression.
 | Manifest, `audio.json`, `sounds.json`, `music.json` | 60 KB in all    | about 40 KB | 44,015 bytes (`sounds.json` 12,121 + `manifest.json` 10,598 + `audio.json` 11,816 + `music.json` 9,480) |
 | **All audio**                                     | **2 MB**          | about 0.7 MB | 796,361 bytes (about 38% of the limit) |
 
+**Final sizes (mix pass, 2026-11-18, issue #452).** The mix pass changed only
+numbers in `content/audio.json` (same byte count) and no sound recipe, so no
+WAV changed: 49 effect files, 752,346 bytes (largest `run_new_best.wav`,
+48,774 bytes, under the 56 KB limit); music 0 bytes of audio; data files
+44,015 bytes (limit 60 KB); **all audio 796,361 bytes, about 0.76 MB, 38% of
+the 2 MB limit**. The audio code (engine, music synth) is part of the web
+bundle and is not counted here.
+
 If the effects pass their limit: shorten the longest sounds, then lower the
 sample rate to 16,000 Hz. A test in `packages/audio` fails when a file or the
 total passes its limit (#447: the test also counts `sounds.json` and the manifest).
