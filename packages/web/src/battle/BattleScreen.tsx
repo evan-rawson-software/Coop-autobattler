@@ -62,8 +62,8 @@ import { overloadLine } from '../choice/overload.js';
 import { simClient, type RecordOutcome } from '../sim-worker/client.js';
 import { CannotShow } from './CannotShow.js';
 import { ResultCard } from './ResultCard.js';
-import { BattleSounds } from '../audio/battle-sounds.js';
-import { readConfig as readAudioConfig } from '../audio/index.js';
+import { BattleSounds, BUILD_LOOP } from '../audio/battle-sounds.js';
+import { playCue, readConfig as readAudioConfig } from '../audio/index.js';
 import { readFailPlayback } from './cannot-show.js';
 import { readForcedPoint } from './force-point.js';
 import { createReadyGate } from './ready-gate.js';
@@ -383,6 +383,14 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     const cfg = readAudioConfig();
     return cfg === null ? null : new BattleSounds(cfg, record);
   }, [record]);
+  // Leaving the battle (a stinger has already asked for it) brings the
+  // workshop loop back (#451).
+  useEffect(
+    () => () => {
+      playCue(BUILD_LOOP);
+    },
+    [],
+  );
   const latest = useRef({ phase, ready, props });
   latest.current = { phase, ready, props };
   const force = (): void => {

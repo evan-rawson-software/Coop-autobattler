@@ -2,10 +2,12 @@
  * The Web Audio side of the engine's port. The graph (AU-20):
  * `effects` and `duck -> music` both feed `master -> destination`. The duck
  * gain carries the ducking and the tab-hidden fade; the music synth (#451)
- * connects to `musicInput`. Every constructor and fetch is injected, so tests
+ * plays into `musicInput` (`startTrack`). Every constructor and fetch is injected, so tests
  * run against a fake context.
  */
-import type { AudioPort, Voice } from './engine.js';
+import type { MusicConfig } from '@game/audio';
+import type { AudioPort, MusicVoice, Voice } from './engine.js';
+import { TrackPlayer } from './music-synth.js';
 import type { VolumeGroup } from './settings.js';
 
 /** The part of `AudioContext` the port uses (real or fake). */
@@ -17,6 +19,8 @@ export interface ContextLike {
   suspend(): Promise<void>;
   createGain(): GainNode;
   createBufferSource(): AudioBufferSourceNode;
+  createOscillator(): OscillatorNode;
+  createBiquadFilter(): BiquadFilterNode;
   decodeAudioData(data: ArrayBuffer): Promise<AudioBuffer>;
 }
 
@@ -25,6 +29,8 @@ export interface WebPortDeps {
   readonly ctor: (new () => ContextLike) | undefined;
   /** The bytes of a sound's file, or null when there is no such file. */
   readonly fetchSound: (soundId: string) => Promise<ArrayBuffer | null>;
+  /** The tracks of `content/music.json`; without them there is no music. */
+  readonly music?: MusicConfig | undefined;
   readonly clock: () => number;
   readonly setTimer: (fn: () => void, ms: number) => unknown;
   readonly clearTimer: (handle: unknown) => void;
@@ -170,6 +176,44 @@ export class WebAudioPort implements AudioPort {
       return;
     }
     node.gain.setTargetAtTime(gain, ctx.currentTime, SMOOTH_S);
+  }
+
+  startTrack(
+    trackId: string,
+    level: number,
+    fadeInMs: number,
+    onEnded?: () => void,
+  ): MusicVoice | null {
+    const ctx = this.ctx;
+    const duck = this.duck;
+    const music = this.deps.music;
+    const track = music?.tracks[trackId];
+    if (
+      ctx === null ||
+      duck === null ||
+      music === undefined ||
+      track === undefined
+    )
+      return null;
+    try {
+      return new TrackPlayer(
+        ctx,
+        duck,
+        music,
+        track,
+        level,
+        fadeInMs,
+        {
+          setTimer: (fn, ms) => this.deps.setTimer(fn, ms),
+          clearTimer: (h) => {
+            this.deps.clearTimer(h);
+          },
+        },
+        onEnded,
+      );
+    } catch {
+      return null;
+    }
   }
 
   rampMusic(factor: number, ms: number): void {

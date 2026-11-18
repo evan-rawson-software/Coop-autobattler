@@ -4,8 +4,13 @@
  * never throws. `installAudio` (called once at start-up) wires the unlock
  * gesture, the tab visibility and the settings to the engine.
  */
-import { loadAudio, type AudioConfig } from '@game/audio';
-import { rawAudio } from '@game/content';
+import {
+  loadAudio,
+  loadMusic,
+  type AudioConfig,
+  type MusicConfig,
+} from '@game/audio';
+import { rawAudio, rawMusic } from '@game/content';
 import manifest from '../../../../assets/audio/manifest.json';
 import { AudioEngine, type PlayOptions } from './engine.js';
 import { audioSettingsStore } from './settings.js';
@@ -41,6 +46,11 @@ export function readConfig(): AudioConfig | null {
   return config;
 }
 
+function readMusic(): MusicConfig | undefined {
+  const r = loadMusic(rawMusic);
+  return r.ok ? r.config : undefined;
+}
+
 function createPort(): WebAudioPort {
   const w = window as unknown as {
     AudioContext?: new () => ContextLike;
@@ -49,6 +59,7 @@ function createPort(): WebAudioPort {
   return new WebAudioPort({
     ctor: w.AudioContext ?? w.webkitAudioContext,
     fetchSound,
+    music: readMusic(),
     clock: () => performance.now(),
     setTimer: (fn, ms) => window.setTimeout(fn, ms),
     clearTimer: (h) => {
@@ -100,5 +111,8 @@ export function installAudio(): void {
   };
   document.addEventListener('visibilitychange', onVisibility);
   onVisibility();
+  // The workshop loop is the default: the menu and every build screen use it
+  // (AU-39); it starts at the first gesture (AU-30).
+  e.playCue('music.build');
   installUiSounds(document, playCue);
 }

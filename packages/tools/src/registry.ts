@@ -2,8 +2,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   loadAudio,
+  loadMusic,
   loadSounds,
   type AudioConfig,
+  type MusicConfig,
   type SoundsConfig,
 } from '@game/audio';
 import {
@@ -48,6 +50,7 @@ export interface LoadedContent {
   threats?: ThreatsConfig;
   presentation?: PresentationConfig;
   sounds?: SoundsConfig;
+  music?: MusicConfig;
   audio?: AudioConfig;
 }
 
@@ -233,13 +236,23 @@ export const contentRegistry: readonly ContentEntry[] = [
     },
   },
   {
+    key: 'music',
+    contentFile: 'music.json',
+    schemaFile: 'music.schema.json',
+    load: (data) => {
+      const r = loadMusic(data);
+      return r.ok ? { ok: true, value: r.config } : r;
+    },
+  },
+  {
     key: 'audio',
     contentFile: 'audio.json',
     schemaFile: 'audio.schema.json',
-    needs: ['sounds'],
+    needs: ['sounds', 'music'],
     load: (data, loaded) => {
       const r = loadAudio(data, {
         soundIds: new Set(Object.keys(need(loaded, 'sounds').sounds)),
+        trackIds: new Set(Object.keys(need(loaded, 'music').tracks)),
         eventTypes: simEventTypes(),
       });
       return r.ok ? { ok: true, value: r.config } : r;

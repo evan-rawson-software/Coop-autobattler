@@ -244,10 +244,10 @@ and a sound; it does not change the engine. The only reserved cue is
 
 | ID | Plays | P | gap | max | vol |
 | --- | --- | --- | --- | --- | --- |
-| `music.build` | The calm loop: main menu, specialist pick, Core placement, shop and build, events, summary, run over | 1 | 0 | 1 | 100 |
-| `music.battle` | The livelier loop: from `zone_revealed` until `battle_ended` | 1 | 0 | 1 | 100 |
-| `music.win` | A stinger (about 4 s), at `battle_ended` with `winner` 0 | 3 | 0 | 1 | 100 |
-| `music.loss` | A stinger (about 5 s), at `battle_ended` with `winner` 1 | 3 | 0 | 1 | 100 |
+| `music.build` | The calm loop (about 48 s): main menu, specialist pick, Core placement, shop and build, events, summary, run over | 1 | 0 | 1 | 100 |
+| `music.battle` | The livelier loop (about 51 s): from `zone_revealed` until `battle_ended` | 1 | 0 | 1 | 100 |
+| `music.win` | A stinger (about 3.5 s), at `battle_ended` with `winner` 0 | 3 | 0 | 1 | 100 |
+| `music.loss` | A stinger (about 3.5 s), at `battle_ended` with `winner` 1 | 3 | 0 | 1 | 100 |
 
 The `vol` of music is relative to the `music` group, which defaults to 50
 (AU-21), so loops sit under the effects.
@@ -304,9 +304,23 @@ The `vol` of music is relative to the `music` group, which defaults to 50
   loop fades out over 400 ms and the stinger for the winner plays at once
   over silence; when the stinger ends, `music.build` fades in over 1500 ms
   for the summary. In `seek` mode the same happens without the first
-  crossfade. Entering any other screen keeps the music that is playing
-  unless that screen has a different track in the table. Starting a loop
-  that is already playing does nothing. Only one stinger plays at a time.
+  crossfade (the loop that is playing, the build loop, fades out). Entering
+  any other screen keeps the music that is playing unless that screen has a
+  different track in the table. Starting a loop that is already playing does
+  nothing. Only one stinger plays at a time: a new stinger replaces the
+  one still sounding, and a battle loop asked for during a stinger cuts it
+  (400 ms fade), while `music.build` asked for during a stinger waits until
+  it ends. Leaving the battle screen asks for `music.build`.
+  The engine remembers which loop should play, so a loop asked for before
+  the first gesture (AU-30), while the tab is hidden (AU-32) or while the
+  music volume is 0 starts or is replaced when it can sound. The main menu
+  uses the workshop loop at the normal music volume (not silence). A stinger
+  that cannot sound (music volume 0, master at 0, tab hidden) is skipped,
+  and the build loop still returns. Muting (AU-21) silences the music
+  through the master gain but keeps the loop running (the one exception to
+  "nothing is scheduled"), so unmuting brings it back where it is. Each loop starts from
+  its beginning and fades in with an equal-power curve (sine in, cosine out,
+  so a crossfade keeps its loudness); a stinger starts without a fade.
 
 ## Files and formats
 
@@ -420,17 +434,37 @@ the contract between them.
     loops, false for stingers);
   - `root` (a MIDI note number) and `scale` (semitone offsets, for example
     `[0, 2, 4, 7, 9]`, a major pentatonic, so any note fits any other);
-  - `voices`: a list of `{ "instrument", "gain", "pattern" }`, where
-    `instrument` is `pluck`, `pad`, `bell` or `bass` (a recipe by name,
-    defined once in the same file: `wave`, envelope times, `lowpass`), and
-    `pattern` is an array of `bars` strings of 16 steps, each step a scale
-    degree (`0` to `9`, `a` to `f` for the upper octave) or `.` for a rest.
+  - `voices`: a list of `{ "instrument", "gain", "shift", "pattern" }`, where
+    `instrument` names an entry of the file's top-level `instruments`
+    (`pluck`, `pad`, `bell`, `bass`, `swell`; see below), `gain` is 0.01 to
+    1, the optional `shift` is semitones added to every note of the voice (a
+    multiple of 12), and `pattern` is an array of `bars` strings of 16 steps
+    (sixteenth notes), each step a scale degree or `.` for a rest.
+  - **Degrees:** a step is `0` to `9` or `a` to `f`, the degree 0 to 15. The
+    scale repeats every octave, so degree `d` is the MIDI note
+    `root + scale[d mod n] + 12 * floor(d / n) + shift` with `n` the length
+    of the scale (with a five-note scale, 5 is the root an octave up).
+    A note is at most MIDI 91 (AU-12).
+  - **Instruments:** the top-level `instruments` is an object from name to
+    `{ "wave", "attackMs", "decayMs", "gain" }` and the optional `lowpass`
+    (Hz) and `partial` (`{ "ratio", "gain" }`, a second sine at `ratio` times
+    the pitch, a bell's upper tone). `wave` is `sine`, `triangle`, `square`
+    or `saw`. A note rises linearly to `gain` x the voice `gain` x 0.5 over
+    `attackMs`, then falls exponentially to silence over `decayMs`; it is not
+    cut by the next note, so tails overlap.
+  - **Timing:** a step lasts `60 / bpm / 4` seconds. A loop's length is
+    `bars x 4 x 60 / bpm`, and its tail rings into the next round, so the
+    repeat has no gap and no click. A stinger ends when its last note has
+    died away. Loops run 45 to 90 s and stingers 2 to 4 s; the validator
+    refuses others.
 
-  Proposed starting points: `music_build` at 84 bpm, 16 bars, root C3, pad
-  and soft pluck, about 46 s; `music_battle` at 112 bpm, 16 bars, the same
-  scale a step livelier, with a bass line and ticking bells, about 34 s;
-  `music_win` 2 bars at 120 bpm, rising, about 4 s; `music_loss` 2 bars at
-  90 bpm, falling and soft, about 5 s. All voices are built from
+  The tracks as built: `music_build` at 80 bpm, 16 bars, root C3, C major
+  pentatonic, two pad voices, a plucked tune and sparse bells, 48 s;
+  `music_battle` at 112 bpm, 24 bars, the same scale, a bass line, a pad,
+  plucked arpeggios, a lead from bar 9 and ticking bells, about 51 s;
+  `music_win` 2 bars at 140 bpm, a rising arpeggio ending on a chord, about
+  3.4 s; `music_loss` 2 bars at 120 bpm, a falling line in a minor
+  pentatonic (`[0, 3, 5, 7, 10]`) ending on a soft chord, about 3.5 s. All voices are built from
   the same recipes as the effects, scheduled on the audio clock in loop
   lengths, so a loop repeats with no gap. The track's scheduling is data
   driven, so Godot can play it the same way (or render each to a file, with
@@ -446,7 +480,7 @@ the contract between them.
 | #448 | `packages/web/src/audio/`: the engine (context and unlock, groups, voices, gaps, `maxVoices`, ducking, visibility), the settings and their storage, the Sound panel, `content/audio.json` and its schema; tests against a fake `AudioContext` |
 | #449 | The cue calls from the build, shop, event and run screens (every `ui`, `build`, `shop`, `run`, `event` row) |
 | #450 | The `battleMap` reader, the thinning windows, speed, seek and ducking from the arena event log (every `battle` row) |
-| #451 | The music synth from `content/music.json`, the crossfade and stingers |
+| #451 | `content/music.json`, its schema and loader (`packages/audio/src/music.ts`), the music synth (`packages/web/src/audio/music-synth.ts`), the loop and stinger rules of AU-39 in the engine, and the battle calls |
 | #452 | The mix pass (every [PROPOSED] number), a playtest, the Godot note |
 
 The engine is pure logic behind an injected port (a small interface for

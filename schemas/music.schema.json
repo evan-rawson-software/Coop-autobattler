@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "music.schema.json",
+  "title": "Music tracks",
+  "description": "The loops and stingers of the game (AU-45): tempo, scale, instruments and note patterns. The web build plays them with a small synth; the Godot port can walk the same patterns or render each track to a file with the same ID.",
+  "type": "object",
+  "required": ["version", "instruments", "tracks"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "instruments": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z]+$" },
+      "additionalProperties": { "$ref": "#/$defs/instrument" }
+    },
+    "tracks": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^music_[a-z0-9_]+$" },
+      "additionalProperties": { "$ref": "#/$defs/track" }
+    }
+  },
+  "$defs": {
+    "instrument": {
+      "type": "object",
+      "required": ["wave", "attackMs", "decayMs", "gain"],
+      "additionalProperties": false,
+      "properties": {
+        "wave": { "enum": ["sine", "triangle", "square", "saw"] },
+        "attackMs": { "type": "integer", "minimum": 1, "maximum": 3000 },
+        "decayMs": { "type": "integer", "minimum": 1, "maximum": 6000 },
+        "lowpass": { "type": "number", "minimum": 50, "maximum": 6000 },
+        "partial": {
+          "type": "object",
+          "required": ["ratio", "gain"],
+          "additionalProperties": false,
+          "properties": {
+            "ratio": { "type": "number", "minimum": 1, "maximum": 4 },
+            "gain": { "type": "number", "minimum": 0.01, "maximum": 1 }
+          }
+        },
+        "gain": { "type": "number", "minimum": 0.01, "maximum": 1 }
+      }
+    },
+    "track": {
+      "type": "object",
+      "required": [
+        "bpm",
+        "beatsPerBar",
+        "bars",
+        "loop",
+        "root",
+        "scale",
+        "voices"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "bpm": { "type": "integer", "minimum": 40, "maximum": 220 },
+        "beatsPerBar": { "const": 4 },
+        "bars": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "loop": { "type": "boolean" },
+        "root": { "type": "integer", "minimum": 24, "maximum": 72 },
+        "scale": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 8,
+          "items": { "type": "integer", "minimum": 0, "maximum": 11 }
+        },
+        "voices": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["instrument", "gain", "pattern"],
+            "additionalProperties": false,
+            "properties": {
+              "instrument": { "type": "string", "pattern": "^[a-z]+$" },
+              "gain": { "type": "number", "minimum": 0.01, "maximum": 1 },
+              "shift": { "type": "integer", "minimum": -36, "maximum": 36 },
+              "pattern": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "pattern": "^[0-9a-f.]{16}$" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

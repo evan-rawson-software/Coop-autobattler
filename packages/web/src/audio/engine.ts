@@ -18,6 +18,16 @@ export interface Voice {
   stop(): void;
 }
 
+/** A playing music track; `fadeOut` ends it softly, `stop` cuts it. */
+export interface MusicVoice {
+  fadeOut(ms: number): void;
+  stop(): void;
+}
+
+/** The two looping tracks the engine keeps one of playing (AU-39). */
+const LOOPS: ReadonlySet<string> = new Set(['music.build', 'music.battle']);
+const STINGERS: ReadonlySet<string> = new Set(['music.win', 'music.loss']);
+
 /** What the engine needs from Web Audio. */
 export interface AudioPort {
   /** A millisecond clock. */
@@ -33,6 +43,17 @@ export interface AudioPort {
   durationMs(soundId: string): number | undefined;
   /** Starts a decoded sound at `gain` and playback `rate`. */
   play(soundId: string, gain: number, rate: number): Voice | null;
+  /**
+   * Starts a music track from its beginning at `level` (0 to 1), fading in
+   * over `fadeInMs`; `onEnded` runs when a non-looping track has finished.
+   * Null when there is no such track.
+   */
+  startTrack(
+    trackId: string,
+    level: number,
+    fadeInMs: number,
+    onEnded?: () => void,
+  ): MusicVoice | null;
   /** Sets the gain of a node (a gain is already squared, AU-21). */
   setGroupGain(group: VolumeGroup, gain: number): void;
   /** Ramps the music duck/hide factor over `ms`. */
@@ -82,6 +103,10 @@ export class AudioEngine {
   private cancelSuspend: (() => void) | null = null;
   private cancelDuck: (() => void) | null = null;
   private readonly thinner: Thinner;
+  // Music (AU-39): the loop that should play, the one that does, a stinger.
+  private wanted: string | null = null;
+  private loop: { cue: string; voice: MusicVoice } | null = null;
+  private stinger: MusicVoice | null = null;
 
   constructor(
     private readonly config: AudioConfig,
@@ -127,6 +152,7 @@ export class AudioEngine {
         this.applyGroups();
         this.preload();
         if (this.hidden) this.hide();
+        else this.syncMusic();
         return true;
       },
       () => {
@@ -188,6 +214,7 @@ export class AudioEngine {
     this.cancelSuspend = null;
     const back = (): void => {
       try {
+        this.syncMusic();
         port.rampMusic(this.targetFactor(), SHOW_FADE_MS);
       } catch {
         // Ignored.
@@ -215,6 +242,7 @@ export class AudioEngine {
 
   private play(id: string, options: PlayOptions): boolean {
     const port = this.port;
+    if (this.config.cues[id]?.group === 'music') return this.playMusic(id);
     if (port === null || !this.unlocked || this.hidden) return false;
     const cue = this.config.cues[id];
     if (cue === undefined || cue.group !== 'effects') return false;
@@ -264,6 +292,110 @@ export class AudioEngine {
     });
     if (cue.duck !== undefined) this.addDuck(cue.duck.gain, cue.duck.holdMs);
     return true;
+  }
+
+  // Music (AU-39). Loops are state, not events: the engine remembers the loop
+  // that should play, so a request before the first gesture (or while the tab
+  // is hidden) starts at unlock (AU-30) or when the tab is shown.
+
+  /** Handles a `music.*` cue; true when a stinger or a new loop started. */
+  private playMusic(id: string): boolean {
+    const cue = this.config.cues[id];
+    if (cue === undefined || cue.enabled === false) return false;
+    if (LOOPS.has(id)) {
+      const changed = this.wanted !== id;
+      this.wanted = id;
+      // A different loop cuts a stinger still ringing; the same one (the
+      // loop that follows it) waits for it to end.
+      if (changed && this.stinger !== null) this.endStinger();
+      return this.syncMusic() && changed;
+    }
+    if (STINGERS.has(id)) return this.startStinger(id);
+    return false;
+  }
+
+  private levelOf(id: string): number {
+    return (this.config.cues[id]?.volume ?? 0) / 100;
+  }
+
+  private canSound(): boolean {
+    return this.port !== null && this.unlocked && !this.hidden;
+  }
+
+  /** Brings the playing loop in line with the wanted one. */
+  private syncMusic(): boolean {
+    const port = this.port;
+    if (port === null || !this.canSound() || this.stinger !== null)
+      return false;
+    const mix = this.config.mix;
+    const want = this.wanted;
+    if (this.loop?.cue === want) return false;
+    const old = this.loop;
+    this.loop = null;
+    try {
+      old?.voice.fadeOut(mix.crossfadeMs);
+      if (want === null) return false;
+      const sound = cueSounds(want, this.config.cues[want] as Cue)[0];
+      if (sound === undefined) return false;
+      const voice = port.startTrack(sound, this.levelOf(want), mix.crossfadeMs);
+      if (voice === null) return false;
+      this.loop = { cue: want, voice };
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private startStinger(id: string): boolean {
+    const port = this.port;
+    // After a battle the build loop returns, whether or not the stinger sounds.
+    this.wanted = 'music.build';
+    if (this.stinger !== null) this.endStinger();
+    if (port === null || !this.canSound()) return false;
+    const mix = this.config.mix;
+    const silent =
+      volumeGain(this.settings.master) === 0 ||
+      volumeGain(this.settings.music) === 0 ||
+      this.settings.muted;
+    if (silent) {
+      this.syncMusic();
+      return false;
+    }
+    const sound = cueSounds(id, this.config.cues[id] as Cue)[0];
+    try {
+      this.loop?.voice.fadeOut(mix.stingerFadeMs);
+      this.loop = null;
+      if (sound === undefined) return false;
+      const state: { voice: MusicVoice | null; done: boolean } = {
+        voice: null,
+        done: false,
+      };
+      state.voice = port.startTrack(sound, this.levelOf(id), 0, () => {
+        state.done = true;
+        if (state.voice !== null && this.stinger === state.voice) {
+          this.stinger = null;
+          this.syncMusic();
+        }
+      });
+      if (state.voice === null) {
+        this.syncMusic();
+        return false;
+      }
+      if (!state.done) this.stinger = state.voice;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private endStinger(): void {
+    const s = this.stinger;
+    this.stinger = null;
+    try {
+      s?.fadeOut(this.config.mix.stingerFadeMs);
+    } catch {
+      // Already ended.
+    }
   }
 
   /** Frees a voice for `cue` if the global limit is reached (AU-27). */

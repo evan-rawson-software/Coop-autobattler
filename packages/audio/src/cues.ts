@@ -76,6 +76,8 @@ export interface AudioConfig {
 export interface AudioContext {
   /** Sound IDs of `content/sounds.json`. */
   soundIds?: ReadonlySet<string>;
+  /** Track IDs of `content/music.json` (#451). */
+  trackIds?: ReadonlySet<string>;
   /** Event types of `schemas/sim-event.schema.json`. */
   eventTypes?: ReadonlySet<string>;
 }
@@ -209,7 +211,17 @@ function checkCue(
     )
       errs.push(`${at}: variants must list one to three sound IDs`);
   }
-  // Music cues name tracks of music.json (#451); only effects are checked here.
+  // Music cues name tracks of music.json (#451).
+  if (
+    ctx.trackIds !== undefined &&
+    c.group === 'music' &&
+    c.enabled !== false &&
+    errs.length === 0
+  ) {
+    for (const s of cueSounds(id, c as unknown as Cue))
+      if (!ctx.trackIds.has(s))
+        errs.push(`${at}: track "${s}" is not in music.json`);
+  }
   if (
     ctx.soundIds !== undefined &&
     c.group === 'effects' &&

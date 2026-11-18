@@ -21,6 +21,7 @@ art. Every file here is validated against a schema in [`../schemas/`](../schemas
 | `points.json`          | Points of interest of the neutral zone: chance per plot band, margin, buffs (CB-8d), their neutral guards (CB-8e), the capture numbers (CB-8f) and the numbers of each buff (CB-8g) | `schemas/points.schema.json`       |
 | `threats.json`         | PvE threats: budget curve (SC-1), unit prices, per-plot limits, ranged mix, layout parameters, archetype and boss templates | `schemas/threats.schema.json`      |
 | `sounds.json`          | Sound effect recipes (`ui_click`, ...): wave, pitch, envelope, filters; rendered to `assets/audio/` by `pnpm audio:build` | `schemas/sounds.schema.json`       |
+| `music.json`           | Music: instruments and the build, battle, win and loss tracks (tempo, scale, note patterns); played by a synth in the browser, no audio files | `schemas/music.schema.json`        |
 | `presentation.en.json` | English names and descriptions for buildings, units, terrain, archetypes, event types and run modifiers, plus the effect-sentence templates, kind labels, "needs" words and screen texts | `schemas/presentation.schema.json` |
 
 Rules files hold no display text; the presentation file holds no rules and
