@@ -1,3 +1,4 @@
+import { loadSounds, type SoundsConfig } from '@game/audio';
 import {
   loadBuildings,
   loadEconomy,
@@ -39,6 +40,7 @@ export interface LoadedContent {
   specialists?: SpecialistConfig;
   threats?: ThreatsConfig;
   presentation?: PresentationConfig;
+  sounds?: SoundsConfig;
 }
 
 /** Outcome of running a core loader on parsed content. */
@@ -212,5 +214,14 @@ export const contentRegistry: readonly ContentEntry[] = [
           specialistIds: need(loaded, 'specialists').ids(),
         }),
       ),
+  },
+  {
+    key: 'sounds',
+    contentFile: 'sounds.json',
+    schemaFile: 'sounds.schema.json',
+    load: (data) => {
+      const r = loadSounds(data);
+      return r.ok ? { ok: true, value: r.config } : r;
+    },
   },
 ];

@@ -303,3 +303,24 @@ documentation, so expect to adjust names or details on the first import.
    three uniforms per node (`material.set_shader_parameter("ramp_mid", ...)`)
    from `tint.teamA`, `tint.teamB` or `tint.resources`.
 8. Flyers: place `fx_shadow` under the unit and scale it with the unit.
+
+## Audio
+
+`assets/audio/` holds the sound effects, generated from `content/sounds.json`
+by `packages/audio` (`pnpm audio:build`). They are original, synthesised in
+code, so there is nothing to credit. The design is
+[`docs/specs/08-audio.md`](../docs/specs/08-audio.md) (AU-42 to AU-44).
+
+```
+assets/audio/
+  manifest.json   version, sampleRate and, per sound: id, file, bytes, durationMs, sha256
+  sfx/<id>.wav    one file per sound: mono, 22,050 Hz, 16-bit PCM, 44-byte header
+```
+
+The files are committed. A test (`pnpm --filter @game/audio test`, run by the
+`test` job of CI) rebuilds every file in memory and fails if a committed WAV
+or the manifest differs by one byte, or if a size limit of AU-44 is passed.
+Generation is a pure function of the recipes (a seeded generator for noise, no
+clock), so the bytes are the same on every run. The set of sounds must equal
+the effect cues of the design doc. After changing `content/sounds.json`, run
+`pnpm audio:build` and commit the result.

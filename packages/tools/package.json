@@ -9,6 +9,7 @@
     "validate:content": "tsx src/validate-content.ts"
   },
   "dependencies": {
+    "@game/audio": "workspace:*",
     "@game/content": "workspace:*",
     "@game/core": "workspace:*",
     "@game/session": "workspace:*",

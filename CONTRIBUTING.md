@@ -6,21 +6,22 @@ A pnpm workspace. The packages mirror the layer boundaries in
 [`docs/specs/06-technical-architecture.md`](docs/specs/06-technical-architecture.md)
 (TA-52).
 
-| Path               | Package         | Role                                                                 |
-| ------------------ | --------------- | -------------------------------------------------------------------- |
-| `packages/core`    | `@game/core`    | Pure game logic: simulation, run rules, generators, content loading. |
-| `packages/session` | `@game/session` | Owns a run in progress; exposes intents and state. 1 to 4 players.   |
-| `packages/web`     | `@game/web`     | Presentation: a static site built with Vite.                         |
-| `packages/content` | `@game/content` | Exports the parsed `content/*.json` files for `web` and tests.       |
-| `packages/tools`   | `@game/tools`   | Node scripts: content checks, `pnpm sim`, ghosts. May use Node I/O.  |
-| `packages/art`     | `@game/art`     | Generates the sprites in `assets/sprites/` (`pnpm art:build`).       |
-| `content/`         |                 | Data files (see its README).                                         |
-| `schemas/`         |                 | Schemas for those files (see its README).                            |
-| `packages/golden`  | `@game/golden`  | Golden vector runner and update command. May use Node I/O.           |
-| `golden/`          |                 | Golden vectors (JSON). See docs/rules-reference.md.                  |
-| `boards/`          |                 | Reference boards for `pnpm sim` (JSON).                              |
-| `assets/`          |                 | Generated sprites (see its README).                                  |
-| `scripts/`         |                 | `check.mjs`, the `pnpm check` chain.                                 |
+| Path               | Package         | Role                                                                   |
+| ------------------ | --------------- | ---------------------------------------------------------------------- |
+| `packages/core`    | `@game/core`    | Pure game logic: simulation, run rules, generators, content loading.   |
+| `packages/session` | `@game/session` | Owns a run in progress; exposes intents and state. 1 to 4 players.     |
+| `packages/web`     | `@game/web`     | Presentation: a static site built with Vite.                           |
+| `packages/content` | `@game/content` | Exports the parsed `content/*.json` files for `web` and tests.         |
+| `packages/tools`   | `@game/tools`   | Node scripts: content checks, `pnpm sim`, ghosts. May use Node I/O.    |
+| `packages/art`     | `@game/art`     | Generates the sprites in `assets/sprites/` (`pnpm art:build`).         |
+| `packages/audio`   | `@game/audio`   | Synthesises the sound effects in `assets/audio/` (`pnpm audio:build`). |
+| `content/`         |                 | Data files (see its README).                                           |
+| `schemas/`         |                 | Schemas for those files (see its README).                              |
+| `packages/golden`  | `@game/golden`  | Golden vector runner and update command. May use Node I/O.             |
+| `golden/`          |                 | Golden vectors (JSON). See docs/rules-reference.md.                    |
+| `boards/`          |                 | Reference boards for `pnpm sim` (JSON).                                |
+| `assets/`          |                 | Generated sprites and sounds (see its README).                         |
+| `scripts/`         |                 | `check.mjs`, the `pnpm check` chain.                                   |
 
 `core` and `session` are consumed as TypeScript source (no build step).
 
@@ -41,6 +42,7 @@ pnpm check          # the whole CI chain (see below)
 pnpm golden:update  # regenerate golden/ expected values (deliberate)
 pnpm ghosts:update  # regenerate the bundled ghosts (see below)
 pnpm art:build      # regenerate assets/sprites/ (see assets/README.md)
+pnpm audio:build    # regenerate assets/audio/ from content/sounds.json (see assets/README.md)
 pnpm format         # prettier --write
 pnpm format:check   # prettier --check
 pnpm validate:content  # check content/ against schemas/ and the core loaders
