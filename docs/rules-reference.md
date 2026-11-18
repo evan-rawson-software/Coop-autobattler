@@ -5928,16 +5928,18 @@ shipped `economy.json` lists a signature building for each specialist whose own
 step of #468 has landed: from issue #473 the **Mana Well** (weight 12, `fromRound`
 2, `specialist` `spec_flowmancer`; "Specialists", "The Mana Well"), the others
 come with their steps (the **Rune Ward** from issue #474: weight 12, `fromRound` 2,
-`specialist` `spec_wardsmith`; a Familiar Roost and Transmuter entry, `fromRound` 2
+`specialist` `spec_wardsmith`; the **Familiar Roost** from issue #475: weight 12,
+`fromRound` 2, `specialist` `spec_beastbinder`; a Transmuter entry, `fromRound` 2
 as EC-3b decides). A roll for a player who has no entry of their own is
 exactly the roll over the list without the specialist entries, so only the
-Flowmancer's shops from round 2 differ from before #473, and from #474 the
-Wardsmith's too. `shop-roll.23`
+Flowmancer's shops from round 2 differ from before #473, from #474 the
+Wardsmith's too and from #475 the Beastbinder's. `shop-roll.23`
 (three players, the Flowmancer, another specialist and none, with a test list
 holding a Mana Well entry for the Flowmancer from round 2), `shop-roll.24`
 (round 1: gated by round), `shop-roll.25` (players without the entry roll as if
 it were not in the list) and `shop-roll.26` (the shipped list with a
-specialist: equal to `shop-roll.20`) pin it; `shop-roll.27` (the shipped list
+specialist: equal to `shop-roll.20` until issue #475, which gave the Beastbinder
+its own entry, so it now differs) pin it; `shop-roll.27` (the shipped list
 at round 2: the Mana Well is on offer to the Flowmancer only) and `shop-roll.28`
 (the shipped list at round 1 for a Flowmancer: no Mana Well yet) pin the
 shipped entry (issue #473). _Notes for a port:_ the player's
@@ -6250,12 +6252,13 @@ Quick march (`S` = 0, 10, 20, 30) and the speed each gives
 | --- | --- | --- | --- | --- |
 | `unit_soldier`, `unit_heavy`, `unit_lancer`, `unit_archer`, `unit_caster` | 6 (40) | 5 (48) | 5 (48) | 4 (60) |
 | `unit_raider`, `unit_drone` | 4 (60) | 3 (80) | 3 (80) | 3 (80) |
+| `unit_familiar` | 3 (80) | 2 (120) | 2 (120) | 2 (120) |
 | `unit_golem` | 10 (24) | 9 (26) | 8 (30) | 7 (34) |
 
 So one stack of Quick march gives a raider or drone 33% more speed (+10% asked)
 and a second and third stack give them nothing more; two stacks give the
 soldier the same as one. The attack cooldowns at Rapid fire (`S` = 15):
-soldier, heavy and archer 10 to 8, raider and drone 8 to 6, golem 14 to 12,
+soldier, heavy, archer and familiar 10 to 8, raider and drone 8 to 6, golem 14 to 12,
 lancer 12 to 10, caster 20 to 17. A table test pins the move cooldowns (`speed-modifiers.test.ts`).
 
 Notes for a port: read the two new kinds like `unit_strength_percent` (same
@@ -6877,13 +6880,15 @@ is a load error).
   **content only** in step #472: its own step of #468 (5/9 to 8/9) gives it its
   behaviour and its real numbers (the Mana Well got them in issue #473, "The
   resource setting and the Mana Well" below, and the Rune Ward in issue #474,
-  "The Rune Ward" below). Until then each is a stand-in of an existing kind with the
+  "The Rune Ward" below, and the Familiar Roost in issue #475, "The Familiar
+  Roost and the Familiar" below). Until then each is a stand-in of an existing kind with the
   footprint of the spec and placeholder numbers: the Mana Well a slow `source`
   (1x1, interval 40 / 28 / 20, price 8 / 20 / 40, still on a node); the Rune Ward
   a 1x1 `wall` (health 120 / 200 / 300, price 8 / 18 / 36; real since
   issue #474); the Familiar Roost a
   1x2 `unit_producer` of `unit_raider` (Power on the south side, 4 per unit,
-  every 80 / 56 / 40 ticks, price 20 / 40 / 70); the Transmuter a 1x2
+  every 80 / 56 / 40 ticks, price 20 / 40 / 70; it makes `unit_familiar` since
+  issue #475); the Transmuter a 1x2
   `refinery` of Composite from 2 Ore and 2 Power (every 60 / 42 / 30 ticks,
   price 25 / 50 / 90). They are **not in `offerWeights`**: nobody can buy one
   yet, so no run holds one and no rule, battle or shop changes. (An entry gated
@@ -7106,6 +7111,59 @@ Step 6/9 of #468: the Wardsmith's signature building.
   distance 1 between cells, never with the footprint boxes. Spend the charge when
   the attack is resolved, in unit order, so a charge of one serves the first
   attacker only.
+
+### The Familiar Roost and the Familiar (issue #475; CB-54, CB-15, CB-51a, EC-3b, V-15)
+
+Step 7/9 of #468: the Beastbinder's signature building and unit.
+
+- **The building** (`bld_familiar_roost`, Beastbinder only). A `unit_producer`
+  (CB-9, CB-13) of `unit_familiar`, 1x2, one input, Power (`res_b`) on the
+  south side at rotation 0, no output; it turns with the rotation like every
+  building. One Familiar per production, `costPerUnit` 4 Power, every
+  `productionIntervalTicks` 80 / 56 / 40 at tiers 1 to 3 (a tier collector
+  makes one item per 20 / 14 / 10 ticks, so one Extractor of its tier makes
+  exactly the 4 items per 80 / 56 / 40 ticks that one Roost uses: the rebalance
+  principle SC-13a holds, no exception), price 20 / 40 / 70, health 40 / 60 /
+  80 (proposed, tuned in #477). It is a plain producer: it holds a finished
+  unit while the exit is blocked and nothing else is new in its rules.
+- **The unit** (`unit_familiar`, `units.json`). Health 20, damage 5, attack
+  cooldown 10, **move cooldown 3** (speed `floor(240 / 3)` = 80 sub-cell units
+  per tick: the shortest of any ground unit, the raider's is 4), radius 60,
+  collision radius 39, reach 60, melee, ground, no armor, no splash. About half
+  a Soldier's health (40) and a little below its damage (6); the issue's
+  numbers, where the design note (CB-54) said about 40% health and two thirds of
+  a Soldier's move cooldown (4, equal to the raider's): the issue wins. It
+  follows the normal target rules (CB-15b, CB-15c, CB-16) with no rule of its
+  own, and it is the unit of its owner (CB-15a), so the Beastbinder's
+  `unit_health_percent` 10 applies: `floor(20 * 110 / 100)` = 22 health, damage
+  5. Because it runs 80 sub-cell units per tick over a 240-unit cell, it
+  reaches a Core well before a Soldier does (40 per tick).
+- **Not used by threats.** No `threats.json` composition, signature or boss
+  names it: it is player-only, and a Familiar appears only from an owner's Roost.
+- **Run modifiers.** The unit-targeted modifiers read the unit's ID as for any
+  unit (`units` lists name it only if they list it); the table of "Unit move and
+  attack speed" has its row.
+- **Shop.** `economy.json`: `bld_familiar_roost`, weight 12, `fromRound` 2,
+  `specialist` `spec_beastbinder` (as "Offer roll", "Signature buildings"). A
+  roll for any player without the Beastbinder is unchanged, so only the
+  Beastbinder's shops from round 2 differ from before.
+- **Ghost validation.** Nothing new (rule 6a ties the Roost to its specialist).
+  No new saved field: no format number is raised.
+- **Web.** Presentation text for the unit and the building, a unit sprite
+  (`unit_familiar`) and the Roost's sprite in the atlas.
+- **The bot.** `rush` picks the Beastbinder and wants the Roost (weight 7, as
+  the Lancer hall), wires it to a Power collector like any consumer (it is in
+  the bot's consumer list) and places it after the Lancer hall in the layout
+  priority, as set up in #472. Nothing is drawn.
+- **Vectors.** `arena-sim.familiar-roost-reaches-core` (a Beastbinder's
+  extractor and Roost: Familiars with 22 health reach and destroy an empty
+  Core), `arena-sim.familiar-outruns-soldier` (a Familiar, a raider and a
+  Soldier at equal distance: the Familiar hits the Core first), `shop-roll.26`
+  (the shipped list with a Beastbinder, now showing Roosts) and the content,
+  loader and shop tests. `speed-modifiers.test.ts` gains the Familiar's rows.
+- _Notes for a port:_ nothing is new in the rules: read the unit's numbers from
+  content like any unit, and the producer from `buildings.json` with
+  `unit: "unit_familiar"`; the speed is only the smaller `moveCooldownTicks`.
 
 ### Saves and snapshots (no format number raised)
 
@@ -7786,7 +7844,8 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Shop | `economy.json` | (issue #145; every non-wall weight was doubled by issue #291, see Walls, and five entries from round 3 were added by issue #383, see "Offer roll") `offerWeights`: collector 12 (was 10), Splitter 6, Merger 6, Crossover 2 (was 4), Barracks 16 (was 10), wall 8, gate 3 (was 5), turret 8, Overclocker 3, Armory 6 (was 3; it was not offered before the rebalance), Range 8 (was 5), Hangar 6 (was 3); placeholder unit numbers of Range and Hangar kept by owner decision (issue #59) | unit producers and the Armory are offered more often, routing parts less; with 8 bot runs per strategy this changes no strategy's depth by more than a round (fortify at party 4: 12.5 to 14.8) |
 | Mana Well (issue #473, proposed, to be tuned in #477) | `buildings.json`, `economy.json` | `bld_mana_well` 1x1 source with `resourceSetting`: interval 40 / 28 / 20 (half an Extractor's 20 / 14 / 10), price 8 / 20 / 40, health 20 / 30 / 40; in the shop from round 2 for the Flowmancer, weight 12 (half an Extractor's 24) | the stated exception to the rebalance principle: it feeds about half a consumer of its tier; weight and numbers are placeholders until #477 |
 | Rune Ward (issue #474, proposed, to be tuned in #477) | `buildings.json`, `economy.json` | `bld_rune_ward` 1x1 defense of type `ward`, Power (`res_b`) on the south side: `reflectDamage` 2 / 3 / 4, `costPerStrike` 1, price 8 / 18 / 36, health 120 / 200 / 300; in the shop from round 2 for the Wardsmith, weight 12 | `reflectDamage` and `costPerStrike` integers >= 1 (`reflectDamage` at most `MAX_DAMAGE`); numbers are placeholders until #477 |
-| Signature buildings (issue #472, placeholders until steps 5/9 to 8/9 of #468; the Mana Well is real since #473 and the Rune Ward since #474, see their rows) | `buildings.json` | `bld_mana_well` 1x1 source, price 8 / 20 / 40, interval 40 / 28 / 20; `bld_rune_ward` (1x1 wall at first, price 8 / 18 / 36, health 120 / 200 / 300; real since #474); `bld_familiar_roost` 1x2 producer of raiders, Power 4 per unit, price 20 / 40 / 70; `bld_transmuter` 1x2 refinery of Composite from 2 Ore and 2 Power, price 25 / 50 / 90; only the Mana Well (issue #473) and the Rune Ward (issue #474) are in `offerWeights` | stand-ins of existing kinds so that the roster, the shop gate and the ghost check can name them; tuned in issue #477 |
+| Familiar Roost and Familiar (issue #475, proposed, to be tuned in #477) | `buildings.json`, `units.json`, `economy.json` | `bld_familiar_roost` 1x2 unit producer of `unit_familiar`, Power (`res_b`) on the south side, 4 per Familiar every 80 / 56 / 40 ticks (need 50 / 71 / 100 per 1000 ticks: exactly one collector of its tier), price 20 / 40 / 70, health 40 / 60 / 80; `unit_familiar` health 20, damage 5, attack cooldown 10, move cooldown 3 (speed 80), radius 60, collision radius 39, reach 60, melee; in the shop from round 2 for the Beastbinder, weight 12 | the rebalance principle holds; the Familiar has the shortest move cooldown of the ground units; numbers are placeholders until #477 |
+| Signature buildings (issue #472, placeholders until steps 5/9 to 8/9 of #468; the Mana Well is real since #473, the Rune Ward since #474 and the Familiar Roost since #475, see their rows) | `buildings.json` | `bld_mana_well` 1x1 source, price 8 / 20 / 40, interval 40 / 28 / 20; `bld_rune_ward` (1x1 wall at first, price 8 / 18 / 36, health 120 / 200 / 300; real since #474); `bld_familiar_roost` 1x2 producer of `unit_familiar` (real since #475, see its row), Power 4 per unit, price 20 / 40 / 70; `bld_transmuter` 1x2 refinery of Composite from 2 Ore and 2 Power, price 25 / 50 / 90; only the Mana Well (issue #473), the Rune Ward (issue #474) and the Familiar Roost (issue #475) are in `offerWeights` | stand-ins of existing kinds so that the roster, the shop gate and the ghost check can name them; tuned in issue #477 |
 | Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
 | Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |
 | Escalator wave timing | `threats.json` | `firstTick` 100 and `intervalTicks` 75 (was 150 and 150): the eighth wave comes at tick 625 instead of 1200 | its Core used to fall before its large late waves spawned; a full tier 1 board now beats hard Escalator through round 8 (was 12), against 7 for Rusher |

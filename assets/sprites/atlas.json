@@ -18,7 +18,7 @@
     "units": {
       "file": "units.png",
       "w": 320,
-      "h": 120
+      "h": 136
     },
     "effects": {
       "file": "effects.png",
@@ -1659,10 +1659,157 @@
       "id": "unit_raider",
       "note": "Fast melee ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
-    "unit_heavy": {
+    "unit_familiar": {
       "sheet": "units",
       "x": 199,
       "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_familiar",
+      "tintable": true,
+      "note": "Very fast, fragile melee ground unit: a low pointed-eared beast in the team colour. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_familiar.walk": {
+      "sheet": "units",
+      "x": 216,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_familiar",
+      "tintable": true,
+      "note": "Very fast, fragile melee ground unit: a low pointed-eared beast in the team colour. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_familiar.attack": {
+      "sheet": "units",
+      "x": 249,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_familiar",
+      "tintable": true,
+      "note": "Very fast, fragile melee ground unit: a low pointed-eared beast in the team colour. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_familiar@a": {
+      "sheet": "units",
+      "x": 282,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_familiar",
+      "note": "Very fast, fragile melee ground unit: a low pointed-eared beast in the team colour. Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_familiar@a.walk": {
+      "sheet": "units",
+      "x": 0,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_familiar",
+      "note": "Very fast, fragile melee ground unit: a low pointed-eared beast in the team colour. Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_familiar@a.attack": {
+      "sheet": "units",
+      "x": 33,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_familiar",
+      "note": "Very fast, fragile melee ground unit: a low pointed-eared beast in the team colour. Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_familiar@b": {
+      "sheet": "units",
+      "x": 66,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_familiar",
+      "note": "Very fast, fragile melee ground unit: a low pointed-eared beast in the team colour. Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_familiar@b.walk": {
+      "sheet": "units",
+      "x": 83,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_familiar",
+      "note": "Very fast, fragile melee ground unit: a low pointed-eared beast in the team colour. Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_familiar@b.attack": {
+      "sheet": "units",
+      "x": 116,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_familiar",
+      "note": "Very fast, fragile melee ground unit: a low pointed-eared beast in the team colour. Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_heavy": {
+      "sheet": "units",
+      "x": 149,
+      "y": 34,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1678,8 +1825,8 @@
     },
     "unit_heavy.walk": {
       "sheet": "units",
-      "x": 216,
-      "y": 17,
+      "x": 166,
+      "y": 34,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1695,8 +1842,8 @@
     },
     "unit_heavy.attack": {
       "sheet": "units",
-      "x": 249,
-      "y": 17,
+      "x": 199,
+      "y": 34,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1712,8 +1859,8 @@
     },
     "unit_heavy@a": {
       "sheet": "units",
-      "x": 282,
-      "y": 17,
+      "x": 232,
+      "y": 34,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1728,7 +1875,7 @@
     },
     "unit_heavy@a.walk": {
       "sheet": "units",
-      "x": 0,
+      "x": 249,
       "y": 34,
       "w": 16,
       "h": 16,
@@ -1744,7 +1891,7 @@
     },
     "unit_heavy@a.attack": {
       "sheet": "units",
-      "x": 33,
+      "x": 282,
       "y": 34,
       "w": 16,
       "h": 16,
@@ -1760,8 +1907,8 @@
     },
     "unit_heavy@b": {
       "sheet": "units",
-      "x": 66,
-      "y": 34,
+      "x": 0,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1776,8 +1923,8 @@
     },
     "unit_heavy@b.walk": {
       "sheet": "units",
-      "x": 83,
-      "y": 34,
+      "x": 17,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1792,8 +1939,8 @@
     },
     "unit_heavy@b.attack": {
       "sheet": "units",
-      "x": 116,
-      "y": 34,
+      "x": 50,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1808,8 +1955,8 @@
     },
     "unit_golem": {
       "sheet": "units",
-      "x": 149,
-      "y": 34,
+      "x": 83,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1825,8 +1972,8 @@
     },
     "unit_golem.walk": {
       "sheet": "units",
-      "x": 166,
-      "y": 34,
+      "x": 100,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1842,8 +1989,8 @@
     },
     "unit_golem.attack": {
       "sheet": "units",
-      "x": 199,
-      "y": 34,
+      "x": 133,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1859,8 +2006,8 @@
     },
     "unit_golem@a": {
       "sheet": "units",
-      "x": 232,
-      "y": 34,
+      "x": 166,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1875,8 +2022,8 @@
     },
     "unit_golem@a.walk": {
       "sheet": "units",
-      "x": 249,
-      "y": 34,
+      "x": 183,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1891,8 +2038,8 @@
     },
     "unit_golem@a.attack": {
       "sheet": "units",
-      "x": 282,
-      "y": 34,
+      "x": 216,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1907,7 +2054,7 @@
     },
     "unit_golem@b": {
       "sheet": "units",
-      "x": 0,
+      "x": 249,
       "y": 51,
       "w": 16,
       "h": 16,
@@ -1923,7 +2070,7 @@
     },
     "unit_golem@b.walk": {
       "sheet": "units",
-      "x": 17,
+      "x": 266,
       "y": 51,
       "w": 16,
       "h": 16,
@@ -1939,8 +2086,8 @@
     },
     "unit_golem@b.attack": {
       "sheet": "units",
-      "x": 50,
-      "y": 51,
+      "x": 0,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1955,8 +2102,8 @@
     },
     "unit_lancer": {
       "sheet": "units",
-      "x": 83,
-      "y": 51,
+      "x": 33,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1972,8 +2119,8 @@
     },
     "unit_lancer.walk": {
       "sheet": "units",
-      "x": 100,
-      "y": 51,
+      "x": 50,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1989,8 +2136,8 @@
     },
     "unit_lancer.attack": {
       "sheet": "units",
-      "x": 133,
-      "y": 51,
+      "x": 83,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2006,8 +2153,8 @@
     },
     "unit_lancer@a": {
       "sheet": "units",
-      "x": 166,
-      "y": 51,
+      "x": 116,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2022,8 +2169,8 @@
     },
     "unit_lancer@a.walk": {
       "sheet": "units",
-      "x": 183,
-      "y": 51,
+      "x": 133,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2038,8 +2185,8 @@
     },
     "unit_lancer@a.attack": {
       "sheet": "units",
-      "x": 216,
-      "y": 51,
+      "x": 166,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2054,8 +2201,8 @@
     },
     "unit_lancer@b": {
       "sheet": "units",
-      "x": 249,
-      "y": 51,
+      "x": 199,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2070,8 +2217,8 @@
     },
     "unit_lancer@b.walk": {
       "sheet": "units",
-      "x": 266,
-      "y": 51,
+      "x": 216,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2086,7 +2233,7 @@
     },
     "unit_lancer@b.attack": {
       "sheet": "units",
-      "x": 0,
+      "x": 249,
       "y": 68,
       "w": 16,
       "h": 16,
@@ -2102,7 +2249,7 @@
     },
     "unit_archer": {
       "sheet": "units",
-      "x": 33,
+      "x": 282,
       "y": 68,
       "w": 16,
       "h": 16,
@@ -2119,8 +2266,8 @@
     },
     "unit_archer.walk": {
       "sheet": "units",
-      "x": 50,
-      "y": 68,
+      "x": 0,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2136,8 +2283,8 @@
     },
     "unit_archer.attack": {
       "sheet": "units",
-      "x": 83,
-      "y": 68,
+      "x": 33,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2153,8 +2300,8 @@
     },
     "unit_archer@a": {
       "sheet": "units",
-      "x": 116,
-      "y": 68,
+      "x": 66,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2169,8 +2316,8 @@
     },
     "unit_archer@a.walk": {
       "sheet": "units",
-      "x": 133,
-      "y": 68,
+      "x": 83,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2185,8 +2332,8 @@
     },
     "unit_archer@a.attack": {
       "sheet": "units",
-      "x": 166,
-      "y": 68,
+      "x": 116,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2201,8 +2348,8 @@
     },
     "unit_archer@b": {
       "sheet": "units",
-      "x": 199,
-      "y": 68,
+      "x": 149,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2217,8 +2364,8 @@
     },
     "unit_archer@b.walk": {
       "sheet": "units",
-      "x": 216,
-      "y": 68,
+      "x": 166,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2233,8 +2380,8 @@
     },
     "unit_archer@b.attack": {
       "sheet": "units",
-      "x": 249,
-      "y": 68,
+      "x": 199,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2249,8 +2396,8 @@
     },
     "unit_drone": {
       "sheet": "units",
-      "x": 282,
-      "y": 68,
+      "x": 232,
+      "y": 85,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2266,7 +2413,7 @@
     },
     "unit_drone.walk": {
       "sheet": "units",
-      "x": 0,
+      "x": 249,
       "y": 85,
       "w": 16,
       "h": 16,
@@ -2283,7 +2430,7 @@
     },
     "unit_drone.attack": {
       "sheet": "units",
-      "x": 33,
+      "x": 282,
       "y": 85,
       "w": 16,
       "h": 16,
@@ -2300,8 +2447,8 @@
     },
     "unit_drone@a": {
       "sheet": "units",
-      "x": 66,
-      "y": 85,
+      "x": 0,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2316,8 +2463,8 @@
     },
     "unit_drone@a.walk": {
       "sheet": "units",
-      "x": 83,
-      "y": 85,
+      "x": 17,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2332,8 +2479,8 @@
     },
     "unit_drone@a.attack": {
       "sheet": "units",
-      "x": 116,
-      "y": 85,
+      "x": 50,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2348,8 +2495,8 @@
     },
     "unit_drone@b": {
       "sheet": "units",
-      "x": 149,
-      "y": 85,
+      "x": 83,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2364,8 +2511,8 @@
     },
     "unit_drone@b.walk": {
       "sheet": "units",
-      "x": 166,
-      "y": 85,
+      "x": 100,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2380,8 +2527,8 @@
     },
     "unit_drone@b.attack": {
       "sheet": "units",
-      "x": 199,
-      "y": 85,
+      "x": 133,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2396,8 +2543,8 @@
     },
     "unit_caster": {
       "sheet": "units",
-      "x": 232,
-      "y": 85,
+      "x": 166,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2413,8 +2560,8 @@
     },
     "unit_caster.walk": {
       "sheet": "units",
-      "x": 249,
-      "y": 85,
+      "x": 183,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2430,8 +2577,8 @@
     },
     "unit_caster.attack": {
       "sheet": "units",
-      "x": 282,
-      "y": 85,
+      "x": 216,
+      "y": 102,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2447,7 +2594,7 @@
     },
     "unit_caster@a": {
       "sheet": "units",
-      "x": 0,
+      "x": 249,
       "y": 102,
       "w": 16,
       "h": 16,
@@ -2463,7 +2610,7 @@
     },
     "unit_caster@a.walk": {
       "sheet": "units",
-      "x": 17,
+      "x": 266,
       "y": 102,
       "w": 16,
       "h": 16,
@@ -2479,8 +2626,8 @@
     },
     "unit_caster@a.attack": {
       "sheet": "units",
-      "x": 50,
-      "y": 102,
+      "x": 0,
+      "y": 119,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2495,8 +2642,8 @@
     },
     "unit_caster@b": {
       "sheet": "units",
-      "x": 83,
-      "y": 102,
+      "x": 33,
+      "y": 119,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -2511,8 +2658,8 @@
     },
     "unit_caster@b.walk": {
       "sheet": "units",
-      "x": 100,
-      "y": 102,
+      "x": 50,
+      "y": 119,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -2527,8 +2674,8 @@
     },
     "unit_caster@b.attack": {
       "sheet": "units",
-      "x": 133,
-      "y": 102,
+      "x": 83,
+      "y": 119,
       "w": 16,
       "h": 16,
       "frames": 2,

@@ -26662,5 +26662,236 @@
       },
       "eventLogHash": "ffc387a7"
     }
+  },
+  {
+    "id": "arena-sim.familiar-roost-reaches-core",
+    "kind": "arena-sim",
+    "description": "A Beastbinder's Power extractor feeds a tier 1 Familiar Roost (4 Power per Familiar, one every 80 ticks, CB-54). Each Familiar spawns with 20 * 110 / 100 = 22 health and damage 5 (CB-51a), runs at move cooldown 3 (speed 80) and eight of them reach the empty enemy Core and destroy it (500 damage) before tick 700.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 0,
+              "y": 0,
+              "resource": "res_b"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_beastbinder"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_familiar_roost",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 0,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 700,
+      "report": "stats"
+    },
+    "expected": {
+      "result": {
+        "tick": 700,
+        "stateHash": "292cee8f",
+        "events": 185,
+        "sides": [
+          {
+            "spawned": 8,
+            "alive": 8,
+            "unitsDied": 0,
+            "buildingDamageDealt": 500,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0]
+          }
+        ],
+        "stats": [
+          [1, 22, 22, 5],
+          [2, 22, 22, 5],
+          [3, 22, 22, 5],
+          [4, 22, 22, 5],
+          [5, 22, 22, 5],
+          [6, 22, 22, 5],
+          [7, 22, 22, 5],
+          [8, 22, 22, 5]
+        ]
+      },
+      "eventLogHash": "8b6dbb44"
+    }
+  },
+  {
+    "id": "arena-sim.familiar-outruns-soldier",
+    "kind": "arena-sim",
+    "description": "A Familiar and a Soldier start side by side the same distance from the enemy Core; the Familiar (move cooldown 3, speed 80) is the first to hit the Core (it has dealt 18 damage after 60 ticks), the raider (cooldown 4) is just behind and the Soldier (move cooldown 6, speed 40) has not arrived.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 60,
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_familiar",
+          "px": 600,
+          "py": 3840
+        },
+        {
+          "side": 0,
+          "def": "unit_raider",
+          "px": 1200,
+          "py": 3840
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "px": 1800,
+          "py": 3840
+        }
+      ],
+      "report": "positions"
+    },
+    "expected": {
+      "result": {
+        "tick": 60,
+        "stateHash": "7cce959e",
+        "events": 3,
+        "sides": [
+          {
+            "spawned": 3,
+            "alive": 3,
+            "unitsDied": 0,
+            "buildingDamageDealt": 18,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [482]
+          }
+        ],
+        "positions": [
+          [1, 1160, 7360],
+          [2, 1256, 7368],
+          [3, 1660, 6180]
+        ]
+      },
+      "eventLogHash": "004babc7"
+    }
   }
 ]

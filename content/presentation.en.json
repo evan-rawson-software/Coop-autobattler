@@ -151,6 +151,10 @@
       "name": "Raider",
       "description": "Small, fast and fragile: marches on the enemy Core like a soldier."
     },
+    "unit_familiar": {
+      "name": "Familiar",
+      "description": "The Beastbinder's own unit: very fast and fragile, it runs at the enemy Core like a soldier and often arrives before the defence is ready."
+    },
     "unit_heavy": {
       "name": "Heavy",
       "description": "A slow-built bruiser: far tougher and harder-hitting than a soldier. Marches on the enemy Core and attacks whatever blocks the way."

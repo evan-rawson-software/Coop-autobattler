@@ -133,9 +133,15 @@ function wiring(r: BotRunResult, id: number): { into: number; out: number } {
 // Power collector like a turret) changed the shops and boards again, so the
 // fortify Aether seed was searched again over 1 to 80: 9 and 70 (39 no longer
 // builds it). Rush Composite 2 and Foundry 1 still build theirs.
+// The Familiar Roost (#475: the Beastbinder rush bot now buys it, and it takes
+// a Power collector) changed the rush shops and boards, so the rush seeds were
+// searched again over 1 to 30 (chain on the board, its units spawned, no
+// rejected intent): Composite 1, 6, 7, 11, 13, 17, 18, 28, 30 (first: 1; 2 no
+// longer builds it); Foundry 2, 6, 12, 14, 19, 22, 27, 29, 30 (first: 2; the
+// old seed 1 builds none). Fortify Aether 9 still builds its chain.
 describe('the bot builds the Foundry and the refining chains (issue #384)', () => {
   test('rush builds the Composite chain and its Golems fight', () => {
-    for (const seed of [2]) {
+    for (const seed of [1]) {
       const r = play('rush', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_ab')).toBeGreaterThan(0);
@@ -155,7 +161,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('a Foundry is built and its heavies fight', () => {
-    const r = play('rush', 1);
+    const r = play('rush', 2);
     expect(r.rejected).toEqual([]);
     expect(onBoard(r, 'bld_foundry')).toBeGreaterThan(0);
     expect(r.spawned['unit_heavy'] ?? 0).toBeGreaterThan(0);

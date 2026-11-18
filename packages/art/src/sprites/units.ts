@@ -197,6 +197,46 @@ function raider(L: Layers, c: Ctx): void {
   L.front.stamp(RAIDER_HOOD, 5, 4 + dy);
 }
 
+// ---- Familiar ----------------------------------------------------------
+
+/** A low, pointed-eared beast in the team colour, seen from the front. */
+const FAMILIAR_BODY: Grid = [
+  '.xxxxxxxx.',
+  'xxxxxxxxXX',
+  'xxxxxxxxXX',
+  'xxxxxxxXXX',
+  '.xxxxXXXX.',
+];
+const FAMILIAR_HEAD: Grid = [
+  'X.....X',
+  'xx...xx',
+  'xxxxxxx',
+  'x6xxx6x',
+  'xxxxxxX',
+  '.xX1XX.',
+];
+
+function familiar(L: Layers, c: Ctx): void {
+  const lunge = c.atk === 2 ? -2 : c.atk === 1 ? 1 : 0;
+  const bob = c.step === -1 ? -1 : 0;
+  const dy = lunge + bob;
+  const s = c.step;
+  // A tail flicking behind it.
+  L.back.set(12 + s, 8 + bob, 'x');
+  L.back.set(13 + s, 7 + bob, 'x');
+  L.back.set(13 + s, 6 + bob, 'X');
+  // Four quick paws.
+  L.back.rect(4, 12 + s, 2, 2, '1');
+  L.back.rect(10, 12 - s, 2, 2, '1');
+  L.back.rect(6, 12 - s, 2, 2, '1');
+  L.back.rect(8, 12 + s, 2, 2, '1');
+  L.body.stamp(FAMILIAR_BODY, 3, 7 + dy);
+  // Bared fangs on the strike.
+  if (c.atk === 2) L.front.rect(7, 11 + dy, 2, 1, '6');
+  sideCue(L.front, c.side, 5, 4 + dy, 6);
+  L.front.stamp(FAMILIAR_HEAD, 4, 3 + dy);
+}
+
 // ---- Archer ------------------------------------------------------------
 
 const ARCHER_CLOAK: Grid = [
@@ -457,6 +497,7 @@ const DRAWERS: Readonly<Record<string, (L: Layers, c: Ctx) => void>> = {
   unit_lancer: lancer,
   unit_caster: caster,
   unit_raider: raider,
+  unit_familiar: familiar,
   unit_archer: archer,
   unit_drone: drone,
 };
@@ -473,6 +514,8 @@ const NOTES: Readonly<Record<string, string>> = {
   unit_lancer:
     'Long-reach melee ground unit: a spear that runs the height of the frame, no shield.',
   unit_raider: 'Fast melee ground unit.',
+  unit_familiar:
+    'Very fast, fragile melee ground unit: a low pointed-eared beast in the team colour.',
   unit_archer: 'Ranged ground unit.',
   unit_drone: 'Flying unit; place fx_shadow under it.',
 };

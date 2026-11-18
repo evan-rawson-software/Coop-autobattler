@@ -97,7 +97,7 @@ describe('real content', () => {
   test('loads everything through loadAllContent', () => {
     const content = loadAllContentOrThrow(raw);
     expect(content.buildings.list().length).toBe(35);
-    expect(content.units.list().length).toBe(8);
+    expect(content.units.list().length).toBe(9);
     expect(content.terrain.list().length).toBe(2);
     const turret = content.buildings.get('bld_turret');
     expect(turret?.kind).toBe('defense');
