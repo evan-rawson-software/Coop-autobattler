@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v5.2
+Status: Draft v5.3
 
 ## Direction
 
@@ -132,6 +132,9 @@ language-neutral from the start:
 - **Layer rule**: `core` imports neither `session` nor `web`, and uses no
   DOM, no Node I/O and no clock; `session` imports only `core`; `web` may
   import both. The TypeScript configs and ESLint enforce it.
+- **Audio (TA-7a)**: designed in `docs/specs/08-audio.md`, not built yet;
+  `packages/audio` will generate the sound effects (`pnpm audio:build`) and
+  the web engine will live in `packages/web/src/audio/`.
 - **Content (TA-48)**: `content/` holds `buildings`, `economy`, `events`,
   `mapgen`, `resources` (TA-27a), `sim`, `terrain`, `threats` and `units`,
   and the display text in `presentation.en.json` (TA-27b).
@@ -258,6 +261,22 @@ Everything from here down describes the Godot game.
 - **TA-7 [PROPOSED]** **Presentation** renders state and plays back event
   logs. It contains no rules. Battle playback is driven entirely by the event
   log, for the host and guests alike.
+- **TA-7a [DECIDED]** **Audio** (issue #445, designed in `08-audio.md`) is part
+  of Presentation and follows these rules:
+  - It is **presentation only**: it reads the run state and the arena event
+    log and never changes the simulation, saves, replays, golden vectors or
+    ghosts.
+  - It is **never the only signal**: everything a sound announces is also
+    visible.
+  - It is **data, not code**: the cues, the event-to-cue table, the sound
+    parameters and the music are content files with schemas
+    (`content/audio.json`, `sounds.json`, `music.json`), and the Godot port
+    reads the same files. Effects are generated in code (`packages/audio`),
+    music is synthesised at run time.
+  - It is **small**: all audio is 2 MB or less, listed in
+    `docs/performance-budget.md`.
+  - Volumes (master, music, effects) and mute are kept per browser, outside
+    saves, and the browser's first click starts audio.
 - **TA-8 [DECIDED]** **Versioning.** Decided:
   - A run keeps the **version it was played on**. It only ever meets ghosts
     that were **played on that same version**, even after the game has been
@@ -474,7 +493,7 @@ is deliberate.
 - **TA-25 [PROPOSED]** Local save files synchronized by Steam Cloud:
   - records (depth reached, run history)
   - saved runs (TA-12)
-  - settings
+  - settings (including the audio volumes, `08-audio.md`)
 - **TA-26 [PROPOSED]** Save files carry the run version (TA-8) and a save-format version.
 
 ## Content

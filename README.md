@@ -59,6 +59,7 @@ refined and then broken down into backlog items for coding agents.
 | 05 | [Scaling & economy](docs/specs/05-scaling-economy.md) | Exponential PvE scaling, player power curve, economy |
 | 06 | [Technical architecture](docs/specs/06-technical-architecture.md) | Phases (web proof of concept → Godot → Steam multiplayer), Steam as the backend, trust model |
 | 07 | [Open questions](docs/specs/07-open-questions.md) | Decisions still to be made, with recommendations |
+| 08 | [Audio](docs/specs/08-audio.md) | Sound effects and music: tone, cue list, mix rules, file formats, size budget |
 
 ## Wireframes
 
