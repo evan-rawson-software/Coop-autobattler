@@ -890,15 +890,29 @@ function familiarRoostSprite(): Pix {
   return p;
 }
 
-/** Placeholder art for the Transmuter (#472): a 1x2 refinery with two vats. */
+/**
+ * The Transmuter (#476): a 1x2 refinery with two vats. The lower vat, by the
+ * input on the south edge, is neutral: it takes any base resource. The upper
+ * vat uses the three tint keys (X, x, Z), so the board draws it in the colour
+ * of the resource its owner set it to make; untinted (the shop card) it is
+ * neutral grey.
+ */
 function transmuterSprite(): Pix {
   const p = new Pix(16, 32);
   plate(p, 1, 1, 14, 30, KIND_RAMP['refinery'] as Ramp);
-  for (const cy of [10, 21]) {
-    p.ellipse(8, cy, 5.5, 4.5, 'K');
-    p.ellipse(8, cy, 4.5, 3.5, '2');
-    p.ellipse(8, cy, 3, 2.2, cy === 10 ? 'o' : 'y');
-  }
+  // The output vat, in the colour of the setting.
+  p.ellipse(8, 10, 5.5, 4.5, 'K');
+  p.ellipse(8, 10, 4.5, 3.5, 'X');
+  p.ellipse(8, 10, 3, 2.2, 'x');
+  p.set(7, 9, 'Z');
+  p.set(8, 9, 'Z');
+  // The input vat takes anything, so it stays plain stone.
+  p.ellipse(8, 22, 5.5, 4.5, 'K');
+  p.ellipse(8, 22, 4.5, 3.5, '4');
+  p.ellipse(8, 22, 3, 2.2, '1');
+  // A pipe from the lower vat to the upper one, and the output arrow.
+  p.rect(7, 14, 2, 4, 'K');
+  p.rect(7, 15, 2, 2, '3');
   arrow(p, 7, 2, 'n', 'y');
   return p;
 }
@@ -938,7 +952,10 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
  * Buildings whose basin takes the colour of a resource at draw time (a
  * building with the resource setting, issue #473): they use the tint keys.
  */
-const TINTED: ReadonlySet<string> = new Set(['bld_mana_well']);
+const TINTED: ReadonlySet<string> = new Set([
+  'bld_mana_well',
+  'bld_transmuter',
+]);
 
 /** Buildings that have art ahead of their content; planned until content adds them. */
 const PLANNED: Readonly<Record<string, string>> = {

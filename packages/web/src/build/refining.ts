@@ -5,6 +5,7 @@
  * turns them into per-second display figures and walks the conduits.
  */
 import {
+  buildFlowGraph,
   buildingEnd,
   costEntries,
   productionOf,
@@ -46,12 +47,15 @@ export function outputRate(
   def: BuildingDef,
   tier: number,
   ticksPerSecond: number,
+  /** A Transmuter's setting (issue #476): the resource it is set to make. */
+  setting?: string,
 ): ResourceRate | null {
   if (def.kind !== 'refinery') return null;
   const t = def.tiers[tier - 1];
-  if (t === undefined) return null;
+  const resource = def.output ?? setting;
+  if (t === undefined || resource === undefined) return null;
   return {
-    resource: def.output,
+    resource,
     hundredths: Math.floor(
       (100 * t.outputPerBatch * ticksPerSecond) / t.productionIntervalTicks,
     ),
@@ -67,9 +71,31 @@ export function batchTotals(
   const t = def.tiers[tier - 1];
   if (t === undefined) return null;
   return {
-    taken: (costEntries(def, tier) ?? []).reduce((n, e) => n + e.cost, 0),
+    taken:
+      t.costPerBatch ??
+      (costEntries(def, tier) ?? []).reduce((n, e) => n + e.cost, 0),
     made: t.outputPerBatch,
   };
+}
+
+/**
+ * The base resource that arrives at a Transmuter's input (issue #476), or
+ * null when no conduit feeds it or the resource is not known yet.
+ */
+export function arrivingResource(
+  team: TeamState,
+  content: Pick<WebContent, 'buildings' | 'terrain' | 'resources'>,
+  building: number,
+): string | null {
+  try {
+    const edge = buildFlowGraph(team, content).edges.find(
+      (e) => e.to === String(building),
+    );
+    return edge?.resource ?? null;
+  } catch {
+    // A loop in the conduits: nothing is known.
+    return null;
+  }
 }
 
 /** The resource a `resource_mismatch` refusal says an input takes, if it does. */
@@ -204,7 +230,9 @@ export function chainRows(
         state: dead ? 'starved' : s.state === 'full' ? 'full' : 'under',
         short:
           s.inputs === undefined
-            ? [def.output]
+            ? [def.output ?? b.resource].flatMap((r) =>
+                r === undefined ? [] : [r],
+              )
             : s.inputs.filter((i) => i.short).map((i) => i.resource),
       });
     }

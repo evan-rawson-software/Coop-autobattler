@@ -609,7 +609,7 @@ describe('signature buildings by specialist (issue #472, EC-3b)', () => {
     expect(rareOfferDefs(e, 3, 100)).not.toContain('bld_mana_well');
   });
 
-  test('the shipped content lists the Mana Well, the Rune Ward and the Familiar Roost from round 2 (#473 to #475)', () => {
+  test('the shipped content lists the four signature buildings from round 2 (#473 to #476)', () => {
     const named = economy.offerWeights.filter(
       (w) => w.specialist !== undefined,
     );
@@ -632,11 +632,13 @@ describe('signature buildings by specialist (issue #472, EC-3b)', () => {
         fromRound: 2,
         specialist: 'spec_beastbinder',
       },
+      {
+        def: 'bld_transmuter',
+        weight: 12,
+        fromRound: 2,
+        specialist: 'spec_alchemist',
+      },
     ]);
-    // The last signature building comes with its own step.
-    expect(economy.offerWeights.some((w) => w.def === 'bld_transmuter')).toBe(
-      false,
-    );
   });
 });
 

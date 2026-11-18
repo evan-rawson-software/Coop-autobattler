@@ -8719,5 +8719,647 @@
       },
       "eventLogHash": "1e2be3a1"
     }
+  },
+  {
+    "id": "flow-sim.transmuter-conversion",
+    "kind": "flow-sim",
+    "description": "The Transmuter takes 2 items of whatever base resource its feeding conduit carries and makes 1 item of the resource it is set to per batch (issue #476, CB-55): a tier 1 Transmuter turns Ore into Power for a Hangar (a batch every 60 ticks); a tier 3 one, fed by a tier 3 Extractor, turns Ore into Flux that leaves it unconnected and is lost (a batch every 30 ticks); a tier 2 one turns Flux into Ore for a Barracks (every 42 ticks). Items taken are twice the items made and the conservation law holds at every tick.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          },
+          {
+            "x": 8,
+            "y": 2,
+            "resource": "res_a"
+          },
+          {
+            "x": 13,
+            "y": 2,
+            "resource": "res_c"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_transmuter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 3,
+          "rotation": 0,
+          "resource": "res_b"
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_hangar",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 8,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_transmuter",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 8,
+          "y": 3,
+          "rotation": 0,
+          "resource": "res_c"
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 5,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 6,
+          "x": 13,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_transmuter",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 7,
+          "x": 13,
+          "y": 3,
+          "rotation": 0,
+          "resource": "res_a"
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 8,
+          "x": 13,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 6,
+            "side": "north"
+          },
+          "to": {
+            "building": 7,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 7,
+            "side": "north"
+          },
+          "to": {
+            "building": 8,
+            "side": "south"
+          },
+          "cells": []
+        }
+      ],
+      "ticks": 400,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "1f4ad88b",
+        "flow": {
+          "produced": 99,
+          "inConduits": 0,
+          "held": 1,
+          "inBuffers": 8,
+          "consumed": 77,
+          "lost": 13
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 18,
+            "lost": 0,
+            "stalledTicks": 21
+          },
+          {
+            "building": 4,
+            "resource": "res_a",
+            "produced": 32,
+            "lost": 0,
+            "stalledTicks": 72
+          },
+          {
+            "building": 6,
+            "resource": "res_c",
+            "produced": 20,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [],
+        "consumers": [
+          {
+            "building": 2,
+            "side": "south",
+            "resource": "res_a",
+            "count": 4,
+            "delivered": 18,
+            "consumed": 14
+          },
+          {
+            "building": 3,
+            "side": "south",
+            "resource": "res_b",
+            "count": 0,
+            "delivered": 6,
+            "consumed": 6
+          },
+          {
+            "building": 5,
+            "side": "south",
+            "resource": "res_a",
+            "count": 4,
+            "delivered": 32,
+            "consumed": 28
+          },
+          {
+            "building": 7,
+            "side": "south",
+            "resource": "res_c",
+            "count": 0,
+            "delivered": 20,
+            "consumed": 20
+          },
+          {
+            "building": 8,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 9,
+            "consumed": 9
+          }
+        ],
+        "refineries": [
+          {
+            "building": 2,
+            "resource": "res_b",
+            "counters": [0],
+            "cooldown": 59,
+            "store": 1,
+            "stalled": 0,
+            "produced": 7,
+            "lost": 0,
+            "batches": 7,
+            "stalledTicks": 0
+          },
+          {
+            "building": 5,
+            "resource": "res_c",
+            "counters": [2],
+            "cooldown": 9,
+            "store": 0,
+            "stalled": 0,
+            "produced": 13,
+            "lost": 13,
+            "batches": 13,
+            "stalledTicks": 0
+          },
+          {
+            "building": 7,
+            "resource": "res_a",
+            "counters": [2],
+            "cooldown": 17,
+            "store": 0,
+            "stalled": 0,
+            "produced": 9,
+            "lost": 0,
+            "batches": 9,
+            "stalledTicks": 0
+          }
+        ]
+      },
+      "eventLogHash": "0242e9a8"
+    }
+  },
+  {
+    "id": "flow-sim.transmuter-same-resource",
+    "kind": "flow-sim",
+    "description": "A Transmuter set to the resource its conduit carries (Ore into a Transmuter set to Ore, feeding a Barracks) produces nothing and takes nothing in (issue #476): its counter stays 0, no batch is made, the conduit backs up to the Extractor, which stalls, and the Barracks gets nothing.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_transmuter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 3,
+          "rotation": 0,
+          "resource": "res_a"
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": []
+        }
+      ],
+      "ticks": 300,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "b9db6614",
+        "flow": {
+          "produced": 4,
+          "inConduits": 0,
+          "held": 0,
+          "inBuffers": 4,
+          "consumed": 0,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 4,
+            "lost": 0,
+            "stalledTicks": 201
+          }
+        ],
+        "routes": [],
+        "consumers": [
+          {
+            "building": 2,
+            "side": "south",
+            "resource": "res_a",
+            "count": 4,
+            "delivered": 4,
+            "consumed": 0
+          },
+          {
+            "building": 3,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 0,
+            "consumed": 0
+          }
+        ],
+        "refineries": [
+          {
+            "building": 2,
+            "resource": "res_a",
+            "counters": [0],
+            "cooldown": 0,
+            "store": 0,
+            "stalled": 0,
+            "produced": 0,
+            "lost": 0,
+            "batches": 0,
+            "stalledTicks": 0
+          }
+        ]
+      },
+      "eventLogHash": "6f846ee8"
+    }
+  },
+  {
+    "id": "flow-sim.transmuter-output-backs-up",
+    "kind": "flow-sim",
+    "description": "A tier 3 Transmuter fed by a tier 2 Extractor with its Power output into a Hangar whose input buffer is never drained (consumers hold): once the buffer and the conduit are full the Transmuter's output store cannot be placed, it is stalled and makes no more batches (issue #476, refinery rules of CB-5d); the items it took in are never lost.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_transmuter",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 3,
+          "rotation": 0,
+          "resource": "res_b"
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_hangar",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": []
+        }
+      ],
+      "ticks": 600,
+      "consumers": "hold"
+    },
+    "expected": {
+      "result": {
+        "tick": 600,
+        "stateHash": "c432a4ba",
+        "flow": {
+          "produced": 21,
+          "inConduits": 0,
+          "held": 1,
+          "inBuffers": 8,
+          "consumed": 12,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 16,
+            "lost": 0,
+            "stalledTicks": 363
+          }
+        ],
+        "routes": [],
+        "consumers": [
+          {
+            "building": 2,
+            "side": "south",
+            "resource": "res_a",
+            "count": 4,
+            "delivered": 16,
+            "consumed": 12
+          },
+          {
+            "building": 3,
+            "side": "south",
+            "resource": "res_b",
+            "count": 4,
+            "delivered": 4,
+            "consumed": 0
+          }
+        ],
+        "refineries": [
+          {
+            "building": 2,
+            "resource": "res_b",
+            "counters": [2],
+            "cooldown": 0,
+            "store": 1,
+            "stalled": 1,
+            "produced": 5,
+            "lost": 0,
+            "batches": 5,
+            "stalledTicks": 452
+          }
+        ]
+      },
+      "eventLogHash": "eeb65d6d"
+    }
   }
 ]

@@ -275,6 +275,14 @@ export function deriveMoments(
       ) {
         // A destroyed refinery says what it starves: the consumers its
         // output conduit led to, which get no more of its compound.
+        // A Transmuter makes the resource of its setting (#476).
+        const made =
+          ref.def.kind === 'refinery'
+            ? (ref.def.output ??
+              record.initialTeams[side].buildings.find(
+                (b) => b.id === e.building,
+              )?.resource)
+            : undefined;
         const fed =
           ref.def.kind === 'refinery'
             ? downstreamOf(record.initialTeams[side], content, e.building)
@@ -294,12 +302,12 @@ export function deriveMoments(
           kind: 'production',
           side,
           text:
-            ref.def.kind === 'refinery' && fed.length > 0
+            ref.def.kind === 'refinery' && fed.length > 0 && made !== undefined
               ? screenText(screenTexts, 'battleLogStarves', {
                   who,
                   name,
                   fed: [...new Set(fed)].join(' and '),
-                  resource: resourceName(content, ref.def.output),
+                  resource: resourceName(content, made),
                 })
               : `${who} ${name} destroyed`,
           focus,

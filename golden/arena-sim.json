@@ -26893,5 +26893,466 @@
       },
       "eventLogHash": "004babc7"
     }
+  },
+  {
+    "id": "arena-sim.transmuter-feeds-roost",
+    "kind": "arena-sim",
+    "description": "A tier 1 Ore Extractor feeds a tier 1 Transmuter set to Power, which feeds a Familiar Roost (issue #476): in battle the Transmuter turns every 2 Ore into 1 Power (a batch every 60 ticks), and the Roost, which takes 4 Power per Familiar, spawns Familiars at the rate that Power allows. No specialist, so the batch interval is the content's.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 0,
+              "y": 0,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_transmuter",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 0,
+            "y": 1,
+            "rotation": 0,
+            "resource": "res_b"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_familiar_roost",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 0,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 2,
+              "side": "north"
+            },
+            "to": {
+              "building": 3,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 700,
+      "report": "stats"
+    },
+    "expected": {
+      "result": {
+        "tick": 700,
+        "stateHash": "99ec78cd",
+        "events": 146,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 290,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [210]
+          }
+        ],
+        "stats": [
+          [1, 20, 20, 5],
+          [2, 20, 20, 5]
+        ]
+      },
+      "eventLogHash": "dc277bf1"
+    }
+  },
+  {
+    "id": "arena-sim.transmuter-alchemist-bonus",
+    "kind": "arena-sim",
+    "description": "The same chain for an Alchemist (issue #476, CB-57): the Alchemist's +15 percent production speed shortens the Transmuter's time between batches (a refinery: 60 ticks becomes floor(6000 / 115) = 52 by the rounding rule of CB-51a), so more Power reaches the Roost and the Alchemist spawns more Familiars than in arena-sim.transmuter-feeds-roost.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 0,
+              "y": 0,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_alchemist"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_transmuter",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 0,
+            "y": 1,
+            "rotation": 0,
+            "resource": "res_b"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_familiar_roost",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 0,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 2,
+              "side": "north"
+            },
+            "to": {
+              "building": 3,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 700,
+      "report": "stats"
+    },
+    "expected": {
+      "result": {
+        "tick": 700,
+        "stateHash": "3efd6cce",
+        "events": 166,
+        "sides": [
+          {
+            "spawned": 3,
+            "alive": 3,
+            "unitsDied": 0,
+            "buildingDamageDealt": 345,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [155]
+          }
+        ],
+        "stats": [
+          [1, 20, 20, 5],
+          [2, 20, 20, 5],
+          [3, 20, 20, 5]
+        ]
+      },
+      "eventLogHash": "2c5beeb7"
+    }
+  },
+  {
+    "id": "arena-sim.transmuter-same-resource-makes-nothing",
+    "kind": "arena-sim",
+    "description": "A Transmuter set to Ore and fed Ore by its Extractor makes nothing (issue #476): the Barracks after it gets no Ore and spawns no soldier.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 0,
+              "y": 0,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "setSpecialist",
+            "actor": 0,
+            "specialist": "spec_alchemist"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_transmuter",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 0,
+            "y": 1,
+            "rotation": 0,
+            "resource": "res_a"
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 0,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 2,
+              "side": "north"
+            },
+            "to": {
+              "building": 3,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 700,
+      "report": "stats"
+    },
+    "expected": {
+      "result": {
+        "tick": 700,
+        "stateHash": "daf100de",
+        "events": 9,
+        "sides": [
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "stats": []
+      },
+      "eventLogHash": "c1761131"
+    }
   }
 ]

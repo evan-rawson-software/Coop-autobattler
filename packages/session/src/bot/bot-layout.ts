@@ -147,7 +147,13 @@ export function isNodeCollector(content: Content, def: string): boolean {
 /** A collector with the resource setting (issue #473). */
 function isWell(content: Content, def: string): boolean {
   const d = content.buildings.get(def);
-  return d !== undefined && hasResourceSetting(d);
+  return d !== undefined && d.kind === 'source' && hasResourceSetting(d);
+}
+
+/** A refinery with the resource setting: the Transmuter (issue #476). */
+export function isTransmuter(content: Content, def: string): boolean {
+  const d = content.buildings.get(def);
+  return d !== undefined && d.kind === 'refinery' && hasResourceSetting(d);
 }
 
 export function sizeOf(env: Env, id: string): { w: number; h: number } {
@@ -473,6 +479,8 @@ function* consumerPlacements(
   consumerId: number,
   wantSide?: Side,
   wantInput?: Side,
+  /** The resource setting of the consumer, if it has one (issue #476). */
+  setting?: string,
 ): Generator<Plan> {
   const s = plan.team.buildings.find((b) => b.id === sourceId);
   const c = plan.team.stash.find((b) => b.id === consumerId);
@@ -498,7 +506,7 @@ function* consumerPlacements(
     size,
   );
   for (const pos of wide ? ranked.slice(0, WIDE_TRIES) : ranked) {
-    const placed = withPlace(env, plan, consumerId, pos.x, pos.y);
+    const placed = withPlace(env, plan, consumerId, pos.x, pos.y, setting);
     if (placed === null) continue;
     const done = withConduit(
       env,
@@ -548,6 +556,18 @@ export function freeNodes(
   );
 }
 
+/**
+ * The nodes of a resource in the player's plot that no building stands on
+ * (the chain step may use the ones kept back): what a collector could still
+ * be put on.
+ */
+function openNodeCount(env: Env, team: TeamState, resource: string): number {
+  const occ = occupancy(team, env.content);
+  return freeNodes(env, team, resource, true).filter(
+    (n) => occ.buildingAt(n.x, n.y) === null,
+  ).length;
+}
+
 function plotNodes(env: Env, team: TeamState, resource: string): Cell[] {
   const nodes: Cell[] = [];
   for (const n of allNodes(team)) {
@@ -568,7 +588,8 @@ function reservedNodes(env: Env, team: TeamState): Cell[] {
   const built = team.buildings.some(
     (b) =>
       b.owner === env.player &&
-      (defOf(env, b.def)?.kind === 'refinery' ||
+      ((defOf(env, b.def)?.kind === 'refinery' &&
+        !isTransmuter(env.content, b.def)) ||
         b.def === 'bld_foundry' ||
         b.def === MERGER),
   );
@@ -1360,6 +1381,45 @@ function connectChain(
   });
 }
 
+/** Most collector and placement choices tried for one Transmuter chain. */
+const TRANSMUTE_TRIES = 60;
+
+/**
+ * Wire a stashed Transmuter (issue #476) between a collector of another base
+ * resource and a stashed consumer of `resource`, which the plot has no free
+ * node for: the Transmuter is set to `resource`, placed beside the collector
+ * and joined to it, and the consumer is placed beside the Transmuter. All or
+ * nothing.
+ */
+function connectTransmuter(
+  env: Env,
+  plan: Plan,
+  transmuterId: number,
+  userId: number,
+  resource: string,
+): Plan | null {
+  let tries = 0;
+  for (const base of env.content.resources.listBase()) {
+    if (base.id === resource) continue;
+    for (const s1 of collectorStarts(env, plan, base.id)) {
+      for (const p1 of consumerPlacements(
+        env,
+        s1.plan,
+        s1.id,
+        transmuterId,
+        undefined,
+        undefined,
+        resource,
+      )) {
+        if (tries++ >= TRANSMUTE_TRIES) return null;
+        const done = placeConsumerNear(env, p1, transmuterId, userId);
+        if (done !== null && sealsNothingNew(env, done.team)) return done;
+      }
+    }
+  }
+  return null;
+}
+
 /** Wire a Merger between two collectors and a Grand barracks, all or nothing (#443). */
 function connectMerged(
   env: Env,
@@ -1418,6 +1478,32 @@ function planChains(env: Env, start: Plan): Plan {
       continue;
     }
     const done = wireTwo(env, plan, f.id, (p) => p);
+    if (done !== null) plan = done;
+  }
+  // A Transmuter turns a resource the plot has a node for into one it lacks,
+  // for a consumer waiting in the stash (issue #476).
+  for (const t of stashed()) {
+    if (!isTransmuter(env.content, t.def)) continue;
+    const base = new Set(env.content.resources.listBase().map((r) => r.id));
+    const user = stashed().find((b) => {
+      const d = defOf(env, b.def);
+      const r = d?.inputs[0]?.resource;
+      return (
+        d !== undefined &&
+        d.kind !== 'route' &&
+        d.kind !== 'source' &&
+        d.kind !== 'refinery' &&
+        d.inputs.length === 1 &&
+        r !== undefined &&
+        base.has(r) &&
+        !isChainPiece(env.content, b.def) &&
+        openNodeCount(env, plan.team, r) === 0
+      );
+    });
+    const need = user === undefined ? undefined : defOf(env, user.def);
+    const resource = need?.inputs[0]?.resource;
+    if (user === undefined || resource === undefined) continue;
+    const done = connectTransmuter(env, plan, t.id, user.id, resource);
     if (done !== null) plan = done;
   }
   for (const r of stashed()) {

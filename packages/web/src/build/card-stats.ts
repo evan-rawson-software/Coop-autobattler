@@ -83,7 +83,11 @@ export function cardStats(
         .join(', '),
       rate: formatHundredths(rate.needs),
     });
-  } else if (def.kind === 'route') {
+  } else if (
+    def.kind === 'route' ||
+    (def.kind === 'refinery' && def.resourceSetting === true)
+  ) {
+    // A route carries, and a Transmuter takes, any resource.
     uses = screenText(texts, 'uiShopUses', {
       needs: content.presentation.templates.needs.any,
     });

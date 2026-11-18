@@ -763,32 +763,29 @@
     {
       "id": "bld_transmuter",
       "kind": "refinery",
-      "output": "res_ab_refined",
+      "resourceSetting": true,
       "footprint": { "width": 1, "height": 2 },
-      "inputs": [
-        { "resource": "res_a", "side": "south" },
-        { "resource": "res_b", "side": "west" }
-      ],
+      "inputs": [{ "side": "south" }],
       "outputs": ["north"],
       "tiers": [
         {
           "health": 40,
           "price": 25,
-          "costs": { "res_a": 2, "res_b": 2 },
+          "costPerBatch": 2,
           "productionIntervalTicks": 60,
           "outputPerBatch": 1
         },
         {
           "health": 60,
           "price": 50,
-          "costs": { "res_a": 2, "res_b": 2 },
+          "costPerBatch": 2,
           "productionIntervalTicks": 42,
           "outputPerBatch": 1
         },
         {
           "health": 80,
           "price": 90,
-          "costs": { "res_a": 2, "res_b": 2 },
+          "costPerBatch": 2,
           "productionIntervalTicks": 30,
           "outputPerBatch": 1
         }

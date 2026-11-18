@@ -178,10 +178,7 @@ describe('the bots and signature buildings (issue #472)', () => {
     }
   });
 
-  // The Transmuter is a refinery: the bot wires a refinery only together with
-  // the consumer of its output, and the Transmuter has none until its own step
-  // (8/9) gives it a job, so the siege bot does not buy it yet.
-  for (const strategy of BOT_STRATEGIES.filter((s) => s !== 'siege')) {
+  for (const strategy of BOT_STRATEGIES) {
     test(`${strategy} buys and places the signature building of its specialist`, () => {
       const def = signatureOf(strategy);
       const economy = withSignatures(2, 40);
@@ -192,9 +189,23 @@ describe('the bots and signature buildings (issue #472)', () => {
       // offer too, which happens in seeds 8 and 9 of the first 30 and in none
       // of 1 to 7 (measured); the other strategies pass with the same seeds.
       for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+        // The Alchemist's Transmuter (#476) is bought only where the plot
+        // has no open node of what a consumer takes, so its run is played
+        // on plots with one node of each common resource.
         const deps = makeGameDeps(
           { battle: fixedBattle(true) },
-          { ...gameConfigs, economy },
+          {
+            ...gameConfigs,
+            economy,
+            ...(strategy === 'siege'
+              ? {
+                  mapgen: {
+                    ...gameConfigs.mapgen,
+                    nodesPerPlot: { common: 1, rare: 1 },
+                  },
+                }
+              : {}),
+          },
         );
         const res = playBotRun(
           deps,

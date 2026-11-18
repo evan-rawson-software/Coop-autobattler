@@ -927,6 +927,9 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
                   // A Mana Well in the stash will be set to the resource
                   // the consumer needs (#473).
                   stashed('bld_mana_well') +
+                  // ... and a Transmuter in the stash turns another
+                  // resource into it (#476).
+                  stashed('bld_transmuter') +
                   splitters +
                   // One more while a share is possible, so the waiting
                   // consumer is what lets the Splitter be bought.
@@ -1064,22 +1067,45 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
               d.state.team.buildings.some(
                 (b) => b.owner === p && b.def === partner,
               )) ||
-            (complete && o.price + 2 * ext > me.gold) ||
-            !chainPlaceable(
-              d.state.team,
-              p,
-              d.deps.content,
-              d.state.team.map.plotWidth,
-              s.layout,
-              [
-                { def: o.def, tier: o.tier },
-                ...(partner !== undefined && !complete
-                  ? [{ def: partner, tier: 1 }]
-                  : []),
-                { def: 'bld_extractor', tier: 1 },
-                { def: 'bld_extractor', tier: 1 },
-              ],
-            )
+            (complete &&
+              o.price + (o.def === 'bld_transmuter' ? 1 : 2) * ext > me.gold) ||
+            !(o.def === 'bld_transmuter'
+              ? // The Alchemist's building (#476): bought for a consumer the
+                // plot's nodes cannot feed, with one collector of another
+                // resource; the consumer may be in the stash or still to buy.
+                [undefined, ...likedConsumers].some(
+                  (c) =>
+                    (c === undefined ||
+                      o.price + tierPrice(d.deps.content, c.def, 1) + ext <=
+                        me.gold) &&
+                    chainPlaceable(
+                      d.state.team,
+                      p,
+                      d.deps.content,
+                      d.state.team.map.plotWidth,
+                      s.layout,
+                      [
+                        { def: o.def, tier: o.tier },
+                        ...(c === undefined ? [] : [c]),
+                        { def: 'bld_extractor', tier: 1 },
+                      ],
+                    ),
+                )
+              : chainPlaceable(
+                  d.state.team,
+                  p,
+                  d.deps.content,
+                  d.state.team.map.plotWidth,
+                  s.layout,
+                  [
+                    { def: o.def, tier: o.tier },
+                    ...(partner !== undefined && !complete
+                      ? [{ def: partner, tier: 1 }]
+                      : []),
+                    { def: 'bld_extractor', tier: 1 },
+                    { def: 'bld_extractor', tier: 1 },
+                  ],
+                ))
           ) {
             score = 0;
           }

@@ -29,7 +29,7 @@ import type { NextFight } from './next-fight.js';
 import { halfFlow } from './overlay-marks.js';
 import { buildingRate, formatHundredths } from './rates.js';
 import { cardStats } from './card-stats.js';
-import { chainRows } from './refining.js';
+import { arrivingResource, chainRows } from './refining.js';
 import { playerName, screenText, screenTexts } from './texts.js';
 import { useEffect } from 'preact/hooks';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -647,6 +647,14 @@ export function InspectorPanel(props: {
                           max: fmt(figs.derived.maxPerMin),
                         }),
                 })}
+              </p>
+            ) : null}
+            {def.kind === 'refinery' &&
+            hasResourceSetting(def) &&
+            b.resource !== undefined &&
+            arrivingResource(team, content, b.id) === b.resource ? (
+              <p class="muted" data-field="same-resource">
+                {t('uiTransmuterSame')}
               </p>
             ) : null}
             <p data-field="health">{stats.health}</p>

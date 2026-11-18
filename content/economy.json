@@ -72,6 +72,12 @@
       "weight": 12,
       "fromRound": 2,
       "specialist": "spec_beastbinder"
+    },
+    {
+      "def": "bld_transmuter",
+      "weight": 12,
+      "fromRound": 2,
+      "specialist": "spec_alchemist"
     }
   ],
   "tierOdds": [

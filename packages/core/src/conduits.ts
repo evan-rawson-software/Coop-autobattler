@@ -27,6 +27,7 @@ import {
   buildingEnd,
   conduitTouches,
   isBorderEnd,
+  refineryOutputOf,
   sourceResourceOf,
   type BorderEnd,
   type Conduit,
@@ -92,6 +93,8 @@ interface View {
   readonly coreKeys: ReadonlySet<number>;
   /** The Tunnel pairs derived from the placement (CB-9g), by entrance ID. */
   readonly pairs: readonly TunnelPair[];
+  /** The base resource IDs: a Transmuter takes only these (issue #476). */
+  readonly base: ReadonlySet<ResourceId>;
 }
 
 /**
@@ -136,6 +139,7 @@ function makeView(
     byId,
     cellOwner,
     coreKeys,
+    base: new Set(content.resources.listBase().map((r) => r.id)),
     pairs:
       pairs ?? pairTunnelEnds(tunnelEnds(state, content), (x) => q.plotOf(x)),
   };
@@ -868,7 +872,7 @@ function computeResources(
         r = sourceResourceOf(e.def, e.b, view.q) ?? null;
       } else if (e.def.kind === 'refinery') {
         // A conduit leaving a refinery carries its output resource (CB-5b).
-        r = e.def.output;
+        r = refineryOutputOf(e.def, e.b) ?? null;
       } else if (e.def.kind === 'route') {
         if (
           e.def.routeType === 'crossover' ||
@@ -909,6 +913,15 @@ function findMismatch(
     if (e === undefined || e.def.kind === 'route') continue;
     const need = e.inputs.find((i) => i.side === to.side)?.resource;
     const got = res.get(c.id) ?? null;
+    if (
+      e.def.kind === 'refinery' &&
+      e.def.resourceSetting === true &&
+      got !== null &&
+      !view.base.has(got)
+    ) {
+      // A Transmuter takes base resources only (issue #476).
+      return `conduit ${String(c.id)} carries the refined resource ${got} into building ${String(e.b.id)}, which takes base resources only`;
+    }
     if (need !== undefined && got !== null && got !== need) {
       return `conduit ${String(c.id)} carries ${got} into building ${String(e.b.id)}, which takes ${need}`;
     }

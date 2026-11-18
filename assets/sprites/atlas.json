@@ -1272,6 +1272,7 @@
       ],
       "category": "building",
       "id": "bld_transmuter",
+      "tintable": true,
       "note": "1x2 tiles."
     },
     "bld_turret_base": {
