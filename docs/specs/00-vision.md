@@ -192,7 +192,9 @@ factories, bright colours, playful names and descriptions, and cute but
 readable units. Art and sound follow the same tone: soft, friendly, and
 always readable at a glance.
 
-The final names are chosen in the theme issue (#393). Until then the specs
+The voice, naming rules, name table and art direction are in
+[`docs/theme.md`](../theme.md). The final names are chosen in the theme issue
+(#393). Until then the specs
 and the game use working names (Ore, Power, Flux; Extractor; Brood; and so
 on). Display names live in one file, `content/presentation.en.json`, so a
 rename never touches the rules (TA-27a).
