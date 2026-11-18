@@ -48,11 +48,11 @@ Not drawn: the lobby for forming a party and settings other than sound. Points o
 drawn in 1c and on the Battle summary (issue #370). Refining (issue #378) is drawn on the
 Shop, Build and Battle screens.
 
-Map legend: **Ex** extractor, **Bk** barracks, **Fo** foundry, **Tu** turret,
-**Sp** splitter, **Ar** armory (an economy building), **Rc** Composite refinery
-(Ore + Power), **Ra** Aether refinery (Power + Flux), **Gf** Golem forge, **Sr**
-Spire, **Lh** Lancer hall, **Gb** Grand barracks, **Mo** Mortar, **Mg** Merger, **Tn** Tunnel ends, solid blocks are
-walls, and **O / P / F** diamonds are Ore, Power, and Flux nodes. Conduits
+Map legend: **Ex** siphon, **Bk** barracks, **Fo** foundry, **Tu** arc turret,
+**Sp** splitter, **Ar** armory (an economy building), **Rc** Sparksteel refinery
+(Ore + Spark), **Ra** Aether refinery (Spark + Flux), **Gf** Golem forge, **Sr**
+Caster spire, **Lh** Lancer hall, **Gb** Grand barracks, **Mo** Mortar, **Mg** Merger, **Tn** Tunnel ends, solid blocks are
+walls, and **O / P / F** diamonds are Ore, Spark, and Flux nodes. Conduits
 are coloured by resource.
 
 ## 1. Battle
@@ -63,7 +63,7 @@ Nobody gives orders here. The party watches its factory start cold, ramp up, and
 
 1. Who you are fighting and what kind of battle it is. A ghost shows the other party's names and each player's specialist (MM-11a); a boss says so and names the boss. The marks a boss adds are in 1b below.
 2. Your board, at the bottom, exactly as you built it. Conduits light up as resources flow.
-3. The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Nothing can be built here. Turrets can shoot enemy units in it; otherwise only units fight here.
+3. The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Nothing can be built here. Arc turrets can shoot enemy units in it; otherwise only units fight here.
 4. The enemy board, at the top, with one Core per player. Your units attack buildings in their way and finally the enemy Cores: first the one opposite their owner's plot, then the nearest still standing.
 5. Units from both sides meet and form a front line.
 6. A Core that has fallen: greyed out with a cross in its side's colour. Its player's buildings stay on the board.
@@ -84,7 +84,7 @@ A boss battle looks like screen 1 plus one extra mark for the boss in play (MM-9
 
 1. Brood stronghold: ticks at 75%, 50% and 25% on each boss Core bar. Below a tick the Core releases a burst of units, and the log says so.
 2. Linked Cores: one shared bar for all boss Cores, with the Cores listed under it. Damage to any Core comes off the bar, and they all fall together. Not used in solo.
-3. Pylons: shield pylons around a boss Core, a shield ring while any stands, and a count ("Pylons 3/4"). Your units go for the pylons first.
+3. Pillars: shield ward pillars around a boss Core, a shield ring while any stands, and a count ("Pillars 3/4"). Your units go for the ward pillars first.
 4. Warlord: the champion leading each wave, drawn bigger than a Golem, with its own health bar.
 
 ## 1c. Battle: points of interest
@@ -154,7 +154,7 @@ The shop always follows the event. Each player has their own offers and their ow
 ![Shop screen wireframe](3-shop.png)
 
 1. Tabs for the two halves of this step.
-2. Your offers, bought for your own plot. A card shows the kind, what it needs (which resource), its rate per second (a consumer's need at top speed, an extractor's collect rate), what it does, and its price. A refinery card shows its two inputs and what it makes.
+2. Your offers, bought for your own plot. A card shows the kind, what it needs (which resource), its rate per second (a consumer's need at top speed, a siphon's collect rate), what it does, and its price. A refinery card shows its two inputs and what it makes.
 3. Gold buys buildings and re-rolls, nothing else.
 4. Your stash: buildings you own that are not on the board. Drag here to sell.
 5. Teammates' gold and stash. You do not see their offers, and gold and buildings cannot be given (CP-29). Hidden in solo.
@@ -163,7 +163,7 @@ The shop always follows the event. Each player has their own offers and their ow
 8. Ready is available on both tabs.
 9. Held run modifiers: a small chip in the run bar, effects totalled, drawbacks marked with "!" (RS-4j). It is on every run screen; it is drawn on this one only.
 10. Your specialist, a chip in the run bar. It is on every run screen after the pick, and drawn here, on Build and on Core placement (RS-13).
-11. A signature building (the Mana Well in the sketch) is offered only in its specialist's own shop and is marked "Signature" (EC-3b). A partner's shop never has it.
+11. A signature building (the Wellspring in the sketch) is offered only in its specialist's own shop and is marked "Signature" (EC-3b). A partner's shop never has it.
 
 ## 4. Build
 
@@ -173,7 +173,7 @@ Where the factory is laid out. Everything of yours except your Core can be moved
 
 1. Stash. Drag a building into your own plot to place it; placing is free.
 2. Tools. Conduit is always available and unlimited. Rotate turns the selected building. Undo covers layout changes only, never buying, selling, or re-rolling.
-3. The board. Lakes and cliffs cannot be built on. Extractors only go on resource nodes.
+3. The board. Lakes and cliffs cannot be built on. Siphons only go on resource nodes.
 4. Conduits, one resource each, coloured by resource. They cannot cross; the splitter is what lets one line feed two buildings. A conduit drawn to the border of a neighbour's plot joins the neighbour's conduit at the same spot into a border link; either player can remove their own half.
 5. Your Core. Placed once at the start of the run; it has no move handle. Every player has one.
 6. The front edge, along the top. Enemy units enter along it.
@@ -185,13 +185,13 @@ Where the factory is laid out. Everything of yours except your Core can be moved
 11. In co-op each extra player adds a plot of their own to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.
 12. Border links (co-op): a list of your own halves, each with its state (linked, waiting for your neighbour, or cannot join), what it carries, and a Remove my half button.
 13. A border spot on the plot edge, where your conduit meets the neighbour's. The neighbour's half is drawn dimmed beside it. Buildings carry their owner's tag (P1, P2), and a consumer that gets less than it needs is marked LOW.
-14. A Composite chain: an Ore conduit and a Power conduit come into the refinery (Rc) from two sides, and a Composite conduit, in its own colour, goes to the Golem forge (Gf). The Power here comes over a border link. The small text on each two-input building (Foundry, both refineries) is its need per second for each input (O = Ore, P = Power, F = Flux).
-15. An Aether chain: Power and Flux go into the refinery (Ra), and an Aether conduit, in its own colour, goes to the Spire (Sr).
-16. The one Flux node feeds this chain. An Overclocker would also want it, so running both means sharing Flux over a border link.
+14. A Sparksteel chain: an Ore conduit and a Spark conduit come into the refinery (Rc) from two sides, and a Sparksteel conduit, in its own colour, goes to the Golem forge (Gf). The Spark here comes over a border link. The small text on each two-input building (Foundry, both refineries) is its need per second for each input (O = Ore, P = Spark, F = Flux).
+15. An Aether chain: Spark and Flux go into the refinery (Ra), and an Aether conduit, in its own colour, goes to the Caster spire (Sr).
+16. The one Flux node feeds this chain. A Surge coil would also want it, so running both means sharing Flux over a border link.
 
 ## 4b. Build: new footprints
 
-Four planned base buildings (CB-9f, issue #437), with working names. Their shapes make the layout a real decision: a 1×3, a 3×3, a two-piece Tunnel and a turret with a blind spot. The image shows four placement previews on the Build screen. As always, each helps only its owner and goes only in its owner's plot.
+Four planned base buildings (CB-9f, issue #437), with working names. Their shapes make the layout a real decision: a 1×3, a 3×3, a two-piece Tunnel and an arc turret with a blind spot. The image shows four placement previews on the Build screen. As always, each helps only its owner and goes only in its owner's plot.
 
 ![Build footprints wireframe](4b-build-footprints.png)
 

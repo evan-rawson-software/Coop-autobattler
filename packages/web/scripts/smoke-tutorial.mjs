@@ -2,9 +2,9 @@
 // shared page and helpers. Plain Node ESM, not part of the bundle.
 //
 // Starts "Play the tutorial", walks its steps (Place the Core, Mine Ore, feed
-// a Barracks, power a Turret with the second Extractor on a Power node),
+// a Barracks, power an Arc turret with the second Siphon on a Spark node),
 // checks the coach card, the checklist, the locked slots and Ready, reloads
-// to see the step resume, asserts the Turret is powered and "Before you
+// to see the step resume, asserts the Arc turret is powered and "Before you
 // fight" has no warnings before Ready (issue #322), then skips with
 // confirmation. A plain "New run" shows no tips at all.
 
@@ -132,7 +132,7 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
   check(
     (await extractor.evaluate((e) => e.classList.contains('tut-target'))) &&
       !(await extractor.isDisabled()),
-    'tutorial: the Extractor slot is ringed and usable',
+    'tutorial: the Siphon slot is ringed and usable',
   );
   const others = page.locator(
     '.stash-item:not([data-stash-def="bld_extractor"])',
@@ -178,7 +178,7 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
     'tutorial: a locked slot cannot be picked with its number key',
   );
 
-  // Drag the Extractor onto an Ore node.
+  // Drag the Siphon onto an Ore node.
   const t0 = await team();
   const core0 = t0.cores[0];
   const byCore = (a, b) =>
@@ -214,15 +214,15 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
     }
     await page.keyboard.press('Escape');
   }
-  check(placed, 'tutorial: an Extractor can be dragged onto a node');
+  check(placed, 'tutorial: a Siphon can be dragged onto a node');
   await settle();
   check(
     /Tutorial · 3 of 6/.test(await title()) &&
       /Feed a Barracks/.test(await card.locator('h3').innerText()) &&
       (await page.locator('.tut-checklist li.done').count()) === 2,
-    `tutorial: the Extractor on a node finishes step 2 (${await title()})`,
+    `tutorial: the Siphon on a node finishes step 2 (${await title()})`,
   );
-  // Select the new Extractor: the checklist must not cover the Selected panel.
+  // Select the new Siphon: the checklist must not cover the Selected panel.
   const placedAt = (await team()).buildings.find(
     (b) => b.x === nodes.find((n) => n.x === b.x && n.y === b.y)?.x,
   );
@@ -261,8 +261,8 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
     'tutorial: a reload resumes at step 3',
   );
 
-  // Steps 3 and 4: Barracks fed by a conduit, Turret powered by the second
-  // Extractor on a Power node (issue #322).
+  // Steps 3 and 4: Barracks fed by a conduit, Arc turret powered by the second
+  // Siphon on a Spark node (issue #322).
   const dragSlot = async (def, x, y) => {
     const box = await page
       .locator(`.stash-item[data-stash-def="${def}"]`)
@@ -336,7 +336,7 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
   );
   check(
     bkAt !== null,
-    'tutorial: a Barracks near the Extractor can be wired to it with a conduit',
+    'tutorial: a Barracks near the Siphon can be wired to it with a conduit',
   );
   await page.waitForFunction(
     () => document.querySelector('.tut-checklist li.done:nth-child(3)'),
@@ -349,53 +349,56 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
     `tutorial: a fed Barracks finishes step 3 (${await title()})`,
   );
 
-  // Step 4: the Turret next to the Core, without Power it stays step 4.
+  // Step 4: the Arc turret next to the Core, without Spark it stays step 4.
   const core = (await team()).cores[0];
   const tuAt = await placeAny('bld_turret', around(core.x, core.y, 3, 5));
-  check(tuAt !== null, 'tutorial: a Turret can be placed next to the Core');
+  check(
+    tuAt !== null,
+    'tutorial: an Arc turret can be placed next to the Core',
+  );
   await settle();
   const tu = tdef(await team(), 'bld_turret')[0];
   check(
     /Tutorial · 4 of 6/.test(await title()) &&
       (await page.locator('.tut-checklist li.done').count()) === 3 &&
-      /Power a Turret next to the Core/.test(
+      /Power an Arc turret next to the Core/.test(
         await page.locator('.tut-checklist li[data-step="4"]').innerText(),
       ),
-    'tutorial: a Turret without Power does not finish step 4',
+    'tutorial: an Arc turret without Spark does not finish step 4',
   );
   check(
     (await page.evaluate(() => window.__debug.build.problems())).some((p) =>
-      /Turret has no conduit into its Power input/.test(p.text),
+      /Arc turret has no conduit into its Spark input/.test(p.text),
     ),
-    'tutorial: Before you fight warns the Turret has no conduit into its Power input',
+    'tutorial: Before you fight warns the Arc turret has no conduit into its Spark input',
   );
   await shot('tutorial-4-power-turret');
 
-  // The second Extractor goes on a Power node near the Core.
+  // The second Siphon goes on a Spark node near the Core.
   const powerNodes = freeOf(await team(), POWER);
-  check(powerNodes.length > 0, 'tutorial: a Power node is free on the map');
+  check(powerNodes.length > 0, 'tutorial: a Spark node is free on the map');
   const pwAt = await placeAny('bld_extractor', powerNodes.slice(0, 3), (ex) =>
     connect(ex, tu),
   );
   check(
     pwAt !== null,
-    'tutorial: the second Extractor goes on a Power node and a conduit reaches the Turret',
+    'tutorial: the second Siphon goes on a Spark node and a conduit reaches the Arc turret',
   );
   await settle();
   check(
     !(await page.evaluate(() => window.__debug.build.problems())).some((p) =>
-      /Turret has no conduit/.test(p.text),
+      /Arc turret has no conduit/.test(p.text),
     ),
-    'tutorial: the Turret receives Power before the fight',
+    'tutorial: the Arc turret receives Spark before the fight',
   );
   check(
     /Tutorial · 5 of 6/.test(await title()) &&
       (await page.locator('.tut-checklist li.done').count()) === 4,
-    `tutorial: a powered Turret finishes step 4 (${await title()})`,
+    `tutorial: a powered Arc turret finishes step 4 (${await title()})`,
   );
   // The coach card never says the base is ready while a warning is listed.
-  // Partly fed is a note, not a warning: the tutorial's lone Power Extractor
-  // leaves the Turret at 50%, and the card still says ready.
+  // Partly fed is a note, not a warning: the tutorial's lone Spark Siphon
+  // leaves the Arc turret at 50%, and the card still says ready.
   const warnings = await page.evaluate(
     () => window.__debug.build.problems().filter((p) => p.warning).length,
   );

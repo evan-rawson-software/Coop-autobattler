@@ -631,7 +631,7 @@ try {
     const BUILD_PLAN = {
       ex1: { x: 12, y: 9 }, // an Ore node
       barracks: { x: 12, y: 11 },
-      ex2: { x: 15, y: 9 }, // a Power node
+      ex2: { x: 15, y: 9 }, // a Spark node
       turretLeft: { x: 9, y: 11 },
       turretRight: { x: 16, y: 12 },
       wall: { x: 5, y: 15 },
@@ -677,7 +677,7 @@ try {
     );
     const stashText = await page.locator('#panel-stash').innerText();
     check(
-      /Extractor/.test(stashText) &&
+      /Siphon/.test(stashText) &&
         /Barracks/.test(stashText) &&
         /Wall \([IOTSZLJ]\)/.test(stashText),
       'stash panel lists the kit, each wall shape as its own row',
@@ -739,14 +739,14 @@ try {
     check(
       ghostBad !== null &&
         ghostBad.ok === false &&
-        /Extractors only go on/.test(ghostBad.message),
+        /Siphons only go on/.test(ghostBad.message),
       `illegal ghost shows core's reason: "${ghostBad?.message}"`,
     );
     await page.mouse.up();
     await pause();
     const stBad = await B.status();
     check(
-      stBad.kind === 'error' && /Extractors only go on/.test(stBad.text),
+      stBad.kind === 'error' && /Siphons only go on/.test(stBad.text),
       `status line explains the refusal: "${stBad.text}"`,
     );
     team = await B.team();
@@ -940,7 +940,7 @@ try {
     await page.click('[data-tool="conduit"]');
     await clickCell(ex1.x, ex1.y);
     check(
-      /Extractor's north side/.test((await B.status()).text),
+      /Siphon's north side/.test((await B.status()).text),
       'conduit tool: clicking a building shows its free output side',
     );
     await moveTo(bk.x, bk.y);
@@ -2199,7 +2199,7 @@ try {
           .locator('[data-field="chains"]')
           .innerText();
         check(
-          /Composite/.test(chainText) && /Aether/.test(chainText),
+          /Sparksteel/.test(chainText) && /Aether/.test(chainText),
           `refining: the chains name both compounds and what they feed ("${chainText.replace(/\s+/g, ' ').slice(0, 90)}")`,
         );
         const refinery = demo.buildings.find(
@@ -2214,7 +2214,7 @@ try {
         const refInsp = await page.locator('#panel-inspector').innerText();
         check(
           /Uses \S+ [\d.]+\/s and \S+ [\d.]+\/s/.test(refInsp) &&
-            /Makes Composite [\d.]+\/s/.test(refInsp) &&
+            /Makes Sparksteel [\d.]+\/s/.test(refInsp) &&
             /at a loss/.test(refInsp),
           `refining: the refinery shows each need per second, its output and the loss ("${refInsp.replace(/\s+/g, ' ').slice(0, 120)}")`,
         );
@@ -2294,9 +2294,9 @@ try {
           true,
         );
         check(
-          /^Pylons [0-3]\/\d+$/.test(pylons.trim()) &&
-            !/^Pylons 3\/3$/.test(pylons.trim()),
-          `boss Pylons: the pylon count shows ("${pylons.trim()}")`,
+          /^Ward pillars [0-3]\/\d+$/.test(pylons.trim()) &&
+            !/^Ward pillars 3\/3$/.test(pylons.trim()),
+          `boss Ward pillars: the pylon count shows ("${pylons.trim()}")`,
         );
         await bossBattle(
           'arch_boss_pylons',

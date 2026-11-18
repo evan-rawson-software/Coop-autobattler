@@ -9,7 +9,7 @@
     },
     {
       "id": "res_b",
-      "name": "Power",
+      "name": "Spark",
       "rarity": "common",
       "color": "#e5c230"
     },
@@ -21,7 +21,7 @@
     },
     {
       "id": "res_ab_refined",
-      "name": "Composite",
+      "name": "Sparksteel",
       "refinedFrom": ["res_a", "res_b"],
       "color": "#e8548a"
     },

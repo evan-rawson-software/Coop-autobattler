@@ -99,7 +99,7 @@ describe('round by round', () => {
     expect(rows).toEqual([
       {
         round: 1,
-        pve: 'Hard · Rusher',
+        pve: 'Hard · Stampede',
         pveResult: 'won',
         pvp: 'Rival party',
         pvpResult: 'won',

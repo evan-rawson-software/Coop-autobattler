@@ -55,7 +55,7 @@ describe('the cards of the pick', () => {
     expect(cards[0]).toMatchObject({
       family: 'Family: Logistics',
       bonus: 'Collectors produce about 10% faster.',
-      signature: 'Mana Well (1x1)',
+      signature: 'Wellspring (1x1)',
       pickedBy: [],
       mine: false,
     });
@@ -130,7 +130,7 @@ describe('the run bar, the PvP panel and the run summary', () => {
     expect(lines('spec_wardsmith')).toEqual([
       'Walls: +15% health',
       'Gates: +15% health',
-      'Turrets: +15% health',
+      'Arc turrets: +15% health',
     ]);
     expect(lines('spec_beastbinder')).toEqual([
       'Units from your producers: +10% health',

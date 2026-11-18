@@ -101,7 +101,7 @@ describe('real content', () => {
     expect(content.terrain.list().length).toBe(2);
     const turret = content.buildings.get('bld_turret');
     expect(turret?.kind).toBe('defense');
-    expect(content.presentation.get('bld_turret')?.name).toBe('Turret');
+    expect(content.presentation.get('bld_turret')?.name).toBe('Arc turret');
   });
 
   test('presentation placeholders resolve through the resource config', () => {

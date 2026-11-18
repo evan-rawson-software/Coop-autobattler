@@ -26,7 +26,7 @@ const base: ResultFacts = {
   foeFell: null,
   topUnits: null,
   coreName: 'Core',
-  sourceName: 'Extractor',
+  sourceName: 'Siphon',
   pathsName: 'Enemy paths',
 };
 const barracks = { building: 'Barracks', resource: 'Ore', units: 'Soldiers' };
@@ -45,7 +45,7 @@ describe('explainResult', () => {
       'Your Core fell at 0:54. Your Barracks never got any Ore, so it trained no Soldiers.',
     );
     expect(w.tip).toBe(
-      "Draw a conduit from a Ore Extractor to the Barracks. The Build checklist turns green when it's connected.",
+      "Draw a conduit from a Ore Siphon to the Barracks. The Build checklist turns green when it's connected.",
     );
   });
 
@@ -59,21 +59,21 @@ describe('explainResult', () => {
     } as const;
     const w = explainResult(turretAndBreach, false, 'x');
     expect(w.cause).toMatch(/Your Turret had no Power, so it never fired\.$/);
-    expect(w.tip).toMatch(/Power Extractor to the Turret/);
+    expect(w.tip).toMatch(/Power Siphon to the Turret/);
   });
 
-  test('no Extractor to draw from: say how to get one instead', () => {
+  test('no Siphon to draw from: say how to get one instead', () => {
     const dry = { ...turret, sourceReady: false };
     const w = explainResult({ ...base, dryTurrets: [dry] }, false, 'x');
     expect(w.tip).toBe(
-      'You have no Extractor to spare. Pick one up from the board and move it onto a Power node, or buy one in the shop. Then draw a conduit to the Turret.',
+      'You have no Siphon to spare. Pick one up from the board and move it onto a Power node, or buy one in the shop. Then draw a conduit to the Turret.',
     );
     const ready = explainResult(
       { ...base, dryTurrets: [{ ...turret, sourceReady: true }] },
       false,
       'x',
     );
-    expect(ready.tip).toMatch(/^Draw a conduit from a Power Extractor/);
+    expect(ready.tip).toMatch(/^Draw a conduit from a Power Siphon/);
     const prod = explainResult(
       { ...base, dryProducers: [{ ...barracks, sourceReady: false }] },
       false,
@@ -176,7 +176,7 @@ describe('resultFacts from a record', () => {
   test('names the content, not hard-coded words', () => {
     const f = factsOf(rec);
     expect(f.coreName).toBe('Core');
-    expect(f.sourceName).toBe('Extractor');
+    expect(f.sourceName).toBe('Siphon');
     expect(f.placed).toBeGreaterThan(0);
   });
 
@@ -188,7 +188,7 @@ describe('resultFacts from a record', () => {
     expect(f.topUnits).toBeNull();
   });
 
-  test('an Extractor in the inventory or on a node of the resource is ready', () => {
+  test('an Siphon in the inventory or on a node of the resource is ready', () => {
     const team = rec.initialTeams[0];
     const stashed = { id: 900, def: 'bld_extractor', tier: 1, owner: 0 };
     const bare: BattleRecord = {

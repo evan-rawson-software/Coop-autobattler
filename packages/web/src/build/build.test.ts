@@ -445,7 +445,7 @@ describe('flow, inspector and problems', () => {
     expect(kinds).toContain('free_nodes');
     const free = problems.find((p) => p.kind === 'free_nodes');
     expect(free?.focus).not.toBeNull();
-    expect(free?.text).toMatch(/Extractor/);
+    expect(free?.text).toMatch(/Siphon/);
     // Empty board, empty stash: nothing to report.
     const empty: TeamState = { ...team, stash: [] };
     expect(deriveProblems(empty, content, null)).toEqual([]);

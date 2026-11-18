@@ -22,7 +22,7 @@ describe('effectLine', () => {
         percent: 20,
         units: ['unit_soldier', 'unit_raider'],
       }),
-    ).toBe('+20% soldier and raider strength');
+    ).toBe('+20% soldier and scamp strength');
   });
 
   test('three or more are listed with commas', () => {
@@ -32,12 +32,12 @@ describe('effectLine', () => {
         percent: 5,
         units: ['unit_soldier', 'unit_raider', 'unit_archer'],
       }),
-    ).toBe('+5% soldier, raider and archer strength');
+    ).toBe('+5% soldier, scamp and archer strength');
   });
 
   test('other kinds are unchanged', () => {
     expect(effectLine({ kind: 'turret_damage_percent', percent: 20 })).toBe(
-      'Turrets: +20% damage',
+      'Arc turrets: +20% damage',
     );
   });
 
@@ -54,7 +54,7 @@ describe('effectLine', () => {
         percent: 10,
         units: ['unit_raider', 'unit_drone'],
       }),
-    ).toBe('+10% raider and drone move speed');
+    ).toBe('+10% scamp and whirligig move speed');
   });
 
   test('gold effects read as gold per shop and sell refund', () => {

@@ -2,7 +2,9 @@
 
 Status: proposal for the owner (issue #393, parts 1 and 3). The setting and
 tone are decided (issue #392, recorded in `docs/specs/00-vision.md`, Theme).
-The names below are not applied yet.
+The Recommended names are applied in
+`content/` and the web build (issue #393, part 2). The candidates stay in the
+table so the owner can swap any name later.
 
 ## The setting
 
@@ -74,8 +76,8 @@ exact (armor 3, 10 percent, 2 cells), because the rules text is the contract.
 
 ## Name table
 
-**The owner picks the names.** The Recommended column is what a later step
-applies by default. Names live only in content (`content/resources.json` and
+**The owner picks the names.** The Recommended column is applied (status:
+applied). Names live only in content (`content/resources.json` and
 `content/presentation.en.json`), so any name can be swapped later without
 touching IDs, saves, ghosts or goldens. A row that says "(keep)" has a current
 name that already fits.

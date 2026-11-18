@@ -74,7 +74,7 @@ describe('bonusView', () => {
     const v = bonusView([stout, curse]);
     expect(v.totals).toEqual([
       { text: 'Walls: −15% health', negative: true },
-      { text: 'Turrets: −15% damage', negative: true },
+      { text: 'Arc turrets: −15% damage', negative: true },
     ]);
     expect(v.held[1]?.lines.every((l) => l.negative)).toBe(true);
     expect(v.held[0]?.lines[0]?.negative).toBe(false);

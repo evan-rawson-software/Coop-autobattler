@@ -1,5 +1,5 @@
 // Prints one real save record (JSON) for the browser smoke: a party of two in
-// the event step of round 3 whose picked event is a Rich vein (Power), at its
+// the event step of round 3 whose picked event is a Rich vein (Spark), at its
 // cell follow-up, no cell chosen yet. The state before the event is made by
 // the real bot; the offer is forced (Rich vein is only one of the events the
 // step may draw) and voted for through the real rules, so the follow-up and

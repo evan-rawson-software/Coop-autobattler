@@ -193,10 +193,10 @@ readable units. Art and sound follow the same tone: soft, friendly, and
 always readable at a glance.
 
 The voice, naming rules, name table and art direction are in
-[`docs/theme.md`](../theme.md). The final names are chosen in the theme issue
-(#393). Until then the specs
-and the game use working names (Ore, Power, Flux; Extractor; Brood; and so
-on). Display names live in one file, `content/presentation.en.json`, so a
+[`docs/theme.md`](../theme.md). The names from that table are applied in the
+game (issue #393). Older specs and issues still use the working names (Power,
+Composite; Extractor; Range; Hangar; Rusher; and so on); the glossary gives
+the working name in brackets where it helps. Display names live in one file, `content/presentation.en.json`, so a
 rename never touches the rules (TA-27a).
 
 ## Glossary
@@ -206,19 +206,19 @@ brackets.
 
 | Term | Meaning |
 |------|---------|
-| Archetype | A template for a PvE threat (for example Rusher, Fortress, Escalator), setting its wave timing, unit mix and stronghold layout. Bosses have archetypes of their own. |
+| Archetype | A template for a PvE threat (for example Stampede [Rusher], Fortress, Crescendo [Escalator]), setting its wave timing, unit mix and stronghold layout. Bosses have archetypes of their own. |
 | Area damage | A unit stat: when the unit hits a target, other units near the target take a percent of the hit too. Units only, no friendly fire. |
 | Armor | A unit stat: a flat amount taken off every hit the unit takes, never below 1 damage. |
 | Board | A side's whole map in a battle: every plot of the party side by side, and everything built on it. |
 | Border link | Two conduits, one drawn by each of two neighbouring players up to the same spot on their shared plot border, joined into one connection that carries resources from one plot to the other. |
 | Boss | A generated PvE opponent used for the PvP battle when no ghost matches. There are several, each with a signature rule that acts only on its own side; later rounds unlock more (MM-9a to MM-9e). |
 | Building | Anything a player places in their plot: collectors, route buildings, unit producers, refineries, defenses, economy buildings. Bought in shops, apart from the starting kit. Each building has one owner, the player who bought it, and a tier from 1 to 3. |
-| Collector [Extractor] | A building on a resource node that produces that node's resource at a flow rate set by its tier. Also called a source. |
+| Collector (Siphon) [Extractor] | A building on a resource node that produces that node's resource at a flow rate set by its tier. Also called a source. |
 | Conduit | A free, unlimited connection that carries one resource between buildings. Takes space, cannot be attacked, and cannot cross another conduit except through a Crossover. It belongs to the player who drew it and stays inside that player's plot, except at a border link. |
 | Core | A player's health in battle and the target of enemy units. Each player has one, placed once per run in their own plot; it never moves. A side loses a battle when all of its Cores are destroyed. |
 | Crossover | A route building that lets two conduits cross. |
 | Depth | The highest round a party reached; the primary score. |
-| Economy building | A building that makes its owner's factory stronger as a battle goes on (ramp), such as the Overclocker and the Armory. It helps only its owner. |
+| Economy building | A building that makes its owner's factory stronger as a battle goes on (ramp), such as the Surge coil [Overclocker] and the Armory. It helps only its owner. |
 | Encounter | A single automated battle (PvE or PvP). |
 | Event | A short non-combat step after every battle, before the shop. The party votes on one of the offered events (CP-16). |
 | Front edge | The side of a board that faces the enemy; units cross it. |
@@ -239,7 +239,7 @@ brackets.
 | PvP battle | The second battle of a round: a ghost, or a boss if no ghost matches. |
 | Ramp | The factory getting stronger over the course of one battle; what economy buildings provide. |
 | Refinery | A building that turns one or two resources into a refined resource, needed by rarer, stronger buildings. |
-| Resource | What collectors extract from nodes and other buildings consume. Three base kinds (Ore, Power, Flux for now). Refining is one step deep; the first version has two refined compounds, Composite (Ore + Power) and Aether (Power + Flux). |
+| Resource | What collectors extract from nodes and other buildings consume. Three base kinds (Ore, Spark [Power], Flux). Refining is one step deep; the first version has two refined compounds, Sparksteel [Composite] (Ore + Spark) and Aether (Spark + Flux). |
 | Resource node | A map cell where a collector can be built. |
 | Round | One pass through the loop: PvE battle, event, shop, PvP battle, event, shop. |
 | Run | One playthrough, from round 1 until the party is eliminated. |

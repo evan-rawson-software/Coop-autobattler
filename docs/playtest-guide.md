@@ -14,27 +14,27 @@ The shop tells you who the PvP opponent is before you ready up. It is either a g
 
 ## What the numbers are meant to do
 
-The shop also offers the Range (trains archers, which shoot from three cells away and can hit flyers) and the Hangar (builds drones, which fly over walls and lakes); their numbers are placeholders, and the bots use them too. From round 4 on, PvE waves also contain archers (about a quarter of a wave's strength) and drones (about a seventh), so build turrets or Ranges: melee units cannot hit drones. A Hangar can be walled in completely: its drones appear next to it and fly out over the walls, so it never blocks Ready (a walled-in Barracks or Range still does). Supply is scarce: one collector fully feeds one building of the same tier (a tier 1 collector gives 0.50 items per second, and a tier 1 Barracks, Overclocker or Armory takes at most that much). Your area has three Ore, three Power and one Flux node, so it can run three Barracks at full speed and no more; to grow after that, raise tiers, use the Overclocker (at most +25% collector speed) or the Armory (+25% to +50% unit health and damage, at most +100% per player), or share through a border link. You earn 14 to 31 gold per round (5 at each of the two shops, plus the battle rewards). Threats grow 25% per round, and strongholds have at most 6 turrets per area. A competent build should beat hard PvE through about round 5, find it a gamble in rounds 6 to 8, and meet the round-5 boss at every party size with a fair chance.
+The shop also offers the Archery yard [working name: Range] (trains archers, which shoot from three cells away and can hit flyers) and the Whirligig loft [Hangar] (builds whirligigs [drones], which fly over walls and lakes); their numbers are placeholders, and the bots use them too. From round 4 on, PvE waves also contain archers (about a quarter of a wave's strength) and whirligigs (about a seventh), so build turrets or Ranges: melee units cannot hit whirligigs. A Whirligig loft can be walled in completely: its whirligigs appear next to it and fly out over the walls, so it never blocks Ready (a walled-in Barracks or Archery yard still does). Supply is scarce: one collector fully feeds one building of the same tier (a tier 1 collector gives 0.50 items per second, and a tier 1 Barracks, Surge coil or Armory takes at most that much). Your area has three Ore, three Spark and one Flux node, so it can run three Barracks at full speed and no more; to grow after that, raise tiers, use the Surge coil (at most +25% collector speed) or the Armory (+25% to +50% unit health and damage, at most +100% per player), or share through a border link. You earn 14 to 31 gold per round (5 at each of the two shops, plus the battle rewards). Threats grow 25% per round, and strongholds have at most 6 turrets per area. A competent build should beat hard PvE through about round 5, find it a gamble in rounds 6 to 8, and meet the round-5 boss at every party size with a fair chance.
 
 ## Refining, the Foundry, Golems and casters (from round 3)
 
 From round 3 the shop can offer buildings that take two resources at once. A building with two inputs needs both: each input side is marked in the colour of the resource it takes (also when you rotate it), and a conduit with the wrong resource is refused with a message that names the resource that side wants. Select the building to see how much of each resource it needs per second.
 
-- The Foundry takes Ore and Power together and trains Heavy units, which are tougher and hit harder than soldiers.
-- A refinery turns two resources into a compound at a loss: the Composite refinery combines Ore and Power, the Aether refinery combines Power and Flux. A batch uses more items than it makes. Composite is pink and Aether is teal; send the compound down the output conduit like any other resource.
-- The Golem forge takes Composite and trains Golems: huge, slow units with armor, so every hit on a Golem does a fixed amount less damage (never below 1). In battle a hit that armor reduced shows a small grey shield with the damage that got through.
-- The Spire takes Aether and trains casters: fragile ranged units whose hits also hurt the enemies next to the target. In battle a caster's shot flies to the target and a blast shows how far the area damage reaches.
+- The Foundry takes Ore and Spark together and trains Brute units, which are tougher and hit harder than soldiers.
+- A refinery turns two resources into a compound at a loss: the Sparksteel refinery combines Ore and Spark, the Aether refinery combines Spark and Flux. A batch uses more items than it makes. Sparksteel is pink and Aether is teal; send the compound down the output conduit like any other resource.
+- The Golem forge takes Sparksteel and trains Golems: huge, slow units with armor, so every hit on a Golem does a fixed amount less damage (never below 1). In battle a hit that armor reduced shows a small grey shield with the damage that got through.
+- The Caster spire takes Aether and trains casters: fragile ranged units whose hits also hurt the enemies next to the target. In battle a caster's shot flies to the target and a blast shows how far the area damage reaches.
 
-The first time the shop offers a refinery, a one-line hint explains the chain. The flow preview lists each refining chain: what reaches the refinery, what it makes per second, and whether the Golem forge or Spire behind it is fully fed or which input is short. If a refinery is destroyed in a battle, the battle log names what it starves.
+The first time the shop offers a refinery, a one-line hint explains the chain. The flow preview lists each refining chain: what reaches the refinery, what it makes per second, and whether the Golem forge or Caster spire behind it is fully fed or which input is short. If a refinery is destroyed in a battle, the battle log names what it starves.
 
 ## Bosses (every PvP battle with no rival party)
 
-When the opponent is a computer-made boss, the Next fight panel of the shop and build screens names it, says in one line what is special about it, and gives one line of counter advice. The boss is fixed before you build, so you can build against it. Later bosses join from later rounds (Brood from round 3, Bonded from 5, Pylons from 7, Warlord from 9), and Bonded needs a party of two or more.
+When the opponent is a computer-made boss, the Next fight panel of the shop and build screens names it, says in one line what is special about it, and gives one line of counter advice. The boss is fixed before you build, so you can build against it. Later bosses join from later rounds (Brood from round 3, Bonded from 5, Pillars from 7, Warlord from 9), and Bonded needs a party of two or more.
 
 - Boss: every third wave is a swarm of raiders. Defense against swarms.
 - Brood: each of its Cores bursts out units at 75%, 50% and 25% health (ticks on the Core bar, and a line in the log). Keep defense at home.
 - Bonded: its Cores share one health bar and fall together (a line joins them on the board).
-- Pylons: its Cores are shielded while pylons beside them stand (blue shield and lines on the board, a count in the side panel). The shield drops when the last pylon falls.
+- Pillars [Pylons]: its Cores are shielded while ward pillars beside them stand (blue shield and lines on the board, a count in the side panel). The shield drops when the last ward pillar falls.
 - Warlord: each wave is led by a champion Golem, drawn larger with its own health bar.
 
 ## Points of interest
@@ -56,8 +56,8 @@ The side panel lists each point and what it is doing, and both sides' bonuses. A
 - Look at which boss is next, then change your factory to counter it, and see whether the battle goes differently.
 - Look at the opponent's factory during a PvP battle and see why it won or lost.
 - Reload the page in the middle of a step to check your run comes back.
-- Build a refining chain (collectors into a refinery, then into a Golem forge or Spire) and compare it with two base buildings (Barracks) on the same collectors.
-- Try the Aether chain against the Overclocker for your Flux: with one Flux node, the refinery and the Overclocker compete, and the preview shows who goes short.
+- Build a refining chain (collectors into a refinery, then into a Golem forge or Caster spire) and compare it with two base buildings (Barracks) on the same collectors.
+- Try the Aether chain against the Surge coil for your Flux: with one Flux node, the refinery and the Surge coil compete, and the preview shows who goes short.
 - Route units past a point of interest, then avoid it, and compare: do you win more when you take it, or when you leave it alone?
 - Watch a point being captured and a healing point's radius, and see whether it is clear who holds what.
 
