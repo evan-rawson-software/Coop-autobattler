@@ -86,14 +86,14 @@ describe('splash in content', () => {
   test('the Spire and the caster are in the shipped content', () => {
     const c = got(content.units.get('unit_caster'));
     expect(c).toMatchObject({
-      health: 28,
-      damage: 9,
+      health: 32,
+      damage: 12,
       attackCooldownTicks: 20,
       moveCooldownTicks: 6,
       reach: 720,
       flying: false,
       attackType: 'ranged',
-      splash: { radiusSub: 240, percent: 50 },
+      splash: { radiusSub: 360, percent: 60 },
     });
     const s = got(content.buildings.get('bld_spire'));
     if (s.kind !== 'unit_producer') throw new Error('kind');
@@ -142,11 +142,11 @@ describe('splash in content', () => {
 });
 
 describe('a caster hit', () => {
-  test('splashes neighbours within one cell, not farther, never its own side', () => {
+  test('splashes neighbours within one and a half cells, not farther, never its own side', () => {
     const { ctx, sim, events, caster, primary, extra } = scene('unit_caster', [
       ['unit_soldier', 1700, 4600], // 200 away: hit
-      ['unit_soldier', 1500, 4840], // exactly 240 away: hit (<=)
-      ['unit_soldier', 1259, 4600], // 241 away: not hit
+      ['unit_soldier', 1500, 4960], // exactly 360 away: hit (<=)
+      ['unit_soldier', 1139, 4600], // 361 away: not hit
       ['unit_soldier!', 1380, 4600], // own side, 120 away: never hurt
     ]);
     stepArena(sim, ctx);
@@ -154,7 +154,7 @@ describe('a caster hit', () => {
     expect(a).toHaveLength(1);
     expect(a[0]).toMatchObject({
       target: { kind: 'unit', unit: primary.id },
-      damage: 9,
+      damage: 12,
     });
     const sp = splashes(events);
     expect(sp).toEqual([
@@ -165,8 +165,8 @@ describe('a caster hit', () => {
         x: 1500,
         y: 4600,
         targets: [
-          { unit: got(extra[0]).id, damage: 4 },
-          { unit: got(extra[1]).id, damage: 4 },
+          { unit: got(extra[0]).id, damage: 7 },
+          { unit: got(extra[1]).id, damage: 7 },
         ],
       },
     ]);
@@ -177,8 +177,8 @@ describe('a caster hit', () => {
         .reduce((n, e) => n + e.damage, 0);
     expect(primary.hp).toBe(40 - onUnit(primary.id));
     expect(got(extra[3]).hp).toBe(40 - onUnit(got(extra[3]).id));
-    expect(got(extra[0]).hp).toBe(40 - 4);
-    expect(got(extra[1]).hp).toBe(40 - 4);
+    expect(got(extra[0]).hp).toBe(40 - 7);
+    expect(got(extra[1]).hp).toBe(40 - 7);
     expect(got(extra[2]).hp).toBe(40);
   });
 
@@ -202,8 +202,8 @@ describe('a caster hit', () => {
     ]);
     stepArena(sim, ctx);
     const sp = got(splashes(events)[0]);
-    expect(sp.targets).toEqual([{ unit: got(extra[0]).id, damage: 4 }]);
-    expect(got(extra[0]).hp).toBe(20 - 4);
+    expect(sp.targets).toEqual([{ unit: got(extra[0]).id, damage: 7 }]);
+    expect(got(extra[0]).hp).toBe(20 - 7);
   });
 
   test('a splash that rounds to 0 is skipped', () => {
@@ -260,13 +260,13 @@ describe('a caster hit', () => {
   });
 
   test('a Golem in the radius takes the splash reduced by armor, at least 1', () => {
-    // The shipped caster: hit 9, splash 4, armor 3 -> 1 (the floor).
+    // The shipped caster: hit 12, splash 7, armor 3 -> 4.
     const a = scene('unit_caster', [['unit_golem', 1700, 4600]]);
     stepArena(a.sim, a.ctx);
     expect(got(splashes(a.events)[0]).targets).toEqual([
-      { unit: got(a.extra[0]).id, damage: 1 },
+      { unit: got(a.extra[0]).id, damage: 4 },
     ]);
-    expect(got(a.extra[0]).hp).toBe(260 - 1);
+    expect(got(a.extra[0]).hp).toBe(260 - 4);
     // A hit of 20: splash 10, armor 3 -> 7; the primary soldier takes 20.
     const b = scene('unit_bigcaster', [['unit_golem', 1700, 4600]]);
     stepArena(b.sim, b.ctx);
@@ -321,9 +321,9 @@ describe('a caster hit', () => {
       simConfig.overloadStartTick + simConfig.overloadIntervalTicks * 3;
     stepArena(sim, ctx);
     const hit = got(attacks(events)[0]).damage;
-    expect(hit).toBeGreaterThan(9);
+    expect(hit).toBeGreaterThan(12);
     expect(got(splashes(events)[0]).targets).toEqual([
-      { unit: got(extra[0]).id, damage: Math.floor(hit / 2) },
+      { unit: got(extra[0]).id, damage: Math.floor((hit * 60) / 100) },
     ]);
   });
 

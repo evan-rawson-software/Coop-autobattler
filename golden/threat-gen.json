@@ -23117,11 +23117,6 @@
             },
             {
               "tick": 400,
-              "unit": "unit_caster",
-              "count": 1
-            },
-            {
-              "tick": 400,
               "unit": "unit_soldier",
               "count": 1
             },
@@ -23163,7 +23158,7 @@
             {
               "tick": 1000,
               "unit": "unit_caster",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 1000,
@@ -23178,7 +23173,7 @@
             {
               "tick": 1200,
               "unit": "unit_caster",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 1200,
@@ -23297,7 +23292,7 @@
             ]
           }
         },
-        "hash": "4440260e"
+        "hash": "3793fcc2"
       }
     }
   },
@@ -23335,7 +23330,7 @@
             {
               "tick": 400,
               "unit": "unit_caster",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 400,
@@ -23350,7 +23345,7 @@
             {
               "tick": 600,
               "unit": "unit_caster",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 600,
@@ -23385,7 +23380,7 @@
             {
               "tick": 1000,
               "unit": "unit_caster",
-              "count": 3
+              "count": 2
             },
             {
               "tick": 1000,
@@ -23575,7 +23570,7 @@
             ]
           }
         },
-        "hash": "567274a1"
+        "hash": "e758153a"
       }
     }
   },
@@ -23598,17 +23593,17 @@
           "round": 15,
           "partySize": 4,
           "budget": 12576,
-          "unitStrengthPercent": 238,
+          "unitStrengthPercent": 213,
           "waves": [
             {
               "tick": 200,
               "unit": "unit_caster",
-              "count": 7
+              "count": 6
             },
             {
               "tick": 200,
               "unit": "unit_soldier",
-              "count": 6
+              "count": 7
             },
             {
               "tick": 200,
@@ -23623,7 +23618,7 @@
             {
               "tick": 400,
               "unit": "unit_caster",
-              "count": 10
+              "count": 8
             },
             {
               "tick": 400,
@@ -23643,12 +23638,12 @@
             {
               "tick": 600,
               "unit": "unit_caster",
-              "count": 9
+              "count": 7
             },
             {
               "tick": 600,
               "unit": "unit_soldier",
-              "count": 10
+              "count": 11
             },
             {
               "tick": 600,
@@ -23663,12 +23658,12 @@
             {
               "tick": 800,
               "unit": "unit_caster",
-              "count": 12
+              "count": 11
             },
             {
               "tick": 800,
               "unit": "unit_soldier",
-              "count": 10
+              "count": 11
             },
             {
               "tick": 800,
@@ -23683,17 +23678,17 @@
             {
               "tick": 1000,
               "unit": "unit_caster",
-              "count": 16
+              "count": 13
             },
             {
               "tick": 1000,
               "unit": "unit_soldier",
-              "count": 12
+              "count": 13
             },
             {
               "tick": 1000,
               "unit": "unit_archer",
-              "count": 7
+              "count": 8
             },
             {
               "tick": 1000,
@@ -23703,12 +23698,12 @@
             {
               "tick": 1200,
               "unit": "unit_caster",
-              "count": 17
+              "count": 15
             },
             {
               "tick": 1200,
               "unit": "unit_soldier",
-              "count": 16
+              "count": 17
             },
             {
               "tick": 1200,
@@ -25596,7 +25591,7 @@
             ]
           }
         },
-        "hash": "c9cb7a89"
+        "hash": "82210b7e"
       }
     }
   }

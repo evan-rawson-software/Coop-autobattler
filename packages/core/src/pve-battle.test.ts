@@ -525,9 +525,10 @@ describe('sweep of reference boards against every threat', () => {
     // Maze (issue #432) adds 54, 19 and 0 (508, 255 and 20), likewise.
     // Focus (issue #433) adds 53, 28 and 4 (561, 283 and 24), likewise.
     // Juggernaut and Coven (issue #434) add 107, 71 and 21 (668, 354 and 45):
-    // their few, expensive units are beaten far into the later rounds. Balance
+    // their few, expensive units are beaten far into the later rounds. The
+    // caster's price 10 and stronger caster (issue #386) make the third 46. Balance
     // is #435.
-    expect(blocks).toEqual([668, 354, 45, 0, 0]);
+    expect(blocks).toEqual([668, 354, 46, 0, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {

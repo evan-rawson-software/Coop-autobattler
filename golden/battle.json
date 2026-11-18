@@ -8605,56 +8605,56 @@
       "result": {
         "ok": true,
         "result": {
-          "winner": 1,
+          "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 660
+          "endTick": 623
         },
         "summary": {
           "sides": [
             {
               "unitsSpawned": 10,
-              "unitsLost": 5,
+              "unitsLost": 1,
               "buildingsLost": 0,
               "cores": [
                 {
                   "player": 0,
-                  "health": 0,
-                  "maxHealth": 500,
-                  "overkill": 4,
-                  "destroyedTick": 659
-                }
-              ],
-              "coresStanding": 0,
-              "coreHealth": 0,
-              "coreMaxHealth": 500,
-              "coreOverkill": 4,
-              "rampSteps": 0,
-              "buildingDamageDealt": 180,
-              "unitsKilled": 9,
-              "guardsKilled": 0,
-              "pointBonus": 0,
-              "healedHp": 0
-            },
-            {
-              "unitsSpawned": 13,
-              "unitsLost": 9,
-              "buildingsLost": 0,
-              "cores": [
-                {
-                  "player": 0,
-                  "health": 320,
+                  "health": 242,
                   "maxHealth": 500,
                   "overkill": 0,
                   "destroyedTick": null
                 }
               ],
               "coresStanding": 1,
-              "coreHealth": 320,
+              "coreHealth": 242,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
               "rampSteps": 0,
               "buildingDamageDealt": 500,
-              "unitsKilled": 5,
+              "unitsKilled": 10,
+              "guardsKilled": 0,
+              "pointBonus": 0,
+              "healedHp": 0
+            },
+            {
+              "unitsSpawned": 12,
+              "unitsLost": 10,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 16,
+                  "destroyedTick": 622
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 16,
+              "rampSteps": 0,
+              "buildingDamageDealt": 258,
+              "unitsKilled": 1,
               "guardsKilled": 0,
               "pointBonus": 0,
               "healedHp": 0
@@ -8708,10 +8708,10 @@
             }
           ]
         },
-        "stateHash": "871b8395",
-        "events": 763
+        "stateHash": "ba7329c0",
+        "events": 700
       },
-      "eventLogHash": "a5128583"
+      "eventLogHash": "60a2bc68"
     }
   },
   {

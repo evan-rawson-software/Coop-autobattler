@@ -3757,22 +3757,22 @@
     "expected": {
       "result": {
         "tick": 2000,
-        "stateHash": "1cf4a942",
+        "stateHash": "815c0de9",
         "flow": {
-          "produced": 11,
+          "produced": 12,
           "inConduits": 2,
           "held": 0,
           "inBuffers": 4,
-          "consumed": 5,
+          "consumed": 6,
           "lost": 0
         },
         "sources": [
           {
             "building": 1,
             "resource": "res_a",
-            "produced": 11,
+            "produced": 12,
             "lost": 0,
-            "stalledTicks": 1881
+            "stalledTicks": 1871
           }
         ],
         "routes": [],
@@ -3782,8 +3782,8 @@
             "side": "south",
             "resource": "res_a",
             "count": 4,
-            "delivered": 9,
-            "consumed": 5
+            "delivered": 10,
+            "consumed": 6
           },
           {
             "building": 2,
@@ -3797,14 +3797,14 @@
         "pacers": [
           {
             "building": 2,
-            "progress": 5,
-            "counters": [5, 0],
+            "progress": 6,
+            "counters": [6, 0],
             "cooldown": 0,
             "productions": 0
           }
         ]
       },
-      "eventLogHash": "b9a58d51"
+      "eventLogHash": "d7c583b6"
     }
   },
   {
@@ -3982,10 +3982,10 @@
         "pacers": [
           {
             "building": 3,
-            "progress": 8,
-            "counters": [4, 4],
-            "cooldown": 3,
-            "productions": 39
+            "progress": 2,
+            "counters": [1, 1],
+            "cooldown": 43,
+            "productions": 33
           }
         ]
       },
@@ -4120,22 +4120,22 @@
     "expected": {
       "result": {
         "tick": 2000,
-        "stateHash": "e9067155",
+        "stateHash": "0fa390b9",
         "flow": {
-          "produced": 206,
+          "produced": 208,
           "inConduits": 3,
           "held": 0,
           "inBuffers": 4,
-          "consumed": 199,
+          "consumed": 201,
           "lost": 0
         },
         "sources": [
           {
             "building": 1,
             "resource": "res_a",
-            "produced": 106,
+            "produced": 108,
             "lost": 0,
-            "stalledTicks": 931
+            "stalledTicks": 911
           },
           {
             "building": 2,
@@ -4152,8 +4152,8 @@
             "side": "south",
             "resource": "res_a",
             "count": 4,
-            "delivered": 104,
-            "consumed": 100
+            "delivered": 106,
+            "consumed": 102
           },
           {
             "building": 3,
@@ -4168,13 +4168,13 @@
           {
             "building": 3,
             "progress": 9,
-            "counters": [5, 4],
+            "counters": [6, 3],
             "cooldown": 0,
-            "productions": 19
+            "productions": 16
           }
         ]
       },
-      "eventLogHash": "37a82ce9"
+      "eventLogHash": "d68947c6"
     }
   },
   {
@@ -4352,10 +4352,10 @@
         "pacers": [
           {
             "building": 3,
-            "progress": 8,
-            "counters": [4, 4],
-            "cooldown": 3,
-            "productions": 19
+            "progress": 6,
+            "counters": [3, 3],
+            "cooldown": 43,
+            "productions": 16
           }
         ]
       },
@@ -4544,13 +4544,13 @@
     "expected": {
       "result": {
         "tick": 2000,
-        "stateHash": "90298b0c",
+        "stateHash": "e6d158a6",
         "flow": {
-          "produced": 309,
-          "inConduits": 0,
+          "produced": 310,
+          "inConduits": 4,
           "held": 1,
           "inBuffers": 4,
-          "consumed": 304,
+          "consumed": 301,
           "lost": 0
         },
         "sources": [
@@ -4564,9 +4564,9 @@
           {
             "building": 5,
             "resource": "res_b",
-            "produced": 109,
+            "produced": 110,
             "lost": 0,
-            "stalledTicks": 903
+            "stalledTicks": 891
           }
         ],
         "routes": [
@@ -4591,8 +4591,8 @@
             "side": "west",
             "resource": "res_b",
             "count": 4,
-            "delivered": 109,
-            "consumed": 105
+            "delivered": 106,
+            "consumed": 102
           },
           {
             "building": 4,
@@ -4606,10 +4606,10 @@
         "pacers": [
           {
             "building": 3,
-            "progress": 5,
-            "counters": [0, 5],
-            "cooldown": 40,
-            "productions": 20
+            "progress": 10,
+            "counters": [4, 6],
+            "cooldown": 0,
+            "productions": 16
           },
           {
             "building": 4,
@@ -4619,7 +4619,7 @@
           }
         ]
       },
-      "eventLogHash": "851d940b"
+      "eventLogHash": "8b739971"
     }
   },
   {
@@ -4847,10 +4847,10 @@
         "pacers": [
           {
             "building": 3,
-            "progress": 7,
-            "counters": [4, 3],
-            "cooldown": 12,
-            "productions": 39
+            "progress": 1,
+            "counters": [1, 0],
+            "cooldown": 52,
+            "productions": 33
           }
         ]
       },

@@ -75,6 +75,8 @@ export type Command =
     }
   | {
       readonly kind: 'stage';
+      /** Run the refining reference boards (issue #386) instead of the stage boards. */
+      readonly chains: boolean;
       /** Rounds 1..rounds are fought. */
       readonly rounds: number;
       /** Seeds 1..seeds per threat. */
@@ -114,13 +116,16 @@ Commands:
             turrets waited for resources, units made against top-speed output,
             and (party of 2+) what losing the first Core means. Every battle is
             replayed tick by tick for this, so large --count values are slow.
-  stage   [--rounds N] [--seeds N]
+  stage   [--rounds N] [--seeds N] [--chains]
             Build five solo boards by hand (the starting kit, half a board, and
             a full board at tiers 1, 2 and 3) on the map of seed 5, fight each
             against generated threats (easy, medium, hard with every archetype,
             and the boss; defaults: 12 rounds, 6 seeds) and print the last round
             each still wins at least half of its battles, plus soldiers made
             per 1000 ticks. Slow (a few minutes with the defaults).
+            With --chains: the refining reference boards instead (the kit board
+            plus a plot of two collectors feeding a chain, the base buildings, a
+            Foundry or an Overclocker; PvE rounds 3..N; defaults: 9 rounds, 3 seeds).
   ghosts  [--out FILE] [--check]
             Play bot runs with ghosts on and write their PvP snapshots to the
             bundled ghost file (default packages/web/src/run/bundled-ghosts.json).
@@ -167,7 +172,7 @@ const FLAGS: Readonly<Record<string, readonly string[]>> = {
     'time',
   ],
   bot: ['strategy', 'count', 'seed', 'party', 'max-rounds', 'verify', 'time'],
-  stage: ['rounds', 'seeds', 'time'],
+  stage: ['rounds', 'seeds', 'chains', 'time'],
   ghosts: ['out', 'check', 'time'],
 };
 /** The largest seed (an unsigned 32-bit integer, as core requires). */
@@ -177,7 +182,13 @@ const MAX_SEED = 0xffffffff;
  * `maxThreatRound` for the loaded content, checked when the command runs.
  */
 const MAX_ROUND_PARSE = 1000;
-const BOOLEAN_FLAGS: readonly string[] = ['ascii', 'time', 'verify', 'check'];
+const BOOLEAN_FLAGS: readonly string[] = [
+  'ascii',
+  'time',
+  'verify',
+  'check',
+  'chains',
+];
 
 function usageError(message: string): CliError {
   return new CliError(`${message}\n\n${USAGE}`, 2);
@@ -343,8 +354,19 @@ export function parseArgs(argv: readonly string[]): Command {
     case 'stage':
       return {
         kind: 'stage',
-        rounds: parseInteger('rounds', flags.get('rounds') ?? '12', 1, 63),
-        seeds: parseInteger('seeds', flags.get('seeds') ?? '6', 1, 100),
+        chains: flags.has('chains'),
+        rounds: parseInteger(
+          'rounds',
+          flags.get('rounds') ?? (flags.has('chains') ? '9' : '12'),
+          1,
+          63,
+        ),
+        seeds: parseInteger(
+          'seeds',
+          flags.get('seeds') ?? (flags.has('chains') ? '3' : '6'),
+          1,
+          100,
+        ),
         time,
       };
     case 'ghosts':

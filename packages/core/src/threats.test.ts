@@ -1300,7 +1300,7 @@ describe('Juggernaut and Coven (issue #434)', () => {
     const price = (u: string) =>
       threats.unitCost.find((x) => x.unit === u)?.cost;
     expect(price('unit_heavy')).toBe(20);
-    expect(price('unit_caster')).toBe(8);
+    expect(price('unit_caster')).toBe(10);
   });
 
   test('every wave has a unit, heavies and casters lead, none before round 3', () => {
@@ -1337,7 +1337,7 @@ describe('Juggernaut and Coven (issue #434)', () => {
     };
     expect(sizes('arch_juggernaut', 3)).toEqual([1, 1, 1, 1]);
     expect(sizes('arch_juggernaut', 10)).toEqual([2, 3, 5, 9]);
-    expect(sizes('arch_coven', 3)).toEqual([1, 1, 1, 1, 1, 2]);
-    expect(sizes('arch_coven', 15)).toEqual([5, 5, 6, 7, 8, 10]);
+    expect(sizes('arch_coven', 3)).toEqual([1, 1, 1, 1, 1, 1]);
+    expect(sizes('arch_coven', 15)).toEqual([4, 4, 6, 6, 9, 10]);
   });
 });
