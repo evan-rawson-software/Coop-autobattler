@@ -53,7 +53,7 @@ export type RouteType =
  * `pylon` is boss-only (MM-9d, "Pylons"): it is never offered, bought or
  * placed by a player, and does nothing but stand.
  */
-export type DefenseType = 'wall' | 'gate' | 'turret' | 'pylon';
+export type DefenseType = 'wall' | 'gate' | 'turret' | 'pylon' | 'ward';
 export type EconomyEffectType = 'source_speed' | 'unit_strength';
 
 /** One cell of a footprint, relative to the footprint's top-left corner. */
@@ -165,6 +165,15 @@ export interface TurretTier extends TierBase {
   readonly splashPercent?: number;
   readonly splashRadiusCells?: number;
 }
+export interface WardTier extends TierBase {
+  /**
+   * Damage (CB-53) the Ward returns to an enemy unit that hits a wall or gate
+   * of the Ward's owner next to it, before the unit's armor.
+   */
+  readonly reflectDamage: number;
+  /** Resource units consumed per strike (a charge, as a turret's shot). */
+  readonly costPerStrike: number;
+}
 export interface EconomyTier extends TierBase {
   /** Resource units consumed per upgrade step. */
   readonly costPerStep: number;
@@ -246,6 +255,12 @@ export interface WallOrGateBuildingDef extends BuildingCommon {
   readonly defenseType: 'wall' | 'gate' | 'pylon';
   readonly tiers: Tiers3<TierBase>;
 }
+/** The Rune Ward (CB-53): a defense that strikes back, and needs Power. */
+export interface WardBuildingDef extends BuildingCommon {
+  readonly kind: 'defense';
+  readonly defenseType: 'ward';
+  readonly tiers: Tiers3<WardTier>;
+}
 export interface TurretBuildingDef extends BuildingCommon {
   readonly kind: 'defense';
   readonly defenseType: 'turret';
@@ -267,7 +282,8 @@ export interface CoreBuildingDef extends BuildingCommon {
   readonly tiers: readonly [CoreTier];
 }
 
-export type DefenseBuildingDef = WallOrGateBuildingDef | TurretBuildingDef;
+export type DefenseBuildingDef =
+  WallOrGateBuildingDef | TurretBuildingDef | WardBuildingDef;
 
 export type BuildingDef =
   | SourceBuildingDef
@@ -448,7 +464,13 @@ const ROUTE_TYPES: readonly string[] = [
   'tunnel_in',
   'tunnel_out',
 ];
-const DEFENSE_TYPES: readonly string[] = ['wall', 'gate', 'turret', 'pylon'];
+const DEFENSE_TYPES: readonly string[] = [
+  'wall',
+  'gate',
+  'turret',
+  'pylon',
+  'ward',
+];
 const EFFECT_TYPES: readonly string[] = ['source_speed', 'unit_strength'];
 
 const COMMON_KEYS = ['id', 'kind', 'footprint', 'tiers', 'inputs', 'outputs'];
@@ -468,6 +490,7 @@ const KIND_FIELDS: Readonly<Record<string, string>> = {
 const TIER_MAX: Readonly<Record<string, number>> = {
   health: MAX_HEALTH,
   damage: MAX_DAMAGE,
+  reflectDamage: MAX_DAMAGE,
   outputPerBatch: MAX_OUTPUT_PER_BATCH,
 };
 
@@ -485,6 +508,9 @@ function tierFields(
     case 'unit_producer':
       return { ...bought, costPerUnit: 1, productionIntervalTicks: 1 };
     case 'defense':
+      if (defenseType === 'ward') {
+        return { ...bought, reflectDamage: 1, costPerStrike: 1 };
+      }
       return defenseType === 'turret'
         ? {
             ...bought,
@@ -596,6 +622,14 @@ function ioRule(kind: string, subtype: string | undefined): IoRule | undefined {
           inputs: [1, 4],
           outputs: none,
           what: 'a turret',
+        };
+      }
+      if (subtype === 'ward') {
+        return {
+          resource: 'required',
+          inputs: [1, 1],
+          outputs: none,
+          what: 'a ward',
         };
       }
       return {
@@ -1290,6 +1324,20 @@ function parseBuilding(
                     splashPercent: num(t, 'splashPercent'),
                     splashRadiusCells: num(t, 'splashRadiusCells'),
                   }),
+            })),
+          ),
+        };
+      }
+      if (defenseType === 'ward') {
+        return {
+          ...common,
+          kind,
+          defenseType,
+          tiers: toTiers3(
+            mapTiers((t) => ({
+              ...base(t),
+              reflectDamage: num(t, 'reflectDamage'),
+              costPerStrike: num(t, 'costPerStrike'),
             })),
           ),
         };

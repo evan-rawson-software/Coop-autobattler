@@ -722,14 +722,14 @@
     {
       "id": "bld_rune_ward",
       "kind": "defense",
-      "defenseType": "wall",
+      "defenseType": "ward",
       "footprint": { "width": 1, "height": 1 },
-      "inputs": [],
+      "inputs": [{ "resource": "res_b", "side": "south" }],
       "outputs": [],
       "tiers": [
-        { "health": 120, "price": 8 },
-        { "health": 200, "price": 18 },
-        { "health": 300, "price": 36 }
+        { "health": 120, "price": 8, "reflectDamage": 2, "costPerStrike": 1 },
+        { "health": 200, "price": 18, "reflectDamage": 3, "costPerStrike": 1 },
+        { "health": 300, "price": 36, "reflectDamage": 4, "costPerStrike": 1 }
       ]
     },
     {

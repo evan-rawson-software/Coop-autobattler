@@ -143,6 +143,11 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     'An entrance facing it in line, up to 5 cells away, pairs with it.',
   ],
   [
+    'uiWardReach',
+    {},
+    'It strikes back for the walls and gates on the marked cells.',
+  ],
+  [
     'problemStalled',
     { name: 'Mill', percent: '97' },
     'Mill is stalled 97% of the time: output backs up.',

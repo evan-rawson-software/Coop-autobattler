@@ -930,21 +930,26 @@ and set in content; the first values are placeholders and are tuned in issue
     (CB-5i); the half rate bounds that, and the question is listed in
     `07-open-questions.md`.
 - **CB-53 [PROPOSED]** **The Rune Ward** (Wardsmith). A 1x1 defense (type
-  `ward`, kind Defense, CB-9) with health, that needs Power (CB-10a:
-  a cost per charge and a shortest time between charges). It does
-  nothing alone.
-  - **When it acts.** When an enemy unit hits a **wall of the Ward's owner**
-    on one of the **eight cells around the Ward** (a wall cell, any shape;
-    gates and other buildings do not count), the Ward spends one charge and
-    returns damage to **the attacker**: a percent of the damage the wall
-    actually took (placeholder 50%), rounded down, at least 1. It returns
-    damage for melee, ranged and flying attackers alike. The returned damage
-    ignores armor, is dealt once, and is never itself returned or reflected.
+  `ward`, kind Defense, CB-9) with health, that needs Power (CB-10a: a cost
+  per strike). It does nothing alone.
+  - **When it acts.** When an enemy unit hits a **wall or gate of the Ward's
+    owner** (any wall shape; other buildings do not count) that **shares an
+    edge** with the Ward (a diagonal does not count), and the Ward holds a
+    full charge, the Ward spends it and returns damage to **the attacker**: a
+    **fixed amount per tier** (placeholder 2 / 3 / 4), reduced by the attacker's
+    **armor** (CB-5h, at least 1). It returns damage for melee, ranged and
+    flying attackers alike, in the same tick as the hit, and the returned
+    damage is never itself returned. (Issue #474 decided this in place of the
+    first draft of this rule, which returned a percent of the wall's damage,
+    ignored armor and looked at the eight cells around the Ward.)
   - **Without a charge** it does nothing (CB-10d: it waits for resources,
-    never weaker). Each hit uses at most one Ward: if several Wards touch the
-    wall, the one with the lowest building order that has a charge acts.
-  - **Not boosted** by the Wardsmith's bonus (CB-51a). It has its own health
-    and can be attacked like any building.
+    never weaker). **Stacking:** each hit uses at most one Ward: if several
+    Wards touch the wall, the one with the lowest building ID that has a
+    charge acts. A Ward never acts for a partner's wall, a ghost's or an
+    enemy's, and never damages a building.
+  - **Not boosted** by the Wardsmith's bonus (CB-51a), and not counted as a
+    wall by the shop's limit of wall shapes (EC-3). It has its own health and
+    can be attacked like any building.
 - **CB-54 [PROPOSED]** **The Familiar Roost and the Familiar** (Beastbinder).
   The Roost is a 1x2 unit producer (CB-9, CB-13) that needs Power and makes
   one Familiar per production, for a cost and shortest time of the same

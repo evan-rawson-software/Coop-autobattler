@@ -209,14 +209,18 @@ function isTurret(b: Pick<SceneBuilding, 'def'>): boolean {
  * Quarter turns (clockwise, as core `rotateSide`) the sprite of a building is
  * drawn with: its placed rotation plus half a turn on the turned enemy board.
  * Walls, gates and the Core keep their light direction (0); a turret's base
- * turns with the building because its input port is part of the art.
+ * (and a Rune Ward's sprite) turns with the building because its input port
+ * is part of the art.
  */
 export function buildingSpriteRot(
   b: Pick<SceneBuilding, 'def' | 'instance'>,
   turned: boolean,
 ): 0 | 1 | 2 | 3 {
   const upright = b.def.kind === 'defense' || b.def.kind === 'core';
-  if (upright && !isTurret(b)) return 0;
+  // A Rune Ward (#474) also draws its input port, like a turret's base.
+  const ported =
+    isTurret(b) || (b.def.kind === 'defense' && b.def.defenseType === 'ward');
+  if (upright && !ported) return 0;
   return ((b.instance.rotation / 90 + (turned ? 2 : 0)) % 4) as 0 | 1 | 2 | 3;
 }
 

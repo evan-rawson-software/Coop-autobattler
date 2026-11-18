@@ -690,6 +690,8 @@ const CONSUMERS = [
   // One collector each (#443); the Grand barracks has its own chain.
   'bld_lancer_hall',
   'bld_mortar',
+  // Fed with Power like a turret, and bought with a collector of its own (#474).
+  'bld_rune_ward',
 ];
 
 /**

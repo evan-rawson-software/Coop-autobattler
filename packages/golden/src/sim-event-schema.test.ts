@@ -120,6 +120,7 @@ describe('sim-event.schema.json', () => {
       'unit_died',
       'unit_retargeted',
       'unit_spawned',
+      'ward_struck',
     ]);
   });
 
@@ -395,6 +396,27 @@ describe('sim-event.schema.json', () => {
     ).toBe(true);
     expect(
       validate({ tick: 1, type: 'turret_fired', side: 0, building: 3 }),
+    ).toBe(false);
+    expect(
+      validate({
+        tick: 30,
+        type: 'ward_struck',
+        side: 0,
+        building: 6,
+        wall: 7,
+        unit: 1,
+        damage: 2,
+      }),
+    ).toBe(true);
+    expect(
+      validate({
+        tick: 30,
+        type: 'ward_struck',
+        side: 0,
+        building: 6,
+        unit: 1,
+        damage: 2,
+      }),
     ).toBe(false);
     expect(validate({ tick: 1, type: 'stalled', building: 2, extra: 1 })).toBe(
       false,

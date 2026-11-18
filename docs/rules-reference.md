@@ -2485,6 +2485,10 @@ state at tick 0:
   `cooldown = 0`;
 - `turrets`: `{side, building, charge, cooldown}` for each living turret, by
   side then building ID, all starting at `charge = 0`, `cooldown = 0`;
+- `wards`: `{side, building, charge}` for each living Rune Ward (issue #474),
+  by side then building ID, all starting at `charge = 0`. **Present only when
+  a plot has a Rune Ward at the start**, so the state (and its hash) of every
+  battle without one is what it was before;
 - `ramps`: `{side, building, charge, steps, cooldown}` for each living economy
   building (in-battle ramp), by side then building ID, all starting at
   `charge = 0`, `steps = 0`, `cooldown = 0` (CB-11);
@@ -2676,7 +2680,16 @@ interest (CB-8f, "Points of interest") add the diversion of rule c in step 3
    conduit back up (the source stalls) instead of draining the network.
    `charge` never exceeds `costPerShot`.
 
-   Then, **ramp charging**, after turret charging: for each living economy
+   Then, **ward charging**, after turret charging (a state without `wards`
+   skips it): for each living Rune Ward, side 0 first and each side in
+   instance-ID order, if `charge < costPerStrike` (the Ward's tier), take
+   `min(input buffer count, costPerStrike - charge)` items out of its input
+   buffer (`takeFromBuffer`) and add them to `charge`; `charge` never exceeds
+   `costPerStrike`. A Ward that is full takes nothing, so an idle Ward lets
+   its buffer fill and its conduit back up. A Ward with no conduit, or whose
+   collector is starved, stays at `charge = 0`: it is **not working**.
+
+   Then, **ramp charging**, after ward charging: for each living economy
    building, side 0 first and each side in instance-ID order, if `steps <
    maxSteps` (its tier), go through its inputs clockwise from north and, for
    each, take `min(input buffer count, costPerStep - charge)` items out of
@@ -2881,8 +2894,40 @@ interest (CB-8f, "Points of interest") add the diversion of rule c in step 3
    straight after it, one `splash` event with the targets and the damage each
    took. The search uses the opposing side's cell grid and visits only the
    cells within `radiusSub` of the target's centre.
+   **Rune Ward strike (issue #474, CB-53).** Straight after the
+   `unit_attacked` of a hit on a **building that is a wall or a gate** (not
+   on a Core, a unit, or any other building, and not a blocked hit on a
+   shielded Core), in the order of the hits (unit `id` order), the attacker may
+   take a strike back. The **candidate Wards** of the hit building are fixed at
+   the start of the battle: the Rune Wards of the **same side and the same
+   owner** (the placed building's `owner`) as the wall or gate that **share an
+   edge** with it, that is, a cell of the Ward and a cell of the wall (any
+   shape) or gate whose Manhattan distance in arena coordinates is exactly 1
+   (a diagonal does not count), listed in Ward instance-ID order. A Ward of a
+   partner or of any other side is never a candidate, so a Ward never touches
+   a neighbour's wall or an enemy building. At the hit, the **first** candidate
+   that is alive (not yet destroyed by step 6) and has `charge >=
+   costPerStrike` strikes; **only that one** does (two Wards next to one wall
+   never strike for the same hit). It spends the charge (`charge -=
+   costPerStrike`), and the attacker takes `armorHit(reflectDamage, armor)`
+   (the tier's `reflectDamage`, then the attacker's own armor, `max(1, ...)`),
+   added to the attacker's pending damage in the same accumulation and the
+   same tick as every other hit, with the Ward's side as the damage's source
+   (it matters only for the kill counts of neutral guards). It is not scaled
+   by Overload, modifiers or the specialist, and it is never itself
+   struck back. A Ward with `charge < costPerStrike`, no candidate Ward, or a
+   Ward destroyed earlier, does nothing. `ward_struck {side, building, wall,
+   unit, damage}` is recorded right after the `unit_attacked` of the hit
+   (`side` the Ward's side, `building` the Ward, `wall` the wall or gate,
+   `unit` the attacker, `damage` after armor). The unit dies in step 6 like
+   any unit if this takes it to 0, simultaneously with everything else of the
+   tick. A side with `freePower` has its Wards charged like its turrets. _Notes
+   for a port:_ the order is the unit order of step 4, and the charge is spent
+   in that order, so with a charge of one two attackers in the same tick are
+   not both struck: the one with the lower unit `id` is. Build the candidate
+   lists once, never by scanning cells during the battle.
    Damage from all
-   attackers, and from turret shots, is summed per target with the saturating
+   attackers, from turret shots and from Ward strikes, is summed per target with the saturating
    rule of "Integer math conventions" (`addSaturating(sum, hit,
    MAX_TICK_DAMAGE)`: each hit is at most `MAX_HIT = 2^51`, a sum below the
    cap `2^52` is exact, and a larger one is `2^52`) and applied together
@@ -3546,6 +3591,7 @@ shot is recorded in step 3, before the step 4 attack events):
 | `core_hit_blocked`   | `unit`, `side`, `core`, `damage`: a unit's hit on a Core shielded by a standing pylon did nothing (MM-9d); recorded in step 4 right after the `unit_attacked` of the same hit (an event only: the shipped targeting never aims at a shielded Core, see "Units, combat and destruction") |
 | `splash`             | `attacker` (the unit with `splash`), `x`, `y` (the primary target's centre, sub-cell units), `targets` (a list of `{unit, damage}` of the secondary targets in unit id order, damage after their armor; may be empty); recorded right after the attacker's `unit_attacked` event, only when the attack was on a unit |
 | `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`; and `splash` (a list of `{unit, damage}`: the other units the shot hit, unit id order, damage after their armor, possibly empty) only for a turret tier with splash (CB-18b) |
+| `ward_struck`        | `side` (the Ward's and the wall's), `building` (the Rune Ward), `wall` (the wall or gate that was hit), `unit` (the attacker), `damage` (after the attacker's armor); recorded in step 4 right after the `unit_attacked` of the same hit (issue #474, CB-53) |
 | `guard_spawned`      | `unit`, `point` (the point's id), `def`, `px`, `py` (the centre, sub-cell units); recorded by a battle at tick 0 right after `zone_revealed`, one per placed neutral guard (CB-8e, "Neutral guards") |
 | `point_capture_started` | `point` (the point's id), `side` (0 or 1): the point's `progressSide` became `side` with progress 0; recorded by the capture step (CB-8f, "Points of interest") |
 | `point_captured`     | `point`, `side` (the new controller), `previous` (the controller before: -1, 0 or 1); recorded by the capture step right after the `point_capture_started` of the same tick, if any (CB-8f) |
@@ -4752,9 +4798,10 @@ identically; with none the field is absent.
   width also fails every plot, a failure on one plot says nothing about the
   others. With `plot = 0` and one plot (a party of 1) `lo = 0`, `hi = W` and
   the entry is identical to one without `plot`.
-- **`freePower`**: every turret of the side is fully charged at all times: in
-  the turret charging step, `charge` is set to `costPerShot` without touching
-  the input buffers. No flow is needed (the PvE threat has no sources,
+- **`freePower`**: every turret of the side (and every Rune Ward, issue #474)
+  is fully charged at all times: in the turret charging step, `charge` is set
+  to `costPerShot` (a Ward's, to `costPerStrike`) without touching the input
+  buffers. No flow is needed (the PvE threat has no sources,
   conduits or producers). The turrets still obey the normal firing rules,
   including that they only shoot units standing on their owner's board rows or in the neutral zone (PP-13).
 - **`unitStrengthPercent`**: a base strength percent for every unit the side
@@ -5880,10 +5927,12 @@ Entries of other specialists in the same list do not move any draw. The
 shipped `economy.json` lists a signature building for each specialist whose own
 step of #468 has landed: from issue #473 the **Mana Well** (weight 12, `fromRound`
 2, `specialist` `spec_flowmancer`; "Specialists", "The Mana Well"), the others
-come with their steps (a Rune Ward, Familiar Roost and Transmuter entry, `fromRound` 2
+come with their steps (the **Rune Ward** from issue #474: weight 12, `fromRound` 2,
+`specialist` `spec_wardsmith`; a Familiar Roost and Transmuter entry, `fromRound` 2
 as EC-3b decides). A roll for a player who has no entry of their own is
 exactly the roll over the list without the specialist entries, so only the
-Flowmancer's shops from round 2 differ from before #473. `shop-roll.23`
+Flowmancer's shops from round 2 differ from before #473, and from #474 the
+Wardsmith's too. `shop-roll.23`
 (three players, the Flowmancer, another specialist and none, with a test list
 holding a Mana Well entry for the Flowmancer from round 2), `shop-roll.24`
 (round 1: gated by round), `shop-roll.25` (players without the entry roll as if
@@ -6827,10 +6876,12 @@ is a load error).
   `bld_rune_ward`, `bld_familiar_roost` and `bld_transmuter`. Every one is
   **content only** in step #472: its own step of #468 (5/9 to 8/9) gives it its
   behaviour and its real numbers (the Mana Well got them in issue #473, "The
-  resource setting and the Mana Well" below). Until then each is a stand-in of an existing kind with the
+  resource setting and the Mana Well" below, and the Rune Ward in issue #474,
+  "The Rune Ward" below). Until then each is a stand-in of an existing kind with the
   footprint of the spec and placeholder numbers: the Mana Well a slow `source`
   (1x1, interval 40 / 28 / 20, price 8 / 20 / 40, still on a node); the Rune Ward
-  a 1x1 `wall` (health 120 / 200 / 300, price 8 / 18 / 36); the Familiar Roost a
+  a 1x1 `wall` (health 120 / 200 / 300, price 8 / 18 / 36; real since
+  issue #474); the Familiar Roost a
   1x2 `unit_producer` of `unit_raider` (Power on the south side, 4 per unit,
   every 80 / 56 / 40 ticks, price 20 / 40 / 70); the Transmuter a 1x2
   `refinery` of Composite from 2 Ore and 2 Power (every 60 / 42 / 30 ticks,
@@ -6839,8 +6890,8 @@ is a load error).
   by a round that has no effect yet would have been equal; leaving them out
   keeps each step's content valid without a number that means nothing.)
   `loadAllContent` refuses a specialist whose `signature` is not a building.
-  Presentation text and sprites are placeholders (the Rune Ward draws as a wall
-  cell).
+  Presentation text and sprites are placeholders (the Rune Ward drew as a wall
+  cell until issue #474).
 - **Shop gate.** "Offer roll", "Signature buildings": an `offerWeights` entry
   with a `specialist` is on offer only to a player with that specialist, from
   its `fromRound`.
@@ -6975,6 +7026,86 @@ resource setting** that the Transmuter (8/9) uses too.
   floors are `floor(interval * 100 / (100 + P))`. Changing a setting is the one
   operation (besides a move and a return) that removes conduits; remember to
   re-add them in an undo.
+
+### The Rune Ward (issue #474; CB-53, EC-3b, V-15, V-17)
+
+Step 6/9 of #468: the Wardsmith's signature building.
+
+- **The building** (`bld_rune_ward`, Wardsmith only). A defense of its own
+  `defenseType`, **`ward`** (a new value: `buildings.json`, the schema and the
+  loader accept it; the other values are unchanged), 1x1, one **input**, Power
+  (`res_b`) on the south side at rotation 0, no output. Tier fields (all
+  integers >= 1, `reflectDamage` at most `MAX_DAMAGE`): `reflectDamage` 2 / 3 / 4
+  and `costPerStrike` 1 at tiers 1 to 3, health 120 / 200 / 300, price 8 / 18 /
+  36 (proposed, tuned in #477). Like every building it works only while fed
+  (V-15, CB-10): with no charge it does nothing. The loader refuses a `ward` with
+  anything but exactly one input naming a resource and no output.
+- **Not a wall.** The Ward has its own `defenseType`, so it is **not** boosted by
+  the Wardsmith's bonus (`wall`, `gate`, `turret` targets), it does not count
+  towards the wall limit of one set of offers (`MAX_WALL_SHAPES_PER_SHOP`, "Offer
+  roll": that rule reads `defenseType` `wall`), it is not a wall for the
+  threat generator, the bot's wall lists or the web's wall drawing, and it
+  blocks units like any building (it is solid, not a gate).
+- **What it does.** "Resolve attacks" (step 4), "Rune Ward strike": when an
+  enemy unit hits a **wall or gate** of the Ward's own owner that shares an
+  edge with the Ward, and the Ward holds a full charge, the attacker takes
+  `reflectDamage` less its armor (`armorHit`), in the same tick. The wall takes
+  its damage as before. One Ward strikes per hit: **among several candidate
+  Wards the lowest instance ID with a full charge** (the recommendation of the
+  issue: no stacking). Owner rules: a Ward acts only on the units of an enemy
+  side (pillar 4, V-17), only for walls and gates of its **own owner** on its own
+  side (never a partner's, even next to it), and it never damages a building.
+  Charging is "Resolve step 2, ward charging": one item of Power per strike.
+- **Which wall cell.** An attack names a building, not a cell; a multi-cell wall
+  shape counts as next to the Ward if **any** of its cells shares an edge with
+  the Ward's cell. A gate and the one-cell wall are single cells.
+- **The rebalance principle (SC-13a, issue #145).** A Ward uses one item per
+  strike and only when it is struck for, so one collector of its tier feeds one
+  Ward at any hit rate a wall sees in practice (a tier 1 Extractor makes one item
+  in 20 ticks; a wall's attackers hit once per attack cooldown). No exception
+  to the principle is needed.
+- **Event.** `ward_struck` ("Events" table; `sim-event.schema.json`).
+- **Shop.** `economy.json`: `bld_rune_ward`, weight 12, `fromRound` 2,
+  `specialist` `spec_wardsmith`, as the Mana Well's entry ("Offer roll",
+  "Signature buildings"). A roll for any player without the Wardsmith is
+  unchanged, so only the Wardsmith's shops from round 2 differ from before.
+- **Ghost validation.** Nothing new: the signature-building rule 6a already
+  ties it to its specialist; a real run's snapshot holds a Ward only for its
+  owner. A Ward in a snapshot has no extra saved field, so no format number is
+  raised.
+- **Web.** The Ward's reach is shown while placing it, moving it, and while it
+  is selected: the four cells that share an edge with it are tinted and outlined
+  (green where a wall or gate of the player already stands), with the text
+  "It strikes back for the walls and gates on the marked cells." Playback draws
+  `ward_struck` as a ring on the Ward and a bolt to the attacker, and the
+  battle's building table credits the damage to the Ward.
+- **The bot.** `fortify` buys the Rune Ward (it is the Wardsmith's pick) and the
+  layout wires it to a Power collector like a turret, on the open cell nearest
+  the collector that touches a wall or gate of its own if one is in reach, and a
+  wall or gate placed later goes beside a Ward that has none (`planLayout`:
+  `preferred`, `placeBesideWard`); the other strategies never see it in a shop.
+  Nothing is drawn.
+- **Vectors.** `arena-sim.ward-strikes-back-at-wall-attacker` (a unit attacks a
+  warded wall; also run with a save and restore at tick 100),
+  `arena-sim.ward-no-ward-control` (the same wall with no Ward),
+  `arena-sim.ward-starved-does-nothing`, `arena-sim.ward-two-wards-one-strikes`,
+  `arena-sim.ward-strike-armor-floor`, `arena-sim.ward-strike-kills-attacker`,
+  `arena-sim.ward-gate`, `arena-sim.ward-two-cells-away-does-nothing`,
+  `arena-sim.ward-diagonal-does-nothing`,
+  `arena-sim.ward-partner-wall-not-struck-for`, `shop-roll.29` and `shop-roll.30`
+  (the Wardsmith's offers, and the round gate), and the content, loader and
+  shop tests (`rune-ward.test.ts`). The four `run-replay` vectors that have a
+  Wardsmith at a shop from round 2 (`s1-p2-market-day`, `s4-p2-drill`,
+  `s214-p2-blueprint`, `s6-p2-caravan`) and `shop-roll.27` changed: the
+  Wardsmith's rolls now include its entry, so its offers and the state hash
+  differ; nothing else of those runs did.
+- _Notes for a port:_ a Ward is a consumer with a charge, exactly as a turret,
+  but with no cooldown and no target search: the only trigger is a hit on a
+  neighbouring wall or gate. Precompute, per wall or gate, its candidate Wards
+  in Ward-ID order at the start of the battle; test adjacency with Manhattan
+  distance 1 between cells, never with the footprint boxes. Spend the charge when
+  the attack is resolved, in unit order, so a charge of one serves the first
+  attacker only.
 
 ### Saves and snapshots (no format number raised)
 
@@ -7654,7 +7785,8 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Walls (issue #291) | `buildings.json`, `economy.json` | seven tetromino shapes (I, O, T, S, Z, L, J), 4 cells each, tier 1 / 2 / 3 health 250 / 400 / 600 and price 8 / 18 / 36 (the old single wall: 100 / 160 / 240 and 4 / 9 / 18, now `bld_wall_block`, kept for strongholds and reference boards, not sold); `offerWeights`: every non-wall weight doubled (collector 24, Splitter 12, Merger 12, Crossover 4, Barracks 32, gate 6, turret 16, Overclocker 6, Armory 12, Range 16, Hangar 12), walls O, T, S, Z, L, J 2 each and I 1 (13 of 161 against 8 of 82 before); at most 2 wall shapes per shop; the kit's 3 walls are random shapes, never I | four cells for a price of 8 is 2 per cell (4 per cell before); the shop limit keeps a set of offers from being all walls |
 | Shop | `economy.json` | (issue #145; every non-wall weight was doubled by issue #291, see Walls, and five entries from round 3 were added by issue #383, see "Offer roll") `offerWeights`: collector 12 (was 10), Splitter 6, Merger 6, Crossover 2 (was 4), Barracks 16 (was 10), wall 8, gate 3 (was 5), turret 8, Overclocker 3, Armory 6 (was 3; it was not offered before the rebalance), Range 8 (was 5), Hangar 6 (was 3); placeholder unit numbers of Range and Hangar kept by owner decision (issue #59) | unit producers and the Armory are offered more often, routing parts less; with 8 bot runs per strategy this changes no strategy's depth by more than a round (fortify at party 4: 12.5 to 14.8) |
 | Mana Well (issue #473, proposed, to be tuned in #477) | `buildings.json`, `economy.json` | `bld_mana_well` 1x1 source with `resourceSetting`: interval 40 / 28 / 20 (half an Extractor's 20 / 14 / 10), price 8 / 20 / 40, health 20 / 30 / 40; in the shop from round 2 for the Flowmancer, weight 12 (half an Extractor's 24) | the stated exception to the rebalance principle: it feeds about half a consumer of its tier; weight and numbers are placeholders until #477 |
-| Signature buildings (issue #472, placeholders until steps 5/9 to 8/9 of #468; the Mana Well is real since #473, see its row) | `buildings.json` | `bld_mana_well` 1x1 source, price 8 / 20 / 40, interval 40 / 28 / 20; `bld_rune_ward` 1x1 wall, price 8 / 18 / 36, health 120 / 200 / 300; `bld_familiar_roost` 1x2 producer of raiders, Power 4 per unit, price 20 / 40 / 70; `bld_transmuter` 1x2 refinery of Composite from 2 Ore and 2 Power, price 25 / 50 / 90; only the Mana Well is in `offerWeights` (issue #473) | stand-ins of existing kinds so that the roster, the shop gate and the ghost check can name them; tuned in issue #477 |
+| Rune Ward (issue #474, proposed, to be tuned in #477) | `buildings.json`, `economy.json` | `bld_rune_ward` 1x1 defense of type `ward`, Power (`res_b`) on the south side: `reflectDamage` 2 / 3 / 4, `costPerStrike` 1, price 8 / 18 / 36, health 120 / 200 / 300; in the shop from round 2 for the Wardsmith, weight 12 | `reflectDamage` and `costPerStrike` integers >= 1 (`reflectDamage` at most `MAX_DAMAGE`); numbers are placeholders until #477 |
+| Signature buildings (issue #472, placeholders until steps 5/9 to 8/9 of #468; the Mana Well is real since #473 and the Rune Ward since #474, see their rows) | `buildings.json` | `bld_mana_well` 1x1 source, price 8 / 20 / 40, interval 40 / 28 / 20; `bld_rune_ward` (1x1 wall at first, price 8 / 18 / 36, health 120 / 200 / 300; real since #474); `bld_familiar_roost` 1x2 producer of raiders, Power 4 per unit, price 20 / 40 / 70; `bld_transmuter` 1x2 refinery of Composite from 2 Ore and 2 Power, price 25 / 50 / 90; only the Mana Well (issue #473) and the Rune Ward (issue #474) are in `offerWeights` | stand-ins of existing kinds so that the roster, the shop gate and the ghost check can name them; tuned in issue #477 |
 | Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
 | Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |
 | Escalator wave timing | `threats.json` | `firstTick` 100 and `intervalTicks` 75 (was 150 and 150): the eighth wave comes at tick 625 instead of 1200 | its Core used to fall before its large late waves spawned; a full tier 1 board now beats hard Escalator through round 8 (was 12), against 7 for Rusher |

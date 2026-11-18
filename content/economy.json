@@ -60,6 +60,12 @@
       "weight": 12,
       "fromRound": 2,
       "specialist": "spec_flowmancer"
+    },
+    {
+      "def": "bld_rune_ward",
+      "weight": 12,
+      "fromRound": 2,
+      "specialist": "spec_wardsmith"
     }
   ],
   "tierOdds": [

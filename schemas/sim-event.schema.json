@@ -476,6 +476,30 @@
       }
     },
     {
+      "title": "ward_struck",
+      "description": "A Rune Ward (CB-53) struck back at an enemy unit that hit a wall or gate of the Ward's owner sharing an edge with the Ward, recorded in step 4 right after the unit_attacked of that hit. `side` is the Ward owner's side (also the wall's), `building` the Ward's instance ID, `wall` the instance ID of the wall or gate that was hit, `unit` the attacker. `damage` is what the unit takes after its armor (at least 1); it joins the tick's pending damage like any attack.",
+      "type": "object",
+      "required": [
+        "tick",
+        "type",
+        "side",
+        "building",
+        "wall",
+        "unit",
+        "damage"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "type": { "const": "ward_struck" },
+        "side": { "type": "integer", "enum": [0, 1] },
+        "building": { "type": "integer", "minimum": 1 },
+        "wall": { "type": "integer", "minimum": 1 },
+        "unit": { "type": "integer", "minimum": 1 },
+        "damage": { "type": "integer", "minimum": 1 }
+      }
+    },
+    {
       "title": "guard_spawned",
       "description": "A neutral guard (CB-8e) was placed at its point of interest at tick 0, before the first tick, in point id order. Its centre is in arena sub-cell units (240 per cell). Guards have side 2 and take the first unit IDs; they are not counted as spawned units of a side.",
       "type": "object",

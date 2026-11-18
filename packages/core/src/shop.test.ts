@@ -609,7 +609,7 @@ describe('signature buildings by specialist (issue #472, EC-3b)', () => {
     expect(rareOfferDefs(e, 3, 100)).not.toContain('bld_mana_well');
   });
 
-  test('the shipped content lists the Mana Well for the Flowmancer from round 2 (#473)', () => {
+  test('the shipped content lists the Mana Well and the Rune Ward from round 2 (#473, #474)', () => {
     const named = economy.offerWeights.filter(
       (w) => w.specialist !== undefined,
     );
@@ -620,13 +620,15 @@ describe('signature buildings by specialist (issue #472, EC-3b)', () => {
         fromRound: 2,
         specialist: 'spec_flowmancer',
       },
+      {
+        def: 'bld_rune_ward',
+        weight: 12,
+        fromRound: 2,
+        specialist: 'spec_wardsmith',
+      },
     ]);
-    // The other three signature buildings come with their own steps.
-    for (const def of [
-      'bld_rune_ward',
-      'bld_familiar_roost',
-      'bld_transmuter',
-    ]) {
+    // The other two signature buildings come with their own steps.
+    for (const def of ['bld_familiar_roost', 'bld_transmuter']) {
       expect(economy.offerWeights.some((w) => w.def === def)).toBe(false);
     }
   });

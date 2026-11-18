@@ -51,7 +51,7 @@
     },
     "bld_rune_ward": {
       "name": "Rune Ward",
-      "description": "The Wardsmith's own ward: enemy units that hit a wall next to it take damage back."
+      "description": "The Wardsmith's own ward. Fed with {res_b}, it strikes back at an enemy unit that hits a wall or gate of yours beside it."
     },
     "bld_familiar_roost": {
       "name": "Familiar Roost",
@@ -405,6 +405,7 @@
       "wall": "Blocks movement",
       "gate": "Blocks enemies, lets your units pass",
       "pylon": "Shields a boss Core while it stands",
+      "ward": "Returns {damage} damage to an enemy that hits a wall or gate beside it; takes {cost} {resource} per strike",
       "turret": "Fires {damage} damage up to {range} cells every {seconds} s",
       "turret_splash": "Fires {damage} damage {min} to {range} cells away every {seconds} s, splash {percent}% (radius {radius})",
       "source_speed": "+{step}% source speed up to +{max}%",
@@ -494,6 +495,7 @@
       "uiTunnelUnpaired": "No partner",
       "uiTunnelHintEntrance": "Its exit goes in line ahead, up to {span} cells away.",
       "uiTunnelHintExit": "An entrance facing it in line, up to {span} cells away, pairs with it.",
+      "uiWardReach": "It strikes back for the walls and gates on the marked cells.",
       "problemStalled": "{name} is stalled {percent}% of the time: output backs up.",
       "problemStarved": "{name} receives no {resource} in the dry run.",
       "problemStashMany": "{count} buildings in the inventory.",

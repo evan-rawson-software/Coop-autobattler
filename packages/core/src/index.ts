@@ -143,6 +143,8 @@ export {
   type Tiers3,
   type TurretBuildingDef,
   type TurretTier,
+  type WardBuildingDef,
+  type WardTier,
   type UnitProducerBuildingDef,
   type UnitProducerTier,
   type WallOrGateBuildingDef,
