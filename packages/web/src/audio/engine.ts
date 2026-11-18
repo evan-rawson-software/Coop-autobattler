@@ -123,6 +123,7 @@ export class AudioEngine {
         if (!ok) return false;
         this.unlocked = true;
         this.applyGroups();
+        this.preload();
         if (this.hidden) this.hide();
         return true;
       },
@@ -237,7 +238,7 @@ export class AudioEngine {
     if (sound === undefined || this.failed.has(sound)) return false;
     const length = port.durationMs(sound);
     if (length === undefined) {
-      // Decoded on first use; this request is dropped, a late sound is worse.
+      // Still decoding (or not preloaded): dropped, a late sound is worse.
       this.fetchSound(sound);
       return false;
     }
@@ -304,9 +305,22 @@ export class AudioEngine {
     this.voices = this.voices.filter((v) => v.endMs > now);
   }
 
+  /**
+   * Decodes every effect sound in the background right after unlock (AU-31),
+   * so the first play of each is heard. A request that arrives while its
+   * sound is still decoding is dropped, as a late sound is worse than none.
+   */
+  private preload(): void {
+    for (const [id, cue] of Object.entries(this.config.cues)) {
+      if (cue.group !== 'effects' || cue.enabled === false) continue;
+      for (const sound of cueSounds(id, cue)) this.fetchSound(sound);
+    }
+  }
+
   private fetchSound(sound: string): void {
     const port = this.port;
     if (port === null || this.loading.has(sound)) return;
+    if (this.failed.has(sound) || port.durationMs(sound) !== undefined) return;
     this.loading.add(sound);
     void port
       .load(sound)

@@ -61,7 +61,6 @@ export function SoundPanel() {
           data-field="sound-mute"
           onChange={(e) => {
             setMuted(e.currentTarget.checked);
-            playCue('ui.toggle');
           }}
         />
         {t('audioMute')}

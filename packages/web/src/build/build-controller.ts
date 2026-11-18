@@ -23,6 +23,7 @@ import {
 } from '@game/core';
 import { screenText, screenTexts } from './texts.js';
 import { createStore, type Store } from '../app-state.js';
+import { playCue } from '../audio/index.js';
 import type { BoardPointerEvent } from '../board/BoardView.js';
 import { content } from '../content.js';
 import { extendPath, proposePath } from './autoroute.js';
@@ -1074,11 +1075,13 @@ export class BuildController {
           rotation: nextRotation(this.ui.held.rotation),
         },
       });
+      playCue('build.rotate');
       return;
     }
     if (this.ui.moving?.started === true) {
       const m = this.ui.moving;
       this.set({ moving: { ...m, rotation: nextRotation(m.rotation) } });
+      playCue('build.rotate');
       return;
     }
     const sel = this.ui.selection;
@@ -1221,7 +1224,7 @@ export class BuildController {
     const s = this.session;
     if (s === null) return false;
     if (s.run.team.buildings.some((b) => b.id === id)) {
-      const picked = await s.act({ t: 'return', id });
+      const picked = await s.act({ t: 'return', id }, true);
       if (!picked.ok) {
         this.refuse(picked.reason, picked.detail);
         return false;
@@ -1698,6 +1701,7 @@ export class BuildController {
         noRouteMessage('statusNoRouteBorder', team, content, d.from, null),
         'error',
       );
+      playCue('build.illegal');
       return;
     }
     const v = previewConduit(team, content, d.from, spot, cells, this.actor());
@@ -1709,6 +1713,7 @@ export class BuildController {
         },
         status: { text: reasonMessage(v.reason, v.detail), kind: 'error' },
       });
+      playCue('build.illegal');
       return;
     }
     const res = await s.act({ t: 'add', from: d.from, to: spot, cells });
@@ -1741,6 +1746,7 @@ export class BuildController {
         noRouteMessage('statusNoRouteSide', team, content, d.from, r.to),
         'error',
       );
+      playCue('build.illegal');
       return;
     }
     const act: LayoutAction = {
@@ -1765,6 +1771,7 @@ export class BuildController {
           kind: 'error',
         },
       });
+      playCue('build.illegal');
       return;
     }
     const res = await s.act(act);
