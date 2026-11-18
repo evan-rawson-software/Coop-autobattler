@@ -39,7 +39,14 @@ export function resetRefineryHint(): void {
   write(false);
 }
 
-/** Whether any offer on sale is a refinery (what the hint is about). */
+/**
+ * Whether any offer on sale is a two-input refinery (what the hint is about).
+ * The Transmuter (#476) has one input and no such rule: it does not count.
+ */
 export function offersRefinery(groups: readonly OfferGroup[]): boolean {
-  return groups.some((g) => g.card.offer?.kind === 'refinery');
+  return groups.some(
+    (g) =>
+      g.card.offer?.kind === 'refinery' &&
+      g.card.offer.def !== 'bld_transmuter',
+  );
 }

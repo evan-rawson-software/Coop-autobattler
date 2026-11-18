@@ -334,6 +334,7 @@ export {
   setBuildingResource,
   type SetResourceReason,
   setSpecialist,
+  refineryOutputOf,
   sourceResourceOf,
   specialistOf,
   type SpecialistReason,

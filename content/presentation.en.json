@@ -59,7 +59,7 @@
     },
     "bld_transmuter": {
       "name": "Transmuter",
-      "description": "The Alchemist's own refinery: turns one base resource into another at a loss."
+      "description": "The Alchemist's own refinery. Feed it any one base resource and set which one it makes: two items in, one item out. If you set it to the resource arriving, it makes nothing."
     },
     "bld_lancer_hall": {
       "name": "Lancer hall",
@@ -406,6 +406,7 @@
       "unit_producer_multi": "Trains {unit} x{units} per {total} {resource}",
       "unit_producer_costs": "Trains 1 {unit} per {costs}",
       "refinery": "Makes {count} {output} every {seconds} s from its inputs",
+      "refinery_setting": "Takes {cost} of one base resource and makes {count} of the one you choose every {seconds} s",
       "wall": "Blocks movement",
       "gate": "Blocks enemies, lets your units pass",
       "pylon": "Shields a boss Core while it stands",
@@ -788,6 +789,7 @@
       "uiLblBorderLink": "Border link",
       "uiLblCarries": "Carries",
       "uiLblConduits": "Conduits",
+      "uiTransmuterSame": "Same resource: it is set to what arrives, so it makes nothing.",
       "uiLblMakes": "Makes",
       "uiResourcePickTip": "Make {resource}",
       "uiLblErase": "Erase",

@@ -189,7 +189,13 @@ export interface RefineryTier extends TierBase {
    * Resource units consumed per batch, one entry per input resource (CB-5d,
    * CB-5e). Read it sorted by resource ID (`costEntries`).
    */
-  readonly costs: Readonly<Record<ResourceId, number>>;
+  readonly costs?: Readonly<Record<ResourceId, number>>;
+  /**
+   * A Transmuter tier (issue #476): the items of the one input resource it
+   * takes per batch, instead of `costs`. Present exactly when the building
+   * has `resourceSetting`.
+   */
+  readonly costPerBatch?: number;
   /** Minimum ticks between two batches. */
   readonly productionIntervalTicks: number;
   /** Items of the building's `output` resource made per batch. */
@@ -227,7 +233,10 @@ export interface SourceBuildingDef extends BuildingCommon {
 
 /** Whether a building definition has the resource setting (issue #473). */
 export function hasResourceSetting(def: BuildingDef): boolean {
-  return def.kind === 'source' && def.resourceSetting === true;
+  return (
+    (def.kind === 'source' || def.kind === 'refinery') &&
+    def.resourceSetting === true
+  );
 }
 export interface RouteBuildingDef extends BuildingCommon {
   readonly kind: 'route';
@@ -273,8 +282,19 @@ export interface EconomyBuildingDef extends BuildingCommon {
 }
 export interface RefineryBuildingDef extends BuildingCommon {
   readonly kind: 'refinery';
-  /** The refined resource it makes; its `refinedFrom` is the set of its input resources. */
-  readonly output: ResourceId;
+  /**
+   * The refined resource it makes; its `refinedFrom` is the set of its input
+   * resources. Absent on a building with `resourceSetting` (the Transmuter,
+   * issue #476): it makes the base resource of its setting, from one input of
+   * any base resource.
+   */
+  readonly output?: ResourceId;
+  /**
+   * The resource setting (issue #476) of a Transmuter: its owner chooses the
+   * base resource it outputs, as for a Mana Well. Its one input names no
+   * resource: the conduit that feeds it sets it, as for a route.
+   */
+  readonly resourceSetting?: true;
   readonly tiers: Tiers3<RefineryTier>;
 }
 export interface CoreBuildingDef extends BuildingCommon {
@@ -483,7 +503,6 @@ const KIND_FIELDS: Readonly<Record<string, string>> = {
   defenseType: 'defense',
   effect: 'economy',
   output: 'refinery',
-  resourceSetting: 'source',
 };
 
 /** Upper bounds of per-tier fields (see `limits.ts`). */
@@ -492,12 +511,14 @@ const TIER_MAX: Readonly<Record<string, number>> = {
   damage: MAX_DAMAGE,
   reflectDamage: MAX_DAMAGE,
   outputPerBatch: MAX_OUTPUT_PER_BATCH,
+  costPerBatch: MAX_TIER_COST,
 };
 
 /** Per-tier integer fields (name -> minimum) by kind, beyond the common ones. */
 function tierFields(
   kind: string,
   defenseType: unknown,
+  converter = false,
 ): Record<string, number> | undefined {
   const bought = { health: 1, price: 0 };
   switch (kind) {
@@ -529,7 +550,12 @@ function tierFields(
         maxSteps: 1,
       };
     case 'refinery':
-      return { ...bought, productionIntervalTicks: 1, outputPerBatch: 1 };
+      return {
+        ...bought,
+        productionIntervalTicks: 1,
+        outputPerBatch: 1,
+        ...(converter ? { costPerBatch: 1 } : {}),
+      };
     case 'core':
       return { health: 1 };
     default:
@@ -556,7 +582,11 @@ interface IoRule {
   readonly what: string;
 }
 
-function ioRule(kind: string, subtype: string | undefined): IoRule | undefined {
+function ioRule(
+  kind: string,
+  subtype: string | undefined,
+  converter = false,
+): IoRule | undefined {
   const none = [0, 0] as const;
   switch (kind) {
     case 'source':
@@ -651,6 +681,15 @@ function ioRule(kind: string, subtype: string | undefined): IoRule | undefined {
         what: 'an economy building',
       };
     case 'refinery':
+      if (converter) {
+        // The Transmuter (#476): one input that names no resource.
+        return {
+          resource: 'forbidden',
+          inputs: [1, 1],
+          outputs: [1, 1],
+          what: 'a refinery with a resource setting',
+        };
+      }
       return {
         resource: 'required',
         inputs: [1, 2],
@@ -758,6 +797,15 @@ function parseBuilding(
   // Fields: required for this kind, forbidden on other kinds, or unknown.
   for (const key of sortedKeys(entry)) {
     if (COMMON_KEYS.includes(key)) continue;
+    if (key === 'resourceSetting') {
+      // A collector or a refinery (the Transmuter) may carry it (#473, #476).
+      if (kind !== undefined && kind !== 'source' && kind !== 'refinery') {
+        errors.push(
+          `${label}: field "resourceSetting" is only valid on kind "source" or "refinery", not "${kind}".`,
+        );
+      }
+      continue;
+    }
     const owner = KIND_FIELDS[key];
     if (owner === undefined) {
       errors.push(`${label}: unknown field "${key}".`);
@@ -854,7 +902,10 @@ function parseBuilding(
     }
   }
   let resourceSetting: true | undefined;
-  if (kind === 'source' && entry['resourceSetting'] !== undefined) {
+  if (
+    (kind === 'source' || kind === 'refinery') &&
+    entry['resourceSetting'] !== undefined
+  ) {
     if (entry['resourceSetting'] === true) {
       resourceSetting = true;
     } else {
@@ -874,7 +925,14 @@ function parseBuilding(
     }
   }
   let output: ResourceId | undefined;
-  if (kind === 'refinery') {
+  if (kind === 'refinery' && resourceSetting === true) {
+    // A Transmuter (#476) makes the base resource of its setting.
+    if (entry['output'] !== undefined) {
+      errors.push(
+        `${label}: a refinery with a resource setting makes the resource of its setting, so it must not have an "output".`,
+      );
+    }
+  } else if (kind === 'refinery') {
     const v = entry['output'];
     if (typeof v !== 'string' || !RESOURCE_ID_PATTERN.test(v)) {
       errors.push(`${label}: a refinery needs an "output" resource ID.`);
@@ -989,7 +1047,7 @@ function parseBuilding(
   const rule =
     kind === undefined || (kind === 'route' && routeType === undefined)
       ? undefined
-      : ioRule(kind, subtype);
+      : ioRule(kind, subtype, kind === 'refinery' && resourceSetting === true);
   if (rule !== undefined && ioWellFormed && Array.isArray(rawInputs)) {
     if (inputs.length < rule.inputs[0] || inputs.length > rule.inputs[1]) {
       errors.push(
@@ -1050,7 +1108,9 @@ function parseBuilding(
 
   // Tiers.
   const wantedFields =
-    kind === undefined ? undefined : tierFields(kind, defenseType);
+    kind === undefined
+      ? undefined
+      : tierFields(kind, defenseType, resourceSetting === true);
   const wantedCount = kind === 'core' ? 1 : 3;
   const tierRecords: Record<string, number>[] = [];
   // Per tier, the `costs` of a two-input unit producer (CB-5e), else undefined.
@@ -1075,7 +1135,15 @@ function parseBuilding(
         let ok = true;
         let costs: Record<string, number> | undefined;
         let fields = wantedFields;
-        if (kind === 'refinery') {
+        if (kind === 'refinery' && resourceSetting === true) {
+          // A Transmuter tier has `costPerBatch`, never `costs` (#476).
+          if ('costs' in raw) {
+            ok = false;
+            errors.push(
+              `${where}: a refinery with a resource setting takes one resource, so it has "costPerBatch", not "costs".`,
+            );
+          }
+        } else if (kind === 'refinery') {
           // A refinery tier always has `costs` (CB-5d).
           if ('costs' in raw) {
             costs = readCosts(raw['costs'], inputs, where, ctx, errors);
@@ -1166,7 +1234,8 @@ function parseBuilding(
           }
           if (
             key === 'costs' &&
-            (kind === 'unit_producer' || kind === 'refinery')
+            (kind === 'unit_producer' ||
+              (kind === 'refinery' && resourceSetting !== true))
           ) {
             continue;
           }
@@ -1189,7 +1258,8 @@ function parseBuilding(
   }
 
   if (
-    (kind === 'unit_producer' || kind === 'refinery') &&
+    (kind === 'unit_producer' ||
+      (kind === 'refinery' && resourceSetting !== true)) &&
     tierCosts.length === wantedCount
   ) {
     // One form for the whole building, and the same resources in every tier.
@@ -1281,6 +1351,21 @@ function parseBuilding(
         ),
       };
     case 'refinery': {
+      if (resourceSetting === true) {
+        return {
+          ...common,
+          kind,
+          resourceSetting,
+          tiers: toTiers3(
+            tierRecords.map((t): RefineryTier => ({
+              ...base(t),
+              costPerBatch: num(t, 'costPerBatch'),
+              productionIntervalTicks: num(t, 'productionIntervalTicks'),
+              outputPerBatch: num(t, 'outputPerBatch'),
+            })),
+          ),
+        };
+      }
       if (output === undefined) return undefined;
       return {
         ...common,
@@ -1501,12 +1586,15 @@ export function productionOf(
     case 'refinery': {
       // The summed cost of one batch (a combined figure; see `costEntries`).
       const t = def.tiers[tier - 1];
-      return (
-        t && {
-          cost: sortedKeys(t.costs).reduce((n, k) => n + (t.costs[k] ?? 0), 0),
-          interval: t.productionIntervalTicks,
-        }
-      );
+      const costs = t?.costs;
+      if (t === undefined) return undefined;
+      return {
+        cost:
+          costs === undefined
+            ? (t.costPerBatch ?? 0)
+            : sortedKeys(costs).reduce((n, k) => n + (costs[k] ?? 0), 0),
+        interval: t.productionIntervalTicks,
+      };
     }
     default:
       return undefined;

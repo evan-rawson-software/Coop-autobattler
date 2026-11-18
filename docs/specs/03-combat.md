@@ -973,8 +973,12 @@ and set in content; the first values are placeholders and are tuned in issue
   (placeholder 2:1; the shortest time between batches is a refinery's).
   - The **output** is the resource set on the building (CB-56). The **input**
     is whichever base resource the conduit that feeds it carries (CB-5b).
-    The input and the output must differ, and refined resources are never
-    accepted; the editor refuses a feed that breaks either rule and shows why.
+    Refined resources are never accepted: the editor refuses such a feed and
+    shows why. The input and the output should differ: if they are the same
+    the building **makes nothing** (it takes nothing in either, so the conduit
+    backs up) and shows a "same resource" status. The first draft of this
+    entry had the editor refuse that feed; issue #476 states the status
+    instead, and it is followed.
   - It is a **second stated exception** to SC-13a: refining pays a premium,
     and this conversion pays a penalty. A collector feeding it makes half
     as many items on the other side, so it never creates supply (V-15) and
@@ -995,8 +999,8 @@ and set in content; the first values are placeholders and are tuned in issue
     editor checks every conduit leaving the building again: one that no
     longer matches what its far end accepts is marked as a problem in the
     problems list and carries nothing, and it does not stop the player from
-    readying up. A Transmuter whose setting equals the resource arriving is
-    refused (CB-55).
+    readying up. A Transmuter whose setting equals the resource arriving makes
+    nothing and shows a "same resource" status (CB-55).
 - **CB-57 [PROPOSED]** **What "ramp buildings work faster" means** (the
   Alchemist). The Overclocker and the Armory raise their owner's bonus one
   **step** every `stepIntervalTicks` (CB-3, the ramp). The Alchemist's

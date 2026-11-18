@@ -24,6 +24,7 @@ import { queryTeamMap } from './map.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
 import {
+  refineryOutputOf,
   sourceResourceOf,
   type TeamContent,
   type TeamState,
@@ -219,6 +220,11 @@ interface PlanRefinery {
   readonly outputs: readonly number[];
   /** The cost of each input resource, sorted by ID. */
   readonly costs: readonly CostEntry[];
+  /**
+   * A Transmuter that takes nothing in and makes nothing (issue #476): no
+   * conduit feeds it, or the resource arriving is the one it is set to make.
+   */
+  readonly idle: boolean;
   readonly interval: number;
   readonly outputPerBatch: number;
   /** The player who owns the refinery (CB-57: whose production speed applies). */
@@ -415,10 +421,20 @@ function compile(
     const inputs: ConsumerInputSim[] = [];
     for (const side of SIDE_ORDER) {
       const inp = rot.inputs.find((i) => i.side === side);
-      if (inp?.resource === undefined) continue;
+      if (inp === undefined) continue;
+      // An input that names no resource (the Transmuter's, issue #476) takes
+      // the resource of the conduit that feeds it; with no conduit, or one that
+      // carries nothing yet determined, it has no input here.
+      const resource =
+        inp.resource ??
+        (def.kind === 'refinery'
+          ? graph.edges.find((e) => e.to === String(b.id) && e.toSide === side)
+              ?.resource
+          : undefined);
+      if (resource === undefined || resource === null) continue;
       inputs.push({
         side,
-        resource: inp.resource,
+        resource,
         count: 0,
         delivered: 0,
         consumed: 0,
@@ -561,7 +577,22 @@ function compile(
     const def = defOf(b.def);
     if (def.kind !== 'refinery') continue;
     const tier = def.tiers[b.tier - 1];
-    const costs = costEntries(def, b.tier);
+    const output = refineryOutputOf(def, b);
+    if (output === undefined) {
+      throw new Error(`Refinery ${String(b.id)} has no output resource.`);
+    }
+    // A Transmuter (issue #476) takes `costPerBatch` of the one resource its
+    // feeding conduit carries; idle while that is unknown or equals its output.
+    let idle = false;
+    let costs = costEntries(def, b.tier);
+    if (def.resourceSetting === true && tier !== undefined) {
+      const fed = consumerSims.find((c) => c.building === b.id)?.inputs[0];
+      costs =
+        fed === undefined
+          ? []
+          : [{ resource: fed.resource, cost: tier.costPerBatch ?? 0 }];
+      idle = fed === undefined || fed.resource === output;
+    }
     if (tier === undefined || costs === undefined) {
       throw new Error(`Refinery ${String(b.id)} has an invalid tier.`);
     }
@@ -574,13 +605,14 @@ function compile(
         return o === undefined ? -1 : outIdx(o);
       }),
       costs,
+      idle,
       interval: tier.productionIntervalTicks,
       outputPerBatch: tier.outputPerBatch,
       owner: b.owner,
     });
     refinerySims.push({
       building: b.id,
-      resource: def.output,
+      resource: output,
       counters: costs.map(() => 0),
       cooldown: 0,
       store: 0,
@@ -1074,7 +1106,7 @@ function stepRefinery(
   pr: PlanRefinery,
 ): void {
   const events = ctx.events;
-  intakeByResource(sim, r.building, pr.costs, r.counters);
+  if (!pr.idle) intakeByResource(sim, r.building, pr.costs, r.counters);
   if (r.store > 0) {
     const n = pr.outputs.length;
     let connected = false;
@@ -1111,6 +1143,7 @@ function stepRefinery(
     }
   }
   if (
+    !pr.idle &&
     r.store === 0 &&
     r.cooldown === 0 &&
     pr.costs.every((e, k) => r.counters[k] === e.cost)

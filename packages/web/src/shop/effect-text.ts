@@ -83,7 +83,8 @@ export function templateKey(def: BuildingDef): EffectTemplateKey {
     case 'economy':
       return def.effect.type;
     case 'refinery':
-      return 'refinery';
+      // The Transmuter (#476) makes the resource its owner chooses.
+      return def.resourceSetting === true ? 'refinery_setting' : 'refinery';
     case 'core':
       return 'core';
   }
@@ -137,7 +138,9 @@ export function effectText(
         values['count'] = String(x.outputPerBatch);
         values['seconds'] = seconds(x.productionIntervalTicks);
       }
-      values['output'] = `{${def.output}}`;
+      if (def.output !== undefined) values['output'] = `{${def.output}}`;
+      if (x?.costPerBatch !== undefined)
+        values['cost'] = String(x.costPerBatch);
       break;
     }
     case 'defense': {

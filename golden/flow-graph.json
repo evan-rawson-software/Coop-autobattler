@@ -3146,5 +3146,277 @@
         "hash": "e942e506"
       }
     }
+  },
+  {
+    "id": "flow-graph.transmuter-takes-any-base-resource",
+    "kind": "flow-graph",
+    "description": "A Transmuter is a refinery node whose one input requires no resource (issue #476): the conduit into it carries what feeds it (Ore, Flux) and the conduit out of it carries the resource it is set to (Power), which the Hangar requires.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          },
+          {
+            "x": 10,
+            "y": 2,
+            "resource": "res_c"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_transmuter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 3,
+          "rotation": 0,
+          "resource": "res_b"
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_hangar",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 10,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_transmuter",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 10,
+          "y": 3,
+          "rotation": 0,
+          "resource": "res_a"
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 5,
+            "side": "south"
+          },
+          "cells": []
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "graph": {
+          "nodes": [
+            {
+              "key": "1",
+              "building": 1,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_a",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 4
+                }
+              ]
+            },
+            {
+              "key": "2",
+              "building": 2,
+              "channel": null,
+              "def": "bld_transmuter",
+              "kind": "refinery",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 4,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 8
+                }
+              ]
+            },
+            {
+              "key": "3",
+              "building": 3,
+              "channel": null,
+              "def": "bld_hangar",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 8,
+                  "requires": "res_b"
+                }
+              ],
+              "outputs": []
+            },
+            {
+              "key": "4",
+              "building": 4,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_c",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 12
+                }
+              ]
+            },
+            {
+              "key": "5",
+              "building": 5,
+              "channel": null,
+              "def": "bld_transmuter",
+              "kind": "refinery",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 12,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": null
+                }
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "conduitId": 4,
+              "linkedConduit": null,
+              "from": "1",
+              "to": "2",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 0,
+              "resource": "res_a"
+            },
+            {
+              "conduitId": 8,
+              "linkedConduit": null,
+              "from": "2",
+              "to": "3",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 0,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 12,
+              "linkedConduit": null,
+              "from": "4",
+              "to": "5",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 0,
+              "resource": "res_c"
+            }
+          ],
+          "order": ["1", "2", "3", "4", "5"],
+          "brokenLinks": []
+        },
+        "hash": "0e243db4"
+      }
+    }
   }
 ]

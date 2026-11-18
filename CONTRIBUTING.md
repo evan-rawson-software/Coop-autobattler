@@ -318,6 +318,10 @@ taken}`. The fields are optional and the follow-up is a new allowed shape of
   and the optional `wards` list of the arena state (present only when a plot
   has a Ward); no saved record holds either, and a team state or ghost that
   holds the building is an ordinary state, so no format number is raised.
+  The Transmuter (issue #476) lets the optional `resourceSetting` of a building
+  definition (content) stand on a refinery too, with the tier field
+  `costPerBatch`; a placed Transmuter carries the same optional `resource` as a
+  Mana Well, so no saved shape changes and no format number is raised.
   (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is

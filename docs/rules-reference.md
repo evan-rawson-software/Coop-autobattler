@@ -393,11 +393,15 @@ the modifier targets (`all`, `wall`, `gate`, `turret`, `source`, `route`,
 placeholders of CB-51a, tuned in issue #477.
 
 In `buildings.json`, `resourceSetting` (issue #473, "The resource setting and
-the Mana Well") is an optional field of a building of kind `source`: `true` or
-absent (`false` and any other value are refused, as is the field on any other
-kind). A building with it needs no extra number: it makes the resource its
-owner chose, at its own tiers' `intervalTicks` (an integer of at least 1, as
-for every collector).
+the Mana Well") is an optional field of a building of kind `source` or, since
+issue #476, `refinery` (the Transmuter, "The Transmuter"): `true` or absent
+(`false` and any other value are refused, as is the field on any other kind).
+A collector with it needs no extra number: it makes the resource its owner
+chose, at its own tiers' `intervalTicks` (an integer of at least 1, as for
+every collector). A refinery with it has no `output`, exactly one input that
+names no `resource`, and per tier `costPerBatch` (an integer from 1 to
+`MAX_TIER_COST`, 1000000) instead of `costs`; a refinery without it is as
+before (`output` and `costs` required, `costPerBatch` refused).
 
 In `points.json` (points of interest, "The neutral zone"): `chancePercent` is
 0 to 100; `bandMarginCells` is at least 0 and twice it must be below
@@ -1205,9 +1209,11 @@ in this order is the reported reason:
 9. `overlaps_conduit`: a cell holds a conduit cell. For `moveBuilding`, conduits
    attached to the moving building do not count (they are removed when the
    move succeeds); conduits of other buildings do.
-10. Node rules (none of them applies to a building with the resource setting,
-    which stands on any open cell of its owner's plot, node or not, and takes
-    nothing from a node: "The resource setting"):
+10. Node rules (none of them applies to a **collector** with the resource
+    setting, which stands on any open cell of its owner's plot, node or not,
+    and takes nothing from a node: "The resource setting"; a Transmuter is a
+    refinery, so `node_reserved` applies to it as to any building that is not a
+    source):
    - `source_needs_node`: a building of kind `source` must have every
      footprint cell on a resource node, all of the same resource (a
      placeholder source is 1x1). It produces that resource.
@@ -2005,7 +2011,8 @@ Rules (step 3a of `stepFlow`, "One tick: `stepFlow`"):
   (issue #383, "Offer roll") and in the bot's builds.
 
 The flow graph node of a refinery has `kind` `refinery`; its `outputs` has
-one entry.
+one entry. The Transmuter is the refinery with the resource setting; where it
+differs, "The Transmuter" says so.
 
 ### Consumer seam
 
@@ -5929,11 +5936,15 @@ step of #468 has landed: from issue #473 the **Mana Well** (weight 12, `fromRoun
 2, `specialist` `spec_flowmancer`; "Specialists", "The Mana Well"), the others
 come with their steps (the **Rune Ward** from issue #474: weight 12, `fromRound` 2,
 `specialist` `spec_wardsmith`; the **Familiar Roost** from issue #475: weight 12,
-`fromRound` 2, `specialist` `spec_beastbinder`; a Transmuter entry, `fromRound` 2
-as EC-3b decides). A roll for a player who has no entry of their own is
+`fromRound` 2, `specialist` `spec_beastbinder`; the **Transmuter** from issue
+#476: weight 12, `fromRound` 2, `specialist` `spec_alchemist`, as EC-3b
+decides). A roll for a player who has no entry of their own is
 exactly the roll over the list without the specialist entries, so only the
 Flowmancer's shops from round 2 differ from before #473, from #474 the
-Wardsmith's too and from #475 the Beastbinder's. `shop-roll.23`
+Wardsmith's too, from #475 the Beastbinder's and from #476 the Alchemist's.
+`shop-roll.31` (the shipped list at round 2: the Transmuter is on offer to the
+Alchemist only) and `shop-roll.32` (round 1: none yet) pin the Transmuter's
+entry. `shop-roll.23`
 (three players, the Flowmancer, another specialist and none, with a test list
 holding a Mana Well entry for the Flowmancer from round 2), `shop-roll.24`
 (round 1: gated by round), `shop-roll.25` (players without the entry roll as if
@@ -6890,7 +6901,7 @@ is a load error).
   every 80 / 56 / 40 ticks, price 20 / 40 / 70; it makes `unit_familiar` since
   issue #475); the Transmuter a 1x2
   `refinery` of Composite from 2 Ore and 2 Power (every 60 / 42 / 30 ticks,
-  price 25 / 50 / 90). They are **not in `offerWeights`**: nobody can buy one
+  price 25 / 50 / 90; real since issue #476, "The Transmuter"). They are **not in `offerWeights`**: nobody can buy one
   yet, so no run holds one and no rule, battle or shop changes. (An entry gated
   by a round that has no effect yet would have been equal; leaving them out
   keeps each step's content valid without a number that means nothing.)
@@ -6918,20 +6929,21 @@ is a load error).
   the Rune Ward after the Mortar (`fortify`). Because the shop only offers the
   bot its own specialist's building, it buys and places it as it does that
   family. The Mana Well is bought but not placed by the `weak` bot (it places
-  no collector); the Transmuter, a refinery with no consumer of its output yet,
-  is not wired by the `siege` bot until its own step. Nothing is drawn.
+  no collector). The Transmuter, a refinery, is wired only together with a
+  consumer of its output, as every refinery is (issue #476, "The Transmuter",
+  "The bot"). Nothing is drawn.
 - **Formats.** `offerWeights[].specialist` is optional content, not saved data:
   no format number is raised.
 
 ### The resource setting and the Mana Well (issue #473; RS-13, EC-3b, PP-8)
 
 Step 5/9 of #468: the Flowmancer's signature building and the **building
-resource setting** that the Transmuter (8/9) uses too.
+resource setting** that the Transmuter (8/9, issue #476) uses too.
 
 - **The setting.** A building definition may declare `"resourceSetting": true`
-  (an optional field of a building of kind `source` only; the loader and
-  `buildings.schema.json` refuse it on any other kind and any value but
-  `true`). A **placed** building of such a definition carries `resource`, one
+  (an optional field of a building of kind `source` or, since issue #476,
+  `refinery` only; the loader and `buildings.schema.json` refuse it on any
+  other kind and any value but `true`). A **placed** building of such a definition carries `resource`, one
   **base** resource of `resources.json` (a refined resource is not allowed),
   chosen by its owner when it is placed and changeable between battles in the
   steps where the layout can be edited (`build`, `shop`), like a move or a
@@ -7164,6 +7176,91 @@ Step 7/9 of #468: the Beastbinder's signature building and unit.
 - _Notes for a port:_ nothing is new in the rules: read the unit's numbers from
   content like any unit, and the producer from `buildings.json` with
   `unit: "unit_familiar"`; the speed is only the smaller `moveCooldownTicks`.
+
+### The Transmuter (issue #476; CB-55, CB-56, CB-57, EC-3b, V-15)
+
+Step 8/9 of #468: the Alchemist's signature building, the first refinery with
+**one** input and the second user of the building resource setting. Numbers
+are the issue's and proposed; they are tuned in #477.
+
+- **Content.** `bld_transmuter`: kind `refinery`, `"resourceSetting": true`,
+  footprint 1x2, one input on the south side that names **no resource**, one
+  output on the north side. Per tier `costPerBatch` 2 (items taken per batch),
+  `outputPerBatch` 1, `productionIntervalTicks` 60 / 42 / 30, price 25 / 50 /
+  90, health 40 / 60 / 80. It has no `output`: the resource it makes is the
+  setting of the placed building. The schema (`tierTransmuter`) and the loader
+  refuse `costs` on it and `costPerBatch` on any other refinery; they check
+  that it has exactly one input and no `output`.
+- **Setting.** The placed building carries `resource`, a base resource, exactly
+  as a Mana Well does ("The resource setting and the Mana Well"): `placeFromStash`
+  takes it (default: the first base resource), `setBuildingResource` changes it
+  between battles and detaches both its conduits, returning it to the stash
+  drops it. `validateTeamState` requires it on a placed Transmuter. A
+  Transmuter is not a collector, so it is placed like any refinery: it needs an
+  open cell of its owner's plot and **may not stand on a node**
+  (`node_reserved`), unlike the Mana Well.
+- **Typing (CB-5b).** The one input takes **any base resource**: the conduit that
+  feeds it sets what it takes, as a route carries what it is fed. A conduit
+  carrying a refined resource into it is `resource_mismatch` (it takes base
+  resources only). A conduit leaving it carries the resource of its setting
+  (`refineryOutputOf`: the definition's `output`, or the setting), so a
+  Transmuter set to Power cannot be joined to an Ore input, and changing the
+  setting detaches the conduits for that reason. The flow graph node has
+  `kind` `refinery`, `produces` null, and its input has `requires` null.
+- **Rule.** One tick of a Transmuter is a tick of a refinery ("Refineries")
+  with one counter: its resource is the one its input conduit carries (in the
+  flow simulation: the `resource` of the edge into it, in the sim's consumer
+  input list), its cost `costPerBatch`, its output the setting. It takes up to
+  `costPerBatch` items into the counter, makes a batch when the counter is full,
+  the cooldown is 0 and the store is empty, puts `outputPerBatch` items of the
+  setting resource into the store and releases one per tick; a refused item
+  makes it stalled, an output side with no conduit loses the item. Speed and
+  Alchemist bonus are the refinery's: the owner's `production_speed_percent`
+  shortens `productionIntervalTicks` to `max(1, floor(interval * 100 / (100 +
+  P)))` (60 becomes 52 for +15%; CB-57).
+- **Same resource.** If the resource its input carries equals its setting it
+  is **idle**: it takes nothing in, makes nothing (no counter fills, no batch,
+  no event), and the input buffer and the conduit back up to the collector,
+  which stalls. The build screen says "same resource" on it. With no conduit
+  attached, or one whose resource is not determined (nothing feeds it), it is
+  idle too. The issue states it this way; the spec (CB-55, CB-56) had said such
+  a feed is refused by the editor, and was changed to match.
+- **Conservation.** Items the Transmuter takes are `consumed` when taken, the
+  items it makes are `produced` when the batch is made, so a Transmuter loses
+  `costPerBatch - outputPerBatch` = 1 item per batch in the count (the loss is
+  `consumed` that never turns up as a consumer's delivery); the law of
+  "Conservation" holds at every tick (checked in the tests and the vectors).
+- **The stated exception (SC-13a, issue #145).** Refining pays a premium; this
+  pays a penalty: a collector feeding a Transmuter makes **twice** as many
+  items as arrive on the other side, so it never creates supply and cannot beat
+  the rebalance principle.
+- **Alchemist.** It is a refinery, so the Alchemist's production speed applies
+  to it (CB-57).
+- **In the shop.** `economy.json` lists it from round 2 with weight 12 and
+  `specialist` `spec_alchemist`. Ghost validation (rule 6a) needs nothing new.
+- **The bot.** The layout planner puts a stashed Transmuter in a chain only for
+  a stashed consumer with one base-resource input that the plot has **no open
+  node** of (no node of that resource without a building on it, other than the
+  ones the style keeps back): it sets the Transmuter to that resource, places
+  it beside a collector of another base resource (a placed free one, or a
+  stashed one put on a free node), joins them and places the consumer beside
+  the Transmuter, all or nothing. In the shop a strategy that connects buys a
+  Transmuter (one only) when that chain would be placed for a consumer it likes
+  or already holds, with gold left for the consumer and one collector, and then
+  also buys the consumer that waits for it. Only `siege` picks the Alchemist.
+- **Vectors.** `flow-sim.transmuter-conversion`, `-same-resource`,
+  `-output-backs-up`; `flow-graph.transmuter-takes-any-base-resource`;
+  `team-state-ops.transmuter-setting`; `arena-sim.transmuter-feeds-roost`,
+  `-alchemist-bonus`, `-same-resource-makes-nothing`; `shop-roll.31` and `.32`.
+  No existing vector changes.
+- **Formats.** No format number is raised: the optional `resource` of a placed
+  building (issue #473) and the optional `resourceSetting` and `costPerBatch`
+  of content are all there is.
+- _Notes for a port:_ the resource of a Transmuter's input is read when the
+  board sim is created (from the conduit graph) and does not change during a
+  battle; `idle` is decided then. Counters are one number; there is no sorting
+  of costs. Everything else is the refinery code with `costs` replaced by one
+  entry.
 
 ### Saves and snapshots (no format number raised)
 
@@ -7845,7 +7942,8 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Mana Well (issue #473, proposed, to be tuned in #477) | `buildings.json`, `economy.json` | `bld_mana_well` 1x1 source with `resourceSetting`: interval 40 / 28 / 20 (half an Extractor's 20 / 14 / 10), price 8 / 20 / 40, health 20 / 30 / 40; in the shop from round 2 for the Flowmancer, weight 12 (half an Extractor's 24) | the stated exception to the rebalance principle: it feeds about half a consumer of its tier; weight and numbers are placeholders until #477 |
 | Rune Ward (issue #474, proposed, to be tuned in #477) | `buildings.json`, `economy.json` | `bld_rune_ward` 1x1 defense of type `ward`, Power (`res_b`) on the south side: `reflectDamage` 2 / 3 / 4, `costPerStrike` 1, price 8 / 18 / 36, health 120 / 200 / 300; in the shop from round 2 for the Wardsmith, weight 12 | `reflectDamage` and `costPerStrike` integers >= 1 (`reflectDamage` at most `MAX_DAMAGE`); numbers are placeholders until #477 |
 | Familiar Roost and Familiar (issue #475, proposed, to be tuned in #477) | `buildings.json`, `units.json`, `economy.json` | `bld_familiar_roost` 1x2 unit producer of `unit_familiar`, Power (`res_b`) on the south side, 4 per Familiar every 80 / 56 / 40 ticks (need 50 / 71 / 100 per 1000 ticks: exactly one collector of its tier), price 20 / 40 / 70, health 40 / 60 / 80; `unit_familiar` health 20, damage 5, attack cooldown 10, move cooldown 3 (speed 80), radius 60, collision radius 39, reach 60, melee; in the shop from round 2 for the Beastbinder, weight 12 | the rebalance principle holds; the Familiar has the shortest move cooldown of the ground units; numbers are placeholders until #477 |
-| Signature buildings (issue #472, placeholders until steps 5/9 to 8/9 of #468; the Mana Well is real since #473, the Rune Ward since #474 and the Familiar Roost since #475, see their rows) | `buildings.json` | `bld_mana_well` 1x1 source, price 8 / 20 / 40, interval 40 / 28 / 20; `bld_rune_ward` (1x1 wall at first, price 8 / 18 / 36, health 120 / 200 / 300; real since #474); `bld_familiar_roost` 1x2 producer of `unit_familiar` (real since #475, see its row), Power 4 per unit, price 20 / 40 / 70; `bld_transmuter` 1x2 refinery of Composite from 2 Ore and 2 Power, price 25 / 50 / 90; only the Mana Well (issue #473), the Rune Ward (issue #474) and the Familiar Roost (issue #475) are in `offerWeights` | stand-ins of existing kinds so that the roster, the shop gate and the ghost check can name them; tuned in issue #477 |
+| Transmuter (issue #476, proposed, to be tuned in #477) | `buildings.json`, `economy.json` | `bld_transmuter` 1x2 refinery with `resourceSetting`, one input of no resource on the south side: `costPerBatch` 2, `outputPerBatch` 1 (2 in, 1 out), `productionIntervalTicks` 60 / 42 / 30, price 25 / 50 / 90, health 40 / 60 / 80; in the shop from round 2 for the Alchemist, weight 12 | the stated exception to the premium of refining: it pays a penalty, so a collector feeding it makes twice what arrives; numbers are placeholders until #477 |
+| Signature buildings (issue #472, placeholders until steps 5/9 to 8/9 of #468; the Mana Well is real since #473, the Rune Ward since #474, the Familiar Roost since #475 and the Transmuter since #476, see their rows) | `buildings.json` | `bld_mana_well` 1x1 source, price 8 / 20 / 40, interval 40 / 28 / 20; `bld_rune_ward` (1x1 wall at first, price 8 / 18 / 36, health 120 / 200 / 300; real since #474); `bld_familiar_roost` 1x2 producer of `unit_familiar` (real since #475, see its row), Power 4 per unit, price 20 / 40 / 70; `bld_transmuter` (real since #476, see its row); all four are in `offerWeights` | stand-ins of existing kinds so that the roster, the shop gate and the ghost check can name them; tuned in issue #477 |
 | Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
 | Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |
 | Escalator wave timing | `threats.json` | `firstTick` 100 and `intervalTicks` 75 (was 150 and 150): the eighth wave comes at tick 625 instead of 1200 | its Core used to fall before its large late waves spawned; a full tier 1 board now beats hard Escalator through round 8 (was 12), against 7 for Rusher |

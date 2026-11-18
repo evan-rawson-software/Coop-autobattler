@@ -476,7 +476,7 @@ function checkPlacement(
       };
     }
   }
-  if (hasResourceSetting(def)) {
+  if (def.kind === 'source' && hasResourceSetting(def)) {
     // A collector with a resource setting stands on any open cell: it needs
     // no node and takes nothing from one (issue #473).
     return null;
@@ -1055,6 +1055,20 @@ export function sourceResourceOf(
 ): ResourceId | undefined {
   if (def.kind !== 'source') return undefined;
   return def.resourceSetting === true ? b.resource : q.nodeAt(b.x, b.y);
+}
+
+/**
+ * The resource a placed refinery puts on its output conduit: its definition's
+ * refined resource, or, for a Transmuter (issue #476, a refinery with the
+ * resource setting), its setting. Undefined for another building and for a
+ * Transmuter whose setting is missing.
+ */
+export function refineryOutputOf(
+  def: BuildingDef,
+  b: { readonly resource?: ResourceId },
+): ResourceId | undefined {
+  if (def.kind !== 'refinery') return undefined;
+  return def.resourceSetting === true ? b.resource : def.output;
 }
 
 // ---------------------------------------------------------------------------

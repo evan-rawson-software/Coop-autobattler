@@ -807,6 +807,11 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['uiLblBorderLink', {}, 'Border link'],
   ['uiLblCarries', {}, 'Carries'],
   ['uiLblConduits', {}, 'Conduits'],
+  [
+    'uiTransmuterSame',
+    {},
+    'Same resource: it is set to what arrives, so it makes nothing.',
+  ],
   ['uiLblMakes', {}, 'Makes'],
   ['uiPanelPlacing', {}, 'Placing'],
   ['uiResourcePickTip', { resource: 'Ore' }, 'Make Ore'],

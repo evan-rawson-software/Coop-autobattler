@@ -12024,5 +12024,510 @@
         "hash": "3f53ae2a"
       }
     }
+  },
+  {
+    "id": "team-state-ops.transmuter-setting",
+    "kind": "team-state-ops",
+    "description": "The Transmuter and the building resource setting (issue #476): a refinery with the setting, so it may not stand on a node (node_reserved), nor on another player's plot; without a resource it takes the first base resource; a resource that is not a base resource is refused. Its one input takes the Ore of an Extractor, and the conduit out of it carries its setting (Ore into a Barracks is allowed; a change to Power detaches both conduits and the Hangar takes Power). The same setting changes nothing; another owner, a building without the setting and a refined resource are refused. A move keeps the setting; returning to the stash drops it.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 2,
+        "plotWidth": 12,
+        "features": [
+          {
+            "x": 1,
+            "y": 2,
+            "feature": "ter_lake"
+          }
+        ],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 3,
+            "resource": "res_a"
+          },
+          {
+            "x": 7,
+            "y": 3,
+            "resource": "res_b"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_transmuter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_transmuter",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_transmuter",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_hangar",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 3,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 1,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 7,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 6,
+          "y": 6,
+          "rotation": 0,
+          "resource": "res_c"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 16,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 9,
+          "y": 9,
+          "rotation": 0,
+          "resource": "res_ab_refined"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 9,
+          "y": 9,
+          "rotation": 0,
+          "resource": "res_b"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 3,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 5,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 0,
+          "id": 1,
+          "resource": "res_b"
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 1,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "returnToStash",
+          "actor": 0,
+          "id": 5
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 6,
+          "x": 3,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 6,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 0,
+          "id": 1,
+          "resource": "res_b"
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 0,
+          "id": 1,
+          "resource": "res_ab_refined"
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 1,
+          "id": 1,
+          "resource": "res_a"
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 0,
+          "id": 4,
+          "resource": "res_a"
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 2,
+          "x": 8,
+          "y": 6,
+          "rotation": 90
+        },
+        {
+          "op": "returnToStash",
+          "actor": 0,
+          "id": 3
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 5
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 6
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 4
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "node_reserved"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "outside_own_plot"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "invalid_resource"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 8
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": true
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 12
+          },
+          {
+            "op": "returnToStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 16
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": true
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": false,
+            "reason": "invalid_resource"
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": false,
+            "reason": "not_owner"
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": false,
+            "reason": "no_resource_setting"
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true
+          },
+          {
+            "op": "returnToStash",
+            "ok": true
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 2,
+            "plotWidth": 12,
+            "features": [
+              {
+                "x": 1,
+                "y": 2,
+                "feature": "ter_lake"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 3,
+                "y": 3,
+                "resource": "res_a"
+              },
+              {
+                "x": 7,
+                "y": 3,
+                "resource": "res_b"
+              }
+            ]
+          },
+          "cores": [null, null],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_transmuter",
+              "tier": 1,
+              "x": 3,
+              "y": 4,
+              "rotation": 0,
+              "owner": 0,
+              "resource": "res_b"
+            },
+            {
+              "id": 2,
+              "def": "bld_transmuter",
+              "tier": 2,
+              "x": 8,
+              "y": 6,
+              "rotation": 90,
+              "owner": 0,
+              "resource": "res_c"
+            },
+            {
+              "id": 4,
+              "def": "bld_extractor",
+              "tier": 1,
+              "x": 3,
+              "y": 3,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 6,
+              "def": "bld_hangar",
+              "tier": 1,
+              "x": 3,
+              "y": 7,
+              "rotation": 0,
+              "owner": 0
+            }
+          ],
+          "stash": [
+            {
+              "id": 3,
+              "def": "bld_transmuter",
+              "tier": 3,
+              "owner": 0
+            },
+            {
+              "id": 5,
+              "def": "bld_barracks",
+              "tier": 1,
+              "owner": 0
+            }
+          ],
+          "nextId": 7,
+          "nextConduitId": [5, 1],
+          "conduits": [
+            {
+              "id": 12,
+              "owner": 0,
+              "from": {
+                "building": 4,
+                "side": "north"
+              },
+              "to": {
+                "building": 1,
+                "side": "south"
+              },
+              "cells": []
+            },
+            {
+              "id": 16,
+              "owner": 0,
+              "from": {
+                "building": 1,
+                "side": "north"
+              },
+              "to": {
+                "building": 6,
+                "side": "south"
+              },
+              "cells": [
+                {
+                  "x": 3,
+                  "y": 6
+                }
+              ]
+            }
+          ]
+        },
+        "hash": "1d50468c"
+      }
+    }
   }
 ]
