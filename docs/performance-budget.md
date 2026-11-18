@@ -359,3 +359,23 @@ against the floor 35, legal dense 6.11 and 3.95 against 2 and 1.5, stress tier 1
 four Cores 1.00 against 0.35, stress tier 3 four Cores one battle 3.1 s against
 6 s, peak 680 units against 1,000, battle length 3,101 ticks against 4,000), so
 the budget table is unchanged.
+
+## Audio budget (2026-11-18, issue #446)
+
+Audio is presentation only and adds nothing to the simulation, so the battle
+budget above is unchanged. Its own budget is on the **download**, designed in
+[`specs/08-audio.md`](specs/08-audio.md) (AU-44). Nothing is built yet; these
+are the limits the later steps (#447 to #451) test against, and the table is
+filled with the measured sizes as they land. Sizes are bytes served, without
+compression.
+
+| Part                                              | Limit (PROPOSED)  | Planned     | Measured |
+| ------------------------------------------------- | ----------------- | ----------- | -------- |
+| Sound effects, `assets/audio/sfx/*.wav` (about 55 files, mono, 22,050 Hz, 16-bit) | 1.0 MB, 56 KB per file | about 0.6 MB | not built |
+| Music and stingers (synthesised in the browser)   | 0 bytes of audio  | 0           | not built |
+| Manifest, `audio.json`, `sounds.json`, `music.json` | 60 KB in all    | about 40 KB | not built |
+| **All audio**                                     | **2 MB**          | about 0.7 MB | not built |
+
+If the effects pass their limit: shorten the longest sounds, then lower the
+sample rate to 16,000 Hz. A test in `packages/audio` fails when a file or the
+total passes its limit.

@@ -99,9 +99,9 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   <header>
     <span class="caption">Wireframes · solo view with co-op elements marked</span>
     <h1>Screens of a run</h1>
-    <p class="lede">Layout sketches for the screens of a run, drawn for a 1080p screen. Screens 1 to 4, 7 and 8 repeat every round; 5, 5b, 6 and 9 start and end a run. Specific numbers and example effects in the sketches are placeholders, not rules. Your base is at the bottom and the enemy is at the top, so the front edge runs across the screen and a bigger party makes the board wider, not taller. Sizes, numbers, and building names are placeholders.</p>
+    <p class="lede">Layout sketches for the screens of a run, drawn for a 1080p screen. Screens 1 to 4, 7 and 8 repeat every round; 5, 5b, 5c, 6 and 9 start and end a run. Specific numbers and example effects in the sketches are placeholders, not rules. Your base is at the bottom and the enemy is at the top, so the front edge runs across the screen and a bigger party makes the board wider, not taller. Sizes, numbers, and building names are placeholders.</p>
     <div class="flowline" aria-label="Order of screens in a run">
-      <span>5 Main menu</span><i>→</i><span>5b Specialist pick</span><i>→</i><span>6 Core placement</span><i>→</i><span>4 Build</span><i>→</i><span>7 PvE choice</span><i>→</i><span class="on">1 Battle</span><i>→</i><span>8 Summary</span><i>→</i><span class="on">2 Event</span><i>→</i><span class="on">3 Shop</span><i>+</i><span class="on">4 Build</span><i>→</i><span>PvP battle …</span><i>→</i><span>9 Run over</span>
+      <span>5 Main menu</span><i>→</i><span>5b Specialist pick</span><i>·</i><span>5c Sound settings</span><i>→</i><span>6 Core placement</span><i>→</i><span>4 Build</span><i>→</i><span>7 PvE choice</span><i>→</i><span class="on">1 Battle</span><i>→</i><span>8 Summary</span><i>→</i><span class="on">2 Event</span><i>→</i><span class="on">3 Shop</span><i>+</i><span class="on">4 Build</span><i>→</i><span>PvP battle …</span><i>→</i><span>9 Run over</span>
     </div>
     <div class="legend" aria-label="Map legend">
       <span><b>Ex</b> extractor</span><span><b>Bk</b> barracks</span><span><b>Fo</b> foundry</span><span><b>Tu</b> turret</span><span><b>Sp</b> splitter</span><span><b>Ar</b> armory (economy)</span><span><b>Rc</b> Composite refinery (Ore + Power)</span><span><b>Ra</b> Aether refinery (Power + Flux)</span><span><b>Gf</b> Golem forge</span><span><b>Sr</b> Spire</span><span><b>■</b> wall</span><span><b>O / P / F</b> Ore, Power, Flux node</span>
@@ -287,6 +287,19 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Your pick, highlighted. You can change it until you are Ready.</li>
       <li>Every party member's current pick, visible as soon as it is made (RS-13b). Two players may pick the same specialist.</li>
       <li>Ready needs a pick; a refused Ready says why. Ready locks your pick, and Unready reopens it. The step ends when everyone is Ready; solo, when you are (RS-13c). On the later screens your specialist stays in the run bar.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>5c. Sound settings</h2>
+    <p>A small panel with three volume sliders and a mute switch (AU-23, issue #446). It opens from the main menu and from the in-run Menu, with the same contents, and changes apply at once. The settings are kept per browser and are not part of a run. Levels are placeholders.</p>
+    <div class="sheet"><svg id="s-sound" viewBox="0 0 960 540" role="img" aria-label="Sound settings wireframe: the panel opened over the main menu on the left and from the in-run Menu on the right, each with Master, Music and Effects sliders and a Mute switch."></svg></div>
+    <ol class="notes">
+      <li>Main menu: the Sound button opens the panel over the menu.</li>
+      <li>Master scales Music and Effects. Each slider shows its level, 0 to 100.</li>
+      <li>Mute silences everything and keeps the levels. A muted game shows it on the Sound button.</li>
+      <li>In-run Menu: the same panel, opened from the run bar's Menu button. It never pauses or changes the run.</li>
+      <li>Close returns to the screen. A short click plays when a slider is released, so the level can be heard.</li>
     </ol>
   </section>
 
@@ -928,6 +941,34 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     btn(s, 648, 404, 288, 44, "Ready", true); btn(s, 648, 458, 288, 36, "Unready (change the pick)");
     T(s, 648, 508, "Ready locks your pick.", "ts tm"); T(s, 648, 522, "Nothing is given to a partner.", "ts tm");
     mark(s, 222, 102, 1); mark(s, 222, 172, 2); mark(s, 222, 236, 3); mark(s, 222, 366, 4); mark(s, 600, 412, 5); mark(s, 922, 412, 6);
+  })();
+
+  // ================= 5c. SOUND SETTINGS =================
+  (function () {
+    var s = document.getElementById("s-sound");
+    R(s, 0, 0, 960, 540, "frame");
+    function panel(x, y, title) {
+      R(s, x, y, 280, 244, "box"); T(s, x + 16, y + 28, title, "th");
+      el(s, "line", { x1: x + 16, y1: y + 38, x2: x + 264, y2: y + 38, class: "rule" });
+      [["Master", 80], ["Music", 50], ["Effects", 80]].forEach(function (r, i) {
+        var yy = y + 70 + i * 40;
+        T(s, x + 16, yy + 4, r[0], "t"); R(s, x + 90, yy - 2, 130, 6, "panel");
+        R(s, x + 90, yy - 2, 130 * r[1] / 100, 6, "btn-go"); el(s, "circle", { cx: x + 90 + 130 * r[1] / 100, cy: yy + 1, r: 8, class: "box" });
+        T(s, x + 264, yy + 4, String(r[1]), "t tm", "end");
+      });
+      R(s, x + 16, y + 190, 16, 16, "box"); T(s, x + 40, y + 203, "Mute everything", "t");
+      btn(s, x + 184, y + 188, 80, 30, "Close");
+    }
+    // left: main menu
+    R(s, 20, 20, 440, 500, "panel"); T(s, 34, 44, "MAIN MENU", "ts tm");
+    btn(s, 34, 60, 130, 32, "New run", true); btn(s, 34, 100, 130, 32, "Join"); btn(s, 34, 140, 130, 32, "Sound"); btn(s, 34, 180, 130, 32, "Quit");
+    panel(176, 120, "Sound");
+    mark(s, 164, 142, 1); mark(s, 410, 190, 2); mark(s, 322, 312, 3); mark(s, 446, 300, 5);
+    // right: in-run menu
+    R(s, 500, 20, 440, 500, "panel"); T(s, 514, 44, "IN A RUN · round 6 · Lives 3 / 5", "ts tm"); btn(s, 860, 28, 64, 26, "Menu");
+    R(s, 780, 60, 144, 106, "box"); T(s, 794, 84, "Sound", "t"); T(s, 794, 108, "Abandon run", "t"); T(s, 794, 132, "Main menu", "t"); T(s, 794, 156, "Resume", "t");
+    panel(520, 180, "Sound");
+    mark(s, 774, 64, 4);
   })();
 
   // ================= 6. CORE PLACEMENT =================

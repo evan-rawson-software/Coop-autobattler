@@ -31,6 +31,7 @@ differs from them in places:
 - The screens call a PvE battle a "Stronghold" battle and a PvP battle a
   "Rival party" battle; a phase stepper (Set up, Build, Fight, Reward) shows
   where the round is.
+- The Sound settings panel (5c, issue #446) is planned, not built.
 - The Caravan draft (2b), the four new buildings (4b, issue #437) and the specialist pick (5b, issue #468) are
   planned, not built.
 
@@ -41,9 +42,9 @@ battle (1, 8) → 2 event → 3 shop + 4 build → … → 9 run over.
 - `screens.html` — all the wireframes on one page, with the callouts. Open
   it in a browser. The screens are drawn by a script in the page, so edit
   that script to change them, then re-export the images.
-- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks) and `1c-battle-points.png` (points of interest), both after the Battle screen and `2b-caravan.png`, `2c-rich-vein.png` and `2d-blueprint.png` (the event follow-ups, after the Event choice screen), and `4b-build-footprints.png` (placement previews for the four new buildings, after the Build screen) and `5b-specialist-pick.png` (the specialist pick, after the Main menu).
+- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks) and `1c-battle-points.png` (points of interest), both after the Battle screen and `2b-caravan.png`, `2c-rich-vein.png` and `2d-blueprint.png` (the event follow-ups, after the Event choice screen), and `4b-build-footprints.png` (placement previews for the four new buildings, after the Build screen) and `5b-specialist-pick.png` (the specialist pick, after the Main menu) and `5c-sound-settings.png` (the Sound settings panel, issue #446, planned, after the specialist pick).
 
-Not drawn: the lobby for forming a party and settings. Points of interest are
+Not drawn: the lobby for forming a party and settings other than sound. Points of interest are
 drawn in 1c and on the Battle summary (issue #370). Refining (issue #378) is drawn on the
 Shop, Build and Battle screens.
 
@@ -224,6 +225,18 @@ The first step of a run after the map is shown, before Core placement (RS-13, is
 4. Your pick, highlighted. You can change it until you are Ready.
 5. Every party member's current pick, visible as soon as it is made (RS-13b). Two players may pick the same specialist.
 6. Ready needs a pick; a refused Ready says why. Ready locks your pick and Unready reopens it. The step ends when everyone is Ready; solo, when you are (RS-13c). On the later screens your specialist stays in the run bar.
+
+## 5c. Sound settings
+
+A small panel with three volume sliders and a mute switch (AU-23, `../specs/08-audio.md`, issue #446). It opens from the main menu and from the in-run Menu, with the same contents, and changes apply at once. The settings are kept per browser and are not part of a run. Levels are placeholders.
+
+![Sound settings wireframe](5c-sound-settings.png)
+
+1. Main menu: the Sound button opens the panel over the menu.
+2. Master scales Music and Effects. Each slider shows its level, 0 to 100.
+3. Mute silences everything and keeps the levels. A muted game shows it on the Sound button.
+4. In-run Menu: the same panel, opened from the run bar's Menu button. It never pauses or changes the run.
+5. Close returns to the screen. A short click plays when a slider is released, so the level can be heard.
 
 ## 6. Core placement
 
