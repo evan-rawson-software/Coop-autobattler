@@ -6198,7 +6198,7 @@ through the Pact event.
 | `mod_pact_bastion` | `building_health_percent` `all` +30 | `unit_strength_percent` -10 |
 | `mod_pact_overcharge` | `turret_damage_percent` +40 | `building_health_percent` `turret` -20 |
 
-Planned, and entering the content only when the feature each needs has
+Also in the content, each entered once the feature it needs had
 landed: stone skin
 (+1 Golem armor, from round 3), wide arcs (+50% caster splash, from round 3)
 and claimstakers (points of interest captured 50% faster). Gold modifiers (Tithe and Scrap dealer, issue #425) are

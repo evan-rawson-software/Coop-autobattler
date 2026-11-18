@@ -21,6 +21,7 @@ import {
   deriveProblems,
   inspectorFigures,
 } from './view-model.js';
+import { scaledInterval } from '@game/core';
 
 /** A working factory: an extractor on a node of the barracks' resource. */
 async function factory(): Promise<{
@@ -370,6 +371,44 @@ describe('flow, inspector and problems', () => {
       team.buildings.find((x) => x.id === ex) as never,
     );
     expect(exFig?.produces?.perSec).toBeGreaterThan(0);
+  });
+
+  test('a collector shows the owner specialist speed bonus', async () => {
+    const { s, ex } = await factory();
+    const team = s.run.team;
+    const b = team.buildings.find((x) => x.id === ex);
+    if (b === undefined) throw new Error('no extractor');
+    const def = content.buildings.get(b.def);
+    if (def === undefined || def.kind !== 'source')
+      throw new Error('no source');
+    const interval = def.tiers[b.tier - 1]?.intervalTicks ?? 1;
+    const percent = 25;
+    const roster = {
+      get: () => ({
+        id: 'spec_test',
+        effects: [{ kind: 'source_speed_percent' as const, percent }],
+      }),
+    };
+    const owned = { ...team, specialists: team.cores.map(() => 'spec_test') };
+    const unpicked = { ...team, specialists: team.cores.map(() => null) };
+    const plain = inspectorFigures(unpicked, content, simConfig, null, b);
+    const boosted = inspectorFigures(
+      owned,
+      { ...content, specialists: roster } as never,
+      simConfig,
+      null,
+      b,
+    );
+    const tps = simConfig.ticksPerSecond;
+    expect(plain?.produces?.perSec).toBe(
+      Math.round((tps / interval) * 10) / 10,
+    );
+    expect(boosted?.produces?.perSec).toBe(
+      Math.round((tps / scaledInterval(interval, percent)) * 10) / 10,
+    );
+    expect(boosted?.produces?.perSec).toBeGreaterThan(
+      plain?.produces?.perSec ?? 0,
+    );
   });
 
   test('an unconnected barracks has no arrivals and is a problem', async () => {

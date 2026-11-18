@@ -20,6 +20,10 @@ import {
   type SimConfig,
   type TeamState,
   buildingEnd,
+  cappedBonus,
+  scaledInterval,
+  specialistEffectsOf,
+  specialistPercent,
   unpairedTunnelEnds,
 } from '@game/core';
 import type { WebContent } from '../content.js';
@@ -203,7 +207,26 @@ export function inspectorFigures(
     const row = dry?.sources.find((s) => s.building === building.id);
     produces = {
       resource: occ.sourceResource(building) ?? null,
-      perSec: t === undefined ? 0 : round1(tps / t.intervalTicks),
+      perSec:
+        t === undefined
+          ? 0
+          : round1(
+              tps /
+                scaledInterval(
+                  t.intervalTicks,
+                  cappedBonus(
+                    specialistPercent(
+                      specialistEffectsOf(
+                        state,
+                        content.specialists,
+                        building.owner,
+                      ),
+                      'source_speed_percent',
+                    ),
+                    sim.maxSourceSpeedPercent,
+                  ),
+                ),
+            ),
       lostPerSec:
         row === undefined || dry === null
           ? 0

@@ -132,9 +132,9 @@ language-neutral from the start:
 - **Layer rule**: `core` imports neither `session` nor `web`, and uses no
   DOM, no Node I/O and no clock; `session` imports only `core`; `web` may
   import both. The TypeScript configs and ESLint enforce it.
-- **Audio (TA-7a)**: designed in `docs/specs/08-audio.md`, not built yet;
-  `packages/audio` will generate the sound effects (`pnpm audio:build`) and
-  the web engine will live in `packages/web/src/audio/`.
+- **Audio (TA-7a)**: designed in `docs/specs/08-audio.md`, built;
+  `packages/audio` generates the sound effects (`pnpm audio:build`) and
+  the web engine lives in `packages/web/src/audio/`.
 - **Content (TA-48)**: `content/` holds `buildings`, `economy`, `events`,
   `mapgen`, `resources` (TA-27a), `sim`, `terrain`, `threats` and `units`,
   and the display text in `presentation.en.json` (TA-27b).
