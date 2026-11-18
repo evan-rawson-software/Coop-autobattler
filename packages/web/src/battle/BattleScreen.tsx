@@ -62,6 +62,8 @@ import { overloadLine } from '../choice/overload.js';
 import { simClient, type RecordOutcome } from '../sim-worker/client.js';
 import { CannotShow } from './CannotShow.js';
 import { ResultCard } from './ResultCard.js';
+import { BattleSounds } from '../audio/battle-sounds.js';
+import { readConfig as readAudioConfig } from '../audio/index.js';
 import { readFailPlayback } from './cannot-show.js';
 import { readForcedPoint } from './force-point.js';
 import { createReadyGate } from './ready-gate.js';
@@ -376,6 +378,11 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     c.refitOnResize = true;
     return c;
   }, []);
+  // Battle sounds (#450): read from the event log as playback passes it.
+  const sounds = useMemo(() => {
+    const cfg = readAudioConfig();
+    return cfg === null ? null : new BattleSounds(cfg, record);
+  }, [record]);
   const latest = useRef({ phase, ready, props });
   latest.current = { phase, ready, props };
   const force = (): void => {
@@ -469,7 +476,9 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
         frameTimes.push(dt);
         if (frameTimes.length > 4000) frameTimes.shift();
       }
+      const from = pb.tick;
       pb.advance(dt);
+      sounds?.passed(pb, from);
       if (pb.finished) {
         latest.current.props.onTick?.(pb.tick);
         setReplay(false);
@@ -490,7 +499,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     return () => {
       cancelAnimationFrame(raf);
     };
-  }, [phase, pb]);
+  }, [phase, pb, sounds]);
 
   const drawData = useRef({ pb, geo, index, content });
   drawData.current = { pb, geo, index, content };
@@ -516,7 +525,9 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     force();
   };
   const onSkip = (): void => {
+    const from = pb.tick;
     pb.skip();
+    sounds?.passed(pb, from, true);
     props.onTick?.(pb.tick);
     setReplay(false);
     setPhase('summary');

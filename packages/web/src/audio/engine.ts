@@ -44,6 +44,8 @@ export interface PlayOptions {
   gain?: number;
   /** Playback rate, default 1 (0.5 to 2). */
   pitch?: number;
+  /** A factor on the cue's `minGapMs`, default 1 (AU-37: slower at speed). */
+  gapFactor?: number;
 }
 
 /** Time the music takes to fade out when the tab is hidden. */
@@ -227,7 +229,11 @@ export class AudioEngine {
       return false;
     const now = port.nowMs();
     const last = this.lastStart.get(id);
-    if (last !== undefined && now - last < cue.minGapMs) return false;
+    if (
+      last !== undefined &&
+      now - last < cue.minGapMs * Math.max(1, options.gapFactor ?? 1)
+    )
+      return false;
     this.prune(now);
     if (this.voices.filter((v) => v.cue === id).length >= cue.maxVoices)
       return false;
@@ -357,7 +363,8 @@ export class AudioEngine {
       const cue = this.config.cues[c.cue];
       if (cue === undefined) continue;
       if (cue.thin === undefined) {
-        if (this.playCue(c.cue)) started.push(c.cue);
+        if (this.playCue(c.cue, { gapFactor: windowFactor }))
+          started.push(c.cue);
         continue;
       }
       thin.push({
@@ -370,7 +377,7 @@ export class AudioEngine {
     }
     if (!this.unlocked || this.hidden || this.settings.muted) return started;
     for (const t of this.thinner.pick(thin, port.nowMs(), windowFactor))
-      if (this.playCue(t.cue)) started.push(t.cue);
+      if (this.playCue(t.cue, { gapFactor: windowFactor })) started.push(t.cue);
     return started;
   }
 
