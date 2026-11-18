@@ -120,6 +120,7 @@ describe('fasterCooldown', () => {
     expect(rows).toEqual([
       ['unit_soldier', 6, 5, 5, 4],
       ['unit_raider', 4, 3, 3, 3],
+      ['unit_familiar', 3, 2, 2, 2],
       ['unit_heavy', 6, 5, 5, 4],
       ['unit_golem', 10, 9, 8, 7],
       ['unit_lancer', 6, 5, 5, 4],
@@ -140,6 +141,7 @@ describe('fasterCooldown', () => {
     expect(rows).toEqual([
       ['unit_soldier', 10, 8],
       ['unit_raider', 8, 6],
+      ['unit_familiar', 10, 8],
       ['unit_heavy', 10, 8],
       ['unit_golem', 14, 12],
       ['unit_lancer', 12, 10],

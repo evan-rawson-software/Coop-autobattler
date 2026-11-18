@@ -692,6 +692,8 @@ const CONSUMERS = [
   'bld_mortar',
   // Fed with Power like a turret, and bought with a collector of its own (#474).
   'bld_rune_ward',
+  // Fed with Power, one collector each: the Beastbinder's producer (#475).
+  'bld_familiar_roost',
 ];
 
 /**

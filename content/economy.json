@@ -66,6 +66,12 @@
       "weight": 12,
       "fromRound": 2,
       "specialist": "spec_wardsmith"
+    },
+    {
+      "def": "bld_familiar_roost",
+      "weight": 12,
+      "fromRound": 2,
+      "specialist": "spec_beastbinder"
     }
   ],
   "tierOdds": [

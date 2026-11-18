@@ -735,7 +735,7 @@
     {
       "id": "bld_familiar_roost",
       "kind": "unit_producer",
-      "unit": "unit_raider",
+      "unit": "unit_familiar",
       "footprint": { "width": 1, "height": 2 },
       "inputs": [{ "resource": "res_b", "side": "south" }],
       "outputs": [],

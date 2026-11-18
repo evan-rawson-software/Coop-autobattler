@@ -955,10 +955,13 @@ and set in content; the first values are placeholders and are tuned in issue
   one Familiar per production, for a cost and shortest time of the same
   order as a Barracks soldier (placeholder), so one collector of its tier
   feeds one Roost: it follows the rebalance principle. The Familiar is a
-  **fast, fragile melee unit**: its health is a fraction of a Soldier's
-  (placeholder: about 40%), its reach and damage are of a Soldier's order,
-  and "fast" means **only a shorter move cooldown** (placeholder: about
-  two thirds of a Soldier's, rounded down by the integer rule of CB-51a).
+  **fast, fragile melee unit**: its health is about half a Soldier's
+  (placeholder: 20 against 40), its reach is a Soldier's and its damage a
+  little below it (5 against 6), and "fast" means **only a shorter move
+  cooldown**, the shortest of any ground unit (placeholder: 3 ticks against
+  the Soldier's 6 and the raider's 4). The first draft of this entry said
+  about 40% health and two thirds of a Soldier's move cooldown; issue #475
+  states the numbers above and they are followed.
   It uses the **normal target rules** (CB-15b, CB-15c, CB-16): no special
   targeting, it does not fly (CB-16c) and has no armor or area damage. It
   is a unit of its owner like any other (CB-15a), so the Beastbinder's

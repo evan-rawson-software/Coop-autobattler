@@ -77,7 +77,11 @@ describe('Splitter placement (#178)', () => {
   // specialists' family bonuses (#471; the rush bot is a Beastbinder, its
   // units have +10% health, so its battles, lives and events differ) 66 of 78
   // (13/14, 18/21, 35/43): 84.6%, party 4 is 81.4%, so the floor per party
-  // size is 0.81 and the overall one 0.84 (measured, not rounded up).
+  // size is 0.81 and the overall one 0.84 (measured, not rounded up). With the
+  // Familiar Roost (#475: the Beastbinder rush bot now buys and places it, so
+  // its shops, boards and battles differ again) 62 of 74 (10/10, 20/24,
+  // 32/40): 83.8%, party 4 is 80.0%, so the floor per party size is 0.80 and
+  // the overall one 0.83 (measured, not rounded up).
   test('rush: Splitters are bought and nearly all are placed, at every party size', () => {
     let bought = 0;
     let placedAll = 0;
@@ -92,7 +96,7 @@ describe('Splitter placement (#178)', () => {
       bought += placed + stashed;
       placedAll += placed;
       expect(placed, `rush party ${String(party)}`).toBeGreaterThanOrEqual(
-        0.81 * (placed + stashed),
+        0.8 * (placed + stashed),
       );
     }
     // The ratio means nothing if nothing is bought.
@@ -101,7 +105,7 @@ describe('Splitter placement (#178)', () => {
     // Drill (#411) 71 of 78.
     expect(bought).toBeGreaterThanOrEqual(72);
     expect(placedAll).toBeGreaterThanOrEqual(62);
-    expect(placedAll / bought).toBeGreaterThanOrEqual(0.84);
+    expect(placedAll / bought).toBeGreaterThanOrEqual(0.83);
   });
 
   // Siege buys few Splitters (its barracks and armories are high tier), so
