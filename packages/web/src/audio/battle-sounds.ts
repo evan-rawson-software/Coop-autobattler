@@ -83,6 +83,12 @@ export interface BattleCue {
   readonly unit?: number;
 }
 
+/** The loop of a battle, started at `zone_revealed` (#451). */
+export const BATTLE_LOOP = 'music.battle';
+
+/** The loop of every other screen, back when a battle is left. */
+export const BUILD_LOOP = 'music.build';
+
 /** The result stinger of a `battle_ended` event (a music cue, #451). */
 export function stingerFor(e: EventLike): string | undefined {
   if (e.type !== 'battle_ended') return undefined;
@@ -202,6 +208,8 @@ export class BattleSounds {
         continue;
       }
       if (jump) continue;
+      // The battle loop crossfades in as the zone is revealed (AU-39).
+      if (e.type === 'zone_revealed') player.playCue(BATTLE_LOOP);
       const c = cueForEvent(this.config.battleMap, e, this.ctx);
       if (c !== undefined) batch.push(c);
     }

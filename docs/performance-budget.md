@@ -371,9 +371,9 @@ measured sizes as they land. Sizes are bytes served, without compression.
 | Part                                              | Limit (PROPOSED)  | Planned     | Measured |
 | ------------------------------------------------- | ----------------- | ----------- | -------- |
 | Sound effects, `assets/audio/sfx/*.wav` (about 55 files, mono, 22,050 Hz, 16-bit) | 1.0 MB, 56 KB per file | about 0.6 MB | 752,346 bytes (49 files, largest 48,774) |
-| Music and stingers (synthesised in the browser)   | 0 bytes of audio  | 0           | not built (#451) |
-| Manifest, `audio.json`, `sounds.json`, `music.json` | 60 KB in all    | about 40 KB | 22,719 bytes (`sounds.json` 12,121 + `manifest.json` 10,598); `audio.json` and `music.json` not built |
-| **All audio**                                     | **2 MB**          | about 0.7 MB | 775,065 bytes so far (about 38% of the limit) |
+| Music and stingers (synthesised in the browser)   | 0 bytes of audio  | 0           | 0 bytes (music is notes; `music.json` is counted below) |
+| Manifest, `audio.json`, `sounds.json`, `music.json` | 60 KB in all    | about 40 KB | 44,015 bytes (`sounds.json` 12,121 + `manifest.json` 10,598 + `audio.json` 11,816 + `music.json` 9,480) |
+| **All audio**                                     | **2 MB**          | about 0.7 MB | 796,361 bytes (about 38% of the limit) |
 
 If the effects pass their limit: shorten the longest sounds, then lower the
 sample rate to 16,000 Hz. A test in `packages/audio` fails when a file or the

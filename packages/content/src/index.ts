@@ -16,6 +16,7 @@ import specialistsJson from '../../../content/specialists.json';
 import threatsJson from '../../../content/threats.json';
 import presentationEnJson from '../../../content/presentation.en.json';
 import audioJson from '../../../content/audio.json';
+import musicJson from '../../../content/music.json';
 
 export const rawResources: unknown = resourcesJson;
 export const rawTerrain: unknown = terrainJson;
@@ -30,3 +31,4 @@ export const rawPoints: unknown = pointsJson;
 export const rawSpecialists: unknown = specialistsJson;
 export const rawThreats: unknown = threatsJson;
 export const rawAudio: unknown = audioJson;
+export const rawMusic: unknown = musicJson;

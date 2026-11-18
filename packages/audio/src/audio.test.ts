@@ -148,10 +148,12 @@ describe('committed sounds', () => {
       total += f.bytes;
     }
     expect(total).toBeLessThanOrEqual(MAX_SFX_TOTAL);
-    const small = ['content/sounds.json', 'assets/audio/manifest.json'].reduce(
-      (n, f) => n + readFileSync(path.join(repoRoot, f)).length,
-      0,
-    );
+    const small = [
+      'content/sounds.json',
+      'content/audio.json',
+      'content/music.json',
+      'assets/audio/manifest.json',
+    ].reduce((n, f) => n + readFileSync(path.join(repoRoot, f)).length, 0);
     expect(small).toBeLessThanOrEqual(60 * 1024);
     expect(total + small).toBeLessThanOrEqual(MAX_ALL);
   });

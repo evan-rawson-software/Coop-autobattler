@@ -207,6 +207,9 @@ class FakePort implements AudioPort {
     this.started.push(sound);
     return { stop: () => undefined };
   }
+  startTrack(): null {
+    return null;
+  }
   setGroupGain(): void {}
   rampMusic(): void {}
 }
@@ -356,7 +359,22 @@ describe('seeking and skipping', () => {
       pb.advance(100);
       bs.passed(pb, from);
     }
-    expect(s.cues.filter((c) => c.startsWith('music.'))).toHaveLength(1);
+    // The battle loop at the start, then one stinger at the end (#451).
+    const music = s.cues.filter((c) => c.startsWith('music.'));
+    expect(music).toEqual([
+      'music.battle',
+      record.result.winner === 0 ? 'music.win' : 'music.loss',
+    ]);
+  });
+
+  test('a seek never starts the battle loop', () => {
+    const s = spy();
+    const pb = new Playback(desc, content, battleConfig, record);
+    pb.start();
+    const bs = new BattleSounds(config, record, () => s.player);
+    pb.advance(2000);
+    bs.passed(pb, 0, true);
+    expect(s.cues).not.toContain('music.battle');
   });
 
   test('a paused or finished playback passes nothing', () => {

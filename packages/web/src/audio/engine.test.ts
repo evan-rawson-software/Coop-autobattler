@@ -1,7 +1,12 @@
 import { describe, expect, test, vi } from 'vitest';
 import { loadAudio, type AudioConfig } from '@game/audio';
 import { rawAudio } from '@game/content';
-import { AudioEngine, type AudioPort, type Voice } from './engine.js';
+import {
+  AudioEngine,
+  type AudioPort,
+  type MusicVoice,
+  type Voice,
+} from './engine.js';
 import {
   DEFAULT_AUDIO_SETTINGS,
   parseAudioSettings,
@@ -69,6 +74,41 @@ class FakePort implements AudioPort {
     return {
       stop: () => {
         v.stopped = true;
+      },
+    };
+  }
+  tracks: {
+    id: string;
+    level: number;
+    fadeInMs: number;
+    fadeOutMs?: number;
+    stopped: boolean;
+    end: () => void;
+  }[] = [];
+  startTrack(
+    id: string,
+    level: number,
+    fadeInMs: number,
+    onEnded?: () => void,
+  ): MusicVoice {
+    const t = {
+      id,
+      level,
+      fadeInMs,
+      stopped: false,
+      end: () => {
+        t.stopped = true;
+        onEnded?.();
+      },
+    } as (typeof this.tracks)[number];
+    this.tracks.push(t);
+    return {
+      fadeOut: (ms: number) => {
+        t.fadeOutMs = ms;
+        t.stopped = true;
+      },
+      stop: () => {
+        t.stopped = true;
       },
     };
   }
@@ -344,6 +384,123 @@ describe('thinning', () => {
     ]);
     expect(started).toEqual(['battle.core_hit']);
     expect(p.started.length).toBe(1);
+  });
+});
+
+describe('music (AU-39)', () => {
+  const sounding = (p: FakePort): string[] =>
+    p.tracks.filter((t) => !t.stopped).map((t) => t.id);
+
+  test('the wanted loop starts at unlock, not before', async () => {
+    const p = new FakePort();
+    const e = new AudioEngine(config, p, DEFAULT_AUDIO_SETTINGS);
+    expect(e.playCue('music.build')).toBe(false);
+    expect(p.tracks).toEqual([]);
+    await e.unlock();
+    expect(sounding(p)).toEqual(['music_build']);
+    expect(p.tracks[0]?.fadeInMs).toBe(config.mix.crossfadeMs);
+    expect(p.tracks[0]?.level).toBe(1);
+  });
+
+  test('a loop already playing is not started again', async () => {
+    const { e, p } = await ready();
+    e.playCue('music.build');
+    e.playCue('music.build');
+    expect(p.tracks).toHaveLength(1);
+    expect(sounding(p)).toEqual(['music_build']);
+  });
+
+  test('a battle crossfades from the workshop loop and back', async () => {
+    const { e, p } = await ready();
+    e.playCue('music.build');
+    expect(e.playCue('music.battle')).toBe(true);
+    expect(p.tracks[0]?.fadeOutMs).toBe(config.mix.crossfadeMs);
+    expect(p.tracks[1]).toMatchObject({
+      id: 'music_battle',
+      fadeInMs: config.mix.crossfadeMs,
+    });
+    e.playCue('music.build');
+    expect(sounding(p)).toEqual(['music_build']);
+    expect(p.tracks).toHaveLength(3);
+  });
+
+  test('a stinger fades the loop out at once, then the workshop loop returns', async () => {
+    const { e, p } = await ready();
+    e.playCue('music.battle');
+    expect(e.playCue('music.win')).toBe(true);
+    const loop = p.tracks[0];
+    const stinger = p.tracks[1];
+    expect(loop?.fadeOutMs).toBe(config.mix.stingerFadeMs);
+    expect(stinger).toMatchObject({ id: 'music_win', fadeInMs: 0 });
+    expect(sounding(p)).toEqual(['music_win']);
+    stinger?.end();
+    expect(sounding(p)).toEqual(['music_build']);
+    expect(p.tracks[2]?.fadeInMs).toBe(config.mix.crossfadeMs);
+  });
+
+  test('the build loop asked for during a stinger waits for it', async () => {
+    const { e, p } = await ready();
+    e.playCue('music.battle');
+    e.playCue('music.loss');
+    e.playCue('music.build');
+    expect(sounding(p)).toEqual(['music_loss']);
+    p.tracks[1]?.end();
+    expect(sounding(p)).toEqual(['music_build']);
+  });
+
+  test('a new battle cuts a stinger, and only one stinger sounds', async () => {
+    const { e, p } = await ready();
+    e.playCue('music.battle');
+    e.playCue('music.win');
+    e.playCue('music.loss');
+    expect(sounding(p)).toEqual(['music_loss']);
+    e.playCue('music.battle');
+    expect(sounding(p)).toEqual(['music_battle']);
+  });
+
+  test('a stinger that cannot sound still brings the workshop loop back', async () => {
+    const { e, p } = await ready({
+      ...DEFAULT_AUDIO_SETTINGS,
+      music: 0,
+    });
+    e.playCue('music.battle');
+    expect(e.playCue('music.win')).toBe(false);
+    expect(sounding(p)).toEqual(['music_build']);
+  });
+
+  test('a hidden tab starts nothing, and shows the wanted loop later', async () => {
+    const { e, p } = await ready();
+    e.setHidden(true);
+    e.playCue('music.battle');
+    expect(p.tracks).toEqual([]);
+    expect(e.playCue('music.win')).toBe(false);
+    e.setHidden(false);
+    await flush();
+    expect(sounding(p)).toEqual(['music_build']);
+  });
+
+  test('a missing track or a broken port never throws', async () => {
+    const p = new FakePort();
+    p.startTrack = () => {
+      throw new Error('boom');
+    };
+    const e = new AudioEngine(config, p, DEFAULT_AUDIO_SETTINGS);
+    await e.unlock();
+    expect(() => e.playCue('music.battle')).not.toThrow();
+    expect(() => e.playCue('music.win')).not.toThrow();
+  });
+
+  test('the volume of the music cue scales the level', async () => {
+    const cfg = JSON.parse(JSON.stringify(config)) as AudioConfig;
+    cfg.cues['music.battle'] = {
+      ...(cfg.cues['music.battle'] as AudioConfig['cues'][string]),
+      volume: 60,
+    };
+    const p = new FakePort();
+    const e = new AudioEngine(cfg, p, DEFAULT_AUDIO_SETTINGS);
+    await e.unlock();
+    e.playCue('music.battle');
+    expect(p.tracks.at(-1)?.level).toBeCloseTo(0.6);
   });
 });
 
