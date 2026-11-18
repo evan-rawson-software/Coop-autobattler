@@ -11,6 +11,7 @@
     "build:debug": "vite build --mode debug --outDir dist-debug --emptyOutDir"
   },
   "dependencies": {
+    "@game/audio": "workspace:*",
     "@game/content": "workspace:*",
     "@game/core": "workspace:*",
     "@game/session": "workspace:*",

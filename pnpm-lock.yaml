@@ -149,6 +149,9 @@ importers:
 
   packages/web:
     dependencies:
+      '@game/audio':
+        specifier: workspace:*
+        version: link:../audio
       '@game/content':
         specifier: workspace:*
         version: link:../content

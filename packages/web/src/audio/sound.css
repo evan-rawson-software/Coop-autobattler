@@ -1,0 +1,34 @@
+/* The Sound settings: sliders and the Mute switch. */
+.sound-panel {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 16rem;
+}
+
+.sound-row {
+  display: grid;
+  grid-template-columns: 8rem 1fr 3rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sound-row input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent, currentColor);
+}
+
+.sound-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+
+.sound-mute {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sound-popover {
+  min-width: 20rem;
+}

@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "audio.schema.json",
+  "title": "Audio cues and mix",
+  "description": "The cue table, the volume defaults, the mix numbers and the arena-event-to-cue map (AU-41). The web engine and the Godot port read it.",
+  "type": "object",
+  "required": ["version", "groups", "mix", "cues", "battleMap"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "groups": {
+      "description": "Default volumes, 0 to 100 (AU-21).",
+      "type": "object",
+      "required": ["master", "music", "effects"],
+      "additionalProperties": false,
+      "properties": {
+        "master": { "$ref": "#/$defs/volume" },
+        "music": { "$ref": "#/$defs/volume" },
+        "effects": { "$ref": "#/$defs/volume" }
+      }
+    },
+    "mix": {
+      "type": "object",
+      "required": [
+        "effectVoices",
+        "duckAttackMs",
+        "duckReleaseMs",
+        "crossfadeMs",
+        "stingerFadeMs",
+        "lowCorePercent",
+        "thinWindowMs",
+        "speedFactor",
+        "seekJumpTicks"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "effectVoices": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "duckAttackMs": { "type": "integer", "minimum": 0, "maximum": 5000 },
+        "duckReleaseMs": { "type": "integer", "minimum": 0, "maximum": 5000 },
+        "crossfadeMs": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "stingerFadeMs": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "lowCorePercent": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "thinWindowMs": {
+          "type": "object",
+          "required": ["attack", "spawn", "death"],
+          "additionalProperties": false,
+          "properties": {
+            "attack": { "type": "integer", "minimum": 0, "maximum": 5000 },
+            "spawn": { "type": "integer", "minimum": 0, "maximum": 5000 },
+            "death": { "type": "integer", "minimum": 0, "maximum": 5000 }
+          }
+        },
+        "speedFactor": {
+          "description": "Thinning-window and gap multiplier per playback speed (AU-37).",
+          "type": "object",
+          "required": ["1", "2", "4"],
+          "additionalProperties": false,
+          "properties": {
+            "1": { "type": "number", "minimum": 1, "maximum": 10 },
+            "2": { "type": "number", "minimum": 1, "maximum": 10 },
+            "4": { "type": "number", "minimum": 1, "maximum": 10 }
+          }
+        },
+        "seekJumpTicks": { "type": "integer", "minimum": 1, "maximum": 1000 }
+      }
+    },
+    "cues": {
+      "description": "Cue ID (family.name) to its fields (AU-25).",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z]+\\.[a-z0-9_]+$" },
+      "additionalProperties": { "$ref": "#/$defs/cue" }
+    },
+    "battleMap": {
+      "description": "Rows tried in order; the first whose `when` matches wins (AU-41).",
+      "type": "array",
+      "items": { "$ref": "#/$defs/row" }
+    }
+  },
+  "$defs": {
+    "volume": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "soundId": { "type": "string", "pattern": "^[a-z]+_[a-z0-9_]+$" },
+    "cue": {
+      "type": "object",
+      "required": ["group", "priority", "minGapMs", "maxVoices", "volume"],
+      "additionalProperties": false,
+      "properties": {
+        "group": { "enum": ["effects", "music"] },
+        "priority": { "enum": [1, 2, 3] },
+        "minGapMs": { "type": "integer", "minimum": 0, "maximum": 60000 },
+        "maxVoices": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "volume": { "$ref": "#/$defs/volume" },
+        "sound": { "$ref": "#/$defs/soundId" },
+        "variants": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/soundId" }
+        },
+        "duck": {
+          "type": "object",
+          "required": ["gain", "holdMs"],
+          "additionalProperties": false,
+          "properties": {
+            "gain": { "type": "number", "minimum": 0, "maximum": 1 },
+            "holdMs": { "type": "integer", "minimum": 0, "maximum": 60000 }
+          }
+        },
+        "enabled": { "type": "boolean" },
+        "thin": { "enum": ["attack", "spawn", "death"] }
+      }
+    },
+    "row": {
+      "type": "object",
+      "required": ["event", "when", "cue"],
+      "additionalProperties": false,
+      "properties": {
+        "event": { "type": "string", "pattern": "^[a-z_]+$" },
+        "cue": { "type": "string", "pattern": "^[a-z]+\\.[a-z0-9_]+$" },
+        "when": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "side": { "enum": [0, 1] },
+            "target": { "enum": ["unit", "building", "core"] },
+            "coreLow": { "type": "boolean" },
+            "levelAtLeast": { "type": "integer", "minimum": 1, "maximum": 100 }
+          }
+        }
+      }
+    }
+  }
+}
