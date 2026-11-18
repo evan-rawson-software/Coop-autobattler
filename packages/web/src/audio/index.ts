@@ -9,6 +9,7 @@ import { rawAudio } from '@game/content';
 import manifest from '../../../../assets/audio/manifest.json';
 import { AudioEngine, type PlayOptions } from './engine.js';
 import { audioSettingsStore } from './settings.js';
+import { installUiSounds } from './ui-sounds.js';
 import { WebAudioPort, type ContextLike } from './web-port.js';
 
 const files = new Map<string, string>(
@@ -93,4 +94,5 @@ export function installAudio(): void {
   };
   document.addEventListener('visibilitychange', onVisibility);
   onVisibility();
+  installUiSounds(document, playCue);
 }

@@ -17,6 +17,8 @@ import {
   type RunState,
 } from '@game/session';
 import { createStore, type Store } from '../app-state.js';
+import { soundForDispatch } from '../audio/moments.js';
+import { noteIntentSent } from '../audio/ui-sounds.js';
 import { appliedNotice } from '../event/view-model.js';
 import { content } from '../content.js';
 import { noteRound } from './new-items.js';
@@ -236,10 +238,16 @@ export class BuildSession {
 
   /** Dispatch one intent. Clears the undo stack at a step change or on any
    * intent that is not a layout change (buying, selling, re-rolling). */
-  async dispatch(intent: Intent): Promise<DispatchResult> {
+  async dispatch(
+    intent: Intent,
+    /** True for a step of a larger action that has its own sound. */
+    quiet = false,
+  ): Promise<DispatchResult> {
     if (this.lockedDetail !== null) {
       return { ok: false, reason: 'stale', detail: this.lockedDetail };
     }
+    noteIntentSent();
+    const before = this.controller.state;
     const r = await this.controller.dispatch(
       this.actingPlayer,
       intent,
@@ -267,6 +275,7 @@ export class BuildSession {
       }
       this.stepAnchor = this.anchor();
     }
+    if (!quiet) soundForDispatch(intent, r, before);
     this.publish();
     return r;
   }
@@ -292,13 +301,14 @@ export class BuildSession {
 
   private async applyAll(
     actions: readonly LayoutAction[],
+    quiet = false,
   ): Promise<ApplyResult> {
     for (const a of actions) {
       const intent = toIntent(this.run.team, a);
       if (intent === null) {
         return { ok: false, reason: 'unknown_conduit' };
       }
-      const r = await this.dispatch(intent);
+      const r = await this.dispatch(intent, quiet);
       if (!r.ok) {
         return r.detail === undefined
           ? { ok: false, reason: r.reason }
@@ -309,9 +319,9 @@ export class BuildSession {
   }
 
   /** Apply a layout change and remember it for undo. */
-  async act(action: LayoutAction): Promise<ApplyResult> {
+  async act(action: LayoutAction, quiet = false): Promise<ApplyResult> {
     const before = this.run.team;
-    const r = await this.applyAll([action]);
+    const r = await this.applyAll([action], quiet);
     if (r.ok) {
       this.stack.record(action, before);
       this.publish();

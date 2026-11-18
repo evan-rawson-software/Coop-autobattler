@@ -13,6 +13,7 @@ import { screenText, screenTexts } from '../build/texts.js';
 import { content } from '../content.js';
 import { clearRunTicks } from '../battle/run-battle.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
+import { runOverCue, takeRunEnded, playOnce } from '../audio/moments.js';
 import { BonusList } from '../run/BonusList.js';
 import { createNewRun, randomSeed } from '../run/run-store.js';
 import { localIsoDate } from '../date.js';
@@ -104,6 +105,12 @@ export function RunOverScreen(props: {
     () => (history === null ? null : bestView(state, history)),
     [state, history],
   );
+  // The cue of the screen opening, once the record is known. Only for a run
+  // that ended on this page: a reload or a reopened summary stays silent.
+  useEffect(() => {
+    if (best === null || readOnly || !takeRunEnded(state.runId)) return;
+    playOnce(`${state.runId}:over`, runOverCue(best.isNewBest));
+  }, [best, readOnly, state.runId]);
   const stats = useMemo(
     () => runStats(state, startingLives),
     [state, startingLives],

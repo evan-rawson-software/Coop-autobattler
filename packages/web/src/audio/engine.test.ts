@@ -88,8 +88,7 @@ async function ready(
   const p = new FakePort();
   const e = new AudioEngine(config, p, settings);
   await e.unlock();
-  // The first request of a sound decodes it and is dropped; warm every sound.
-  for (const id of Object.keys(config.cues)) e.playCue(id);
+  // Unlock preloads every effect sound; let the decodes finish.
   await flush();
   p.advance(10_000);
   p.started = [];
@@ -139,15 +138,37 @@ describe('unlock', () => {
 });
 
 describe('playing', () => {
-  test('the first request decodes and is dropped, the next plays', async () => {
+  test('unlock preloads every effect sound, so the first play is heard', async () => {
     const p = new FakePort();
     const e = new AudioEngine(config, p, DEFAULT_AUDIO_SETTINGS);
     await e.unlock();
-    expect(e.playCue('ui.click')).toBe(false);
     await flush();
-    expect(p.loads.length).toBe(1);
+    expect(p.loads).toContain('ui_click');
+    expect(p.loads).toContain('shop_buy');
+    expect(p.loads).not.toContain('ui_hover');
     expect(e.playCue('ui.click')).toBe(true);
     expect(p.started[0]?.gain).toBeCloseTo(0.6);
+  });
+
+  test('a sound that is still decoding drops the request', async () => {
+    const p = new FakePort();
+    let finish: (n: number) => void = () => undefined;
+    p.load = (id) => {
+      p.loads.push(id);
+      return new Promise((r) => {
+        finish = (n) => {
+          p.decoded.add(id);
+          r(n);
+        };
+      });
+    };
+    const e = new AudioEngine(config, p, DEFAULT_AUDIO_SETTINGS);
+    await e.unlock();
+    expect(e.playCue('ui.click')).toBe(false);
+    expect(p.started).toEqual([]);
+    finish(500);
+    await flush();
+    expect(p.loads.filter((x) => x === 'ui_click').length).toBe(1);
   });
 
   test('the gain and pitch options apply; unknown cues are ignored', async () => {

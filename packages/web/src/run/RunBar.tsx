@@ -9,7 +9,9 @@ import type { RunHandle } from './handle.js';
 import { createStore, useStore } from '../app-state.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildSession } from '../build/session.js';
-import { barLivesText } from './bar-lives.js';
+import { useEffect } from 'preact/hooks';
+import { playOnce } from '../audio/moments.js';
+import { barLives, barLivesText } from './bar-lives.js';
 import { resultShown } from '../battle/result-shown.js';
 import { BonusesItem } from './BonusList.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -47,6 +49,12 @@ export function RunBar(props: {
   // run saved before specialists. Battle screens leave it out: their opponent
   // panel names the specialists, and the step title needs the bar's room.
   // The Bonuses popover keeps the specialist's bonus on every screen.
+  // The life is lost when the result card reveals it (not when it is saved).
+  const lifeChange = barLives(state, props.lifeCost ?? 1, shown).change;
+  useEffect(() => {
+    if (lifeChange < 0)
+      playOnce(`${state.runId}:${String(state.round)}:life`, 'run.life_lost');
+  }, [lifeChange, state.runId, state.round]);
   const pick = barSpecialist(state.team, acting);
   const specialist = BATTLE_STEPS.has(state.step) ? null : pick;
   return (
