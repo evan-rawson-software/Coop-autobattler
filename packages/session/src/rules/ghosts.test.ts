@@ -847,30 +847,31 @@ describe('validation', () => {
       return [round, b.goldPerPlayer, b.kitPerPlayer, b.limit];
     });
     // startingGold 10, income 5 per shop, PvE hard 13, PvP win 8, best event
-    // gold 6 (the Caravan's Gold reward; a Windfall pays 4).
-    // round 1: 10 + 5*1 + 13*1 + 8*0 + 6*1 = 34 gold.
-    expect(table[0]?.[1]).toBe(34);
-    // round 2: 10 + 5*3 + 13*2 + 8*1 + 6*3 = 77, plus one Drill step (from
+    // gold 8 (the Caravan's Gold reward and the Windfall; both were 6 and 4
+    // before the event tuning, #417).
+    // round 1: 10 + 5*1 + 13*1 + 8*0 + 8*1 = 36 gold.
+    expect(table[0]?.[1]).toBe(36);
+    // round 2: 10 + 5*3 + 13*2 + 8*1 + 8*3 = 83, plus one Drill step (from
     // round 2) worth the largest free collector raise, 25, plus one Caravan
     // step (from round 2) worth the dearest free building or raise: 100, the
     // largest price step of any building (the Grand barracks, tier 2 to 3:
     // 240 - 140; before it, the refineries' 75).
-    expect(table[1]?.[1]).toBe(77 + 25 + 100);
-    // No margin: the limit is players * (gold + kit) = 202 + 79.
-    expect(table[1]?.[3]).toBe(77 + 25 + 100 + 79);
+    expect(table[1]?.[1]).toBe(83 + 25 + 100);
+    // No margin: the limit is players * (gold + kit) = 208 + 79.
+    expect(table[1]?.[3]).toBe(83 + 25 + 100 + 79);
     // A party of two has twice the bound.
     // Without a Drill or Caravan event there is no free raise or building to
-    // count, and the best event gold is the Windfall's 4 again.
+    // count, and the best event gold is the Windfall's 8 again.
     const noFree = {
       ...gameConfigs.events,
       events: gameConfigs.events.events.filter(
         (x) => x.type !== 'drill' && x.type !== 'caravan',
       ),
     };
-    expect(ghostValueBound(2, 1, content, e, noFree).goldPerPlayer).toBe(71);
+    expect(ghostValueBound(2, 1, content, e, noFree).goldPerPlayer).toBe(83);
     expect(
       ghostValueBound(1, 1, content, e, gameConfigs.events).goldPerPlayer,
-    ).toBe(34);
+    ).toBe(36);
     const two = ghostValueBound(3, 2, content, e, gameConfigs.events);
     const one = ghostValueBound(3, 1, content, e, gameConfigs.events);
     expect(two.limit).toBe(2 * one.limit);

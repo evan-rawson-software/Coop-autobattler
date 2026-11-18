@@ -180,14 +180,14 @@ describe('event cards', () => {
         )[0],
     );
     expect(cards.map((c) => c?.lines)).toEqual([
-      ['Your units: +20% strength'],
-      ['All buildings except the Core: +30% health'],
+      ['Your units: +15% strength'],
+      ['All buildings except the Core: +50% health'],
       ['Arc turrets: +40% damage'],
     ]);
     expect(cards.map((c) => c?.drawbacks)).toEqual([
-      ['Your Core: −15% health'],
-      ['Your units: −10% strength'],
-      ['Arc turrets: −20% health'],
+      ['Your Core: −40% health'],
+      ['Your units: −5% strength'],
+      ['Arc turrets: −50% health'],
     ]);
     expect(cards[0]?.title).toBe('Pact');
     // Other events have no drawback line.

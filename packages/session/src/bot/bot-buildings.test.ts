@@ -269,8 +269,11 @@ describe('whole bot runs use the new buildings (#443)', () => {
   // The Rune Ward (#474) changed the fortify shops: searched again over 1 to
   // 120 (party of 2): a Mortar is placed in seeds 24, 43, 47, 86, 93, 115
   // (none in 1 to 40 with a party of 1).
+  // Event tuning (#417: Workshop 70%, Windfall and Caravan gold 8, the bots'
+  // event order): seed 24 no longer places one; seed 43 does (searched in the
+  // order of the list above).
   test('fortify places a Mortar', () => {
-    const { result, seen } = played('fortify', 2, 24, ['bld_mortar']);
+    const { result, seen } = played('fortify', 2, 43, ['bld_mortar']);
     expect(result.rejected).toEqual([]);
     expect(seen.has('bld_mortar')).toBe(true);
   });

@@ -523,7 +523,7 @@ describe('the event step', () => {
     expect(cur.step).toBe('shop');
     const income = gameConfigs.economy.baseIncomePerShop;
     cur.perPlayer.forEach((p, i) => {
-      expect(p.gold).toBe((before[i] as number) + 4 + income);
+      expect(p.gold).toBe((before[i] as number) + 8 + income);
     });
   });
 

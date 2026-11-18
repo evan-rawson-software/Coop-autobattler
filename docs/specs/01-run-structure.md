@@ -56,7 +56,7 @@ Lobby -> Map -> Specialist pick -> Core placement -> First build ->
   `content/events.json` (the numbers in RS-4i are PROPOSED). A ninth,
   **Caravan**, is PROPOSED and not in the content yet:
   - **Workshop** — every player may raise one building they own by one
-    tier (never above tier 3), paying 80% of that tier's shop price from
+    tier (never above tier 3), paying 70% of that tier's shop price from
     their own gold, or skip. The party votes on the event; each player then
     chooses for themselves, and it is offered only if some player can afford
     an upgrade.
@@ -126,7 +126,7 @@ Lobby -> Map -> Specialist pick -> Core placement -> First build ->
     It is held in a fixed slot of their next shop that re-rolls do not
     replace, and it is still paid for. It helps finish a refining chain.
   - **RS-4i6 [PROPOSED] Pact** (from round 4). One strong run modifier paired
-    with a drawback, for example +20% unit strength and -15% Core health. Take
+    with a drawback, for example +15% unit strength and -40% Core health. Take
     both or skip; the party vote on the event is the choice. Each pact can be
     taken once per run.
 - **RS-4j [DECIDED]** Held run modifiers are always visible. Once taken, a

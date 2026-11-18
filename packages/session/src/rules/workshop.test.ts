@@ -455,7 +455,7 @@ describe('Workshop offers', () => {
       Json
     >[];
     const w = offers.find((o) => o['type'] === 'workshop');
-    expect(w?.['workshopPricePercent']).toBe(80);
+    expect(w?.['workshopPricePercent']).toBe(70);
   });
 });
 

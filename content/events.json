@@ -6,7 +6,7 @@
       "id": "evt_workshop",
       "type": "workshop",
       "weight": 10,
-      "params": { "workshopPricePercent": 80 }
+      "params": { "workshopPricePercent": 70 }
     },
     {
       "id": "evt_shrine",
@@ -18,7 +18,7 @@
       "id": "evt_windfall",
       "type": "windfall",
       "weight": 6,
-      "params": { "gold": 4 }
+      "params": { "gold": 8 }
     },
     {
       "id": "evt_drill",
@@ -60,7 +60,7 @@
       "fromRound": 2,
       "resourceWeights": { "res_a": 3, "res_b": 3, "res_c": 1 },
       "params": {
-        "gold": 6,
+        "gold": 8,
         "weightGold": 4,
         "weightBuilding": 4,
         "weightUpgrade": 3,
@@ -183,8 +183,8 @@
       "stackable": false,
       "pact": true,
       "effects": [
-        { "kind": "unit_strength_percent", "percent": 20 },
-        { "kind": "core_health_percent", "percent": -15 }
+        { "kind": "unit_strength_percent", "percent": 15 },
+        { "kind": "core_health_percent", "percent": -40 }
       ]
     },
     {
@@ -192,8 +192,8 @@
       "stackable": false,
       "pact": true,
       "effects": [
-        { "kind": "building_health_percent", "target": "all", "percent": 30 },
-        { "kind": "unit_strength_percent", "percent": -10 }
+        { "kind": "building_health_percent", "target": "all", "percent": 50 },
+        { "kind": "unit_strength_percent", "percent": -5 }
       ]
     },
     {
@@ -205,7 +205,7 @@
         {
           "kind": "building_health_percent",
           "target": "turret",
-          "percent": -20
+          "percent": -50
         }
       ]
     }
