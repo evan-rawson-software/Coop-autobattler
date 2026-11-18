@@ -17722,7 +17722,7 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 325
+          "endTick": 326
         },
         "summary": {
           "sides": [
@@ -17760,7 +17760,7 @@
                   "health": 0,
                   "maxHealth": 206,
                   "overkill": 4,
-                  "destroyedTick": 324
+                  "destroyedTick": 325
                 }
               ],
               "coresStanding": 0,
@@ -17824,10 +17824,10 @@
             }
           ]
         },
-        "stateHash": "e1cab8c1",
-        "events": 244
+        "stateHash": "1f3888c1",
+        "events": 245
       },
-      "eventLogHash": "307f3462"
+      "eventLogHash": "72a491b8"
     }
   }
 ]

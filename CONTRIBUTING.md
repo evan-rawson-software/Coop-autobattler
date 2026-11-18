@@ -83,7 +83,7 @@ pnpm sim pve --team boards/rush.json --archetype rusher --type medium --round 3 
 pnpm sim batch --a rush --b fortify --count 300 --seed 1 [--time]
 pnpm sim batch --a siege --archetype fortress --round 5 --count 100
 pnpm sim bot --strategy all --count 3 --party 2 --verify
-pnpm sim stage [--rounds 12] [--seeds 6]
+pnpm sim stage [--rounds 12] [--seeds 6] [--chains]
 pnpm sim ghosts [--check]          # same as: pnpm ghosts:update
 pnpm sim --help
 ```

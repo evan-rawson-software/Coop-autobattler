@@ -178,20 +178,20 @@
         {
           "health": 70,
           "price": 40,
-          "costs": { "res_a": 5, "res_b": 5 },
-          "productionIntervalTicks": 100
+          "costs": { "res_a": 6, "res_b": 6 },
+          "productionIntervalTicks": 120
         },
         {
           "health": 105,
           "price": 85,
-          "costs": { "res_a": 5, "res_b": 5 },
-          "productionIntervalTicks": 70
+          "costs": { "res_a": 6, "res_b": 6 },
+          "productionIntervalTicks": 84
         },
         {
           "health": 140,
           "price": 150,
-          "costs": { "res_a": 5, "res_b": 5 },
-          "productionIntervalTicks": 50
+          "costs": { "res_a": 6, "res_b": 6 },
+          "productionIntervalTicks": 60
         }
       ]
     },

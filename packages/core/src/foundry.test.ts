@@ -86,16 +86,16 @@ describe('the two-cost form in content', () => {
     ]);
     expect([1, 2, 3].map((t) => costEntries(d, t))).toEqual([
       [
-        { resource: 'res_a', cost: 5 },
-        { resource: 'res_b', cost: 5 },
+        { resource: 'res_a', cost: 6 },
+        { resource: 'res_b', cost: 6 },
       ],
       [
-        { resource: 'res_a', cost: 5 },
-        { resource: 'res_b', cost: 5 },
+        { resource: 'res_a', cost: 6 },
+        { resource: 'res_b', cost: 6 },
       ],
       [
-        { resource: 'res_a', cost: 5 },
-        { resource: 'res_b', cost: 5 },
+        { resource: 'res_a', cost: 6 },
+        { resource: 'res_b', cost: 6 },
       ],
     ]);
     expect(d.kind === 'unit_producer' && d.tiers.map((t) => t.price)).toEqual([
@@ -199,8 +199,8 @@ describe('the battle: one counter per resource', () => {
     );
     runArena(sim, ctx, 1500);
     const p = got(sim.producers.find((x) => x.building === f));
-    expect(p.counters).toEqual([5, 0]);
-    expect(p.progress).toBe(5);
+    expect(p.counters).toEqual([6, 0]);
+    expect(p.progress).toBe(6);
     expect(spawns(events)).toEqual([]);
     const south = got(
       got(sim.boards[1].consumers.find((c) => c.building === f)).inputs.find(
@@ -214,9 +214,9 @@ describe('the battle: one counter per resource', () => {
 
   test('with both inputs it produces at its top speed, one unit per interval', () => {
     for (const [tier, interval] of [
-      [1, 100],
-      [2, 70],
-      [3, 50],
+      [1, 120],
+      [2, 84],
+      [3, 60],
     ] as const) {
       const { lab } = farm({ ore: tier, power: tier, tier });
       const { sim, ctx, events } = startArenaBattle(
@@ -250,18 +250,18 @@ describe('the battle: one counter per resource', () => {
     for (let t = 0; t < 1500; t++) {
       runArena(sim, ctx, 1);
       const [a = 0, b = 0] = got(p.counters);
-      if (a === 5 && b > 0 && b < 5) sawOreFullPowerPartial = true;
-      expect(a).toBeLessThanOrEqual(5);
-      expect(b).toBeLessThanOrEqual(5);
+      if (a === 6 && b > 0 && b < 6) sawOreFullPowerPartial = true;
+      expect(a).toBeLessThanOrEqual(6);
+      expect(b).toBeLessThanOrEqual(6);
     }
     expect(sawOreFullPowerPartial).toBe(true);
     const src = got(sim.boards[1].sources.find((s) => s.building === ore));
     expect(src.stalledTicks).toBeGreaterThan(500);
-    // Power: 50 per 1000 ticks, 5 per unit: one unit per 100 ticks.
+    // Power: 50 per 1000 ticks, 6 per unit: one unit per 120 ticks.
     const t = spawns(events);
-    expect(t.length).toBeGreaterThanOrEqual(12);
+    expect(t.length).toBeGreaterThanOrEqual(10);
     t.slice(2).forEach((tick, i) => {
-      expect(tick - got(t[i + 1])).toBe(100);
+      expect(tick - got(t[i + 1])).toBe(120);
     });
   });
 
@@ -295,14 +295,14 @@ describe('the battle: one counter per resource', () => {
       { resource: 'res_a', needPer1000: 100 },
       { resource: 'res_b', needPer1000: 100 },
     ]);
-    // Fed at its need: a unit per 50 ticks.
-    expect(need.productions).toBeGreaterThanOrEqual(18);
+    // Fed at its need: a unit per 60 ticks.
+    expect(need.productions).toBeGreaterThanOrEqual(15);
     const slow = farm({ power: 1 });
     const rs = dryRunFlow(slow.lab.state, content, simConfig, 2000, 'need');
     const n2 = got(rs.needs?.find((n) => n.building === slow.f));
     expect(n2.productions).toBeLessThan(need.productions * 2);
-    expect(n2.productions).toBeGreaterThanOrEqual(18);
-    expect(n2.productions).toBeLessThanOrEqual(21);
+    expect(n2.productions).toBeGreaterThanOrEqual(15);
+    expect(n2.productions).toBeLessThanOrEqual(18);
   });
 
   test('a Foundry destroyed mid-battle leaves the other buildings intact', () => {

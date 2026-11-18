@@ -25,6 +25,7 @@ import {
   type CommandOutput,
 } from './commands.js';
 import { botCommand } from './bot-command.js';
+import { chainsCommand } from './chain-report.js';
 import { stageCommand } from './stage-command.js';
 import {
   BUNDLED_GHOST_PATH,
@@ -168,7 +169,7 @@ export function main(argv: readonly string[], io: Io): number {
         break;
       }
       case 'stage':
-        output = stageCommand(ctx, cmd);
+        output = cmd.chains ? chainsCommand(ctx, cmd) : stageCommand(ctx, cmd);
         break;
       case 'ghosts': {
         const file = buildBundledGhostFile(ctx);

@@ -22,7 +22,7 @@
     { "unit": "unit_drone", "cost": 16 },
     { "unit": "unit_golem", "cost": 50 },
     { "unit": "unit_heavy", "cost": 20 },
-    { "unit": "unit_caster", "cost": 8 }
+    { "unit": "unit_caster", "cost": 10 }
   ],
   "rangedMix": {
     "fromRound": 4,

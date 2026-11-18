@@ -293,6 +293,21 @@ most 444 in one tick. The bound in the rules is the product (casters x opposing
 units), at most about 10^6 hits per tick, which no battle within the unit
 budget reaches because units that are packed that closely are mostly dead.
 
+## Refining (issue #386)
+
+A refinery adds one flow node with two input counters and one output store; a
+Golem is a large body (collision radius 80) in the push pass; a caster does
+the splash search above on every attack on a unit. Measured with the chain
+reference boards of `pnpm sim stage --chains` (the starting-kit board plus a
+plot of two tier 1 collectors; 54 medium PvE battles each, rounds 6 and 9, every
+archetype, 3 seeds, wall time per simulated tick, two runs on the shared
+sandbox): the kit board alone 10.4 to 11.4 us per tick, the Golem chain 13.3 to
+13.7, the Barracks and Hangar pair 10.7 to 14.1, the Foundry 9.2 to 10.1, the
+Aether chain 8.6 to 10.4, the Hangar and Overclocker pair 8.5 to 8.8. The runs
+differ from each other by more than the boards differ, so refining adds no
+measurable battle cost on a plot this size; the Golem chain is at the top of the
+range and is the one to watch on a full board. The budget above is unchanged.
+
 ## Point aggro and capture (2026-11-17, issue #373)
 
 Units that pass within 3 cells of a point their side does not hold divert to

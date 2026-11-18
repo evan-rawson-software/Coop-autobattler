@@ -100,8 +100,8 @@
     },
     {
       "id": "unit_caster",
-      "health": 28,
-      "damage": 9,
+      "health": 32,
+      "damage": 12,
       "attackCooldownTicks": 20,
       "moveCooldownTicks": 6,
       "radius": 66,
@@ -109,7 +109,7 @@
       "reach": 720,
       "flying": false,
       "attackType": "ranged",
-      "splash": { "radiusSub": 240, "percent": 50 }
+      "splash": { "radiusSub": 360, "percent": 60 }
     }
   ]
 }
