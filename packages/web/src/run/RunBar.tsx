@@ -83,7 +83,9 @@ export function RunBar(props: {
       {props.storage === undefined ? null : (
         <NotSavedNote run={{ storage: props.storage }} />
       )}
-      <SoundMenuItem />
+      {/* Battle screens leave the Sound button out, as they do the
+          specialist: the step title needs the bar's room there. */}
+      {BATTLE_STEPS.has(state.step) ? null : <SoundMenuItem />}
       {state.step === 'run_over' ? null : (
         <button
           type="button"
