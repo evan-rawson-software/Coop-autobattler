@@ -524,16 +524,7 @@
     },
     {
       "event": "unit_died",
-      "when": {
-        "side": 0
-      },
-      "cue": "battle.unit_died"
-    },
-    {
-      "event": "unit_died",
-      "when": {
-        "side": 1
-      },
+      "when": {},
       "cue": "battle.unit_died"
     },
     {

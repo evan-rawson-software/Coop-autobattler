@@ -210,7 +210,7 @@ thinned, only limited by the gap and max below.
 | `battle.core_hit` | `unit_attacked`, target a Core of side 0, that Core above the low mark | attack | 2 | 200 | 1 | 65 |
 | `battle.core_hit_low` | The same, with that Core at or below the low mark (AU-36). Louder and with a lower, slower tone | attack | 3 | 250 | 1 | 85 |
 | `battle.foe_core_hit` | `unit_attacked`, target a Core of side 1 | attack | 2 | 200 | 1 | 55 |
-| `battle.unit_died` | `unit_died` (not guards, `side` 2) | death | 1 | 100 | 2 | 40 |
+| `battle.unit_died` | `unit_died` (a unit of a side; a guard's death has `side` 2 and plays nothing) | death | 1 | 100 | 2 | 40 |
 | `battle.building_destroyed` | `building_destroyed`, `side` 1 | no | 2 | 120 | 2 | 65 |
 | `battle.building_lost` | `building_destroyed`, `side` 0 | no | 2 | 120 | 2 | 70 |
 | `battle.core_destroyed` | `core_destroyed`, `side` 1 | no | 3 | 400 | 1 | 85 |
@@ -345,7 +345,7 @@ the contract between them.
     keys: `side` (0 or 1: the event's `side`; for `unit_attacked`, the `side`
     of its target when that is a building or a Core), `target`
     (`unit`, `building` or `core`), `coreLow` (true or false, AU-36) and
-    `levelAtLeast` (an integer). Empty `when` matches all. The rows are
+    `levelAtLeast` (an integer). Empty `when` matches all. An event with `side` 2 (a neutral guard) plays nothing, and the death of a unit of a side carries no `side`, so its row has an empty `when`. The rows are
     exactly the Event column of the battle table.
   - **Checks** (in the validator, #449): every key of `cues` and every
     `sound` or `variants` entry is a sound in `content/sounds.json` or, for

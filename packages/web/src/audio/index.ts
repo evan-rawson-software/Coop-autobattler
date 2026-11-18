@@ -30,9 +30,15 @@ async function fetchSound(id: string): Promise<ArrayBuffer | null> {
   return res.ok ? res.arrayBuffer() : null;
 }
 
-function readConfig(): AudioConfig | null {
-  const r = loadAudio(rawAudio);
-  return r.ok ? r.config : null;
+let config: AudioConfig | null | undefined;
+
+/** The cue table and mix (`content/audio.json`), or null when invalid. */
+export function readConfig(): AudioConfig | null {
+  if (config === undefined) {
+    const r = loadAudio(rawAudio);
+    config = r.ok ? r.config : null;
+  }
+  return config;
 }
 
 function createPort(): WebAudioPort {
@@ -68,11 +74,11 @@ const UNLOCK_EVENTS = ['pointerdown', 'keydown'] as const;
 /** Wires the engine to the page. Safe to call more than once. */
 export function installAudio(): void {
   if (engine !== null || typeof window === 'undefined') return;
-  const config = readConfig();
-  if (config === null) return;
+  const cfg = readConfig();
+  if (cfg === null) return;
   const port = createPort();
   const e = new AudioEngine(
-    config,
+    cfg,
     port.available ? port : null,
     audioSettingsStore.get(),
   );
