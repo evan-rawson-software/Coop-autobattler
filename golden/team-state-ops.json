@@ -11426,5 +11426,603 @@
         "hash": "ccdfed9a"
       }
     }
+  },
+  {
+    "id": "team-state-ops.mana-well-setting",
+    "kind": "team-state-ops",
+    "description": "Mana Well and the building resource setting (issue #473): a Well stands on any open cell of its owner's plot, with no node needed (without a resource it takes the first base resource), also on a node (whose resource it ignores); a natural feature, another player's plot, a resource that is not a base resource and a resource given to a building without the setting are refused. The setting is stored on the placed building only. Changing it to a different resource detaches the attached conduit (the same resource changes nothing); a Flux Well cannot be wired to an Ore input; a move keeps the setting; returning to the stash drops it.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 2,
+        "plotWidth": 12,
+        "features": [
+          {
+            "x": 1,
+            "y": 2,
+            "feature": "ter_lake"
+          }
+        ],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 3,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_mana_well",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_mana_well",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_mana_well",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_mana_well",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_mana_well",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_mana_well",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_hangar",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 4,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 6,
+          "y": 4,
+          "rotation": 0,
+          "resource": "res_c"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 3,
+          "y": 3,
+          "rotation": 0,
+          "resource": "res_b"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 1,
+          "y": 2,
+          "rotation": 0,
+          "resource": "res_a"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 16,
+          "y": 4,
+          "rotation": 0,
+          "resource": "res_a"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 6,
+          "x": 8,
+          "y": 4,
+          "rotation": 0,
+          "resource": "res_ab_refined"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 6,
+          "x": 8,
+          "y": 4,
+          "rotation": 0,
+          "resource": "res_nothing"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 7,
+          "x": 9,
+          "y": 9,
+          "rotation": 0,
+          "resource": "res_a"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 6,
+          "x": 8,
+          "y": 4,
+          "rotation": 0,
+          "resource": "res_b"
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 8,
+          "x": 4,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 9,
+          "x": 8,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 10,
+          "x": 6,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 8,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 6,
+            "side": "north"
+          },
+          "to": {
+            "building": 9,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 10,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 6,
+              "y": 5
+            },
+            {
+              "x": 6,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 0,
+          "id": 1,
+          "resource": "res_a"
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 0,
+          "id": 1,
+          "resource": "res_b"
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 0,
+          "id": 1,
+          "resource": "res_ab_refined"
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 0,
+          "id": 8,
+          "resource": "res_a"
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 1,
+          "id": 1,
+          "resource": "res_a"
+        },
+        {
+          "op": "setBuildingResource",
+          "actor": 0,
+          "id": 99,
+          "resource": "res_a"
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 6,
+          "x": 8,
+          "y": 2,
+          "rotation": 90
+        },
+        {
+          "op": "returnToStash",
+          "actor": 0,
+          "id": 2
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 6,
+          "y": 5,
+          "rotation": 0
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 5
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 6
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 7
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 8
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 9
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 10
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "blocked_by_feature"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "outside_own_plot"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "invalid_resource"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "invalid_resource"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "invalid_resource"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 4
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 8
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "resource_mismatch"
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": true
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": true
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": false,
+            "reason": "invalid_resource"
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": false,
+            "reason": "no_resource_setting"
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": false,
+            "reason": "not_owner"
+          },
+          {
+            "op": "setBuildingResource",
+            "ok": false,
+            "reason": "unknown_building"
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true
+          },
+          {
+            "op": "returnToStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 2,
+            "plotWidth": 12,
+            "features": [
+              {
+                "x": 1,
+                "y": 2,
+                "feature": "ter_lake"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 3,
+                "y": 3,
+                "resource": "res_a"
+              }
+            ]
+          },
+          "cores": [null, null],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_mana_well",
+              "tier": 1,
+              "x": 4,
+              "y": 4,
+              "rotation": 0,
+              "owner": 0,
+              "resource": "res_b"
+            },
+            {
+              "id": 2,
+              "def": "bld_mana_well",
+              "tier": 2,
+              "x": 6,
+              "y": 5,
+              "rotation": 0,
+              "owner": 0,
+              "resource": "res_a"
+            },
+            {
+              "id": 3,
+              "def": "bld_mana_well",
+              "tier": 1,
+              "x": 3,
+              "y": 3,
+              "rotation": 0,
+              "owner": 0,
+              "resource": "res_b"
+            },
+            {
+              "id": 6,
+              "def": "bld_mana_well",
+              "tier": 1,
+              "x": 8,
+              "y": 2,
+              "rotation": 90,
+              "owner": 0,
+              "resource": "res_b"
+            },
+            {
+              "id": 8,
+              "def": "bld_barracks",
+              "tier": 1,
+              "x": 4,
+              "y": 7,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 9,
+              "def": "bld_hangar",
+              "tier": 1,
+              "x": 8,
+              "y": 7,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 10,
+              "def": "bld_barracks",
+              "tier": 1,
+              "x": 6,
+              "y": 7,
+              "rotation": 0,
+              "owner": 0
+            }
+          ],
+          "stash": [
+            {
+              "id": 4,
+              "def": "bld_mana_well",
+              "tier": 1,
+              "owner": 0
+            },
+            {
+              "id": 5,
+              "def": "bld_mana_well",
+              "tier": 1,
+              "owner": 0
+            },
+            {
+              "id": 7,
+              "def": "bld_extractor",
+              "tier": 1,
+              "owner": 0
+            }
+          ],
+          "nextId": 11,
+          "nextConduitId": [3, 1],
+          "conduits": []
+        },
+        "hash": "3f53ae2a"
+      }
+    }
   }
 ]

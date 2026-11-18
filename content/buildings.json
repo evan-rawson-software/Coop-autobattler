@@ -709,6 +709,7 @@
     {
       "id": "bld_mana_well",
       "kind": "source",
+      "resourceSetting": true,
       "footprint": { "width": 1, "height": 1 },
       "inputs": [],
       "outputs": ["north"],

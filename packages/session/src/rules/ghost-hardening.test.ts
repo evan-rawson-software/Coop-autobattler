@@ -13,6 +13,9 @@ import {
   ghostTierBound,
   ghostValueBound,
   hashJson,
+  addToStash,
+  placeFromStash,
+  type TeamState,
   type Cell,
   tierPrice,
   validateGhostSnapshot,
@@ -659,6 +662,71 @@ describe('item 3: tier plausibility', () => {
     expect(
       validateGhostSnapshot(withSpecialist('bld_extractor', null), ctx).ok,
     ).toBe(true);
+  });
+
+  test('a placed Mana Well needs a base-resource setting (issue #473)', () => {
+    const ctx = ctxOf();
+    const base = loose(goodSnapshot(2));
+    const team = base.team as unknown as TeamState;
+    const added = addToStash(team, content, {
+      def: 'bld_mana_well',
+      tier: 1,
+      owner: 0,
+    });
+    if (!added.ok) throw new Error(added.reason);
+    let placed: TeamState | null = null;
+    for (let y = 1; y < team.map.height && placed === null; y++) {
+      for (let x = 0; x < team.map.width && placed === null; x++) {
+        const r = placeFromStash(added.state, content, {
+          actor: 0,
+          id: added.id,
+          x,
+          y,
+          rotation: 0,
+          resource: 'res_b',
+        });
+        if (r.ok) placed = r.state;
+      }
+    }
+    if (placed === null) throw new Error('no open cell');
+    const snapshot = (change?: (b: Record<string, unknown>) => void) => {
+      const t = loose(base);
+      t.team = clone(placed) as unknown as Loose['team'];
+      t.team['specialists'] = ['spec_flowmancer'];
+      if (change !== undefined) {
+        const w = t.team.buildings.find((b) => b['def'] === 'bld_mana_well');
+        change(w as Record<string, unknown>);
+      }
+      return t as unknown as GhostSnapshot;
+    };
+    const verdict = (s: GhostSnapshot) => validateGhostSnapshot(s, ctx);
+    expect(verdict(snapshot()).ok).toBe(true);
+    // A real run never writes these; each is refused with a readable error.
+    for (const bad of ['res_ab_refined', 'res_nothing', 7, null]) {
+      const r = verdict(
+        snapshot((b) => {
+          b['resource'] = bad;
+        }),
+      );
+      expect(r.ok, String(bad)).toBe(false);
+      if (!r.ok) expect(r.errors.join(' ')).toContain('base resource');
+    }
+    const missing = verdict(
+      snapshot((b) => {
+        delete b['resource'];
+      }),
+    );
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) expect(missing.errors.join(' ')).toContain('needs a');
+    // Another building must not carry one.
+    const extra = loose(snapshot());
+    const other = extra.team.buildings.find(
+      (b) => b['def'] !== 'bld_mana_well',
+    );
+    if (other !== undefined) {
+      other['resource'] = 'res_a';
+      expect(verdict(extra as unknown as GhostSnapshot).ok).toBe(false);
+    }
   });
 
   test('the refining buildings are accepted at their prices, also in rounds 1 and 2 (issue #383)', () => {

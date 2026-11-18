@@ -16,6 +16,7 @@ import {
   defCells,
 } from './board-cells.js';
 import {
+  hasResourceSetting,
   rotateBuilding,
   type BuildingDef,
   type BuildingId,
@@ -56,6 +57,12 @@ export interface PlacedBuilding {
   readonly y: number;
   readonly rotation: Rotation;
   readonly owner: number;
+  /**
+   * The resource setting (issue #473): the base resource its owner chose, for
+   * a building whose definition has the resource setting; absent for every
+   * other building. A building that is back in the stash loses it.
+   */
+  readonly resource?: ResourceId;
 }
 
 /** An owned building that is not on the board. */
@@ -226,6 +233,7 @@ export type PlacementReason =
   | 'overlaps_conduit'
   | 'source_needs_node'
   | 'node_reserved'
+  | 'invalid_resource'
   | 'resource_mismatch'
   | 'would_loop';
 
@@ -468,6 +476,11 @@ function checkPlacement(
       };
     }
   }
+  if (hasResourceSetting(def)) {
+    // A collector with a resource setting stands on any open cell: it needs
+    // no node and takes nothing from one (issue #473).
+    return null;
+  }
   if (def.kind === 'source') {
     let resource: ResourceId | undefined;
     for (const c of cells) {
@@ -657,15 +670,55 @@ function checkActor(
 }
 
 /**
+ * The resource setting a placement takes (issue #473): for a definition with
+ * the setting, the given base resource, or the first base resource of the
+ * content when none is given; for any other definition none (a resource given
+ * for it is `invalid_resource`).
+ */
+function settingForPlacement(
+  content: TeamContent,
+  def: BuildingDef,
+  given: string | undefined,
+):
+  | { readonly ok: true; readonly resource: ResourceId | undefined }
+  | OpFailure<'invalid_resource'> {
+  const base = content.resources.listBase();
+  if (!hasResourceSetting(def)) {
+    return given === undefined
+      ? { ok: true, resource: undefined }
+      : { ok: false, reason: 'invalid_resource', detail: given };
+  }
+  if (given === undefined) {
+    const first = base[0];
+    return first === undefined
+      ? { ok: false, reason: 'invalid_resource' }
+      : { ok: true, resource: first.id };
+  }
+  if (!base.some((r) => r.id === given)) {
+    return { ok: false, reason: 'invalid_resource', detail: given };
+  }
+  return { ok: true, resource: given };
+}
+
+/**
  * Place a stashed building on the board. Free. Reasons, in order:
- * unknown_building, invalid_owner, not_owner, then those of `checkPlacement`,
+ * unknown_building, invalid_owner, not_owner, invalid_resource (a resource
+ * setting that is not a base resource, or given to a building without the
+ * setting; issue #473), then those of `checkPlacement`,
  * then, for a Tunnel end only, resource_mismatch and would_loop (the pair it
  * brings into being is a conduit segment, CB-9g).
  */
 export function placeFromStash(
   state: TeamState,
   content: TeamContent,
-  args: { actor: number; id: number; x: number; y: number; rotation: number },
+  args: {
+    actor: number;
+    id: number;
+    x: number;
+    y: number;
+    rotation: number;
+    resource?: string;
+  },
 ): OpResult<PlacementReason> {
   const item = state.stash.find((s) => s.id === args.id);
   const def = item === undefined ? undefined : content.buildings.get(item.def);
@@ -674,6 +727,8 @@ export function placeFromStash(
   }
   const denied = checkActor(state, args.actor, item.owner);
   if (denied !== null) return denied;
+  const setting = settingForPlacement(content, def, args.resource);
+  if (!setting.ok) return setting;
   const index = buildingCellIndex(state, content);
   const ctx = makeContext(
     state,
@@ -698,6 +753,7 @@ export function placeFromStash(
     y: args.y,
     rotation: args.rotation as Rotation,
     owner: item.owner,
+    ...(setting.resource === undefined ? {} : { resource: setting.resource }),
   };
   const next: TeamState = {
     ...state,
@@ -787,6 +843,49 @@ export function moveBuilding(
   const pairing = tunnelNetworkFailure(detached, content, def);
   if (pairing !== null) return pairing;
   return { ok: true, state: detached };
+}
+
+export type SetResourceReason =
+  | 'unknown_building'
+  | 'invalid_owner'
+  | 'not_owner'
+  | 'no_resource_setting'
+  | 'invalid_resource';
+
+/**
+ * Change the resource setting of a placed building (issue #473). Free.
+ * Reasons, in order: unknown_building, invalid_owner, not_owner,
+ * no_resource_setting (its definition has none), invalid_resource (not a base
+ * resource). A different resource detaches every conduit attached to the
+ * building, as a move does (its output carried the old resource); the same
+ * resource changes nothing and returns the same state.
+ */
+export function setBuildingResource(
+  state: TeamState,
+  content: TeamContent,
+  args: { actor: number; id: number; resource: string },
+): OpResult<SetResourceReason> {
+  const item = state.buildings.find((b) => b.id === args.id);
+  const def = item === undefined ? undefined : content.buildings.get(item.def);
+  if (item === undefined || def === undefined) {
+    return { ok: false, reason: 'unknown_building' };
+  }
+  const denied = checkActor(state, args.actor, item.owner);
+  if (denied !== null) return denied;
+  if (!hasResourceSetting(def)) {
+    return { ok: false, reason: 'no_resource_setting' };
+  }
+  if (!content.resources.listBase().some((r) => r.id === args.resource)) {
+    return { ok: false, reason: 'invalid_resource', detail: args.resource };
+  }
+  if (item.resource === args.resource) return { ok: true, state };
+  const next: TeamState = {
+    ...state,
+    buildings: state.buildings.map((b) =>
+      b.id === item.id ? { ...b, resource: args.resource } : b,
+    ),
+  };
+  return { ok: true, state: detachConduits(next, item.id) };
 }
 
 /**
@@ -939,11 +1038,23 @@ export function occupancy(state: TeamState, content: TeamContent): Occupancy {
       const r = rotateBuilding(defOf(b), b.rotation);
       return { inputs: r.inputs, outputs: r.outputs };
     },
-    sourceResource: (b) => {
-      if (defOf(b).kind !== 'source') return undefined;
-      return q.nodeAt(b.x, b.y);
-    },
+    sourceResource: (b) => sourceResourceOf(defOf(b), b, q),
   };
+}
+
+/**
+ * The resource a placed collector makes: its node's, or, for a collector with
+ * the resource setting (issue #473), the setting (never the node's). Undefined
+ * for another building, for a collector with no node, and for a setting that
+ * is missing.
+ */
+export function sourceResourceOf(
+  def: BuildingDef,
+  b: { readonly x: number; readonly y: number; readonly resource?: ResourceId },
+  q: Pick<MapQuery, 'nodeAt'>,
+): ResourceId | undefined {
+  if (def.kind !== 'source') return undefined;
+  return def.resourceSetting === true ? b.resource : q.nodeAt(b.x, b.y);
 }
 
 // ---------------------------------------------------------------------------
@@ -1289,6 +1400,7 @@ const PLACED_KEYS = new Set([
   'y',
   'rotation',
   'owner',
+  'resource',
 ]);
 const STASH_KEYS = new Set(['id', 'def', 'tier', 'owner']);
 
@@ -1486,6 +1598,29 @@ function validateInner(
         typeof entry['def'] === 'string' &&
         isSafeInt(entry['owner'])
       ) {
+        // The resource setting (issue #473): a base resource for a building
+        // that has the setting, absent for every other.
+        const raw = entry['resource'];
+        const wants = hasResourceSetting(def);
+        let resource: ResourceId | undefined;
+        if (raw === undefined) {
+          if (wants) {
+            errors.push(
+              `${at}: "${entry['def']}" has a resource setting and needs a "resource".`,
+            );
+          }
+        } else if (!wants) {
+          errors.push(
+            `${at}: "${entry['def']}" has no resource setting, so it must not have a "resource".`,
+          );
+        } else if (
+          typeof raw !== 'string' ||
+          !content.resources.listBase().some((r) => r.id === raw)
+        ) {
+          errors.push(`${at}: "resource" must be a base resource ID.`);
+        } else {
+          resource = raw;
+        }
         placed.push({
           id: entry['id'],
           def: entry['def'],
@@ -1494,6 +1629,7 @@ function validateInner(
           y: entry['y'],
           rotation: entry['rotation'],
           owner: entry['owner'],
+          ...(resource === undefined ? {} : { resource }),
         });
         defs.set(entry['id'], def);
       }

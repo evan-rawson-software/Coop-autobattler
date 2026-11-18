@@ -492,3 +492,39 @@ li[data-check='ok'] .check-text strong {
   padding-left: 1.1rem;
   font-size: 0.85rem;
 }
+
+/* ---- Resource setting picker (issue #473) ---- */
+
+.res-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.res-picker-label {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  margin-right: 0.15rem;
+}
+
+.res-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.res-pick.active {
+  outline: 2px solid var(--accent);
+  font-weight: 700;
+}
+
+.res-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: inline-block;
+}

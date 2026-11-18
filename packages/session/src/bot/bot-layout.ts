@@ -10,6 +10,7 @@
 import {
   addConduit,
   collectorRatePer1000,
+  hasResourceSetting,
   isBorderEnd,
   needPer1000,
   occupancy,
@@ -130,6 +131,23 @@ export function defOf(env: Env, id: string): BuildingDef | undefined {
   return env.content.buildings.get(id);
 }
 
+/**
+ * A collector that stands on a resource node and makes its resource. A
+ * collector with the resource setting (the Mana Well, issue #473) is not one:
+ * it stands on any open cell and is used only where the plot has no free node
+ * of the resource a consumer needs (`connectWell`).
+ */
+export function isNodeCollector(content: Content, def: string): boolean {
+  const d = content.buildings.get(def);
+  return d !== undefined && d.kind === 'source' && !hasResourceSetting(d);
+}
+
+/** A collector with the resource setting (issue #473). */
+function isWell(content: Content, def: string): boolean {
+  const d = content.buildings.get(def);
+  return d !== undefined && hasResourceSetting(d);
+}
+
 export function sizeOf(env: Env, id: string): { w: number; h: number } {
   const fp = defOf(env, id)?.footprint;
   return { w: fp?.width ?? 1, h: fp?.height ?? 1 };
@@ -246,6 +264,8 @@ export function withPlace(
   id: number,
   x: number,
   y: number,
+  /** The resource setting of a building that has one (issue #473). */
+  resource?: string,
 ): Plan | null {
   const r = placeFromStash(plan.team, env.content, {
     actor: env.player,
@@ -253,11 +273,22 @@ export function withPlace(
     x,
     y,
     rotation: 0,
+    ...(resource === undefined ? {} : { resource }),
   });
   if (!r.ok) return null;
   return {
     team: r.state,
-    out: [...plan.out, { type: 'place_building', id, x, y, rotation: 0 }],
+    out: [
+      ...plan.out,
+      {
+        type: 'place_building',
+        id,
+        x,
+        y,
+        rotation: 0,
+        ...(resource === undefined ? {} : { resource }),
+      },
+    ],
   };
 }
 
@@ -577,11 +608,11 @@ function connectConsumer(
   const stash = t.stash.filter(
     (b) =>
       b.owner === env.player &&
-      defOf(env, b.def)?.kind === 'source' &&
+      isNodeCollector(env.content, b.def) &&
       feeds(env, need, 1, b),
   );
   const first = stash[0];
-  if (first === undefined) return null;
+  if (first === undefined) return connectWell(env, plan, consumerId, resource);
   const consumer = isPlaced
     ? t.buildings.find((b) => b.id === consumerId)
     : undefined;
@@ -616,6 +647,57 @@ function connectConsumer(
     const done = isPlaced
       ? withConduit(env, placed, first.id, consumerId)
       : placeConsumerNear(env, placed, first.id, consumerId);
+    if (done !== null && sealsNothingNew(env, done.team)) return done;
+  }
+  return connectWell(env, plan, consumerId, resource);
+}
+
+/** The most cells tried for a Mana Well before the plan gives up. */
+const WELL_TRIES = 24;
+
+/**
+ * Feed one consumer from a stashed Mana Well (issue #473): used when the plot
+ * has no free node of the resource the consumer takes. The well is set to the resource the consumer takes and
+ * placed on the open cell nearest the consumer (or the Core, or the middle of
+ * the plot), as the node collectors are; the consumer is then placed beside
+ * it or joined to it. Only a well that feeds the consumer at the minimum
+ * coverage is used (a Well makes half what an Extractor of its tier does).
+ */
+function connectWell(
+  env: Env,
+  plan: Plan,
+  consumerId: number,
+  resource: string,
+): Plan | null {
+  const t = plan.team;
+  // Only where the plot lacks the node: with a free node of the resource the
+  // bot wants a node collector (an Extractor) for it, not a Well.
+  if (freeNodes(env, t, resource, true).length > 0) return null;
+  const need = [...t.buildings, ...t.stash].find((b) => b.id === consumerId);
+  const well = t.stash.find(
+    (b) =>
+      b.owner === env.player &&
+      isWell(env.content, b.def) &&
+      need !== undefined &&
+      feeds(env, need, 1, b),
+  );
+  if (well === undefined) return null;
+  const consumer = t.buildings.find((b) => b.id === consumerId);
+  const around: Cell = consumer ??
+    env.core ?? {
+      x: Math.floor((env.x0 + env.x1) / 2),
+      y: t.map.height - 1,
+    };
+  let tries = 0;
+  for (const cell of nearby(env, around, 1)) {
+    if (tries >= WELL_TRIES) break;
+    const placed = withPlace(env, plan, well.id, cell.x, cell.y, resource);
+    if (placed === null) continue;
+    tries++;
+    const done =
+      consumer !== undefined
+        ? withConduit(env, placed, well.id, consumerId)
+        : placeConsumerNear(env, placed, well.id, consumerId);
     if (done !== null && sealsNothingNew(env, done.team)) return done;
   }
   return null;
@@ -872,7 +954,7 @@ function splitterStarts(
     if (next !== null) starts.push(next);
   }
   const source = t.stash.find(
-    (b) => b.owner === env.player && defOf(env, b.def)?.kind === 'source',
+    (b) => b.owner === env.player && isNodeCollector(env.content, b.def),
   );
   if (source === undefined || !fits(source)) return starts;
   for (const node of shuffle(freeNodes(env, t, resource), env.rng)) {
@@ -1109,7 +1191,7 @@ function* collectorStarts(
     }
   }
   const stash = t.stash.find(
-    (b) => b.owner === env.player && defOf(env, b.def)?.kind === 'source',
+    (b) => b.owner === env.player && isNodeCollector(env.content, b.def),
   );
   if (stash === undefined) return;
   let nodes = shuffle(freeNodes(env, t, resource, true), env.rng);

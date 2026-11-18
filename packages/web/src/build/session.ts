@@ -44,6 +44,7 @@ const LAYOUT_INTENTS = new Set([
   'place_building',
   'move_building',
   'return_building',
+  'set_building_resource',
   'add_conduit',
   'erase_conduit',
   'ready',

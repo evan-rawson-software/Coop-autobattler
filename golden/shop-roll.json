@@ -972,5 +972,109 @@
         ]
       }
     }
+  },
+  {
+    "id": "shop-roll.27-p3-r2-shipped-mana-well",
+    "kind": "shop-roll",
+    "description": "The shipped offer list at round 2 (issue #473): the Mana Well entry (weight 12, from round 2, Flowmancer only) is on offer to the Flowmancer (player 0) and to nobody else; the Wardsmith (player 1) and a player with no specialist (player 2) roll as if it were not in the list. Nine re-rolls each.",
+    "input": {
+      "seed": 276,
+      "before": ["kit", "pve_options:r1"],
+      "round": 2,
+      "leg": "pve",
+      "players": 3,
+      "rerolls": 9,
+      "specialists": ["spec_flowmancer", "spec_wardsmith", null]
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r2:pve",
+        "runState": [2051793451, 265153001, 2574600384, 2743461468],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_mana_well t1 8", "1 bld_range t1 24", "2 bld_barracks t1 20", "3 bld_extractor t1 10", "4 bld_turret t1 15"],
+              ["0 bld_barracks t1 20", "1 bld_overclocker t1 30", "2 bld_extractor t1 10", "3 bld_overclocker t1 30", "4 bld_turret t1 15"],
+              ["0 bld_extractor t1 10", "1 bld_armory t1 30", "2 bld_armory t1 30", "3 bld_wall_z t1 8", "4 bld_hangar t1 30"],
+              ["0 bld_crossover t1 8", "1 bld_barracks t1 20", "2 bld_splitter t1 5", "3 bld_overclocker t1 30", "4 bld_mana_well t1 8"],
+              ["0 bld_wall_z t1 8", "1 bld_merger t1 5", "2 bld_armory t1 30", "3 bld_armory t1 30", "4 bld_overclocker t1 30"],
+              ["0 bld_hangar t1 30", "1 bld_wall_o t1 8", "2 bld_overclocker t1 30", "3 bld_mana_well t1 8", "4 bld_wall_t t1 8"],
+              ["0 bld_armory t1 30", "1 bld_extractor t1 10", "2 bld_wall_z t1 8", "3 bld_extractor t1 10", "4 bld_barracks t1 20"],
+              ["0 bld_barracks t1 20", "1 bld_range t1 24", "2 bld_armory t1 30", "3 bld_extractor t1 10", "4 bld_wall_z t1 8"],
+              ["0 bld_crossover t1 8", "1 bld_splitter t1 5", "2 bld_mana_well t1 8", "3 bld_lancer_hall t1 25", "4 bld_range t1 24"],
+              ["0 bld_extractor t1 10", "1 bld_overclocker t1 30", "2 bld_splitter t1 5", "3 bld_merger t1 5", "4 bld_extractor t1 10"]
+            ],
+            "stream": [3492285188, 3575776526, 3335094875, 1198157561]
+          },
+          {
+            "rolls": [
+              ["0 bld_overclocker t1 30", "1 bld_turret t1 15", "2 bld_gate t1 8", "3 bld_hangar t1 30", "4 bld_extractor t1 10"],
+              ["0 bld_extractor t1 10", "1 bld_armory t1 30", "2 bld_overclocker t1 30", "3 bld_turret t1 15", "4 bld_range t1 24"],
+              ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_extractor t1 10", "3 bld_wall_t t1 8", "4 bld_hangar t1 30"],
+              ["0 bld_range t1 24", "1 bld_overclocker t1 30", "2 bld_extractor t1 10", "3 bld_splitter t1 5", "4 bld_splitter t1 5"],
+              ["0 bld_barracks t1 20", "1 bld_extractor t1 10", "2 bld_barracks t1 20", "3 bld_splitter t1 5", "4 bld_overclocker t1 30"],
+              ["0 bld_turret t1 15", "1 bld_merger t1 5", "2 bld_extractor t1 10", "3 bld_barracks t1 20", "4 bld_turret t1 15"],
+              ["0 bld_splitter t1 5", "1 bld_barracks t1 20", "2 bld_extractor t1 10", "3 bld_merger t1 5", "4 bld_merger t1 5"],
+              ["0 bld_gate t1 8", "1 bld_overclocker t1 30", "2 bld_lancer_hall t1 25", "3 bld_gate t1 8", "4 bld_splitter t1 5"],
+              ["0 bld_armory t1 30", "1 bld_overclocker t1 30", "2 bld_splitter t1 5", "3 bld_barracks t1 20", "4 bld_extractor t1 10"],
+              ["0 bld_crossover t1 8", "1 bld_range t1 24", "2 bld_range t1 24", "3 bld_armory t1 30", "4 bld_barracks t1 20"]
+            ],
+            "stream": [4293234957, 3004668603, 1726379733, 2329129913]
+          },
+          {
+            "rolls": [
+              ["0 bld_turret t1 15", "1 bld_wall_t t1 8", "2 bld_merger t1 5", "3 bld_turret t1 15", "4 bld_splitter t1 5"],
+              ["0 bld_armory t1 30", "1 bld_splitter t1 5", "2 bld_extractor t1 10", "3 bld_extractor t1 10", "4 bld_barracks t1 20"],
+              ["0 bld_extractor t1 10", "1 bld_extractor t1 10", "2 bld_hangar t1 30", "3 bld_extractor t1 10", "4 bld_barracks t1 20"],
+              ["0 bld_merger t1 5", "1 bld_wall_o t1 8", "2 bld_extractor t1 10", "3 bld_range t1 24", "4 bld_lancer_hall t1 25"],
+              ["0 bld_barracks t1 20", "1 bld_turret t1 15", "2 bld_armory t1 30", "3 bld_splitter t1 5", "4 bld_lancer_hall t1 25"],
+              ["0 bld_range t1 24", "1 bld_hangar t1 30", "2 bld_turret t1 15", "3 bld_extractor t1 10", "4 bld_turret t1 15"],
+              ["0 bld_barracks t1 20", "1 bld_turret t1 15", "2 bld_barracks t1 20", "3 bld_barracks t1 20", "4 bld_splitter t1 5"],
+              ["0 bld_crossover t1 8", "1 bld_turret t1 15", "2 bld_barracks t1 20", "3 bld_turret t1 15", "4 bld_splitter t1 5"],
+              ["0 bld_barracks t1 20", "1 bld_wall_s t1 8", "2 bld_wall_t t1 8", "3 bld_hangar t1 30", "4 bld_armory t1 30"],
+              ["0 bld_gate t1 8", "1 bld_lancer_hall t1 25", "2 bld_armory t1 30", "3 bld_extractor t1 10", "4 bld_turret t1 15"]
+            ],
+            "stream": [3255001966, 2841801142, 3039504957, 2050708952]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.28-p1-r1-shipped-flowmancer-round-gate",
+    "kind": "shop-roll",
+    "description": "The shipped list at round 1 for a Flowmancer (issue #473): the Mana Well is not on offer before round 2, so the roll is the roll of a player with no specialist (same seed, no specialist: the same offers). Nine re-rolls.",
+    "input": {
+      "seed": 280,
+      "before": ["kit", "pve_options:r1"],
+      "round": 1,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 9,
+      "specialists": ["spec_flowmancer"]
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r1:pve",
+        "runState": [2025770870, 3706035643, 383834011, 2854932789],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_extractor t1 10", "1 bld_armory t1 30", "2 bld_barracks t1 20", "3 bld_merger t1 5", "4 bld_hangar t1 30"],
+              ["0 bld_overclocker t1 30", "1 bld_range t1 24", "2 bld_hangar t1 30", "3 bld_barracks t1 20", "4 bld_turret t1 15"],
+              ["0 bld_overclocker t1 30", "1 bld_crossover t1 8", "2 bld_armory t1 30", "3 bld_wall_o t1 8", "4 bld_range t1 24"],
+              ["0 bld_turret t1 15", "1 bld_hangar t1 30", "2 bld_extractor t1 10", "3 bld_wall_i t1 8", "4 bld_range t1 24"],
+              ["0 bld_range t1 24", "1 bld_merger t1 5", "2 bld_splitter t1 5", "3 bld_barracks t1 20", "4 bld_barracks t1 20"],
+              ["0 bld_splitter t1 5", "1 bld_barracks t1 20", "2 bld_splitter t1 5", "3 bld_range t1 24", "4 bld_turret t1 15"],
+              ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_extractor t1 10", "3 bld_hangar t1 30", "4 bld_splitter t1 5"],
+              ["0 bld_turret t1 15", "1 bld_barracks t1 20", "2 bld_hangar t1 30", "3 bld_barracks t1 20", "4 bld_extractor t1 10"],
+              ["0 bld_crossover t1 8", "1 bld_barracks t1 20", "2 bld_armory t1 30", "3 bld_barracks t1 20", "4 bld_barracks t1 20"],
+              ["0 bld_barracks t1 20", "1 bld_merger t1 5", "2 bld_merger t1 5", "3 bld_range t1 24", "4 bld_overclocker t1 30"]
+            ],
+            "stream": [1026156859, 2677605445, 3739919240, 3383373799]
+          }
+        ]
+      }
+    }
   }
 ]

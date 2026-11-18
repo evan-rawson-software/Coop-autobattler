@@ -392,6 +392,13 @@ the modifier targets (`all`, `wall`, `gate`, `turret`, `source`, `route`,
 `MAX_SPECIALIST_PERCENT` (100); no other keys. The shipped numbers are the
 placeholders of CB-51a, tuned in issue #477.
 
+In `buildings.json`, `resourceSetting` (issue #473, "The resource setting and
+the Mana Well") is an optional field of a building of kind `source`: `true` or
+absent (`false` and any other value are refused, as is the field on any other
+kind). A building with it needs no extra number: it makes the resource its
+owner chose, at its own tiers' `intervalTicks` (an integer of at least 1, as
+for every collector).
+
 In `points.json` (points of interest, "The neutral zone"): `chancePercent` is
 0 to 100; `bandMarginCells` is at least 0 and twice it must be below
 `plotWidth` (the loader checks this when it knows the mapgen file, `pnpm
@@ -981,11 +988,19 @@ never changes its input.
   addressed by its player index. `placeCore` is the only operation that
   touches `cores`, and works once per player. All Cores of a side have the same
   maximum health (see the battle sections).
-- `buildings`: placed buildings `{ id, def, tier, x, y, rotation, owner }`.
+- `buildings`: placed buildings `{ id, def, tier, x, y, rotation, owner,
+  resource? }`.
   `id` is a unique positive integer instance ID, `def` a building definition
   ID, `tier` 1 to 3, `rotation` 0, 90, 180 or 270, `owner` a 0-based player
   index below `map.partySize`. `(x, y)` is the lowest-x, lowest-y cell of the
-  footprint **after rotation**.
+  footprint **after rotation**. `resource` (optional, issue #473) is the
+  **resource setting** of a building whose definition has one ("The resource
+  setting" below): the ID of a base resource. It is present exactly on a
+  placed building of such a definition and absent on every other, so a state
+  without such a building serialises and hashes as before and **no format
+  number is raised** (CONTRIBUTING, "Versions and saved formats"). A stash
+  entry has no `resource`: the setting is chosen when the building is placed
+  and lost when it goes back to the stash.
 - `stash`: owned buildings off the board `{ id, def, tier, owner }`.
 - `nextId`: the next instance ID to assign. IDs start at 1, are taken from
   `nextId` by `addToStash`, and are never reused (not even after
@@ -1136,14 +1151,20 @@ Each returns `{ ok: true, state }` (`addToStash` also the new `id`) or
   `placeFromStash`, `moveBuilding` and `addConduit` means the footprint of any
   placed Core. `validateTeamState` requires every placed Core to be legal for
   its player, and `renderTeamStateAscii` draws every Core as `C`.
-- `placeFromStash({ actor, id, x, y, rotation })`: `id` must be in `stash`. Moves
-  the entry to `buildings` (same ID, tier, owner).
+- `placeFromStash({ actor, id, x, y, rotation, resource? })`: `id` must be in
+  `stash`. Moves the entry to `buildings` (same ID, tier, owner). `resource`
+  (issue #473) is the resource setting: for a building whose definition has the
+  setting it is a base resource ID, or left out for **the first base resource
+  of `resources.json`** (Ore); for any other building it must be left out. Any
+  other value is `invalid_resource` ("The resource setting").
 - `moveBuilding({ actor, id, x, y, rotation })`: `id` must be in `buildings`. Sets
   position and rotation in one step; moving to the same position with a new
   rotation is a rotate in place. The building's own current cells never count
   as overlap.
+- `setBuildingResource({ actor, id, resource })` (issue #473): changes the
+  resource setting of a placed building ("The resource setting").
 - `returnToStash({ actor, id })`: `id` must be in `buildings`; the entry goes back
-  to `stash` (sorted by ID). Rejects with `unknown_building`, `invalid_owner`
+  to `stash` (sorted by ID); a resource setting is dropped with it. Rejects with `unknown_building`, `invalid_owner`
   or `not_owner`; for a Tunnel end also `would_loop` and `resource_mismatch`
   (below, "Tunnels").
 - `addItemToStash(def, tier, owner)` (CB-9g): one **shop item**. It is
@@ -1172,6 +1193,8 @@ in this order is the reported reason:
 2. `invalid_owner` (`actor` is not a player index), then `not_owner` (`actor`
    is not the building's `owner`). (A malformed `actor` is told apart from a
    wrong one.)
+2a. `placeFromStash` only (issue #473): `invalid_resource` (`resource` is not a
+   base resource, or is given for a building whose definition has no setting).
 3. `invalid_rotation`: not 0, 90, 180 or 270.
 4. `out_of_bounds`: a non-integer position, or any cell of the rotated
    footprint outside `0 <= x < width`, `0 <= y < height`.
@@ -1182,7 +1205,9 @@ in this order is the reported reason:
 9. `overlaps_conduit`: a cell holds a conduit cell. For `moveBuilding`, conduits
    attached to the moving building do not count (they are removed when the
    move succeeds); conduits of other buildings do.
-10. Node rules:
+10. Node rules (none of them applies to a building with the resource setting,
+    which stands on any open cell of its owner's plot, node or not, and takes
+    nothing from a node: "The resource setting"):
    - `source_needs_node`: a building of kind `source` must have every
      footprint cell on a resource node, all of the same resource (a
      placeholder source is 1x1). It produces that resource.
@@ -1205,8 +1230,11 @@ it** (every conduit whose `from.building` or `to.building` is that building),
 and no others. `detachConduits(state, buildingId)` in `team-state.ts` does it
 (it returns the same state object when nothing is attached); `moveBuilding` and
 `returnToStash` call it after the building has been updated, and only when the
-operation is accepted. A rejected operation detaches nothing. No other
-operation removes conduits, apart from `eraseConduit`.
+operation is accepted. A rejected operation detaches nothing. The only other operations that remove
+conduits are `eraseConduit` and a **change of a resource setting** to a
+different resource (`setBuildingResource`, issue #473), which detaches every
+conduit attached to that building in the same way, because they carried the old
+resource.
 
 ### Whole-state validation
 
@@ -1228,7 +1256,13 @@ Conduits), counting the Tunnel pairs derived from the placement as conduit
 segments and re-checking them (see "Tunnels"). `specialists` is parsed
 hostilely: absent, or a list of exactly `partySize` entries, each `null` or a
 string matching `spec_[a-z0-9_]+` that is in the roster (`content.specialists`,
-when the content has one), and not all `null`. It does not check that the map is one the generator could produce.
+when the content has one), and not all `null`. A placed building's `resource`
+(issue #473) is checked against its definition: a definition with the resource
+setting needs a `resource` that is a base resource (a refined resource, an
+unknown ID and a value that is not a string are errors), and any other
+definition must not have one; a stash entry may not have the field (an unknown
+key). The conduits are then checked with the setting as the source's resource.
+It does not check that the map is one the generator could produce.
 
 ### ASCII rendering
 
@@ -1244,8 +1278,10 @@ Input `{ "seed": u32, "partySize": 1..4, "ops": [...] }`. The map is the
 `map-gen` map for that seed and party size, the state starts as
 `createTeamState(map)`, and the ops run in order. An op is an object with an
 `op` field and its arguments: `addToStash` (`def`, `tier`, `owner`),
-`placeCore` (`actor`, `x`, `y`), `placeFromStash` and `moveBuilding` (`actor`,
-`id`, `x`, `y`, `rotation`), `returnToStash` and `removeFromStash` (`actor`,
+`placeCore` (`actor`, `x`, `y`), `placeFromStash` (`actor`,
+`id`, `x`, `y`, `rotation`, and optionally `resource`; issue #473) and
+`moveBuilding` (the same without `resource`), `setBuildingResource` (`actor`,
+`id`, `resource`; issue #473), `returnToStash` and `removeFromStash` (`actor`,
 `id`), `addNode` (`owner`, `x`, `y`, `resource`, `round`; Rich vein, issue
 #414), `addConduit` (`actor`, `from` and `to`, each `{ building, side }`, and
 `cells`, a list of `{ x, y }`), `eraseConduit` (`actor`, `id`) and
@@ -1386,8 +1422,9 @@ Each conduit carries at most one resource type, set by what feeds it.
 `conduitResource(state, content, conduitId)` returns a resource ID or `null`
 (undetermined, also for an unknown ID):
 
-- A conduit leaving a **source** carries the source's node resource
-  (`sourceResource`).
+- A conduit leaving a **source** carries the source's resource
+  (`sourceResource`): its node's resource, or, for a source with the resource
+  setting (issue #473), its setting (whatever node it may stand on).
 - A conduit leaving a **refinery** (CB-5d) carries the refinery's `output`
   resource, a refined resource, whatever its inputs carry (even when none of
   them is connected).
@@ -1419,9 +1456,10 @@ one: a refined conduit is refused at the input of another refinery or of any
 building that takes another resource, Composite into an Aether refinery
 included; Composite and Aether never mix in a merger).
 
-Because sources take their resource from their node, moving a source to a
-different node could change types; this is fine because moving detaches the
-source's conduits first.
+Because sources take their resource from their node (or from their setting),
+moving a source to a different node, or changing a setting, could change types;
+this is fine because moving and changing a setting detach the source's conduits
+first.
 
 ### Loops (CB-9c)
 
@@ -1846,7 +1884,12 @@ that divides a flow (CB-9e). Its rate is one item per `scaledInterval` ticks
 give the display values: `ratePer1000 = floor(1000 / scaledInterval)` items per
 1000 ticks (the plain `intervalTicks` when there is no speed-up), and
 `floor(100 * ticksPerSecond / scaledInterval)` hundredths of an item per second
-(tier 1 at 20 ticks: 0.50 per second, shown rounded down).
+(tier 1 at 20 ticks: 0.50 per second, shown rounded down). A collector with the
+resource setting (the Mana Well, issue #473) is an ordinary collector here: its
+tier's `intervalTicks` and the owner's collector speed-up (a Flowmancer's
+family bonus included) apply in the same way, and the resource it makes is its
+setting. Its shipped intervals are 40 / 28 / 20, **half the rate** of an
+Extractor of the tier ("The resource setting", "The Mana Well").
 
 ### Accepting
 
@@ -5834,15 +5877,21 @@ computes the weights, and a call **without** a specialist (the Blueprint and
 Caravan pools, which belong to no one's own shop) gives every specialist entry
 weight 0, so no event ever offers or holds a signature building (EC-3b).
 Entries of other specialists in the same list do not move any draw. The
-shipped `economy.json` lists no signature building yet: each is added by its
-own step of #468 (a Mana Well, Rune Ward, Familiar Roost and Transmuter entry,
-`fromRound` 2 as EC-3b decides, with its `specialist`; "Specialists", "Signature
-buildings"), so the shipped rolls are unchanged by this step. `shop-roll.23`
+shipped `economy.json` lists a signature building for each specialist whose own
+step of #468 has landed: from issue #473 the **Mana Well** (weight 12, `fromRound`
+2, `specialist` `spec_flowmancer`; "Specialists", "The Mana Well"), the others
+come with their steps (a Rune Ward, Familiar Roost and Transmuter entry, `fromRound` 2
+as EC-3b decides). A roll for a player who has no entry of their own is
+exactly the roll over the list without the specialist entries, so only the
+Flowmancer's shops from round 2 differ from before #473. `shop-roll.23`
 (three players, the Flowmancer, another specialist and none, with a test list
 holding a Mana Well entry for the Flowmancer from round 2), `shop-roll.24`
 (round 1: gated by round), `shop-roll.25` (players without the entry roll as if
 it were not in the list) and `shop-roll.26` (the shipped list with a
-specialist: equal to `shop-roll.20`) pin it. _Notes for a port:_ the player's
+specialist: equal to `shop-roll.20`) pin it; `shop-roll.27` (the shipped list
+at round 2: the Mana Well is on offer to the Flowmancer only) and `shop-roll.28`
+(the shipped list at round 1 for a Flowmancer: no Mana Well yet) pin the
+shipped entry (issue #473). _Notes for a port:_ the player's
 specialist is read from the team state when its shop is entered and when it
 re-rolls; nothing is drawn for it, and it does not change `pickWeightedIndex`
 (weights still sum with zeros left in place).
@@ -6245,8 +6294,8 @@ ends it at once); the ready flags are cleared on entering the next step.
 **Ready locks editing (issue #58):** in `specialist_pick`, `core_placement`, `build` and `shop`, while a player is
 ready, every intent of theirs other than `unready` (and `abandon` by the host)
 is rejected with `locked_ready`: `pick_specialist`, `place_core`, `buy`, `sell`, `reroll`, the board edits
-(`place_building`, `move_building`, `return_building`, `add_conduit`,
-`erase_conduit`) and any extension intent a handler allows in those steps.
+(`place_building`, `move_building`, `return_building`, `set_building_resource`,
+`add_conduit`, `erase_conduit`) and any extension intent a handler allows in those steps.
 The step check comes first (a `vote` in `build` is still `wrong_step`), and
 `ready` while ready is still `already_ready`. Other players are not affected.
 `allowedIntents` leaves the locked intents out. Because the step ends the
@@ -6776,8 +6825,9 @@ is a load error).
   definitions in `buildings.json` from this step, so that the specialists, the
   shop gate, the ghost check and the bot can name them: `bld_mana_well`,
   `bld_rune_ward`, `bld_familiar_roost` and `bld_transmuter`. Every one is
-  **content only**: its own step of #468 (5/9 to 8/9) gives it its behaviour and
-  its real numbers. Until then each is a stand-in of an existing kind with the
+  **content only** in step #472: its own step of #468 (5/9 to 8/9) gives it its
+  behaviour and its real numbers (the Mana Well got them in issue #473, "The
+  resource setting and the Mana Well" below). Until then each is a stand-in of an existing kind with the
   footprint of the spec and placeholder numbers: the Mana Well a slow `source`
   (1x1, interval 40 / 28 / 20, price 8 / 20 / 40, still on a node); the Rune Ward
   a 1x1 `wall` (health 120 / 200 / 300, price 8 / 18 / 36); the Familiar Roost a
@@ -6813,11 +6863,118 @@ is a load error).
   bot its own specialist's building, it buys and places it as it does that
   family. The Mana Well is bought but not placed by the `weak` bot (it places
   no collector); the Transmuter, a refinery with no consumer of its output yet,
-  is not wired by the `siege` bot until its own step. Nothing is drawn: the
-  shipped content offers none of them, so every bot run, battle and bundled
-  ghost is unchanged.
+  is not wired by the `siege` bot until its own step. Nothing is drawn.
 - **Formats.** `offerWeights[].specialist` is optional content, not saved data:
   no format number is raised.
+
+### The resource setting and the Mana Well (issue #473; RS-13, EC-3b, PP-8)
+
+Step 5/9 of #468: the Flowmancer's signature building and the **building
+resource setting** that the Transmuter (8/9) uses too.
+
+- **The setting.** A building definition may declare `"resourceSetting": true`
+  (an optional field of a building of kind `source` only; the loader and
+  `buildings.schema.json` refuse it on any other kind and any value but
+  `true`). A **placed** building of such a definition carries `resource`, one
+  **base** resource of `resources.json` (a refined resource is not allowed),
+  chosen by its owner when it is placed and changeable between battles in the
+  steps where the layout can be edited (`build`, `shop`), like a move or a
+  rotation. It is stored on the building in the team state ("Team state and
+  placement", format) and is not part of the stash entry: returning the
+  building to the stash drops it, and placing it again chooses again (the first
+  base resource when none is given).
+- **`setBuildingResource({ actor, id, resource })`.** Reasons in order:
+  `unknown_building` (not a placed building), `invalid_owner`, `not_owner`,
+  `no_resource_setting` (its definition has no setting), `invalid_resource`
+  (not a base resource of the content). Choosing the resource it already has
+  succeeds and changes nothing (the same state is returned, nothing is
+  detached). A different resource sets `resource` and **detaches every conduit
+  attached to the building** with `detachConduits`, in the same way and for the
+  same reason as a move (the conduits carried the old resource): the conduit
+  counters and instance IDs do not change. Free. The golden ops are
+  `placeFromStash` with `resource` and `setBuildingResource`.
+- **Placement.** A source with the setting is placed by the ordinary rules
+  ("Rule order for `placeFromStash` and `moveBuilding`") except step 10: it
+  needs **no node** and may stand on **any open cell of its owner's plot**; it
+  may not stand on a natural feature that blocks building (`blocked_by_feature`),
+  outside its owner's plot (`outside_own_plot`) or on a Core, a building or a
+  conduit. It **may** stand on a resource node (generated or added by a Rich
+  vein) and then **gains nothing from it**: the node's resource is ignored, the
+  node stays unused, and the setting is the resource. A node cell it covers
+  makes no building `node_reserved` elsewhere.
+- **The resource it makes** (`sourceResource(instance)`, one function used by
+  the conduit typing, the flow graph, the flow simulation and `occupancy`):
+  for a collector with the setting `instance.resource`, for any other collector
+  the resource of its node. A collector with the setting and no `resource` is
+  invalid state (`validateTeamState` refuses it; the flow simulation throws).
+  Conduit typing, the `resource_mismatch` check and the flow graph's `produces`
+  follow from it, so a Well set to Power cannot be joined to an Ore input.
+- **The intents** (session). `place_building` takes an optional `resource`
+  (any string; absent means the default above; a non-string is
+  `invalid_intent`); `set_building_resource { id, resource }` is a new board
+  intent, legal in the same steps as the other board edits (`build`, `shop`;
+  `wrong_step` elsewhere), locked while the player is Ready (`locked_ready`),
+  and `invalid_intent` for a non-integer `id` or a non-string `resource`. It
+  adds the reasons of `setBuildingResource` to the built-in reasons. Intents are
+  part of the action log, so an old log replays as it did (no log has either
+  field or intent).
+- **Undo (RS-5g).** The web's undo inverts a change of the setting by setting
+  the old resource and re-adding the conduits the change detached (as for a
+  move, under their old IDs); undoing a placement returns the building, undoing
+  a return places it again **with its setting**.
+- **The Mana Well** (`bld_mana_well`, Flowmancer only, 1x1, one output side,
+  north at rotation 0, kind `source` with `resourceSetting` true). It makes its
+  owner's chosen **base** resource (Ore, Power or Flux) at the collector rate
+  of its tier; the numbers (proposed, to be tuned in #477): `intervalTicks`
+  40 / 28 / 20, price 8 / 20 / 40, health 20 / 30 / 40. The **Flowmancer's
+  family bonus** (`source_speed_percent`, "Family bonuses") applies to it as to
+  an Extractor: it is a collector and the bonus is the owner's collector speed
+  total, so, for a Flowmancer, 40 becomes `floor(4000 / 110)` = 36, 28 becomes 25
+  and 20 becomes 18 (the Overclocker's cap is the same). It trades space for
+  supply (Pillar 6): a cramped plot can make up for a missing node, but each Well
+  costs a cell and wiring.
+- **The stated exception to the rebalance principle (issue #145, SC-13a).** A
+  collector fully feeds exactly one consumer of its own tier; the Mana Well
+  makes **half the rate** of an Extractor of its tier (its `intervalTicks` are
+  twice the Extractor's: 40 against 20, 28 against 14, 20 against 10), so a Well
+  feeds **about half** a consumer of its tier. Two Wells set to one resource
+  feed one such consumer through a Merger. This is intended (EC-3b, issue #473):
+  it is the price of working without a node.
+- **In the shop.** `economy.json` lists the Mana Well from round 2 with weight
+  12 and `specialist` `spec_flowmancer` ("Offer roll", "Signature buildings"); no
+  event pool offers it. Shop price and tier odds are the ordinary ones.
+- **Ghost validation** needs nothing new beyond `validateTeamState` (the
+  setting is checked there, above) and the signature-building rule 6a: a
+  snapshot from a real run always has a base-resource `resource` on every Well,
+  because the only operations that create or change one check it. A snapshot
+  from before this step has no Well, so none is rejected.
+- **The bot.** A strategy whose shop sells it a Mana Well uses it when the plot
+  has no free node of the resource a consumer it already has or likes needs
+  (the layout planner puts it on the open cell nearest the consumer, set to the
+  consumer's resource, only when no node collector can feed the consumer;
+  `bld_mana_well` is never placed on a node by the node steps). In the shop a
+  strategy that connects buys it only for a consumer it likes that the dry run
+  shows would be fed that way. No shipped strategy picks the Flowmancer except
+  `weak`, which buys at random and places no collector, so the Well changes the
+  shop rolls of `weak` from round 2 (and nothing else of a bot run).
+- **Formats.** The optional `resource` of a placed building and the two intent
+  shapes add no required field and change no existing meaning: no format number
+  is raised ("Versions and saved formats" in CONTRIBUTING).
+- **Vectors.** `team-state-ops.mana-well-setting` (placement on open ground,
+  on a node, refusals, the default resource, a change that detaches a conduit,
+  the same resource, a move, a return), `flow-graph.mana-well-on-a-node`,
+  `flow-sim.mana-well-rate` (tiers 1 to 3 against an Extractor: 10, 14 and 20
+  items in 400 ticks against 20; the Well feeds a Barracks with Ore and a Hangar
+  with Power) and `flow-sim.mana-well-setting-change` (the same board after two
+  changes: the conduits are detached and nothing is delivered),
+  `arena-sim.specialist-flowmancer-mana-well` (the family bonus) and
+  `shop-roll.27` and `shop-roll.28`.
+- _Notes for a port:_ the setting is plain data on the placed building; read it
+  wherever the resource of a collector is read and nowhere else. A Well's
+  `intervalTicks` go through `scaledInterval` like any collector's, so integer
+  floors are `floor(interval * 100 / (100 + P))`. Changing a setting is the one
+  operation (besides a move and a return) that removes conduits; remember to
+  re-add them in an undo.
 
 ### Saves and snapshots (no format number raised)
 
@@ -7496,7 +7653,8 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Gold | `economy.json` | `baseIncomePerShop` 5; `rewards.pveWin` easy / medium / hard 6 / 9 / 13; `pvpWin` 8; `pvpLoss` 4 (14 to 31 gold per round: the base income is paid at both shops of a round, see "Income") | strictly increasing `pveWin` |
 | Walls (issue #291) | `buildings.json`, `economy.json` | seven tetromino shapes (I, O, T, S, Z, L, J), 4 cells each, tier 1 / 2 / 3 health 250 / 400 / 600 and price 8 / 18 / 36 (the old single wall: 100 / 160 / 240 and 4 / 9 / 18, now `bld_wall_block`, kept for strongholds and reference boards, not sold); `offerWeights`: every non-wall weight doubled (collector 24, Splitter 12, Merger 12, Crossover 4, Barracks 32, gate 6, turret 16, Overclocker 6, Armory 12, Range 16, Hangar 12), walls O, T, S, Z, L, J 2 each and I 1 (13 of 161 against 8 of 82 before); at most 2 wall shapes per shop; the kit's 3 walls are random shapes, never I | four cells for a price of 8 is 2 per cell (4 per cell before); the shop limit keeps a set of offers from being all walls |
 | Shop | `economy.json` | (issue #145; every non-wall weight was doubled by issue #291, see Walls, and five entries from round 3 were added by issue #383, see "Offer roll") `offerWeights`: collector 12 (was 10), Splitter 6, Merger 6, Crossover 2 (was 4), Barracks 16 (was 10), wall 8, gate 3 (was 5), turret 8, Overclocker 3, Armory 6 (was 3; it was not offered before the rebalance), Range 8 (was 5), Hangar 6 (was 3); placeholder unit numbers of Range and Hangar kept by owner decision (issue #59) | unit producers and the Armory are offered more often, routing parts less; with 8 bot runs per strategy this changes no strategy's depth by more than a round (fortify at party 4: 12.5 to 14.8) |
-| Signature buildings (issue #472, placeholders until steps 5/9 to 8/9 of #468) | `buildings.json` | `bld_mana_well` 1x1 source, price 8 / 20 / 40, interval 40 / 28 / 20; `bld_rune_ward` 1x1 wall, price 8 / 18 / 36, health 120 / 200 / 300; `bld_familiar_roost` 1x2 producer of raiders, Power 4 per unit, price 20 / 40 / 70; `bld_transmuter` 1x2 refinery of Composite from 2 Ore and 2 Power, price 25 / 50 / 90; none is in `offerWeights` yet | stand-ins of existing kinds so that the roster, the shop gate and the ghost check can name them; tuned in issue #477 |
+| Mana Well (issue #473, proposed, to be tuned in #477) | `buildings.json`, `economy.json` | `bld_mana_well` 1x1 source with `resourceSetting`: interval 40 / 28 / 20 (half an Extractor's 20 / 14 / 10), price 8 / 20 / 40, health 20 / 30 / 40; in the shop from round 2 for the Flowmancer, weight 12 (half an Extractor's 24) | the stated exception to the rebalance principle: it feeds about half a consumer of its tier; weight and numbers are placeholders until #477 |
+| Signature buildings (issue #472, placeholders until steps 5/9 to 8/9 of #468; the Mana Well is real since #473, see its row) | `buildings.json` | `bld_mana_well` 1x1 source, price 8 / 20 / 40, interval 40 / 28 / 20; `bld_rune_ward` 1x1 wall, price 8 / 18 / 36, health 120 / 200 / 300; `bld_familiar_roost` 1x2 producer of raiders, Power 4 per unit, price 20 / 40 / 70; `bld_transmuter` 1x2 refinery of Composite from 2 Ore and 2 Power, price 25 / 50 / 90; only the Mana Well is in `offerWeights` (issue #473) | stand-ins of existing kinds so that the roster, the shop gate and the ghost check can name them; tuned in issue #477 |
 | Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
 | Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |
 | Escalator wave timing | `threats.json` | `firstTick` 100 and `intervalTicks` 75 (was 150 and 150): the eighth wave comes at tick 625 instead of 1200 | its Core used to fall before its large late waves spawned; a full tier 1 board now beats hard Escalator through round 8 (was 12), against 7 for Rusher |

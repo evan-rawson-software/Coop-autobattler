@@ -20,6 +20,7 @@ import {
   moveBuilding,
   placeFromStash,
   returnToStash,
+  setBuildingResource,
   type Cell,
   type ConduitEnd,
   type TeamContent,
@@ -37,8 +38,16 @@ export type LayoutAction =
       readonly x: number;
       readonly y: number;
       readonly rotation: number;
+      /** A placement of a building with the resource setting (issue #473). */
+      readonly resource?: string;
     }
   | { readonly t: 'return'; readonly id: number }
+  /** Change the resource setting of a placed building (issue #473). */
+  | {
+      readonly t: 'setResource';
+      readonly id: number;
+      readonly resource: string;
+    }
   | {
       readonly t: 'add' | 'erase';
       readonly from: ConduitEnd | BorderEnd;
@@ -87,7 +96,10 @@ export function toIntent(
         x: a.x,
         y: a.y,
         rotation: a.rotation,
+        ...(a.resource === undefined ? {} : { resource: a.resource }),
       };
+    case 'setResource':
+      return { type: 'set_building_resource', id: a.id, resource: a.resource };
     case 'move':
       return {
         type: 'move_building',
@@ -150,7 +162,24 @@ export function inverseOf(
       const b = before.buildings.find((x) => x.id === action.id);
       if (b === undefined) return [];
       return [
-        { t: 'place', id: b.id, x: b.x, y: b.y, rotation: b.rotation },
+        {
+          t: 'place',
+          id: b.id,
+          x: b.x,
+          y: b.y,
+          rotation: b.rotation,
+          ...(b.resource === undefined ? {} : { resource: b.resource }),
+        },
+        ...attached(before, b.id),
+      ];
+    }
+    case 'setResource': {
+      // Changing the setting detaches the conduits, so the inverse also
+      // re-adds them (issue #473).
+      const b = before.buildings.find((x) => x.id === action.id);
+      if (b === undefined || b.resource === undefined) return [];
+      return [
+        { t: 'setResource', id: b.id, resource: b.resource },
         ...attached(before, b.id),
       ];
     }
@@ -235,6 +264,12 @@ export function applyAction(
       return moveBuilding(state, content, { ...a, actor });
     case 'return':
       return returnToStash(state, content, { id: a.id, actor });
+    case 'setResource':
+      return setBuildingResource(state, content, {
+        id: a.id,
+        resource: a.resource,
+        actor,
+      });
     case 'add':
       return addConduit(state, content, {
         actor,

@@ -273,6 +273,10 @@
           "minimum": 0,
           "maximum": 12
         },
+        "resourceSetting": {
+          "description": "Collector only (issue #473): its owner chooses one base resource when placing it and may change it between battles. A collector with the setting stands on any open cell of its owner's plot (no node needed) and makes the resource of its setting. Absent: an ordinary collector on a node.",
+          "const": true
+        },
         "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
         "output": {
           "description": "Refinery only: the refined resource it makes. Its refinedFrom must be, as a set, the resources of the building's inputs (the core loader checks this).",
@@ -290,6 +294,15 @@
         }
       },
       "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": { "kind": { "const": "source" } },
+            "required": ["kind"]
+          },
+          "then": true,
+          "else": { "properties": { "resourceSetting": false } }
+        },
         {
           "if": {
             "type": "object",

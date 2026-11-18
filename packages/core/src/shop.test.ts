@@ -241,7 +241,8 @@ describe('rollOffers', () => {
     const rng = Rng.fromSeed(11);
     const mirror = Rng.fromSeed(11);
     const offers = rollOffers(rng, 8, content, economy);
-    const bw = economy.offerWeights.map((w) => w.weight);
+    // No specialist: the Mana Well entry (the Flowmancer's, #473) has weight 0.
+    const bw = offerWeightsAt(economy, 8).map((w) => w.weight);
     const tw = tierOddsFor(8, economy.tierOdds).weights;
     for (const o of offers) {
       const d = at(economy.offerWeights, pickWeightedIndex(mirror, bw)).def;
@@ -272,7 +273,10 @@ describe('rollOffers', () => {
         expect(Math.abs(observed - expected)).toBeLessThan(0.012);
         if (w === 0) expect(tiers[i]).toBe(0);
       });
-      const active = economy.offerWeights.filter((w) => w.fromRound <= round);
+      // A roll without a specialist never offers a signature building (#473).
+      const active = economy.offerWeights.filter(
+        (w) => w.fromRound <= round && w.specialist === undefined,
+      );
       const wsum = active.reduce((a, w) => a + w.weight, 0);
       for (const w of active) {
         const observed = (byDef.get(w.def) ?? 0) / total;
@@ -452,8 +456,9 @@ describe('offerWeightsAt and rareOfferDefs (Blueprint, RS-4i5)', () => {
     for (const w of late) {
       expect(early.find((e) => e.def === w.def)?.weight).toBe(0);
       expect(
-        offerWeightsAt(economy, w.fromRound).find((e) => e.def === w.def)
-          ?.weight,
+        offerWeightsAt(economy, w.fromRound, w.specialist).find(
+          (e) => e.def === w.def,
+        )?.weight,
       ).toBe(w.weight);
     }
   });
@@ -604,9 +609,25 @@ describe('signature buildings by specialist (issue #472, EC-3b)', () => {
     expect(rareOfferDefs(e, 3, 100)).not.toContain('bld_mana_well');
   });
 
-  test('the shipped content lists no signature building yet', () => {
-    for (const w of economy.offerWeights) {
-      expect(w.specialist).toBeUndefined();
+  test('the shipped content lists the Mana Well for the Flowmancer from round 2 (#473)', () => {
+    const named = economy.offerWeights.filter(
+      (w) => w.specialist !== undefined,
+    );
+    expect(named).toEqual([
+      {
+        def: 'bld_mana_well',
+        weight: 12,
+        fromRound: 2,
+        specialist: 'spec_flowmancer',
+      },
+    ]);
+    // The other three signature buildings come with their own steps.
+    for (const def of [
+      'bld_rune_ward',
+      'bld_familiar_roost',
+      'bld_transmuter',
+    ]) {
+      expect(economy.offerWeights.some((w) => w.def === def)).toBe(false);
     }
   });
 });
@@ -625,16 +646,20 @@ describe('loadEconomy: the specialist of an entry (issue #472)', () => {
   }
   test('an entry may name the owner of a signature building', () => {
     const d = clone(economyJson) as unknown as Record<string, unknown>;
-    (d['offerWeights'] as Rows).push({
+    const rows = d['offerWeights'] as Rows;
+    // The shipped list already holds the Mana Well entry (#473): change it.
+    rows[rows.findIndex((w) => w['def'] === 'bld_mana_well')] = {
       def: 'bld_mana_well',
       weight: 4,
       fromRound: 2,
       specialist: 'spec_flowmancer',
-    });
+    };
     const r = loadEconomy(d, ctx);
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.config.offerWeights.at(-1)).toEqual({
+      expect(
+        r.config.offerWeights.find((w) => w.def === 'bld_mana_well'),
+      ).toEqual({
         def: 'bld_mana_well',
         weight: 4,
         fromRound: 2,

@@ -55,6 +55,7 @@ import {
   DryRunTable,
   InspectorPanel,
   InventoryTray,
+  PlacingPanel,
   NextFightPanel,
   OverlayLegend,
   BorderLinksPanel,
@@ -929,6 +930,7 @@ export function BuildView(props: {
           acting={acting}
           sell={ui.selection?.kind === 'building' ? sellNode : null}
         />
+        <PlacingPanel team={team} ctl={ctl} model={model} />
         {sellTarget !== null && ui.selection === null && ui.held !== null ? (
           <Panel
             title={screenText(screenTexts, 'uiPanelSelected')}

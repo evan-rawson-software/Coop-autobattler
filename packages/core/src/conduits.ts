@@ -27,6 +27,7 @@ import {
   buildingEnd,
   conduitTouches,
   isBorderEnd,
+  sourceResourceOf,
   type BorderEnd,
   type Conduit,
   type ConduitEnd,
@@ -864,7 +865,7 @@ function computeResources(
     const e = view.byId.get(c.from.building);
     if (e !== undefined) {
       if (e.def.kind === 'source') {
-        r = view.q.nodeAt(e.b.x, e.b.y) ?? null;
+        r = sourceResourceOf(e.def, e.b, view.q) ?? null;
       } else if (e.def.kind === 'refinery') {
         // A conduit leaving a refinery carries its output resource (CB-5b).
         r = e.def.output;
@@ -1280,7 +1281,9 @@ export function buildFlowGraph(
       def: b.def,
       kind,
       produces:
-        e.def.kind === 'source' ? (view.q.nodeAt(b.x, b.y) ?? null) : null,
+        e.def.kind === 'source'
+          ? (sourceResourceOf(e.def, b, view.q) ?? null)
+          : null,
       inputs: inSides.map(inputOf),
       outputs: outSides.map(outputOf),
     });

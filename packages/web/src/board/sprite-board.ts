@@ -311,7 +311,16 @@ function drawBuildings(
       }
     } else if (fits) {
       const rot = buildingSpriteRot(b, f.turned);
-      drawSprite(lc, b.def.id, px, py, 1, rot ? { rot } : {});
+      // A building with the resource setting (issue #473) shows its resource
+      // in the colour of its basin.
+      const ramp =
+        b.instance.resource === undefined
+          ? undefined
+          : rampOf(set, b.instance.resource);
+      drawSprite(lc, b.def.id, px, py, 1, {
+        ...(rot ? { rot } : {}),
+        ...(ramp === undefined ? {} : { ramp }),
+      });
     } else {
       // No sprite for this building: the flat block.
       lc.fillStyle = b.solid ? theme.wall : (theme.kinds[b.def.kind] ?? '#888');

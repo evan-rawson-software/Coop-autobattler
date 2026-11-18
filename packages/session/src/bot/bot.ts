@@ -920,6 +920,9 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
               (taking.get(res) ?? 0) >=
                 (room.openNodes.get(res) ?? 0) +
                   (room.placedSources.get(res) ?? 0) +
+                  // A Mana Well in the stash will be set to the resource
+                  // the consumer needs (#473).
+                  stashed('bld_mana_well') +
                   splitters +
                   // One more while a share is possible, so the waiting
                   // consumer is what lets the Splitter be bought.
@@ -968,6 +971,17 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
                   : likedConsumers.some((c) =>
                       placeable('collector', offer, [c, c]),
                     ))
+              ) {
+                score = 0;
+              }
+            } else if (o.def === 'bld_mana_well') {
+              // The Flowmancer's collector (#473): bought only for a
+              // consumer the strategy likes that the plot's nodes cannot
+              // feed, which the dry run shows (it places a well only where
+              // no free node of the resource is left).
+              if (
+                role === 1 ||
+                !likedConsumers.some((c) => placeable('collector', offer, [c]))
               ) {
                 score = 0;
               }

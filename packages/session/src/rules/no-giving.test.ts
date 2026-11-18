@@ -1,7 +1,9 @@
 import {
   Rng,
+  addToStash,
   conduitTouches,
   loadEconomyOrThrow,
+  placeFromStash,
   type PlacedBuilding,
 } from '@game/core';
 import { describe, expect, test } from 'vitest';
@@ -138,6 +140,35 @@ function laidOut(s: RunState, actor: number): { s: RunState; plan: Intent[] } {
   return { s: cur, plan };
 }
 
+/**
+ * The laid-out state with a Mana Well of `actor` on the first open cell of
+ * their plot (issue #473): the board `set_building_resource` acts on.
+ */
+function withWell(s: RunState, actor: number): RunState {
+  const lay = laidOut(s, actor).s;
+  const added = addToStash(lay.team, content, {
+    def: 'bld_mana_well',
+    tier: 1,
+    owner: actor,
+  });
+  if (!added.ok) throw new Error(added.reason);
+  const { map } = added.state;
+  for (let y = 1; y < map.height; y++) {
+    for (let x = actor * map.plotWidth; x < (actor + 1) * map.plotWidth; x++) {
+      const r = placeFromStash(added.state, content, {
+        actor,
+        id: added.id,
+        x,
+        y,
+        rotation: 0,
+        resource: 'res_a',
+      });
+      if (r.ok) return { ...lay, team: r.state };
+    }
+  }
+  throw new Error('no open cell for a Mana Well');
+}
+
 type Maker = (s: RunState, actor: number, whose: 'own' | 'foreign') => Intent[];
 
 function owned(
@@ -204,6 +235,14 @@ const MAKERS: Record<string, Maker> = {
       type: 'return_building',
       id,
     })),
+  set_building_resource: (s, actor, whose) =>
+    owned(withWell(s, actor).team.buildings, actor, whose).flatMap((id) =>
+      ['res_a', 'res_b'].map((resource) => ({
+        type: 'set_building_resource',
+        id,
+        resource,
+      })),
+    ),
   add_conduit: (s, actor) =>
     laidOut(s, actor).plan.filter((i) => i.type === 'add_conduit'),
   erase_conduit: (s, actor) => {
@@ -228,6 +267,7 @@ function baseFor(
   actor: number,
   intent: Intent,
 ): RunState {
+  if (type === 'set_building_resource') return withWell(s, actor);
   if (ON_LAID_OUT.has(type)) return laidOut(s, actor).s;
   if (type !== 'add_conduit') return s;
   // A conduit needs the buildings and earlier conduits of the plan first.

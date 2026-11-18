@@ -23,7 +23,11 @@ import { divFloor, mulDiv } from './int.js';
 import { queryTeamMap } from './map.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
-import type { TeamContent, TeamState } from './team-state.js';
+import {
+  sourceResourceOf,
+  type TeamContent,
+  type TeamState,
+} from './team-state.js';
 import type { TunnelPair } from './tunnels.js';
 
 // ---------------------------------------------------------------------------
@@ -519,9 +523,11 @@ function compile(
   for (const b of state.buildings) {
     const def = defOf(b.def);
     if (def.kind !== 'source') continue;
-    const resource = q.nodeAt(b.x, b.y);
+    const resource = sourceResourceOf(def, b, q);
     if (resource === undefined)
-      throw new Error(`Source ${String(b.id)} is not on a node.`);
+      throw new Error(
+        `Source ${String(b.id)} is not on a node and has no resource setting.`,
+      );
     const tier = def.tiers[b.tier - 1];
     if (tier === undefined)
       throw new Error(`Source ${String(b.id)} has an invalid tier.`);

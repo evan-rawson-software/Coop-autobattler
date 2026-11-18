@@ -4,7 +4,9 @@
  * the reference boards. Input `{ seed, partySize, ops }` (or `{ map, ops }`
  * with an explicit map in the map format) where each op is `{ op, ...args }`
  * (`addToStash` {def, tier, owner}; `placeCore` {actor, x, y};
- * `placeFromStash` and `moveBuilding` {actor, id, x, y, rotation};
+ * `placeFromStash` {actor, id, x, y, rotation, resource?} and `moveBuilding`
+ * {actor, id, x, y, rotation}; `setBuildingResource` {actor, id, resource}
+ * (issue #473);
  * `returnToStash` and `removeFromStash` {actor, id}; `addNode` {owner, x, y,
  * resource, round} (Rich vein, an added resource node); `addConduit` {actor,
  * from: {building, side}, to: {building, side}, cells: [{x, y}]} and
@@ -31,6 +33,7 @@ import {
   placeFromStash,
   removeFromStash,
   returnToStash,
+  setBuildingResource,
   setSpecialist,
   type TeamContent,
   type TeamState,
@@ -138,6 +141,16 @@ export function runTeamStateOps(
             x: int(a, 'x'),
             y: int(a, 'y'),
             rotation: int(a, 'rotation'),
+            ...(a['resource'] === undefined
+              ? {}
+              : { resource: str(a, 'resource') }),
+          });
+          break;
+        case 'setBuildingResource':
+          outcome = setBuildingResource(state, content, {
+            actor: int(a, 'actor'),
+            id: int(a, 'id'),
+            resource: str(a, 'resource'),
           });
           break;
         case 'moveBuilding':
