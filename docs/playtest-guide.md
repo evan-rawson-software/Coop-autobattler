@@ -61,6 +61,22 @@ The side panel lists each point and what it is doing, and both sides' bonuses. A
 - Route units past a point of interest, then avoid it, and compare: do you win more when you take it, or when you leave it alone?
 - Watch a point being captured and a healing point's radius, and see whether it is clear who holds what.
 
+## First-time hints
+
+The first time you meet something new after round 1, a short card appears at the top of the side panel (never over the board, the top bar or the Ready button). "Got it" closes it; it shows once per player, and the main menu's "Show tips again" brings them back. "Turn tips off" in the main menu hides all hints and phase tips. In a tutorial run they start once the six tutorial steps are done. The hints and when they appear:
+
+- Points of interest: the first battle with a point in the neutral zone. (Already in the battle side panel.)
+- Refinery offered: the first shop that offers a two-input refinery.
+- Refinery placed: the first time one of your buildings is a refinery.
+- Boss: the first shop whose next rival is a boss.
+- Caravan: the first Caravan reward screen.
+- Rich vein: the first cell picker.
+- Pact: the first event step that offers a Pact.
+- Bonuses: the first time you hold a bonus, pointing at the Bonuses item in the top bar.
+- Plot nearly full: the first time 15 percent or less of your plot's free ground is left.
+
+Not given a hint, on purpose: the specialist pick explains each specialist on its own cards; the Stronghold threats (Stampede, Crescendo, Spotlight and the rest) are named and described on the fight choice cards; and each new building says what it does on its shop card and in the inspector. The first-seen question for each is in the next list.
+
 ## Choosing the opponent (for testing)
 
 Open the `#debug` page (add `#debug` to the address) and use "Next PvP opponent" to force the boss. It applies the next time a shop fixes an opponent, and stays set in your browser until you switch it back to Automatic. Normal play never needs it.
@@ -83,6 +99,17 @@ The same page has "Point of interest": force a point of a chosen buff into your 
 - Did the music sit under the effects, or did you not notice it at all?
 - Did you turn the music or the sound off? Why?
 - Do points feel worth fighting for, or are they a distraction? Are they noticeable in the battle, and is it clear what they give and who holds them?
+- Did you understand what a point of interest is the first time you saw its hint?
+- Did you understand that a refinery needs both inputs, each on its own conduit, the first time you saw its hint?
+- Did the refinery-placed hint help you route its output?
+- Did you understand the boss hint, and did you find the boss's counter line?
+- Did you understand the Caravan hint (turn order, and the bonus reward that applies to the whole party)?
+- Did you understand the Rich vein hint, and how to pick the cell?
+- Did you understand, from the Pact hint, that the drawback lasts the whole run?
+- Did the Bonuses hint help you find your bonuses in the top bar?
+- Did the plot-nearly-full hint tell you that buildings can be moved between battles, and was it shown at the right time?
+- Did a hint ever get in your way, or show too late or too often? Did you turn tips off, and why?
+- Did you miss a hint for something new (a specialist, a threat or a building) when you first met it?
 - Anything that confused you, broke, or looked wrong, with what you were doing at the time.
 
 Send it as a note on the issue tracker or in your own words.

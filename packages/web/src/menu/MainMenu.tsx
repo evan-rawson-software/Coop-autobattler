@@ -23,6 +23,7 @@ import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { SoundPanel } from '../audio/SoundPanel.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import { resetTips } from '../shell/phase-tips.js';
+import { setTipsOff, tipsOffStore } from '../hints/hint-store.js';
 import './menu.css';
 import {
   menuRows,
@@ -140,6 +141,7 @@ export function MainMenuScreen() {
   const [starting, setStarting] = useState(false);
   const [ghostNote, setGhostNote] = useState<string | null>(null);
   const [tipsNote, setTipsNote] = useState(false);
+  const tipsOff = useStore(tipsOffStore);
   const [soundOpen, setSoundOpen] = useState(false);
   const hash = useStore(hashStore);
   const seed = seedFromHash(hash);
@@ -339,6 +341,17 @@ export function MainMenuScreen() {
             }}
           >
             {text('menuShowTips')}
+          </button>
+          <button
+            type="button"
+            id="tips-toggle"
+            class="text-link"
+            data-tips={tipsOff ? 'off' : 'on'}
+            onClick={() => {
+              setTipsOff(!tipsOff);
+            }}
+          >
+            {text(tipsOff ? 'menuTipsOn' : 'menuTipsOff')}
           </button>
           {tipsNote ? (
             <p class="muted fine" role="status" data-field="tips-note">

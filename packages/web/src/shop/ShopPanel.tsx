@@ -13,6 +13,7 @@ import {
   offersRefinery,
   refineryHintSeen,
 } from './refinery-hint.js';
+import { tipsOffStore } from '../hints/hint-store.js';
 import type { OfferGroup, ShopView } from './view-model.js';
 
 const t = (key: string, values: Record<string, string> = {}): string =>
@@ -156,6 +157,7 @@ export function ShopPanel(props: {
 }) {
   const { sv } = props;
   const hintSeen = useStore(refineryHintSeen);
+  const tipsOff = useStore(tipsOffStore);
   return (
     <section class="shop-panel" id="shop-screen" aria-label={t('uiShopTitle')}>
       <div class="shop-head">
@@ -188,7 +190,7 @@ export function ShopPanel(props: {
           {sv.marketNote}
         </p>
       )}
-      {!hintSeen && offersRefinery(sv.groups) ? (
+      {!hintSeen && !tipsOff && offersRefinery(sv.groups) ? (
         <p class="shop-hint" data-field="refinery-hint">
           {t('refineryHint')}{' '}
           <button

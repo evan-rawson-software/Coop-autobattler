@@ -32,6 +32,7 @@ import { OpponentBonuses } from '../run/BonusList.js';
 import { OpponentSpecialists } from '../specialist/SpecialistList.js';
 import { useStore } from '../app-state.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
+import { tipsOffStore } from '../hints/hint-store.js';
 import { dismissPointHint, pointHintSeen } from './point-hint.js';
 import {
   bonusLines,
@@ -312,6 +313,7 @@ export function PointsSection(props: {
 }) {
   const { pb, tps } = props;
   const hintSeen = useStore(pointHintSeen);
+  const tipsOff = useStore(tipsOffStore);
   const points = pointsNow(pb.sim);
   if (points.length === 0) return null;
   const mine = bonusLines(pb.sim, 0, tps);
@@ -363,7 +365,7 @@ export function PointsSection(props: {
       {mine.length + theirs.length > 0 ? (
         <p class="muted small">{t('battleBonusNote')}</p>
       ) : null}
-      {hintSeen ? null : (
+      {hintSeen || tipsOff ? null : (
         <p class="point-hint" data-field="point-hint">
           {t('battlePointHint')}{' '}
           <button
