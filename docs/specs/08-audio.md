@@ -153,7 +153,7 @@ the section says `music`. Every number is [PROPOSED].
 
 | ID | Trigger | P | gap | max | vol |
 | --- | --- | --- | --- | --- | --- |
-| `build.place` | A building or Core is placed on the board | 2 | 80 | 2 | 75 |
+| `build.place` | A building or Core is placed on the board | 2 | 80 | 2 | 68 |
 | `build.rotate` | The held or selected building is rotated | 1 | 60 | 1 | 50 |
 | `build.move` | A placed building is picked up and put down elsewhere (played on the drop, instead of `build.place`) | 2 | 80 | 1 | 65 |
 | `build.stash` | A building returns to the inventory (stash) | 2 | 80 | 1 | 60 |
@@ -165,8 +165,8 @@ the section says `music`. Every number is [PROPOSED].
 
 | ID | Trigger | P | gap | max | vol |
 | --- | --- | --- | --- | --- | --- |
-| `shop.buy` | An item is bought | 2 | 80 | 2 | 80 |
-| `shop.sell` | A building is sold | 2 | 80 | 2 | 70 |
+| `shop.buy` | An item is bought | 2 | 80 | 2 | 72 |
+| `shop.sell` | A building is sold | 2 | 80 | 2 | 66 |
 | `shop.reroll` | The shop is re-rolled | 2 | 120 | 1 | 65 |
 | `shop.no_gold` | A buy or re-roll is refused for lack of gold | 2 | 150 | 1 | 60 |
 
@@ -175,7 +175,7 @@ the section says `music`. Every number is [PROPOSED].
 | ID | Trigger | P | gap | max | vol |
 | --- | --- | --- | --- | --- | --- |
 | `run.ready` | This player presses Ready (or Unready: `ui.toggle`) | 2 | 120 | 1 | 65 |
-| `run.all_ready` | Everyone is ready and the step ends | 2 | 300 | 1 | 75 |
+| `run.all_ready` | Everyone is ready and the step ends | 2 | 300 | 1 | 68 |
 | `run.vote_cast` | A vote is cast, by this player or another (co-op) | 1 | 100 | 2 | 50 |
 | `run.vote_resolved` | A vote resolves and the winning option shows | 2 | 300 | 1 | 70 |
 | `run.event_chosen` | An event option is chosen (after the vote, if any) | 2 | 200 | 1 | 70 |
@@ -264,9 +264,9 @@ The `vol` of music is relative to the `music` group, which defaults to 50
   classes: `attack` (the cues marked attack), `spawn` and `death`. Each
   class has a **window** in wall-clock milliseconds: after one of its cues
   plays, no other cue of the class plays until the window has passed. The
-  windows at speed 1× are 250 ms for `attack` (at most 4 attack sounds per
-  second, whatever happens on screen), 333 ms for `spawn` and 333 ms for
-  `death` (about 3 per second). When several cues of a class arrive in the
+  windows at speed 1× are 300 ms for `attack` (at most 3 attack sounds per
+  second, whatever happens on screen), 500 ms for `spawn` and 500 ms for
+  `death` (2 per second each; set in the mix pass, AU-47). When several cues of a class arrive in the
   same frame, only the best is considered: the highest priority, then the
   largest `damage` (zero for classes without it), then the lowest unit ID.
   So a Core hit (`battle.core_hit_low` over `battle.core_hit` over
@@ -347,7 +347,7 @@ the contract between them.
     AU-21.
   - `mix`: `{ "effectVoices": 16, "duckAttackMs": 40, "duckReleaseMs": 400,
     "crossfadeMs": 1500, "stingerFadeMs": 400, "lowCorePercent": 30,
-    "thinWindowMs": { "attack": 250, "spawn": 333, "death": 333 },
+    "thinWindowMs": { "attack": 300, "spawn": 500, "death": 500 },
     "speedFactor": { "1": 1, "2": 1.33, "4": 2 }, "seekJumpTicks": 8 }`.
   - `cues`: an object from cue ID to `{ "group", "priority", "minGapMs",
     "maxVoices", "volume" }` and the optional fields of AU-25 (`sound`,
@@ -488,15 +488,64 @@ The engine is pure logic behind an injected port (a small interface for
 context and never listen. Smoke checks may assert state, such as that the
 settings persist, never sound.
 
+## Mix pass (#452)
+
+- **AU-47 [DECIDED]** The mix pass was done headlessly: levels were read from
+  the generated files and a rendering of the music (RMS and peak, with the
+  group gains of AU-21), not by ear. Changes to the first numbers:
+  - Thinning windows `attack` 250 to 300 ms, `spawn` and `death` 333 to
+    500 ms. With every class busy, the old windows could keep a short sound
+    running about once a second in every second (4 + 3 + 3 sounds); the new
+    ones give 3 + 2 + 2 and leave gaps, so a battle at 1× is never a
+    continuous noise. At 4× the factor of AU-37 still halves the rate.
+  - Volumes of the sounds a player hears most often, lowered: `shop.buy`
+    80 to 72, `build.place` 75 to 68, `shop.sell` 70 to 66, `run.all_ready`
+    75 to 68. They were 3 to 5 dB louder than the other routine cues.
+  - Left as they were: `ui.click` (the quietest routine cue, RMS about
+    -21 dBFS at its volume), the Core cues (`battle.core_hit` is about 7 dB
+    above `battle.attack`, `battle.core_hit_low`, `battle.core_lost` and
+    `battle.core_destroyed` about 12 dB above it), the ducks (AU-35), the
+    group defaults (AU-21) and `ui.hover` (still off).
+  - Music at the default groups sits about 20 dB under a routine effect (RMS
+    about -30 dBFS before the group gain, and the music group gain is 8 dB
+    under the effects group gain). That is "under the effects" with room to
+    spare; whether it is too quiet to notice is a question for a listener.
+  - No sound recipe changed, so no WAV changed.
+- What still needs a human ear: whether any single sound tires on repeat,
+  whether the battle is readable by ear at 1×, 2× and 4×, whether the music
+  gap above is right, and whether the stingers and ducks feel proportionate.
+  The questions are in `docs/playtest-guide.md`.
+
 ## For the Godot port
 
-- Reuse as they are: `content/audio.json`, `content/sounds.json`,
-  `content/music.json`, `assets/audio/sfx/*.wav` and the manifest, the cue
-  and sound IDs, and the rules AU-20 to AU-39.
-- Cues are the hook: the port implements the engine (an `AudioStreamPlayer`
-  pool of 16, the buses `Master`, `Music` and `Effects`, thinning and
-  ducking as above) and reads `battleMap` to map arena events. Godot's
-  buses replace the gain formula only where the result is the same
-  (AU-21).
-- A sound can be replaced by a recorded file with the same ID. Nothing else
-  changes.
+Reuse the data and the rules; write only the player and the engine. The port
+plan is in `specs/06-technical-architecture.md` (G2, issue #365).
+
+**Reuse as they are:** `content/audio.json`, `content/sounds.json`,
+`content/music.json`, `assets/audio/sfx/*.wav`, `assets/audio/manifest.json`,
+the cue, sound and track IDs (AU-46) and the rules AU-20 to AU-39. The cue
+IDs are the contract: nothing in the engine names a sound except through a
+cue ID, so a recorded sound replaces a generated one by taking its ID.
+
+**How each part maps:**
+
+| Web | Godot |
+| --- | --- |
+| `assets/audio/sfx/<id>.wav` (mono, 22,050 Hz, 16-bit PCM, 44-byte header) | Import as is: Godot reads each file as an `AudioStreamWAV`. Load them from the manifest (`files[].file`), keep them uncompressed in memory, no loop. A recorded replacement may be OGG Vorbis (`AudioStreamOggVorbis`) with the same ID |
+| Effect voices, 16 at once (AU-27), `maxVoices` and `minGapMs` per cue | A pool of 16 `AudioStreamPlayer` nodes on the `Effects` bus, reused by the same rule (free player, else steal the sounding voice of the lowest priority with the least time left, only for a higher priority). Per-cue counts and gap timestamps are kept in GDScript, from `cues`. Time is `Time.get_ticks_msec()` |
+| Groups `master`, `music`, `effects` and the gain formula (AU-21) | Buses `Master`, `Music` and `Effects` (both children of `Master`) in the bus layout. Set each bus with `AudioServer.set_bus_volume_db(bus, linear_to_db(v))` where `v = (slider/100)^2`; the cue's own `volume / 100` and the duck go on the player (`volume_db`) so the product equals AU-21. Mute is `AudioServer.set_bus_mute` on `Master`, with the music still running (AU-39) |
+| Settings in `localStorage` (AU-22) | The same four values (`master`, `music`, `effects`, `muted`) in `user://settings.cfg`, section `[audio]` |
+| Unlock on first click, drop earlier cues (AU-30) | Not needed: a desktop build has audio from the start. Skip the rule; the music that should play simply starts |
+| Tab hidden (AU-32) | The window losing focus or being minimised: pause the `Music` bus with `AudioServer.set_bus_mute` or `get_tree().paused`, and drop effect cues (`NOTIFICATION_APPLICATION_FOCUS_OUT` and `_IN`). Keep this a setting if players want music in the background |
+| Thinning (AU-34, AU-37), `battleMap`, core-low (AU-36), seek and skip (AU-38) | Plain GDScript on the playback frame: the same three windows from `mix.thinWindowMs` times `speedFactor`, the same pick order (priority, damage, lowest unit ID), the same `battleMap` rows tried in order. This is the part most worth porting from `packages/web/src/audio/thin.ts` and `battle-sounds.ts` line by line, with the same unit tests, because it must behave as the web build does |
+| Ducking (AU-35) | A tween or a per-frame move of the `Music` bus volume (or of a `duck` factor on the music players) toward the target: 40 ms down, hold, 400 ms up; the deepest active duck wins |
+| Crossfade and stingers (AU-39) | Two `AudioStreamPlayer` nodes on `Music` (the playing loop and the one fading in) and a third for the stinger. Fade with a `Tween` on `volume_db`, using the equal-power curves (sine in, cosine out, i.e. gain `sin(x)` and `cos(x)`, converted with `linear_to_db`; 1500 ms for the crossfade, 400 ms for the stinger). The rule that `music.build` waits for a stinger to end is a `finished` signal |
+| Music from `content/music.json`, synthesised in the browser by `music-synth.ts` | Two ways, with the same track IDs. **(a) Pre-rendered (recommended):** a tool (a GDScript editor script, or the `packages/audio` helpers in Node) renders each track once to a 22,050 Hz mono WAV from the notes, with the loops sample-exact in length (`bars x 4 x 60 / bpm` seconds) and the tail of the last bars mixed back onto the start so the repeat has no gap, and sets `loop_mode = AudioStreamWAV.LOOP_FORWARD` and `loop_end`. Loop files are about 2 MB each at that format, so a desktop build can store them as OGG Vorbis instead. **(b) Live:** a GDScript sequencer on `AudioStreamGenerator` that does what `TrackPlayer` does (a step is `60 / bpm / 4` s, degree to MIDI note by AU-45, an attack ramp then an exponential decay, a one-pole low-pass per instrument, an optional partial), mixing into the generator buffer with `push_frame`. (b) costs CPU on the main thread and has to survive a stall, so prefer (a) unless music must follow the data live |
+| Sound parameters in `content/sounds.json` | Not read at run time. They matter only for regenerating the WAVs: `pnpm audio:build` stays the generator (Node), and its output is committed. Port the synthesiser to GDScript only if the sounds are meant to be tuned inside Godot |
+| `ui` and run cues (AU-26) | `AudioManager.play("shop.buy")` from an autoload, called from the same moments as the web UI (the tables above are the list of moments) |
+
+**Tests to port:** the engine logic is behind a port interface on the web
+(`packages/web/src/audio/web-port.ts`); in Godot do the same with a small
+fake player so the gap, voice, thinning, duck and music-state tests run
+headless, in GUT or gdUnit, without listening.
+

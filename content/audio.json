@@ -13,9 +13,9 @@
     "stingerFadeMs": 400,
     "lowCorePercent": 30,
     "thinWindowMs": {
-      "attack": 250,
-      "spawn": 333,
-      "death": 333
+      "attack": 300,
+      "spawn": 500,
+      "death": 500
     },
     "speedFactor": {
       "1": 1,
@@ -66,7 +66,7 @@
       "priority": 2,
       "minGapMs": 80,
       "maxVoices": 2,
-      "volume": 75
+      "volume": 68
     },
     "build.rotate": {
       "group": "effects",
@@ -115,14 +115,14 @@
       "priority": 2,
       "minGapMs": 80,
       "maxVoices": 2,
-      "volume": 80
+      "volume": 72
     },
     "shop.sell": {
       "group": "effects",
       "priority": 2,
       "minGapMs": 80,
       "maxVoices": 2,
-      "volume": 70
+      "volume": 66
     },
     "shop.reroll": {
       "group": "effects",
@@ -150,7 +150,7 @@
       "priority": 2,
       "minGapMs": 300,
       "maxVoices": 1,
-      "volume": 75
+      "volume": 68
     },
     "run.vote_cast": {
       "group": "effects",
