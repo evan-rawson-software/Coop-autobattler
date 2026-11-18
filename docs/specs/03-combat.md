@@ -375,12 +375,12 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 | Kind | Role | In the game (`content/buildings.json`) | Not built yet |
 |------|------|----------|----------|
-| **Source** (collector) | Built on a resource node; produces that node's resource at a flow rate set by its tier | Extractor | Mana Well (1x1, any open cell, a weak collector; CB-52) |
-| **Route** | Splits, joins, or crosses conduits | Splitter (one in, three out); Merger (three in, one out); Crossover (two conduits pass at 90°) | Tunnel (two 1x1 ends, carries a conduit under buildings; CB-9g) |
-| **Refinery** | Turns one resource (common) or two (rare) into a refined resource | Composite Refinery (Ore + Power → Composite); Aether Refinery (Power + Flux → Aether) | One-input refineries such as a Smelter (Ore → Alloy), CB-5d; Transmuter (1x2, one base resource into another at a loss; CB-55) |
+| **Source** (collector) | Built on a resource node; produces that node's resource at a flow rate set by its tier | Extractor; Mana Well (1x1, any open cell, a weak collector; CB-52) | — |
+| **Route** | Splits, joins, or crosses conduits | Splitter (one in, three out); Merger (three in, one out); Crossover (two conduits pass at 90°); Tunnel (two 1x1 ends, carries a conduit under buildings; CB-9g) | — |
+| **Refinery** | Turns one resource (common) or two (rare) into a refined resource | Composite Refinery (Ore + Power → Composite); Aether Refinery (Power + Flux → Aether); Transmuter (1x2, one base resource into another at a loss; CB-55) | One-input refineries such as a Smelter (Ore → Alloy), CB-5d |
 | **Modifier** | Changes the flow passing through | — | Booster (more per tick); Buffer (stores, then releases a burst) |
-| **Unit producer** | Consumes resources → spawns units | Barracks (Soldier, cheap swarm); Range (Archer, ranged); Hangar (Drone, flying); Foundry (Ore + Power, Heavy, a bruiser); Golem forge (Composite, Golem, tanky front-liner); Spire (Aether, Caster, area damage) | Grand barracks (3x3, two soldiers at a time); Lancer hall (1x3, long-reach melee); CB-9f; Familiar Roost (1x2, fast fragile melee units; CB-54) |
-| **Defense** | Blocks or kills enemy units | Walls (seven four-cell shapes, I, O, T, S, Z, L, J, and a one-cell wall that is not sold); Gate; Turret (needs Power to fire); Pylon (boss strongholds only, never in a shop, CB-29) | Mortar (2x2 turret, long range and splash, blind spot up close; CB-9f); Rune Ward (1x1, hits back at attackers of the walls beside it; CB-53); Repair station |
+| **Unit producer** | Consumes resources → spawns units | Barracks (Soldier, cheap swarm); Range (Archer, ranged); Hangar (Drone, flying); Foundry (Ore + Power, Heavy, a bruiser); Golem forge (Composite, Golem, tanky front-liner); Spire (Aether, Caster, area damage); Grand barracks (3x3, two soldiers at a time); Lancer hall (1x3, long-reach melee); CB-9f; Familiar Roost (1x2, fast fragile melee units; CB-54) | — |
+| **Defense** | Blocks or kills enemy units | Walls (seven four-cell shapes, I, O, T, S, Z, L, J, and a one-cell wall that is not sold); Gate; Turret (needs Power to fire); Pylon (boss strongholds only, never in a shop, CB-29); Mortar (2x2 turret, long range and splash, blind spot up close; CB-9f); Rune Ward (1x1, hits back at attackers of the walls beside it; CB-53) | Repair station |
 | **Economy** | Consumes resources → the factory gets stronger for the rest of this battle | Overclocker (Flux; collectors faster, up to a low cap, SC-12); Armory (Ore; later units spawn stronger) | Reactor (becomes a new source once fed enough) |
 | **Core** | One per player: that player's health. Fixed position (CB-3e). Needs no resources. | Core | — |
 
@@ -433,7 +433,7 @@ no building makes and only PvE waves field.
   it needs a 3x3 hole and a Merger feeding it (CB-10f). The Tunnel is
   described in CB-9g. Considered and left out: adjacency boosters, a repair
   station, a Bulwark turret.
-- **CB-9g [PROPOSED]** **The Tunnel** (not built yet, CB-9f). A Tunnel is a route building made of
+- **CB-9g [PROPOSED]** **The Tunnel** (built, CB-9f). A Tunnel is a route building made of
   two separate 1x1 pieces, an **entrance** and an **exit**, placed together
   as a pair.
   - It carries **one conduit** of **one resource** (CB-5b) from the entrance
@@ -539,7 +539,7 @@ no building makes and only PvE waves field.
   feeding it backs up (CB-9e). The number of items that can wait at each
   input is `inputBufferUnits` in `content/sim.json`. Nothing in a store
   carries over to the next battle (CB-11).
-- **CB-10f [PROPOSED]** **The Grand barracks exception** (not built yet,
+- **CB-10f [PROPOSED]** **The Grand barracks exception** (built,
   CB-9f). The rebalance
   principle (SC-13a) is that a collector fully feeds exactly one consumer of
   its own tier. The Grand barracks is the stated exception: it is fed by
@@ -599,7 +599,7 @@ no building makes and only PvE waves field.
   input means more units only up to the building's top speed; beyond that,
   more output takes more or better buildings, and the supply to run them.
   Stronger units come from economy buildings (the factory's ramp).
-- **CB-13a [PROPOSED]** **Several units per production** (not built yet,
+- **CB-13a [PROPOSED]** **Several units per production** (built,
   CB-9f). A unit producer may
   spawn more than one unit each time it produces. The Grand barracks spawns
   two soldiers per production, for a cost of about 75% of two Barracks
@@ -693,7 +693,7 @@ no building makes and only PvE waves field.
   (CB-5g); area damage is a radius and a percent of the hit passed to other
   units near the target (CB-5h). Implemented: `armor` and `splash` in
   `content/units.json`.
-- **CB-16e [PROPOSED]** **The Lancer** (not built yet, CB-9f). A melee unit (CB-16) with a long
+- **CB-16e [PROPOSED]** **The Lancer** (built, CB-9f). A melee unit (CB-16) with a long
   reach (a few cells, edge to edge, more than other melee units), low health
   and moderate damage. It stands behind a front line of other units and hits
   over them. It still cannot hit flying units (CB-16b). Trained by the

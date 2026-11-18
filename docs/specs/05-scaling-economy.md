@@ -159,7 +159,7 @@ first. Gold (next section) is never produced by the factory.
   `offerWeights`, issue #383); weights, tier odds and those rounds are in
   `content/economy.json`.
 - **EC-3a [PROPOSED]** **The four new buildings in the shop** (CB-9f,
-  issue #437). They are planned and not in the content yet. Each is offered from a round, through the shop's per-offer
+  issue #437). They are in the content. Each is offered from a round, through the shop's per-offer
   `fromRound` (issue #383): before that round its weight is 0. Simple pieces
   come early, puzzle pieces later. Each is offered at the tier shown, and
   gains better tiers like any building (CB-26a).
